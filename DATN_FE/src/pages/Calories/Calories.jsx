@@ -87,9 +87,9 @@ export default function Calories() {
                     Tính Calo tiêu thụ trong một ngày
                   </h1>
                   <div className='flex items-center'>
-                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Cook</span>
-                    <span className='font-semibold'>Healthy</span>
-                    <IoTimeOutline className='mr-1 ml-2' /> 02/04/2024
+                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Nutri</span>
+                    <span className='font-semibold'>Community</span>
+                    <IoTimeOutline className='mr-1 ml-2' /> 02/03/2025
                   </div>
                 </header>
                 <div className='font-medium'>Xem thêm các công thức tính khác:</div>

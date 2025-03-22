@@ -20,7 +20,7 @@ function AuthLayoutInner({ children }) {
             }}
           >
             <Link to='/' className='text-6xl font-bold text-left tracking-wide'>
-              Chào mừng đến với <span className='text-red-500'>Cook</span>Healthy
+              Chào mừng đến với <span className='text-red-500'>Nutri</span>Community
             </Link>
             <p className='text-3xl italic my-4'>Hãy chú ý đến sức khoẻ của mình nhé !</p>
           </MotionWrapper>

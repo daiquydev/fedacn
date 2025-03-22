@@ -72,7 +72,7 @@ export default function HeaderLanding() {
       )}
 
       <h4 className='dark:text-white text-gray-900 flex justify-center items-center font-black cursor-pointer text-2xl md:text-3xl'>
-        <span className='text-red-500'>Cook</span>Healthy
+        <span className='text-red-500'>Nutri</span>Community
         <DarkMode />
       </h4>
 

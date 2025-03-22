@@ -32,7 +32,7 @@ export default function InfoLanding() {
       <div className='py-20'>
         <div className='text-center m-auto mb-10 md:w-1/2'>
           <h1 className='font-bold text-3xl mb-4'>
-            Với <span className='text-red-500'>Cook</span>Healthy
+            Với <span className='text-red-500'>Nutri</span>Community
           </h1>
           <h1 className=' text-3xl font-extrabold'>Bạn có thể làm gì ?</h1>
         </div>

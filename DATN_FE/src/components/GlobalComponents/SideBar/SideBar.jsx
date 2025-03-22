@@ -207,6 +207,12 @@ export default function SideBar() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to={'/meal-plan'} className='link-custom '>
+                  <BsFillCalendarHeartFill size={25} className='min-w-max' />
+                  Kế hoạch dinh dưỡng
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to={'/album'} className='link-custom '>
                   <IoMdAlbums size={25} className='min-w-max' />
                   Album

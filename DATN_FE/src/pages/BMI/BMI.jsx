@@ -109,8 +109,8 @@ export default function BMI() {
                     CÁCH TÍNH VÀ Ý NGHĨA CỦA CHỈ SỐ BMI TRONG ĐÁNH GIÁ TÌNH TRẠNG CƠ THỂ
                   </h1>
                   <div className='flex items-center'>
-                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Cook</span>
-                    <span className='font-semibold'>Healthy</span>
+                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Nutri</span>
+                    <span className='font-semibold'>Community</span>
                     <IoTimeOutline className='mr-1 ml-2' /> 02/04/2024
                   </div>
                 </header>

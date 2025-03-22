@@ -11,7 +11,7 @@ export default function Logo({
       <img src={logo} width={sizeLogo} alt='icon-app' />
       <div>
         <span className={textClassName}>
-          <span className='text-red-500'>Cook</span>Healthy
+          <span className='text-red-500'>Nutri</span>Community
           <DarkMode />
         </span>
         <div className='text-sm flex text-gray-500 items-center font-semibold'>Admin</div>

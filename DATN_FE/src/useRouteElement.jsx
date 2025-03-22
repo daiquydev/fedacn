@@ -57,6 +57,8 @@ const SportEvent = lazy(() => import('./pages/SportEvent'))
 const EventDetail = lazy(() => import('./pages/SportEvent/EventDetail'))
 const MyEvents = lazy(() => import('./pages/SportEvent/MyEvents'))
 const EventHistory = lazy(() => import('./pages/SportEvent/EventHistory'))
+const MealPlan = lazy(() => import('./pages/MealPlan/MealPlan'))
+const MealPlanDetail = lazy(() => import('./pages/MealPlan/MealPlanDetail/MealPlanDetail'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -440,9 +442,27 @@ export default function useRouteElement() {
               </Suspense>
             </MainLayout>
           )
+        },
+        {
+          path: '/meal-plan',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealPlan />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/meal-plan/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealPlanDetail />
+              </Suspense>
+            </MainLayout>
+          )
         }
-
-        /////////////////////////////////////////////
       ]
     },
     {
