@@ -1,0 +1,3566 @@
+[
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307360f"
+    },
+    "code": "01003",
+    "met": "14.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, leo núi, lên dốc, mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073610"
+    },
+    "code": "01004",
+    "met": "16.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, leo núi, đua xe cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073611"
+    },
+    "code": "01008",
+    "met": "8.5",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, BMX"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073612"
+    },
+    "code": "01009",
+    "met": "8.5",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, leo núi, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073613"
+    },
+    "code": "01010",
+    "met": "4.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, <10 mph, giải trí, đi làm hoặc đi chơi (Bộ luật Taylor 115)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073614"
+    },
+    "code": "01011",
+    "met": "6.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đi làm/đi làm, tốc độ tự chọn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073615"
+    },
+    "code": "01013",
+    "met": "5.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, trên đường đất hoặc đường nông thôn, tốc độ vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073616"
+    },
+    "code": "01014",
+    "met": "7.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073617"
+    },
+    "code": "01015",
+    "met": "4.3",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, tốc độ dễ dàng tự chọn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073618"
+    },
+    "code": "01016",
+    "met": "7.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, tốc độ vừa phải tự chọn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073619"
+    },
+    "code": "01017",
+    "met": "9.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, tốc độ mạnh mẽ tự chọn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307361a"
+    },
+    "code": "01018",
+    "met": "3.5",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, thư giãn 5,5 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307361b"
+    },
+    "code": "01019",
+    "met": "5.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, giải trí, 9,4 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307361c"
+    },
+    "code": "01020",
+    "met": "6.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, 10-11,9 mph, thư giãn, chậm, nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307361d"
+    },
+    "code": "01030",
+    "met": "8.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, 12-13,9 mph, thư giãn, gắng sức vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307361e"
+    },
+    "code": "01040",
+    "met": "10.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, 14-15,9 mph, đua xe hoặc giải trí, nỗ lực nhanh, mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307361f"
+    },
+    "code": "01050",
+    "met": "12.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, tốc độ 16-19 dặm/giờ, đua/không kéo dài hoặc &gt;19 dặm/giờ, rất nhanh, đua chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073620"
+    },
+    "code": "01060",
+    "met": "16.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, >20 mph, đua xe, không kéo dài"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073621"
+    },
+    "code": "01065",
+    "met": "8.5",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, tốc độ 12 dặm/giờ, ngồi yên, tay đặt trên mui xe phanh hoặc thả thanh điều khiển, 80 vòng/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073622"
+    },
+    "code": "01066",
+    "met": "9.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, 12 dặm/giờ, đứng, tay đặt trên mui xe phanh, 60 vòng/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073623"
+    },
+    "code": "01070",
+    "met": "5.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đi xe đạp một bánh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073624"
+    },
+    "code": "01200",
+    "met": "6.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073625"
+    },
+    "code": "01210",
+    "met": "3.5",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 25-30 watt, nỗ lực từ rất nhẹ đến nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073626"
+    },
+    "code": "01214",
+    "met": "4.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 50 watt, nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073627"
+    },
+    "code": "01216",
+    "met": "5.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 60 watt, nỗ lực từ nhẹ đến trung bình"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073628"
+    },
+    "code": "01218",
+    "met": "5.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 70-80 watt"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073629"
+    },
+    "code": "01220",
+    "met": "6.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 90-100 watt, vừa phải đến mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307362a"
+    },
+    "code": "01224",
+    "met": "6.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 101-125 watt"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307362b"
+    },
+    "code": "01228",
+    "met": "8.0",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 126-150 watt"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307362c"
+    },
+    "code": "01232",
+    "met": "10.3",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 151-199 watt"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307362d"
+    },
+    "code": "01236",
+    "met": "10.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 200-229 watt, mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307362e"
+    },
+    "code": "01240",
+    "met": "12.5",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 230-250 watt, rất mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c307362f"
+    },
+    "code": "01244",
+    "met": "13.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, 270-305 watt, rất mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073630"
+    },
+    "code": "01248",
+    "met": "16.3",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, đứng yên, >325 watt, rất mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1860c346e05c3073631"
+    },
+    "code": "01305",
+    "met": "8.8",
+    "activity_category": "Đi xe đạp",
+    "activity": "Đạp xe, luyện tập cường độ cao ngắt quãng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073632"
+    },
+    "code": "02000",
+    "met": "7.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thể dục nhịp điệu, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073633"
+    },
+    "code": "02001",
+    "met": "5.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thể dục nhịp điệu, bước, với bước 4 inch"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073634"
+    },
+    "code": "02002",
+    "met": "7.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thể dục nhịp điệu, bước, với bước 6 – 8 inch"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073635"
+    },
+    "code": "02003",
+    "met": "9.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thể dục nhịp điệu, bước, với bước 10 – 12 inch"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073636"
+    },
+    "code": "02005",
+    "met": "4.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Nhảy aerobic, tác động thấp, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073637"
+    },
+    "code": "02007",
+    "met": "10.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Nhảy aerobic với tạ 10-15 lb"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073638"
+    },
+    "code": "02008",
+    "met": "5.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập vượt chướng ngại vật kiểu quân đội, chương trình huấn luyện trại huấn luyện"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073639"
+    },
+    "code": "02020",
+    "met": "7.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Các bài tập thể dục trị liệu (ví dụ: chống đẩy, ngồi dậy, kéo xà, nhảy cầu, gập bụng, chiến đấu trên dây), nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307363a"
+    },
+    "code": "02022",
+    "met": "3.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Các bài tập thể dục trị liệu (ví dụ: chống đẩy, ngồi dậy, kéo xà, gập người), nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307363b"
+    },
+    "code": "02024",
+    "met": "2.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Các bài tập thể dục trị liệu (ví dụ: gập người, gập bụng, plank),&nbsp; nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307363c"
+    },
+    "code": "02030",
+    "met": "3.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập thể dục mềm mại, nỗ lực nhẹ hoặc trung bình, tổng quát (ví dụ: các bài tập lưng), đi lên và xuống từ sàn (Taylor Code 150)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307363d"
+    },
+    "code": "02032",
+    "met": "6.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Tập luyện mạch, bài tập trọng lượng cơ thể"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307363e"
+    },
+    "code": "02034",
+    "met": "3.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Luyện tập theo mạch, nỗ lực nhẹ nhàng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307363f"
+    },
+    "code": "02035",
+    "met": "5.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Luyện tập theo mạch, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073640"
+    },
+    "code": "02040",
+    "met": "7.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Tập luyện theo mạch, bao gồm tạ ấm, một số động tác aerobic với thời gian nghỉ ngơi tối thiểu, cường độ chung, mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073641"
+    },
+    "code": "02045",
+    "met": "3.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thói quen tập thể dục Curves™ ở phụ nữ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073642"
+    },
+    "code": "02048",
+    "met": "5.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Huấn luyện viên hình elip, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073643"
+    },
+    "code": "02049",
+    "met": "9.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Huấn luyện viên hình elip, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073644"
+    },
+    "code": "02052",
+    "met": "5.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Tập tạ (tập tạ), squats, deadlift, nỗ lực chậm hoặc bùng nổ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073645"
+    },
+    "code": "02054",
+    "met": "3.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Tập tạ (tập tạ), nhiều bài tập, 8-15 lần lặp lại ở các mức kháng cự khác nhau"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073646"
+    },
+    "code": "02055",
+    "met": "5.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Huấn luyện sức đề kháng, mạch, supersets đối ứng, huấn luyện hành động nghe ngoại vi"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073647"
+    },
+    "code": "02056",
+    "met": "3.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Các bài tập kháng trọng lượng cơ thể (ví dụ: squat, lunge, chống đẩy, gập bụng), tổng quát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073648"
+    },
+    "code": "02057",
+    "met": "6.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Các bài tập kháng trọng lượng cơ thể (ví dụ: squat, lunge, chống đẩy, gập bụng), cường độ cao"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073649"
+    },
+    "code": "02064",
+    "met": "3.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập về nhà, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307364a"
+    },
+    "code": "02068",
+    "met": "11.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập nhảy dây, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307364b"
+    },
+    "code": "02069",
+    "met": "9.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Nhảy dây, Máy nhảy Digi, 120 lần nhảy/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307364c"
+    },
+    "code": "02072",
+    "met": "7.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Chèo thuyền, đứng yên, 100 đến 149 watt, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307364d"
+    },
+    "code": "02073",
+    "met": "11.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Chèo thuyền, đứng yên, 150 đến 199 watt, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307364e"
+    },
+    "code": "02074",
+    "met": "14.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Chèo thuyền, đứng yên, ≥ 200 watt, nỗ lực rất mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307364f"
+    },
+    "code": "02078",
+    "met": "11.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Chạy con thoi, tiến/lùi/ngang"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073650"
+    },
+    "code": "02080",
+    "met": "6.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Máy trượt tuyết, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073651"
+    },
+    "code": "02085",
+    "met": "10.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập trượt ván, tổng quát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073652"
+    },
+    "code": "02090",
+    "met": "6.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Slimnastics, jazzercise"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073653"
+    },
+    "code": "02101",
+    "met": "2.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Kéo dài, nhẹ nhàng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073654"
+    },
+    "code": "02110",
+    "met": "6.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Dạy các lớp tập thể dục (ví dụ: aerobic, dưới nước)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073655"
+    },
+    "code": "02112",
+    "met": "2.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bóng tập trị liệu, bài tập Fitball"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073656"
+    },
+    "code": "02114",
+    "met": "9.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bóng tập trị liệu, bài tập Fitball, cường độ cao"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073657"
+    },
+    "code": "02115",
+    "met": "2.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập thân trên, máy đo sức cơ cánh tay, tổng quát, nhẹ nhàng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073658"
+    },
+    "code": "02119",
+    "met": "4.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập thân trên, xe đạp cố định; Airdyne (chỉ dùng tay) 40 vòng/phút, cường độ vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073659"
+    },
+    "code": "02120",
+    "met": "5.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thể dục nhịp điệu dưới nước, thể dục mềm mại dưới nước, tập thể dục dưới nước"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307365a"
+    },
+    "code": "02140",
+    "met": "2.5",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Video, bài tập thể dục, chương trình điều hòa TV (ví dụ: yoga, giãn cơ, ngồi), nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307365b"
+    },
+    "code": "02143",
+    "met": "4.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Video, bài tập thể dục, chương trình điều hòa TV (ví dụ: rèn luyện sức bền tim mạch), vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307365c"
+    },
+    "code": "02145",
+    "met": "6.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Video, bài tập thể dục, chương trình điều hòa TV (ví dụ: rèn luyện sức bền tim mạch), mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307365d"
+    },
+    "code": "02150",
+    "met": "2.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Yoga, Hatha"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307365e"
+    },
+    "code": "02153",
+    "met": "8.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Yoga, Hatha, cường độ cao"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c307365f"
+    },
+    "code": "02155",
+    "met": "3.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Yoga, Nóng bỏng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073660"
+    },
+    "code": "02160",
+    "met": "4.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Yoga, Sức mạnh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073661"
+    },
+    "code": "02175",
+    "met": "2.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Yoga, Tổng quát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073662"
+    },
+    "code": "02210",
+    "met": "7.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập cường độ cao ngắt quãng,&nbsp; nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073663"
+    },
+    "code": "02214",
+    "met": "11.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Tập luyện cường độ cao ngắt quãng, gập bụng, leo núi, nhảy squat, Tabata, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073664"
+    },
+    "code": "02240",
+    "met": "9.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Hệ thống luyện tập xung lực, huấn luyện viên thể dục quán tính"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073665"
+    },
+    "code": "02280",
+    "met": "7.9",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Thể dục thực tế ảo,Supernatural™ “Dòng chảy”, “Quyền anh; cường độ mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073666"
+    },
+    "code": "02284",
+    "met": "9.3",
+    "activity_category": "Bài tập thể dục",
+    "activity": "ExerCube, chuỗi bài tập"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073667"
+    },
+    "code": "02340",
+    "met": "2.8",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập ngồi đứng, 6-12 lần/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c1c30c346e05c3073668"
+    },
+    "code": "02344",
+    "met": "4.0",
+    "activity_category": "Bài tập thể dục",
+    "activity": "Bài tập ngồi đứng, 18-24 lần/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073669"
+    },
+    "code": "03010",
+    "met": "5.0",
+    "activity_category": "Múa",
+    "activity": "Ba lê, hiện đại hoặc nhạc jazz nói chung, buổi diễn tập hoặc lớp học"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c307366a"
+    },
+    "code": "03011",
+    "met": "6.3",
+    "activity_category": "Múa",
+    "activity": "Các bài tập múa ba lê (plie, gân, jetes, rond de Jambes, fondus, grand battement, grand adage, sautes, temp Leve&#8217;s)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c307366b"
+    },
+    "code": "03012",
+    "met": "6.8",
+    "activity_category": "Múa",
+    "activity": "Biểu diễn ballet, hiện đại hoặc jazz, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c307366c"
+    },
+    "code": "03014",
+    "met": "4.8",
+    "activity_category": "Múa",
+    "activity": "Nhấn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c307366d"
+    },
+    "code": "03025",
+    "met": "4.5",
+    "activity_category": "Múa",
+    "activity": "Vũ điệu dân tộc hoặc văn hóa (ví dụ: Hy Lạp, Trung Đông, hula, salsa, merengue, bamba y plena,&nbsp; flamenco, bụng và đu dây)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c307366e"
+    },
+    "code": "03028",
+    "met": "5.5",
+    "activity_category": "Múa",
+    "activity": "Múa vuông Trung Quốc, Ballet & Múa Tây Tạng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c307366f"
+    },
+    "code": "03030",
+    "met": "5.5",
+    "activity_category": "Múa",
+    "activity": "Nhảy khiêu vũ, nhanh (Taylor Code 125)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073670"
+    },
+    "code": "03031",
+    "met": "9.8",
+    "activity_category": "Múa",
+    "activity": "Câu lạc bộ đêm hoặc khiêu vũ dân gian, nỗ lực mạnh mẽ (ví dụ: hộp đêm, disco, dân gian, nhảy dây, nhảy bước Ailen, polka, contra)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073671"
+    },
+    "code": "03038",
+    "met": "11.3",
+    "activity_category": "Múa",
+    "activity": "Múa khiêu vũ, thi đấu, tổng quát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073672"
+    },
+    "code": "03039",
+    "met": "13.0",
+    "activity_category": "Múa",
+    "activity": "Múa khiêu vũ, cuộc thi DanceSport (điệu waltz hiện đại, tango, điệu valse của Vienna, cáo chậm, bước nhanh, samba, chacha, rumba, paso doble, jive)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073673"
+    },
+    "code": "03040",
+    "met": "3.0",
+    "activity_category": "Múa",
+    "activity": "Phòng khiêu vũ, chậm, ví dụ: waltz, foxtrot, nhảy chậm, samba tango, rumba, điệu nhảy thế kỷ 19, mambo, cha cha"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073674"
+    },
+    "code": "03042",
+    "met": "6.0",
+    "activity_category": "Múa",
+    "activity": "Múa khiêu vũ, giải trí (Waltz, Foxtrot, Cha-cha, Swing)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073675"
+    },
+    "code": "03050",
+    "met": "5.5",
+    "activity_category": "Múa",
+    "activity": "Múa Anishinaabe Jingle, tốc độ nhanh, điệu múa truyền thống khác của người Mỹ da đỏ do phụ nữ biểu diễn, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073676"
+    },
+    "code": "03060",
+    "met": "3.5",
+    "activity_category": "Múa",
+    "activity": "Vũ điệu Caribbean (Abakua, Beguine, Bellair, Bongo, Brukin's, Caribbean Quadrills, Dinki&nbsp; Mini, Gere, Gumbay, Ibo, Jonkonnu, Kumina,&nbsp; Oreisha, Jambu)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073677"
+    },
+    "code": "03070",
+    "met": "3.8",
+    "activity_category": "Múa",
+    "activity": "Múa đương đại, tổng quát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073678"
+    },
+    "code": "03072",
+    "met": "4.3",
+    "activity_category": "Múa",
+    "activity": "Nhảy đương đại, hộp đêm"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2740c346e05c3073679"
+    },
+    "code": "03078",
+    "met": "4.5",
+    "activity_category": "Múa",
+    "activity": "Nhảy Jazz, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307367a"
+    },
+    "code": "12010",
+    "met": "6.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy bộ/đi bộ kết hợp (chạy bộ dưới 10 phút) (Taylor Code 180)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307367b"
+    },
+    "code": "12020",
+    "met": "7.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy bộ, chung, tốc độ tự chọn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307367c"
+    },
+    "code": "12025",
+    "met": "4.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy bộ tại chỗ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307367d"
+    },
+    "code": "12026",
+    "met": "3.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy bộ với tốc độ 2,6 đến 3,7 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307367e"
+    },
+    "code": "12027",
+    "met": "4.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy bộ trên xe đạp nhỏ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307367f"
+    },
+    "code": "12028",
+    "met": "6.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 4 đến 4,2 mph (13 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073680"
+    },
+    "code": "12029",
+    "met": "7.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy 4,3 đến 4,8 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073681"
+    },
+    "code": "12030",
+    "met": "8.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 5,0 đến 5,2 mph (12 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073682"
+    },
+    "code": "12045",
+    "met": "9.0",
+    "activity_category": "Chạy",
+    "activity": "Đang chạy, 5,5 -5,8 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073683"
+    },
+    "code": "12050",
+    "met": "9.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 6-6,3 mph (10 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073684"
+    },
+    "code": "12060",
+    "met": "10.5",
+    "activity_category": "Chạy",
+    "activity": "Đang chạy, 6,7 mph (9 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073685"
+    },
+    "code": "12070",
+    "met": "11.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 7 mph (8,5 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073686"
+    },
+    "code": "12080",
+    "met": "11.8",
+    "activity_category": "Chạy",
+    "activity": "Đang chạy, 7,5 mph (8 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073687"
+    },
+    "code": "12090",
+    "met": "12.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 8 mph (7,5 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073688"
+    },
+    "code": "12100",
+    "met": "12.5",
+    "activity_category": "Chạy",
+    "activity": "Đang chạy, 8,6 mph (7 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073689"
+    },
+    "code": "12110",
+    "met": "13.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 9 mph (6,5 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307368a"
+    },
+    "code": "12115",
+    "met": "14.8",
+    "activity_category": "Chạy",
+    "activity": "Đang chạy, 9,3 đến 9,6 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307368b"
+    },
+    "code": "12120",
+    "met": "14.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 10 mph (6 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307368c"
+    },
+    "code": "12130",
+    "met": "16.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 11 mph (5,5 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307368d"
+    },
+    "code": "12132",
+    "met": "18.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 12 mph (5,0 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307368e"
+    },
+    "code": "12134",
+    "met": "19.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 13 mph (4,6 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307368f"
+    },
+    "code": "12135",
+    "met": "23.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 14 mph (4,3 phút/dặm)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073690"
+    },
+    "code": "12140",
+    "met": "9.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy việt dã"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073691"
+    },
+    "code": "12145",
+    "met": "10.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, tốc độ tự chọn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073692"
+    },
+    "code": "12150",
+    "met": "8.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy (Taylor Code 200)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073693"
+    },
+    "code": "12170",
+    "met": "15.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, cầu thang, lên"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073694"
+    },
+    "code": "12180",
+    "met": "10.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, trên đường đua, luyện tập đồng đội"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073695"
+    },
+    "code": "12184",
+    "met": "18.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy đúng đường, 500-1500m, thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073696"
+    },
+    "code": "12186",
+    "met": "19.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy đúng đường, 2000-3000m, thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073697"
+    },
+    "code": "12190",
+    "met": "8.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, tập, đẩy xe lăn hoặc địu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073698"
+    },
+    "code": "12200",
+    "met": "13.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy, marathon"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c3073699"
+    },
+    "code": "12255",
+    "met": "10.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 4,5 dặm/giờ, độ nghiêng 5%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307369a"
+    },
+    "code": "12260",
+    "met": "13.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 6,0 dặm/giờ, độ nghiêng 5%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307369b"
+    },
+    "code": "12265",
+    "met": "15.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 7,0 mph, độ nghiêng 5%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307369c"
+    },
+    "code": "12325",
+    "met": "17.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 5,0 đến 5,9 dặm/giờ, độ nghiêng 15%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307369d"
+    },
+    "code": "12335",
+    "met": "8.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, 0,6 đến 0,79 dặm/giờ, độ nghiêng 30%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307369e"
+    },
+    "code": "12337",
+    "met": "10.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, 0,8 đến 0,99 mph, nghiêng 30%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c307369f"
+    },
+    "code": "12339",
+    "met": "11.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 1,0 đến 1,19 dặm/giờ, độ nghiêng 30%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a0"
+    },
+    "code": "12341",
+    "met": "13.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 1,2 đến 1,39 dặm/giờ, độ nghiêng 30-40%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a1"
+    },
+    "code": "12343",
+    "met": "14.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, tốc độ 1,4 đến 1,59 dặm/giờ, độ nghiêng 30%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a2"
+    },
+    "code": "12345",
+    "met": "16.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy lên dốc, >1,6 mph, nghiêng 10-30%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a3"
+    },
+    "code": "12350",
+    "met": "16.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, địa hình đồi núi, độ cao thay đổi ±100m"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a4"
+    },
+    "code": "12352",
+    "met": "5.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy xuống dốc, 5,0 đến 5,9 mph, -10% đến -15%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a5"
+    },
+    "code": "12353",
+    "met": "7.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy xuống dốc, 6,0 đến 6,9 mph, -10% đến -15%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a6"
+    },
+    "code": "12355",
+    "met": "9.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy xuống dốc, 7,0 đến 8,9 mph, -10% đến -15%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a7"
+    },
+    "code": "12358",
+    "met": "9.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy xuống dốc, 6,0 đến 7,9 mph, -3% đến -9%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a8"
+    },
+    "code": "12361",
+    "met": "13.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy xuống dốc, 8,0 đến 10,5 mph, -3% đến -9%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736a9"
+    },
+    "code": "12405",
+    "met": "5.3",
+    "activity_category": "Chạy",
+    "activity": "Chạy/chạy bộ, máy chạy bộ cong, 3,0 đến 3,9 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736aa"
+    },
+    "code": "12408",
+    "met": "6.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy/chạy bộ, máy chạy bộ cong, 4,0 đến 4,9 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736ab"
+    },
+    "code": "12410",
+    "met": "11.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy máy chạy bộ dạng cong, tốc độ 5,0 đến 5,9 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736ac"
+    },
+    "code": "12412",
+    "met": "12.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy máy chạy bộ dạng cong, tốc độ 7,0 đến 7,9 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736ad"
+    },
+    "code": "12414",
+    "met": "14.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy máy chạy bộ dạng cong, tốc độ 8,0 đến 8,9 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736ae"
+    },
+    "code": "12416",
+    "met": "16.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy máy chạy bộ dạng cong, tốc độ 9,0 đến 9,9 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736af"
+    },
+    "code": "12508",
+    "met": "8.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 5,0 - 5,9 mph, ba lô nặng 1,0 đến 3,0 kg"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b0"
+    },
+    "code": "12510",
+    "met": "9.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 6,0 - 6,9 mph, ba lô nặng 1,0 đến 3,0 kg"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b1"
+    },
+    "code": "12512",
+    "met": "9.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 7,0 - 7,9 mph, ba lô nặng 1,0 đến 3,0 kg"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b2"
+    },
+    "code": "12514",
+    "met": "12.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, 8,0 - 8,9 mph, ba lô nặng 1,0 đến 3,0 kg"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b3"
+    },
+    "code": "12555",
+    "met": "7.8",
+    "activity_category": "Chạy",
+    "activity": "Chạy, chân trần, tốc độ 3,5-5,9 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b4"
+    },
+    "code": "12560",
+    "met": "12.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, chân trần, tốc độ 6,0-7,9 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b5"
+    },
+    "code": "12565",
+    "met": "13.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, chân trần, tốc độ 8,0-8,9 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b6"
+    },
+    "code": "12585",
+    "met": "8.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, xe đẩy chạy bộ, trong nhà, 5 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b7"
+    },
+    "code": "12588",
+    "met": "9.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, xe đẩy chạy bộ, trong nhà, tốc độ 6 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b8"
+    },
+    "code": "12593",
+    "met": "10.0",
+    "activity_category": "Chạy",
+    "activity": "Chạy, xe đẩy chạy bộ, ngoài trời, 5 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736b9"
+    },
+    "code": "12595",
+    "met": "11.5",
+    "activity_category": "Chạy",
+    "activity": "Chạy, xe đẩy chạy bộ, ngoài trời, tốc độ 6 dặm/giờ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736ba"
+    },
+    "code": "12600",
+    "met": "11.5",
+    "activity_category": "Chạy",
+    "activity": "Bỏ qua, 5,5-6,0 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c27e0c346e05c30736bb"
+    },
+    "code": "12620",
+    "met": "13.0",
+    "activity_category": "Chạy",
+    "activity": "Ba môn phối hợp, Chạy"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736bc"
+    },
+    "code": "15025",
+    "met": "9.0",
+    "activity_category": "Thể thao",
+    "activity": "Cầu lông, thi đấu, thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736bd"
+    },
+    "code": "15030",
+    "met": "5.5",
+    "activity_category": "Thể thao",
+    "activity": "Cầu lông, đơn, đôi, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736be"
+    },
+    "code": "15050",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng rổ, không phải trò chơi, chung (Mã Taylor 480)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736bf"
+    },
+    "code": "15055",
+    "met": "7.5",
+    "activity_category": "Thể thao",
+    "activity": "Bóng rổ, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c0"
+    },
+    "code": "15062",
+    "met": "5.8",
+    "activity_category": "Thể thao",
+    "activity": "Bóng rổ, điều hành"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c1"
+    },
+    "code": "15072",
+    "met": "9.3",
+    "activity_category": "Thể thao",
+    "activity": "Bóng rổ, diễn tập, luyện tập"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c2"
+    },
+    "code": "15080",
+    "met": "2.5",
+    "activity_category": "Thể thao",
+    "activity": "Bida"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c3"
+    },
+    "code": "15092",
+    "met": "3.8",
+    "activity_category": "Thể thao",
+    "activity": "Bowling, trong nhà, sân chơi bowling"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c4"
+    },
+    "code": "15100",
+    "met": "12.3",
+    "activity_category": "Thể thao",
+    "activity": "Quyền anh, trên võ đài, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c5"
+    },
+    "code": "15110",
+    "met": "5.8",
+    "activity_category": "Thể thao",
+    "activity": "Đấm bốc, bao cát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c6"
+    },
+    "code": "15113",
+    "met": "7.0",
+    "activity_category": "Thể thao",
+    "activity": "Đấm bốc, bao đấm, 60 nhịp/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c7"
+    },
+    "code": "15115",
+    "met": "8.5",
+    "activity_category": "Thể thao",
+    "activity": "Đấm bốc, bao đấm, 120 nhịp/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c8"
+    },
+    "code": "15118",
+    "met": "10.8",
+    "activity_category": "Thể thao",
+    "activity": "Đấm bốc, bao đấm, 180 b/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736c9"
+    },
+    "code": "15120",
+    "met": "7.8",
+    "activity_category": "Thể thao",
+    "activity": "Đấm bốc, đấu tập"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ca"
+    },
+    "code": "15125",
+    "met": "9.3",
+    "activity_category": "Thể thao",
+    "activity": "Đấm bốc, mô phỏng vòng đấu quyền anh, tập thể dục"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736cb"
+    },
+    "code": "15130",
+    "met": "7.0",
+    "activity_category": "Thể thao",
+    "activity": "Broomball"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736cc"
+    },
+    "code": "15135",
+    "met": "5.8",
+    "activity_category": "Thể thao",
+    "activity": "Trò chơi dành cho trẻ em, người lớn chơi&nbsp; (ví dụ: nhảy lò cò, 4 ô vuông, bóng né, thiết bị sân chơi, t-ball,tetherball, bi, jack, trò chơi điện tử), nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736cd"
+    },
+    "code": "15138",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Cổ vũ, các động tác thể dục, tranh tài"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ce"
+    },
+    "code": "15140",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Huấn luyện, bóng đá, bóng đá, bóng rổ, bóng chày, bơi lội, v.v."
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736cf"
+    },
+    "code": "15150",
+    "met": "4.8",
+    "activity_category": "Thể thao",
+    "activity": "Cricket, đánh bóng, bowling, ném bóng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d0"
+    },
+    "code": "15192",
+    "met": "8.5",
+    "activity_category": "Thể thao",
+    "activity": "Đua xe, bánh hở"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d1"
+    },
+    "code": "15195",
+    "met": "7.8",
+    "activity_category": "Thể thao",
+    "activity": "Futsal"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d2"
+    },
+    "code": "15200",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Đấu kiếm, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d3"
+    },
+    "code": "15203",
+    "met": "9.8",
+    "activity_category": "Thể thao",
+    "activity": "Đấu kiếm, epee, cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d4"
+    },
+    "code": "15205",
+    "met": "10.5",
+    "activity_category": "Thể thao",
+    "activity": "Bóng sàn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d5"
+    },
+    "code": "15210",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng đá, mang tính cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d6"
+    },
+    "code": "15232",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng đá, chạm, cờ, nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d7"
+    },
+    "code": "15235",
+    "met": "2.5",
+    "activity_category": "Thể thao",
+    "activity": "Bóng đá hoặc bóng chày, chơi đuổi bắt"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d8"
+    },
+    "code": "15240",
+    "met": "3.0",
+    "activity_category": "Thể thao",
+    "activity": "Chơi ném đĩa, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736d9"
+    },
+    "code": "15252",
+    "met": "3.8",
+    "activity_category": "Thể thao",
+    "activity": "Frisbee golf"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736da"
+    },
+    "code": "15255",
+    "met": "4.5",
+    "activity_category": "Thể thao",
+    "activity": "Golf, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736db"
+    },
+    "code": "15265",
+    "met": "4.3",
+    "activity_category": "Thể thao",
+    "activity": "Golf, đi bộ, mang gậy"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736dc"
+    },
+    "code": "15285",
+    "met": "4.5",
+    "activity_category": "Thể thao",
+    "activity": "Golf, đi bộ, kéo gậy"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736dd"
+    },
+    "code": "15300",
+    "met": "3.8",
+    "activity_category": "Thể thao",
+    "activity": "Thể dục dụng cụ, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736de"
+    },
+    "code": "15320",
+    "met": "12.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng ném, chung (Mã Taylor 520)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736df"
+    },
+    "code": "15330",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng ném, đồng đội"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e0"
+    },
+    "code": "15350",
+    "met": "7.8",
+    "activity_category": "Thể thao",
+    "activity": "Khúc côn cầu, sân cỏ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e1"
+    },
+    "code": "15360",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Khúc côn cầu, băng, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e2"
+    },
+    "code": "15362",
+    "met": "10.0",
+    "activity_category": "Thể thao",
+    "activity": "Khúc côn cầu, băng, cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e3"
+    },
+    "code": "15370",
+    "met": "5.5",
+    "activity_category": "Thể thao",
+    "activity": "Cưỡi ngựa, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e4"
+    },
+    "code": "15390",
+    "met": "5.8",
+    "activity_category": "Thể thao",
+    "activity": "Cưỡi ngựa, chạy nước kiệu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e5"
+    },
+    "code": "15395",
+    "met": "7.3",
+    "activity_category": "Thể thao",
+    "activity": "Cưỡi ngựa, phi nước kiệu hoặc phi nước đại"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e6"
+    },
+    "code": "15400",
+    "met": "3.8",
+    "activity_category": "Thể thao",
+    "activity": "Cưỡi ngựa, đi bộ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e7"
+    },
+    "code": "15402",
+    "met": "9.0",
+    "activity_category": "Thể thao",
+    "activity": "Cưỡi ngựa, nhảy"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e8"
+    },
+    "code": "15406",
+    "met": "2.1",
+    "activity_category": "Thể thao",
+    "activity": "Cưỡi ngựa, mô phỏng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736e9"
+    },
+    "code": "15425",
+    "met": "5.3",
+    "activity_category": "Thể thao",
+    "activity": "Võ thuật, các loại khác nhau, tốc độ chậm hơn, người mới tập, luyện tập"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ea"
+    },
+    "code": "15430",
+    "met": "10.3",
+    "activity_category": "Thể thao",
+    "activity": "Võ thuật, các loại hình khác nhau, tốc độ vừa phải (ví dụ: judo, jujitsu, karate, kickboxing, tae kwon do, tai-bo, Muay Thai quyền anh)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736eb"
+    },
+    "code": "15432",
+    "met": "14.3",
+    "activity_category": "Thể thao",
+    "activity": "Taekwondo, mô phỏng chiến đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ec"
+    },
+    "code": "15433",
+    "met": "11.3",
+    "activity_category": "Thể thao",
+    "activity": "Judo"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ed"
+    },
+    "code": "15440",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Tung hứng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ee"
+    },
+    "code": "15450",
+    "met": "7.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng đá"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ef"
+    },
+    "code": "15455",
+    "met": "5.5",
+    "activity_category": "Thể thao",
+    "activity": "Thể dục Kung Fu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f0"
+    },
+    "code": "15457",
+    "met": "7.3",
+    "activity_category": "Thể thao",
+    "activity": "Kickboxing"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f1"
+    },
+    "code": "15465",
+    "met": "3.3",
+    "activity_category": "Thể thao",
+    "activity": "Chơi bowling trên sân cỏ, bóng bocce, ngoài trời"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f2"
+    },
+    "code": "15470",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Motocross, mô tô thể thao địa hình, xe địa hình, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f3"
+    },
+    "code": "15475",
+    "met": "5.3",
+    "activity_category": "Thể thao",
+    "activity": "Đua xe máy, đua Supormoto"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f4"
+    },
+    "code": "15477",
+    "met": "7.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng lưới"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f5"
+    },
+    "code": "15490",
+    "met": "10.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng chèo, mang tính cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f6"
+    },
+    "code": "15500",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng chèo, thông thường, chung (Mã Taylor 460)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f7"
+    },
+    "code": "15503",
+    "met": "1.8",
+    "activity_category": "Thể thao",
+    "activity": "Dù lượn, độ cao vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f8"
+    },
+    "code": "15510",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Polo, trên lưng ngựa"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736f9"
+    },
+    "code": "15520",
+    "met": "10.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng vợt, cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736fa"
+    },
+    "code": "15525",
+    "met": "10.3",
+    "activity_category": "Thể thao",
+    "activity": "Đi bộ trong cuộc đua, 3,1 m/s (6,9 mph)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736fb"
+    },
+    "code": "15527",
+    "met": "13.8",
+    "activity_category": "Thể thao",
+    "activity": "Đi bộ trong cuộc đua, 3,7 m/s (8,3 mph)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736fc"
+    },
+    "code": "15528",
+    "met": "15.5",
+    "activity_category": "Thể thao",
+    "activity": "Đi bộ trong cuộc đua, tốc độ đua, 4,0 m/s (8,95 mph)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736fd"
+    },
+    "code": "15534",
+    "met": "8.8",
+    "activity_category": "Thể thao",
+    "activity": "Leo núi, đá tự do"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736fe"
+    },
+    "code": "15535",
+    "met": "7.3",
+    "activity_category": "Thể thao",
+    "activity": "Leo núi, leo núi, độ khó cao"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c30736ff"
+    },
+    "code": "15536",
+    "met": "10.5",
+    "activity_category": "Thể thao",
+    "activity": "Leo núi, leo núi tốc độ, rất khó"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073700"
+    },
+    "code": "15537",
+    "met": "5.8",
+    "activity_category": "Thể thao",
+    "activity": "Trèo đá, leo lên hoặc vượt qua đá, độ khó từ thấp đến trung bình"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073701"
+    },
+    "code": "15538",
+    "met": "10.5",
+    "activity_category": "Thể thao",
+    "activity": "Leo núi, leo tường, 4-6 m/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073702"
+    },
+    "code": "15539",
+    "met": "10.5",
+    "activity_category": "Thể thao",
+    "activity": "Leo núi, leo tường, 7-10 m/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073703"
+    },
+    "code": "15540",
+    "met": "5.0",
+    "activity_category": "Thể thao",
+    "activity": "Leo núi, leo núi,"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073704"
+    },
+    "code": "15542",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Rodeo thể thao, tổng hợp, nỗ lực nhẹ nhàng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073705"
+    },
+    "code": "15550",
+    "met": "12.3",
+    "activity_category": "Thể thao",
+    "activity": "Nhảy dây, tốc độ nhanh, 120-160 lần/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073706"
+    },
+    "code": "15551",
+    "met": "11.8",
+    "activity_category": "Thể thao",
+    "activity": "Nhảy dây, tốc độ vừa phải, thông thường, 100 đến 120 lần/phút, nhảy 2 chân, bật nảy đơn giản"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073707"
+    },
+    "code": "15552",
+    "met": "8.3",
+    "activity_category": "Thể thao",
+    "activity": "Nhảy dây, tốc độ chậm, < 100 lần/phút, nhảy 2 chân, nảy nhịp"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073708"
+    },
+    "code": "15554",
+    "met": "10.0",
+    "activity_category": "Thể thao",
+    "activity": "Nhảy dây, nhảy hai chân trở lên"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073709"
+    },
+    "code": "15560",
+    "met": "8.3",
+    "activity_category": "Thể thao",
+    "activity": "Bóng bầu dục, đoàn thể, đồng đội, thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307370a"
+    },
+    "code": "15562",
+    "met": "6.3",
+    "activity_category": "Thể thao",
+    "activity": "Bóng bầu dục, chạm, không mang tính cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307370b"
+    },
+    "code": "15580",
+    "met": "5.0",
+    "activity_category": "Thể thao",
+    "activity": "Trượt ván, nói chung, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307370c"
+    },
+    "code": "15582",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Trượt ván, thi đấu, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307370d"
+    },
+    "code": "15590",
+    "met": "7.0",
+    "activity_category": "Thể thao",
+    "activity": "Trượt băng, lăn (Taylor Code 360)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307370e"
+    },
+    "code": "15591",
+    "met": "7.5",
+    "activity_category": "Thể thao",
+    "activity": "Trượt patin, trượt patin, 14,4 km/h (9,0 mph), tốc độ giải trí"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307370f"
+    },
+    "code": "15592",
+    "met": "9.8",
+    "activity_category": "Thể thao",
+    "activity": "Trượt patin, trượt patin, tốc độ 17,7 km/h (11,0 mph), tốc độ vừa phải, luyện tập thể dục"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073710"
+    },
+    "code": "15593",
+    "met": "12.3",
+    "activity_category": "Thể thao",
+    "activity": "Trượt patin, trượt patin, tốc độ 21,0 đến 21,7 km/h (13,0 đến 13,6 mph), tốc độ nhanh, luyện tập thể dục"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073711"
+    },
+    "code": "15594",
+    "met": "15.5",
+    "activity_category": "Thể thao",
+    "activity": "Trượt patin, trượt patin, 24,0 km/h (15,0 mph), nỗ lực tối đa"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073712"
+    },
+    "code": "15595",
+    "met": "6.8",
+    "activity_category": "Thể thao",
+    "activity": "Trượt ván, ván dài, 13,3 km/h, tốc độ chậm"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073713"
+    },
+    "code": "15596",
+    "met": "8.3",
+    "activity_category": "Thể thao",
+    "activity": "Ván trượt, ván dài, 16,2 km/h, tốc độ điển hình"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073714"
+    },
+    "code": "15597",
+    "met": "10.5",
+    "activity_category": "Thể thao",
+    "activity": "ván trượt, ván dài, 13,3 km/h, tốc độ nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073715"
+    },
+    "code": "15600",
+    "met": "3.5",
+    "activity_category": "Thể thao",
+    "activity": "Nhảy dù, nhảy cầu, nhảy bungee"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073716"
+    },
+    "code": "15605",
+    "met": "9.5",
+    "activity_category": "Thể thao",
+    "activity": "Bóng đá, cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073717"
+    },
+    "code": "15610",
+    "met": "7.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng đá, thông thường, chung (Mã Taylor 540)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073718"
+    },
+    "code": "15615",
+    "met": "3.5",
+    "activity_category": "Thể thao",
+    "activity": "Đi bộ bóng đá/bóng đá"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073719"
+    },
+    "code": "15620",
+    "met": "5.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng mềm hoặc bóng chày, ném bóng nhanh hay chậm, nỗ lực chung, vừa phải (Mã Taylor 440)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307371a"
+    },
+    "code": "15625",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng mềm, luyện tập"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307371b"
+    },
+    "code": "15630",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng mềm, điều hành"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307371c"
+    },
+    "code": "15640",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng mềm, ném bóng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307371d"
+    },
+    "code": "15660",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng bàn, bóng bàn (Taylor Code 410)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307371e"
+    },
+    "code": "15670",
+    "met": "3.3",
+    "activity_category": "Thể thao",
+    "activity": "Thái cực quyền, khí công, tướng quân"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307371f"
+    },
+    "code": "15672",
+    "met": "1.5",
+    "activity_category": "Thể thao",
+    "activity": "Thái cực quyền, khí công, ngồi, nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073720"
+    },
+    "code": "15674",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Thái cực quyền, phong cách Yang"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073721"
+    },
+    "code": "15675",
+    "met": "6.8",
+    "activity_category": "Thể thao",
+    "activity": "Quần vợt, chung, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073722"
+    },
+    "code": "15676",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Quần vợt, chung, mang tính cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073723"
+    },
+    "code": "15680",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Quần vợt, đôi (Taylor Code 430)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073724"
+    },
+    "code": "15685",
+    "met": "4.5",
+    "activity_category": "Thể thao",
+    "activity": "Quần vợt, đôi"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073725"
+    },
+    "code": "15690",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Quần vợt, đánh đơn (Taylor Code 420)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073726"
+    },
+    "code": "15695",
+    "met": "5.0",
+    "activity_category": "Thể thao",
+    "activity": "Quần vợt, đánh bóng, không chơi trò chơi, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073727"
+    },
+    "code": "15710",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng chuyền (Taylor Code 400)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073728"
+    },
+    "code": "15711",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng chuyền, thi đấu, trong phòng tập thể dục"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c3073729"
+    },
+    "code": "15720",
+    "met": "3.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng chuyền, không thi đấu, đội 6 &#8211; 9 thành viên, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307372a"
+    },
+    "code": "15725",
+    "met": "8.0",
+    "activity_category": "Thể thao",
+    "activity": "Bóng chuyền, bãi biển, trên cát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307372b"
+    },
+    "code": "15730",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Đấu vật, thi đấu (một trận = 5 phút)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307372c"
+    },
+    "code": "15732",
+    "met": "4.0",
+    "activity_category": "Thể thao",
+    "activity": "Điền kinh (ví dụ: bắn, ném đĩa, ném búa)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307372d"
+    },
+    "code": "15733",
+    "met": "6.0",
+    "activity_category": "Thể thao",
+    "activity": "Điền kinh (ví dụ: nhảy cao, nhảy xa, nhảy ba bước, ném lao, nhảy sào)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2860c346e05c307372e"
+    },
+    "code": "15734",
+    "met": "10.0",
+    "activity_category": "Thể thao",
+    "activity": "Điền kinh (ví dụ: vượt rào, vượt rào)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307372f"
+    },
+    "code": "17011",
+    "met": "3.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ với ba lô trong ngày, mặt đất bằng phẳng, giả định trong thành phố"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073730"
+    },
+    "code": "17012",
+    "met": "7.8",
+    "activity_category": "Đi bộ",
+    "activity": "Du lịch bụi,đi bộ đường dài với ba lô trong ngày, đi bộ có tổ chức với ba lô trong ngày"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073731"
+    },
+    "code": "17032",
+    "met": "5.0",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, độ dốc 5 đến 20%, tốc độ rất chậm"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073732"
+    },
+    "code": "17033",
+    "met": "3.8",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, tải trọng 15-50 lb, độ dốc 1 đến 2%, tốc độ chậm"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073733"
+    },
+    "code": "17034",
+    "met": "5.3",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, độ dốc từ 1 đến 5%, tốc độ vừa phải đến nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073734"
+    },
+    "code": "17035",
+    "met": "7.0",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, độ dốc 6 đến 10%, tốc độ vừa phải đến nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073735"
+    },
+    "code": "17036",
+    "met": "8.8",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, điểm 11 đến 20%, tốc độ chậm đến trung bình"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073736"
+    },
+    "code": "17037",
+    "met": "10.0",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, tốc độ 4,0 đến 5,0 mph, độ dốc 3 đến 5%, tốc độ rất nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073737"
+    },
+    "code": "17038",
+    "met": "8.5",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, độ dốc (30%), tốc độ chậm (dưới 1,2 mph)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073738"
+    },
+    "code": "17039",
+    "met": "15.5",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, độ dốc rất cao (30-40%), tốc độ 1,2 đến 1,8 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073739"
+    },
+    "code": "17040",
+    "met": "16.3",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, không tải, độ dốc (10-40%), tốc độ 1,8 đến 5,0 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307373a"
+    },
+    "code": "17045",
+    "met": "6.5",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, tải trọng 10 đến 20 lb, mức 5 đến 10%, vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307373b"
+    },
+    "code": "17050",
+    "met": "7.5",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, tải trọng từ 21 đến 40 lb, mức 3 đến 10%, tốc độ vừa phải đến nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307373c"
+    },
+    "code": "17060",
+    "met": "10.0",
+    "activity_category": "Đi bộ",
+    "activity": "Leo đồi, tải trọng trên 20 pound, mức 5 đến 20%, tốc độ vừa phải đến nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307373d"
+    },
+    "code": "17080",
+    "met": "6.0",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ đường dài, xuyên quốc gia (Mã Taylor 040)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307373e"
+    },
+    "code": "17081",
+    "met": "3.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ chậm hoặc đi bộ qua cánh đồng và sườn đồi, không tải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307373f"
+    },
+    "code": "17082",
+    "met": "5.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ hoặc đi bộ với tốc độ bình thường qua cánh đồng và sườn đồi, không tải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073740"
+    },
+    "code": "17110",
+    "met": "6.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ đường đua"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073741"
+    },
+    "code": "17151",
+    "met": "2.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, dưới 2,0 mph, ngang bằng, đi dạo, rất chậm"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073742"
+    },
+    "code": "17152",
+    "met": "2.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 2,0 đến 2,4 mph, bằng phẳng, tốc độ chậm, bề mặt chắc chắn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073743"
+    },
+    "code": "17165",
+    "met": "3.0",
+    "activity_category": "Đi bộ",
+    "activity": "Dắt chó đi dạo"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073744"
+    },
+    "code": "17170",
+    "met": "3.0",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 2,5 mph, bề mặt bằng phẳng, chắc chắn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073745"
+    },
+    "code": "17180",
+    "met": "3.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 2,5 mph, xuống dốc"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073746"
+    },
+    "code": "17190",
+    "met": "3.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 2,8 đến 3,4 mph, đều đặn, tốc độ vừa phải, bề mặt chắc chắn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073747"
+    },
+    "code": "17200",
+    "met": "4.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 3,5 đến 3,9 dặm/giờ, bằng phẳng, nhanh nhẹn, bề mặt chắc chắn, đi bộ để tập thể dục"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073748"
+    },
+    "code": "17220",
+    "met": "5.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 4,0 đến 4,4 mph (6,4 đến 7,0 km/h), bằng phẳng, bề mặt chắc chắn, tốc độ rất nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073749"
+    },
+    "code": "17230",
+    "met": "7.0",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 4,5 đến 4,9 mph, bằng phẳng, bề mặt chắc chắn, rất, rất nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307374a"
+    },
+    "code": "17231",
+    "met": "8.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, 5,0 đến 5,5 mph (8,8 đến 8,9 km/h), bằng phẳng, bề mặt chắc chắn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307374b"
+    },
+    "code": "17250",
+    "met": "3.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi dạo, giải trí, nghỉ làm (Taylor Code xxx)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307374c"
+    },
+    "code": "17255",
+    "met": "4.0",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, tốc độ tự chọn, đường trong nhà hoặc ngoài trời, bề mặt chắc chắn"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307374d"
+    },
+    "code": "17260",
+    "met": "4.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, đường cỏ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307374e"
+    },
+    "code": "17262",
+    "met": "4.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, tốc độ bình thường, cày ruộng hoặc cát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307374f"
+    },
+    "code": "17302",
+    "met": "4.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, để tập thể dục, 2,5 đến 3,5 dặm/giờ (4,0 đến 5,6 km/giờ), với cột trượt tuyết, đi bộ kiểu Bắc Âu, ở mức độ, tốc độ vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073750"
+    },
+    "code": "17304",
+    "met": "5.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, để tập thể dục, 3,6 đến 4,4 mph (5,8 đến 7,1 km/h), với cột trượt tuyết, đi bộ kiểu Bắc Âu, ở mức độ, tốc độ vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073751"
+    },
+    "code": "17305",
+    "met": "8.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, tập thể dục, 4,5 đến 5,0 dặm/giờ, với cột trượt tuyết, đi bộ kiểu Bắc Âu, trình độ, tốc độ nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073752"
+    },
+    "code": "17340",
+    "met": "2.1",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, dưới 1,0 dặm/giờ, điểm 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073753"
+    },
+    "code": "17343",
+    "met": "2.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 1,0 mph, mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073754"
+    },
+    "code": "17346",
+    "met": "2.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 1,2 đến 1,9 mph, mức 0% (1,9 đến 3,0 km/h)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073755"
+    },
+    "code": "17349",
+    "met": "3.0",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 2,0 đến 2,4 mph (3,2 đến 3,9 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073756"
+    },
+    "code": "17352",
+    "met": "3.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 2,5 đến 2,9 mph (4,0 đến 4,7 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073757"
+    },
+    "code": "17355",
+    "met": "3.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 3,0 đến 3,4 mph (4,8 đến 5,5 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073758"
+    },
+    "code": "17358",
+    "met": "4.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 3,5 đến 3,9 mph (5,6 đến 6,3 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073759"
+    },
+    "code": "17361",
+    "met": "5.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 4,0 đến 4,4 mph (6,4 đến 7,1 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307375a"
+    },
+    "code": "17364",
+    "met": "6.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 4,5 đến 4,9 mph (7,2 đến 7,9 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307375b"
+    },
+    "code": "17367",
+    "met": "8.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, máy chạy bộ, 5,0 đến 5,5 mph (8,0 đến 8,9 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307375c"
+    },
+    "code": "17382",
+    "met": "3.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, chạy trên máy chạy bộ, xuống dốc (mức -3% đến -12%), 2,8 đến 3,1 mph"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307375d"
+    },
+    "code": "17412",
+    "met": "3.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, chạy trên máy chạy bộ, xuống dốc (mức -5% đến -25%), 2,8 mph, với người Ba Lan Bắc Âu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307375e"
+    },
+    "code": "17434",
+    "met": "4.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, chạy trên máy chạy bộ, tốc độ 2,5 dặm/giờ, mức 0%, 5 đến 20 độ C, tải trọng 40 lb (18,2 kg)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c307375f"
+    },
+    "code": "17438",
+    "met": "5.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, chạy trên máy chạy bộ, tốc độ 2,5 dặm/giờ, mức 0%, -10 đến 0 độ C, tải trọng 40 lb (18,2 kg)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073760"
+    },
+    "code": "17455",
+    "met": "8.3",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, Máy chạy bộ cong, tốc độ 3,0 đến 5,0 dặm/giờ, tốc độ nhanh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073761"
+    },
+    "code": "17475",
+    "met": "7.8",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ trên máy chạy bộ, lùi, 2,5 mph, +10% điểm"
+  },
+  {
+    "_id": {
+      "$oid": "6623c28d0c346e05c3073762"
+    },
+    "code": "17492",
+    "met": "1.5",
+    "activity_category": "Đi bộ",
+    "activity": "Đi bộ, với khung tập đi hoặc dáng đi từng bước trên máy chạy bộ, 0,7 mph (1,1 km/h), mức 0%"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073763"
+    },
+    "code": "18010",
+    "met": "2.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, chạy điện, lái xe"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073764"
+    },
+    "code": "18012",
+    "met": "1.3",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, điện, hành khách, ánh sáng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073765"
+    },
+    "code": "18040",
+    "met": "2.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ca nô, chèo thuyền, tốc độ 2,0-3,9 mph, nỗ lực nhẹ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073766"
+    },
+    "code": "18050",
+    "met": "5.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ca nô, chèo thuyền, tốc độ 4,0-5,9 mph, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073767"
+    },
+    "code": "18060",
+    "met": "12.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ca nô, chèo thuyền, chèo thuyền kayak, thi đấu, &gt; 6 mph, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073768"
+    },
+    "code": "18080",
+    "met": "12.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ca nô hoặc chèo thuyền, trong cuộc thi, thuyền viên hoặc chèo thuyền (Bộ luật Taylor 260)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073769"
+    },
+    "code": "18090",
+    "met": "3.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lặn, bàn đạp hoặc bục"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307376a"
+    },
+    "code": "18100",
+    "met": "5.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền kayak, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307376b"
+    },
+    "code": "18104",
+    "met": "13.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "chèo thuyền kayak, thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307376c"
+    },
+    "code": "18106",
+    "met": "9.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "chèo thuyền kayak, trượt nước, nước phẳng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307376d"
+    },
+    "code": "18110",
+    "met": "4.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307376e"
+    },
+    "code": "18112",
+    "met": "15.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, mô phỏng thuyền viên trong bể nước, mái chèo đơn, 33 sải/phút,"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307376f"
+    },
+    "code": "18114",
+    "met": "15.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, chèo thuyền đơn, máy đo công, máy đo công trên đường trượt, tốc độ đua (32+ sải/phút, &gt;10 mph)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073770"
+    },
+    "code": "18120",
+    "met": "3.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, chèo thuyền, lướt ván, chèo thuyền trên băng, chung (Bộ luật Taylor 235)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073771"
+    },
+    "code": "18130",
+    "met": "4.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Thuyền buồm, thi đấu, nói chung&nbsp;"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073772"
+    },
+    "code": "18132",
+    "met": "9.3",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, thi đấu, nỗ lực cao"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073773"
+    },
+    "code": "18140",
+    "met": "3.3",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo thuyền, Cá mặt trăng/Laser/Mèo sở thích, thuyền Keel, chèo thuyền vượt biển, du thuyền, giải trí"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073774"
+    },
+    "code": "18150",
+    "met": "6.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Trượt tuyết, lướt ván dưới nước hoặc lướt ván (Mã Taylor 220)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073775"
+    },
+    "code": "18200",
+    "met": "7.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lướt ván, lặn biển, chung (Mã Taylor 310)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073776"
+    },
+    "code": "18202",
+    "met": "5.3",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lặn biển, nói chung, nỗ lực nhẹ nhàng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073777"
+    },
+    "code": "18204",
+    "met": "5.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lặn bình khí, nói chung, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073778"
+    },
+    "code": "18206",
+    "met": "5.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lặn bình dưỡng khí, thợ lặn chuyên nghiệp"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073779"
+    },
+    "code": "18208",
+    "met": "6.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lặn bình dưỡng khí, thợ lặn giải trí"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307377a"
+    },
+    "code": "18210",
+    "met": "5.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lặn ống thở (Taylor Code 320)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307377b"
+    },
+    "code": "18220",
+    "met": "3.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lướt sóng, cơ thể hoặc ván, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307377c"
+    },
+    "code": "18221",
+    "met": "6.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lướt ván, chèo thuyền"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307377d"
+    },
+    "code": "18222",
+    "met": "5.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lướt sóng, thể hình hoặc lướt ván, cạnh tranh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307377e"
+    },
+    "code": "18224",
+    "met": "6.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Lướt ván đứng, tướng quân"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307377f"
+    },
+    "code": "18225",
+    "met": "2.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ván chèo đứng, đứng, 10-19 sải/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073780"
+    },
+    "code": "18226",
+    "met": "3.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ván chèo đứng, đứng, 20-29 sải/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073781"
+    },
+    "code": "18227",
+    "met": "5.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ván chèo đứng, đứng, 30-39 sải/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073782"
+    },
+    "code": "18228",
+    "met": "9.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ván chèo đứng, đứng, 40-49 sải/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073783"
+    },
+    "code": "18229",
+    "met": "11.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ván chèo đứng, đứng, 50-69 sải/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073784"
+    },
+    "code": "18240",
+    "met": "5.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi vòng, tự do, chậm, giải trí"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073785"
+    },
+    "code": "18250",
+    "met": "9.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, bơi ngửa, tập luyện hoặc thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073786"
+    },
+    "code": "18255",
+    "met": "4.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, bơi ngửa, giải trí"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073787"
+    },
+    "code": "18260",
+    "met": "10.3",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, bơi ếch, tổng quát, tập luyện hoặc thi đấu"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073788"
+    },
+    "code": "18270",
+    "met": "13.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, bướm, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073789"
+    },
+    "code": "18280",
+    "met": "10.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, trườn, tốc độ nhanh, ~75 thước/phút, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307378a"
+    },
+    "code": "18285",
+    "met": "10.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, nước mở, 5k"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307378b"
+    },
+    "code": "18290",
+    "met": "8.00",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, trườn, tốc độ trung bình, ~50 thước/phút, nỗ lực mạnh mẽ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307378c"
+    },
+    "code": "18292",
+    "met": "5.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, trườn, tốc độ chậm, 30-45 thước/phút, nỗ lực vừa phải"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307378d"
+    },
+    "code": "18294",
+    "met": "14.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, bò, vận động viên bơi lội ưu tú, thi đấu, >90 yard/phút"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307378e"
+    },
+    "code": "18300",
+    "met": "6.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, hồ, biển, sông (Mã Taylor 280, 295)"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307378f"
+    },
+    "code": "18310",
+    "met": "6.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, nhàn nhã, không bơi vòng, nói chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073790"
+    },
+    "code": "18320",
+    "met": "7.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, bơi ngang, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073791"
+    },
+    "code": "18330",
+    "met": "8.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, đồng bộ"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073792"
+    },
+    "code": "18340",
+    "met": "9.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, đi dưới nước, nỗ lực nhanh, mạnh"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073793"
+    },
+    "code": "18350",
+    "met": "3.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bơi, đi dưới nước, nỗ lực vừa phải, chung"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073794"
+    },
+    "code": "18352",
+    "met": "2.3",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Ống, trôi trên sông, tướng quân"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073795"
+    },
+    "code": "18355",
+    "met": "5.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Thể dục nhịp điệu dưới nước, thể dục mềm dẻo dưới nước, tổng quát"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073796"
+    },
+    "code": "18356",
+    "met": "3.8",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Thể dục nhịp điệu dưới nước, bài tập sức đề kháng"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073797"
+    },
+    "code": "18358",
+    "met": "7.5",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Thể dục nhịp điệu dưới nước, cường độ cao"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073798"
+    },
+    "code": "18360",
+    "met": "10.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bóng nước"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c3073799"
+    },
+    "code": "18365",
+    "met": "3.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Bóng chuyền nước"
+  },
+  {
+    "_id": {
+      "$oid": "6623c2940c346e05c307379a"
+    },
+    "code": "18370",
+    "met": "5.0",
+    "activity_category": "Hoạt động dưới nước",
+    "activity": "Chèo bè vượt thác, chèo thuyền kayak hoặc chèo thuyền"
+  }
+]

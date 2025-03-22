@@ -1,0 +1,100 @@
+[
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed2"
+    },
+    "name": "Quả chín",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed3"
+    },
+    "name": "Dầu, mỡ, bơ",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffecf"
+    },
+    "name": "Khoai củ và sản phẩm chế biến",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed4"
+    },
+    "name": "Thịt và sản phẩm chế biến",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed5"
+    },
+    "name": "Thủy sản và sản phẩm chế biến ",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed7"
+    },
+    "name": "Sữa và sản phẩm chế biến",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed0"
+    },
+    "name": "Hạt, quả giàu đạm, béo và sản phẩm chế biến",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed1"
+    },
+    "name": "Rau, củ, quả dùng làm rau",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed9"
+    },
+    "name": "Đồ ngọt",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffeda"
+    },
+    "name": "Gia vị, nước chấm",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffedb"
+    },
+    "name": "Nước giải khát, bia, rượu",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffece"
+    },
+    "name": "Ngũ cốc và sản phẩm chế biến",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed6"
+    },
+    "name": "Trứng và sản phẩm chế biến",
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "66001fbf3a2cbc145d2ffed8"
+    },
+    "name": "Đồ hộp",
+    "__v": 0
+  }
+]
