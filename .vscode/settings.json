@@ -8,7 +8,7 @@
   "diffEditor.ignoreTrimWhitespace": true,
 
   // Timeout in milliseconds after which diff computation is cancelled. Use 0 for no timeout.
-  "diffEditor.maxComputationTime": 5000,
+  "diffEditor.maxComputationTime": 0,
 
   // Controls whether the diff editor shows +/- indicators for added/removed changes.
   "diffEditor.renderIndicators": true,

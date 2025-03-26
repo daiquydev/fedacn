@@ -54,9 +54,6 @@ class RecipeService {
       body: newImage?.buffer as Buffer
     })
     console.log(newImage)
-
-    // lấy tên ảnh từ newImage.originalname
-   // lấy tên ảnh từ newImage.originalname
     let finalImageUrl = '';
     if (uploadRes.Location) {
   // Nếu uploadRes.Location tồn tại, thay thế địa chỉ
@@ -65,6 +62,9 @@ class RecipeService {
   // Nếu uploadRes.Location không tồn tại, có thể throw lỗi hoặc trả về một URL mặc định
       throw new Error('Failed to get the file location after upload.');
 }
+
+    // lấy tên ảnh từ newImage.originalname
+
     const image_name = newImage.originalname.split('.')[0]
 
     console.log(image_name)
@@ -165,15 +165,7 @@ class RecipeService {
 
       // xóa anhr cũ trên S3
       const old_image_name = recipe.image_name + '.' + recipe.image.split('.').pop()
-// Kiểm tra và xử lý URL từ uploadRes.Location
-let finalImageUrl = '';
-if (uploadRes.Location) {
-  // Nếu uploadRes.Location tồn tại, thay thế địa chỉ
-  finalImageUrl = uploadRes.Location.replace('http://localhost/', 'http://localhost:9000/');
-} else {
-  // Nếu uploadRes.Location không tồn tại, có thể throw lỗi hoặc trả về một URL mặc định
-  throw new Error('Failed to get the file location after upload.');
-}
+
       await deleteFileFromS3(`recipe/${old_image_name}`)
 
       const image_name = newImage.originalname.split('.')[0]
@@ -187,7 +179,7 @@ if (uploadRes.Location) {
           title,
           description,
           content,
-          image: finalImageUrl,
+          image: uploadRes.Location,
           image_name,
           video,
           time,

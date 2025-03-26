@@ -90,8 +90,6 @@ class WritterService {
     const image_name = newImage.originalname.split('.')[0]
 
     console.log(image_name)
-// Kiểm tra và xử lý URL từ uploadRes.Location
-
 
     //     url: 'https://bepvang.org.vn/Userfiles/Upload/images/Download/2017/2/24/268f41e9fdcd49999f327632ed207db1.jpg',
 

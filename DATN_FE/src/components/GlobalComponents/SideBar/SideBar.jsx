@@ -102,34 +102,34 @@ export default function SideBar() {
 
   const subMenusList = checkSubmenu()
     ? [
-        {
-          name: 'Sức khoẻ',
-          icon: BsFillHeartFill,
-          menus: [
-            { subName: 'Công cụ tính toán', subPath: 'fitness-calculator' },
-            { subName: 'Lịch sử tính toán', subPath: 'fitness-history' }
-          ],
-          path: 'fitness'
-        },
-        {
-          name: 'Lịch trình',
-          icon: BsFillCalendarHeartFill,
-          menus: [
-            { subName: 'Lịch trình ăn uống', subPath: 'eat-schedule' },
-            { subName: 'Lịch trình tập luyện', subPath: 'ex-schedule' }
-          ],
-          path: 'schedule'
-        },
-        {
-          name: 'Tạo bài viết',
-          icon: FaPenToSquare,
-          menus: [
-            { subName: 'Tạo thực đơn', subPath: 'recipe-list' },
-            { subName: 'Tạo album món ăn', subPath: 'album-list' },
-            { subName: 'Tạo blog dinh dưỡng', subPath: 'blog-list' }
-          ],
-          path: 'chef'
-        },
+        // {
+        //   name: 'Sức khoẻ',
+        //   icon: BsFillHeartFill,
+        //   menus: [
+        //     { subName: 'Công cụ tính toán', subPath: 'fitness-calculator' },
+        //     { subName: 'Lịch sử tính toán', subPath: 'fitness-history' }
+        //   ],
+        //   path: 'fitness'
+        // },
+        // {
+        //   name: 'Lịch trình',
+        //   icon: BsFillCalendarHeartFill,
+        //   menus: [
+        //     { subName: 'Lịch trình ăn uống', subPath: 'eat-schedule' },
+        //     { subName: 'Lịch trình tập luyện', subPath: 'ex-schedule' }
+        //   ],
+        //   path: 'schedule'
+        // },
+        // {
+        //   name: 'Tạo bài viết',
+        //   icon: FaPenToSquare,
+        //   menus: [
+        //     { subName: 'Tạo thực đơn', subPath: 'recipe-list' },
+        //     { subName: 'Tạo album món ăn', subPath: 'album-list' },
+        //     { subName: 'Tạo blog dinh dưỡng', subPath: 'blog-list' }
+        //   ],
+        //   path: 'chef'
+        // },
         {
           name: 'Sự kiện của tôi',
           icon: FaRunning,
@@ -141,24 +141,24 @@ export default function SideBar() {
         }
       ]
     : [
-        {
-          name: 'Sức khoẻ',
-          icon: BsFillHeartFill,
-          menus: [
-            { subName: 'Công cụ tính toán', subPath: 'fitness-calculator' },
-            { subName: 'Lịch sử tính toán', subPath: 'fitness-history' }
-          ],
-          path: 'fitness'
-        },
-        {
-          name: 'Lịch trình',
-          icon: BsFillCalendarHeartFill,
-          menus: [
-            { subName: 'Lịch trình ăn uống', subPath: 'eat-schedule' },
-            { subName: 'Lịch trình tập luyện', subPath: 'ex-schedule' }
-          ],
-          path: 'schedule'
-        },
+        // {
+        //   name: 'Sức khoẻ',
+        //   icon: BsFillHeartFill,
+        //   menus: [
+        //     { subName: 'Công cụ tính toán', subPath: 'fitness-calculator' },
+        //     { subName: 'Lịch sử tính toán', subPath: 'fitness-history' }
+        //   ],
+        //   path: 'fitness'
+        // },
+        // {
+        //   name: 'Lịch trình',
+        //   icon: BsFillCalendarHeartFill,
+        //   menus: [
+        //     { subName: 'Lịch trình ăn uống', subPath: 'eat-schedule' },
+        //     { subName: 'Lịch trình tập luyện', subPath: 'ex-schedule' }
+        //   ],
+        //   path: 'schedule'
+        // },
         {
           name: 'Sự kiện của tôi',
           icon: FaRunning,
@@ -200,24 +200,25 @@ export default function SideBar() {
                   Cộng đồng
                 </NavLink>
               </li>
-              <li>
+             
+              {/* <li>
                 <NavLink to={'/cooking'} className='link-custom '>
                   <FaUtensils size={25} className='min-w-max' />
                   Thực đơn
                 </NavLink>
-              </li>
+              </li> */}
               <li>
                 <NavLink to={'/meal-plan'} className='link-custom '>
                   <BsFillCalendarHeartFill size={25} className='min-w-max' />
                   Kế hoạch dinh dưỡng
                 </NavLink>
               </li>
-              <li>
+              {/* <li>
                 <NavLink to={'/album'} className='link-custom '>
                   <IoMdAlbums size={25} className='min-w-max' />
                   Album
                 </NavLink>
-              </li>
+              </li> */}
               <li>
                 <NavLink to={'/blog'} className='link-custom '>
                   <FaShareAlt size={25} className='min-w-max' />

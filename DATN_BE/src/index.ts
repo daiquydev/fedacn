@@ -49,16 +49,13 @@ app.use(morgan('combined'))
 app.use(helmet())
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ extended: true, limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb' }))
 app.use(bodyParser.urlencoded({ extended: false, limit: '50mb', parameterLimit: 50000 }))
 app.use(
   bodyParser.json({
     limit: '50mb'
   })
 )
-
-// app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', parameterLimit: 50000 }))
-
 
 // viết hàm chạy luôn khi server start
 
