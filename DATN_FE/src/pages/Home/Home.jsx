@@ -1,7 +1,7 @@
 import { BsFillImageFill, BsFillSunFill } from 'react-icons/bs'
 import useravatar from '../../assets/images/useravatar.jpg'
 import { MdNightlight } from 'react-icons/md'
-import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning } from 'react-icons/fa'
+import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaArrowRight } from 'react-icons/fa'
 import { PiClockAfternoonFill } from 'react-icons/pi'
 import PostCard from '../../components/CardComponents/PostCard'
 import BlogCard from '../../components/CardComponents/BlogCard'
@@ -16,9 +16,9 @@ import Loading from '../../components/GlobalComponents/Loading'
 import { getBlogsForUser } from '../../apis/blogApi'
 import { followUser, recommendUser } from '../../apis/userApi'
 import { queryClient } from '../../main'
-import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { MdBook, MdClose } from 'react-icons/md'
+import { UserDashboard } from '../../components/Dashboard'
 
 export default function Home() {
   const { profile } = useContext(AppContext)
@@ -92,49 +92,18 @@ export default function Home() {
     )
   }
   return (
-    <>
-      {/* Community Welcome Banner */}
-      {showBanner && (
-        <div className="w-full bg-gradient-to-r from-green-50 via-green-100 to-green-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-xl shadow-md mb-6 relative">
-          <button 
-            onClick={() => setShowBanner(false)}
-            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors"
-            aria-label="Đóng"
-          >
-            <MdClose size={24} />
-          </button>
-          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div className="md:flex md:items-center md:justify-between">
-              <div className="md:w-2/3">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-                  <span className="block">Cộng đồng NutriCommunity</span>
-                </h2>
-                <p className="mt-2 text-base text-gray-600 dark:text-gray-300">
-                  Chia sẻ kinh nghiệm dinh dưỡng, món ăn yêu thích và kết nối với những người có cùng đam mê về lối sống lành mạnh.
-                </p>
-                <div className="mt-4 flex space-x-3">
-                  <Link to="/cooking" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-                    <FaUtensils className="mr-2" /> Khám phá công thức
-                  </Link>
-                  <Link to="/sport-event" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
-                    <FaRunning className="mr-2" /> Tham gia sự kiện
-                  </Link>
-                </div>
-              </div>
-              <div className="mt-4 md:mt-0 md:w-1/3 flex justify-end">
-                <div className="hidden md:block">
-                  <FaUsers className="h-24 w-24 text-green-500 dark:text-green-400" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="space-y-6">
+      {/* Dashboard section - Đặt ở trên cùng, toàn màn hình */}
+      <div className="w-full">
+        <UserDashboard />
+      </div>
 
-      <div className='grid xl:mx-4 pt-2 xl:gap-6 xl:grid-cols-5'>
-        <div className='xl:col-span-3'>
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Main column - tăng kích thước lên */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-3 space-y-5">
           {/* Create Post Card */}
-          <div className='bg-white py-4 px-6 shadow-md rounded-xl dark:bg-color-primary mb-6'>
+          <div className="bg-white py-4 px-6 shadow-md rounded-xl dark:bg-color-primary mb-6">
             <div>{checkTime(profile)}</div>
             <div className='flex justify-between items-center gap-2 md:gap-4 w-full mt-4'>
               <div className='w-10 h-10 md:w-12 overflow-hidden md:h-12 rounded-full cursor-pointer'>
@@ -168,8 +137,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Feed Content */}
-          <div className='space-y-6'>
+          {/* List Post */}
+          <div className="space-y-6">
             {content}
             <div ref={ref}>
               {isFetchingNextPage ? (
@@ -181,32 +150,44 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Sidebar Content */}
-        <div className='hidden xl:block col-span-2 space-y-6'>
-          {/* People You May Know */}
+        {/* Sidebar Content - không bao gồm Dashboard nữa */}
+        <div className="col-span-1 space-y-6">
+          {/* People You May Know - TỐI ƯU */}
           {userData?.data?.result.length === 0 ? null : (
-            <div className='w-full shadow-md bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden'>
-              <div className='bg-gradient-to-r from-red-700 to-pink-600 dark:from-red-800 dark:to-pink-700 py-3 px-4'>
-                <h3 className='text-lg font-semibold text-white flex items-center'>
-                  <FaUsers className="mr-2" /> Gợi ý kết nối
+            <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
+              <div className="bg-gradient-to-r from-red-600 to-pink-500 dark:from-red-800 dark:to-pink-700 py-3.5 px-5">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <FaUsers className="mr-2 text-xl" /> Gợi ý kết nối
                 </h3>
               </div>
-              <div className='p-4 space-y-4'>
-                {userData?.data?.result.map((user) => {
-                  return <ItemUser key={user._id} user={user} />
-                })}
+              <div className="p-4">
+                <div className="space-y-3">
+                  {userData?.data?.result.map((user) => (
+                    <ItemUser key={user._id} user={user} />
+                  ))}
+                </div>
+                {userData?.data?.result.length > 0 && (
+                  <div className="pt-3 mt-3 border-t border-gray-100 dark:border-gray-700">
+                    <Link 
+                      to="/search?tab=people"
+                      className="flex justify-center items-center text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                    >
+                      Xem thêm gợi ý <FaArrowRight className="ml-1 w-3 h-3" />
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* Latest Blogs */}
-          <div className='w-full shadow-md bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden'>
-            <div className='bg-gradient-to-r from-green-700 to-green-600 dark:from-green-800 dark:to-green-700 py-3 px-4'>
-              <h3 className='text-lg font-semibold text-white flex items-center'>
+          <div className="w-full shadow-md bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
+            <div className="bg-gradient-to-r from-green-700 to-green-600 dark:from-green-800 dark:to-green-700 py-3 px-4">
+              <h3 className="text-lg font-semibold text-white flex items-center">
                 <MdBook className="mr-2" /> Blog mới nhất
               </h3>
             </div>
-            <div className='p-4 space-y-4'>
+            <div className="p-4 space-y-4">
               {blogData?.data?.result.blogs.map((blog) => {
                 return (
                   <BlogCard
@@ -231,7 +212,7 @@ export default function Home() {
         </div>
       </div>
       {modalPost && <ModalUploadPost profile={profile} closeModalPost={closeModalPost} />}
-    </>
+    </div>
   )
 }
 
@@ -301,37 +282,40 @@ const ItemUser = ({ user }) => {
     )
   }
   return (
-    <div className='flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-0'>
-      <div className='flex items-center gap-3'>
-        <div className='avatar'>
-          <div className='rounded-full w-12 h-12 ring-2 ring-offset-2 ring-gray-200 dark:ring-gray-700'>
-            <img
-              className='object-cover w-12 h-12 rounded-full'
-              src={user.avatar === '' ? useravatar : user.avatar}
-              alt='Avatar'
-            />
-          </div>
-        </div>
-        <div>
-          <div
-            onClick={() => navigate(`/user/${user._id}`)}
-            className='font-bold flex items-center gap-2 cursor-pointer hover:text-green-600 transition-colors'
-          >
-            {user.name}
-            {user.role === 1 && (
-              <div className='text-blue-500 rounded-full flex justify-center items-center'>
-                <FaCheckCircle size={13} />
-              </div>
-            )}
-          </div>
-          <div className=''>
-            <span className='text-sm text-gray-500 dark:text-gray-400'>@{user.user_name}</span>
-          </div>
+    <div className="grid grid-cols-[auto,1fr,auto] gap-3 items-center p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+      {/* Avatar - Cột 1 */}
+      <div className="flex-shrink-0">
+        <div className="rounded-full w-11 h-11 overflow-hidden ring-2 ring-offset-1 ring-gray-200 dark:ring-gray-700">
+          <img
+            className="object-cover w-full h-full"
+            src={user.avatar === '' ? useravatar : user.avatar}
+            alt={`Avatar của ${user.name}`}
+          />
         </div>
       </div>
+      
+      {/* Thông tin user - Cột 2 */}
+      <div className="min-w-0 overflow-hidden">
+        <div
+          onClick={() => navigate(`/user/${user._id}`)}
+          className="font-semibold flex items-center gap-1.5 cursor-pointer hover:text-green-600 transition-colors truncate"
+        >
+          <span className="truncate">{user.name}</span>
+          {user.role === 1 && (
+            <div className="text-blue-500 rounded-full flex-shrink-0">
+              <FaCheckCircle size={13} />
+            </div>
+          )}
+        </div>
+        <div className="truncate text-sm text-gray-500 dark:text-gray-400">
+          @{user.user_name}
+        </div>
+      </div>
+      
+      {/* Nút theo dõi - Cột 3 */}
       <button 
         onClick={handleFollow} 
-        className='px-3 py-1.5 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors'
+        className="w-20 h-8 flex-shrink-0 flex items-center justify-center text-xs font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-md shadow-sm hover:shadow transition-all"
       >
         Theo dõi
       </button>

@@ -12,6 +12,10 @@ import InputConfirm from './pages/ForgotPassword/components/InputConfirm'
 import ChangePassForm from './pages/ForgotPassword/components/ChangePassForm'
 import ChangeSuccess from './pages/ForgotPassword/components/ChangeSuccess'
 import WorkoutScheduleDetail from './pages/WorkoutScheduleDetail'
+import Challenge from "./pages/Challenge/Challenge"
+import ChallengeDetail from "./pages/Challenge/ChallengeDetail"
+import MyChallenge from "./pages/Challenge/MyChallenge"
+import CreateChallenge from "./pages/Challenge/CreateChallenge"
 
 const HomeLanding = lazy(() => import('./pages/HomeLanding'))
 const Login = lazy(() => import('./pages/Login'))
@@ -460,6 +464,38 @@ export default function useRouteElement() {
               <Suspense>
                 <MealPlanDetail />
               </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/challenge',
+          element: (
+            <MainLayout>
+              <Challenge />
+            </MainLayout>
+          )
+        },
+        {
+          path: '/challenge/:id',
+          element: (
+            <MainLayout>
+              <ChallengeDetail />
+            </MainLayout>
+          )
+        },
+        {
+          path: '/challenge/my-challenges',
+          element: (
+            <MainLayout>
+              <MyChallenge />
+            </MainLayout>
+          )
+        },
+        {
+          path: '/challenge/create',
+          element: (
+            <MainLayout>
+              <CreateChallenge />
             </MainLayout>
           )
         }

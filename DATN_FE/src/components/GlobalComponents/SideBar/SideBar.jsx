@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
 // * React icons
-import { FaCookieBite, FaShareAlt, FaRunning } from 'react-icons/fa'
+import { FaCookieBite, FaShareAlt, FaRunning, FaTrophy } from 'react-icons/fa'
 import { BsFillCalendarHeartFill, BsFillHeartFill, BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
 import { MdMenu, MdSportsSoccer } from 'react-icons/md'
@@ -138,6 +138,15 @@ export default function SideBar() {
             { subName: 'Lịch sử sự kiện', subPath: 'history' }
           ],
           path: 'sport-event'
+        },
+        {
+          name: 'Thử thách của tôi',
+          icon: FaTrophy,
+          menus: [
+            { subName: 'Thử thách đã tham gia', subPath: 'my-challenges' },
+            { subName: 'Tạo thử thách mới', subPath: 'create' }
+          ],
+          path: 'challenge'
         }
       ]
     : [
@@ -167,6 +176,14 @@ export default function SideBar() {
             { subName: 'Lịch sử sự kiện', subPath: 'history' }
           ],
           path: 'sport-event'
+        },
+        {
+          name: 'Thử thách của tôi',
+          icon: FaTrophy,
+          menus: [
+            { subName: 'Thử thách đã tham gia', subPath: 'my-challenges' }
+          ],
+          path: 'challenge'
         }
       ]
 
@@ -233,6 +250,16 @@ export default function SideBar() {
                 >
                   <MdSportsSoccer size={25} className='min-w-max' />
                   Sự kiện thể thao
+                </NavLink>
+              </li>
+              <li>
+                <NavLink 
+                  to={'/challenge'} 
+                  end
+                  className='link-custom'
+                >
+                  <FaTrophy size={25} className='min-w-max' />
+                  Thử thách cộng đồng
                 </NavLink>
               </li>
 
