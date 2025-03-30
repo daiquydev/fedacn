@@ -16,6 +16,11 @@ import Challenge from "./pages/Challenge/Challenge"
 import ChallengeDetail from "./pages/Challenge/ChallengeDetail"
 import MyChallenge from "./pages/Challenge/MyChallenge"
 import CreateChallenge from "./pages/Challenge/CreateChallenge"
+import MyMealSchedule from './pages/MealSchedule/MyMealSchedule'
+import DayMealScheduleDetail from './pages/MealSchedule/DayMealScheduleDetail'
+import EditDayMealSchedule from './pages/MealSchedule/EditDayMealSchedule'
+import MealAlternativesPage from './pages/MealSchedule/MealAlternativesPage'
+import MealPlanManagement from './pages/MealSchedule/MealPlanManagement'
 
 const HomeLanding = lazy(() => import('./pages/HomeLanding'))
 const Login = lazy(() => import('./pages/Login'))
@@ -496,6 +501,56 @@ export default function useRouteElement() {
           element: (
             <MainLayout>
               <CreateChallenge />
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/my-eat-schedule',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MyMealSchedule />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-schedule/day/:date',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <DayMealScheduleDetail />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-schedule/edit/:date',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <EditDayMealSchedule />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-schedule/alternatives/:date',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealAlternativesPage />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-plan',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealPlanManagement />
+              </Suspense>
             </MainLayout>
           )
         }

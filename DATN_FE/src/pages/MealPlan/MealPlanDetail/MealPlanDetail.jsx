@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark } from 'react-icons/fa'
-import { MdFastfood } from 'react-icons/md'
+import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList } from 'react-icons/fa'
+import { MdFastfood, MdClose, MdSchedule, MdDateRange } from 'react-icons/md'
 import { IoMdTime } from 'react-icons/io'
 import NutritionChart from './components/NutritionChart'
 import DayMealPlan from './components/DayMealPlan'
@@ -16,6 +16,12 @@ export default function MealPlanDetail() {
   const [liked, setLiked] = useState(false)
   const [saved, setSaved] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
+  
+  // Thêm các state mới
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showApplyModal, setShowApplyModal] = useState(false)
+  const [startDate, setStartDate] = useState(getCurrentDate())
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   
   // Mock data - in a real app, this would be fetched from an API
   useEffect(() => {
@@ -137,6 +143,15 @@ export default function MealPlanDetail() {
     }, 500);
   }, [id]);
 
+  // Hàm lấy ngày hiện tại theo format YYYY-MM-DD
+  function getCurrentDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   const handleLike = () => {
     if (liked) {
       setLikesCount(prev => prev - 1);
@@ -146,8 +161,40 @@ export default function MealPlanDetail() {
     setLiked(!liked);
   };
 
+  // Cập nhật hàm handleSave để mở modal
   const handleSave = () => {
-    setSaved(!saved);
+    if (!saved) {
+      setShowSaveModal(true);
+    } else {
+      setSaved(false);
+      // Xử lý bỏ lưu thực đơn ở đây (gọi API)
+    }
+  };
+
+  // Xác nhận lưu thực đơn
+  const confirmSave = () => {
+    setSaved(true);
+    setShowSaveModal(false);
+    // Gọi API lưu thực đơn ở đây
+  };
+
+  // Mở modal áp dụng thực đơn
+  const openApplyModal = () => {
+    setShowSaveModal(false);
+    setShowApplyModal(true);
+  };
+
+  // Xác nhận áp dụng thực đơn
+  const confirmApply = () => {
+    setShowApplyModal(false);
+    setShowSuccessModal(true);
+    // Gọi API áp dụng thực đơn ở đây với ngày bắt đầu là startDate
+  };
+
+  // Chuyển hướng đến trang lịch thực đơn
+  const goToMealSchedule = () => {
+    setShowSuccessModal(false);
+    navigate('/schedule/eat-schedule');
   };
 
   const handleShare = () => {
@@ -287,7 +334,7 @@ export default function MealPlanDetail() {
                   ) : (
                     <FaRegBookmark className="mr-1" />
                   )}
-                  <span>Lưu</span>
+                  <span>{saved ? "Đã lưu" : "Lưu"}</span>
                 </button>
                 
                 <button 
@@ -305,6 +352,17 @@ export default function MealPlanDetail() {
                   <FaPrint className="mr-1" />
                   <span>In</span>
                 </button>
+                
+                {/* Nút áp dụng thực đơn - chỉ hiển thị khi đã lưu */}
+                {saved && (
+                  <button 
+                    onClick={() => setShowApplyModal(true)}
+                    className="flex items-center px-3 py-1.5 rounded-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <FaCalendarAlt className="mr-1" />
+                    <span>Áp dụng thực đơn</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -425,6 +483,179 @@ export default function MealPlanDetail() {
           </div>
         </div>
       </div>
+
+      {/* Modal Lưu thực đơn */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Lưu thực đơn</h3>
+              <button 
+                onClick={() => setShowSaveModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <MdClose size={24} />
+              </button>
+            </div>
+            
+            <div className="mb-6 text-center">
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaBookmark className="text-green-600 dark:text-green-400 text-3xl" />
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                Bạn muốn lưu "{mealPlan.title}" vào danh sách thực đơn của mình?
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Thực đơn sẽ được lưu vào trang "Thực đơn của tôi" để dễ dàng truy cập sau này.
+              </p>
+            </div>
+            
+            <div className="flex flex-col space-y-3">
+              <button 
+                onClick={confirmSave}
+                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Lưu thực đơn
+              </button>
+              <button 
+                onClick={openApplyModal}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Lưu và áp dụng ngay
+              </button>
+              <button 
+                onClick={() => setShowSaveModal(false)}
+                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Áp dụng thực đơn */}
+      {showApplyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Áp dụng thực đơn</h3>
+              <button 
+                onClick={() => setShowApplyModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <MdClose size={24} />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MdSchedule className="text-blue-600 dark:text-blue-400 text-3xl" />
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4 text-center">
+                Chọn ngày bắt đầu áp dụng "{mealPlan.title}"
+              </p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Ngày bắt đầu:
+                </label>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  min={getCurrentDate()}
+                  className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg mb-4">
+                <div className="flex items-start">
+                  <FaBell className="text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" />
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                    Bạn sẽ nhận được nhắc nhở hàng ngày về các bữa ăn theo thực đơn này. Bạn có thể điều chỉnh thiết lập nhắc nhở trong phần Cài đặt.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col space-y-3">
+              <button 
+                onClick={confirmApply}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
+              >
+                <FaCalendarAlt className="mr-2" />
+                Áp dụng thực đơn
+              </button>
+              <button 
+                onClick={() => setShowApplyModal(false)}
+                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+              >
+                Để sau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Áp dụng thành công */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaCheckSquare className="text-green-600 dark:text-green-400 text-3xl" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Áp dụng thành công!
+              </h3>
+              <p className="text-gray-700 dark:text-gray-300">
+                Thực đơn "{mealPlan.title}" đã được áp dụng từ ngày {new Date(startDate).toLocaleDateString('vi-VN')}
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+                <FaClipboardList className="mr-2" /> Tiếp theo bạn có thể:
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start">
+                  <span className="text-blue-600 dark:text-blue-400 mr-2">•</span>
+                  <span className="text-blue-800 dark:text-blue-300">Xem lịch thực đơn hàng ngày của bạn</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-600 dark:text-blue-400 mr-2">•</span>
+                  <span className="text-blue-800 dark:text-blue-300">Đánh dấu các bữa ăn đã hoàn thành</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-600 dark:text-blue-400 mr-2">•</span>
+                  <span className="text-blue-800 dark:text-blue-300">Ghi chú cảm nhận về mỗi món ăn</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-600 dark:text-blue-400 mr-2">•</span>
+                  <span className="text-blue-800 dark:text-blue-300">Theo dõi tiến trình áp dụng thực đơn</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="flex flex-col space-y-3">
+              <button 
+                onClick={goToMealSchedule}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
+              >
+                <MdDateRange className="mr-2" />
+                Đi đến lịch thực đơn của tôi
+              </button>
+              <button 
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+              >
+                Ở lại trang này
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

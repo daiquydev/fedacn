@@ -147,6 +147,15 @@ export default function SideBar() {
             { subName: 'Tạo thử thách mới', subPath: 'create' }
           ],
           path: 'challenge'
+        },
+        {
+          name: 'Thực đơn & Dinh dưỡng',
+          icon: FaUtensils,
+          menus: [
+            { subName: 'Lịch ăn uống của tôi', subPath: 'my-eat-schedule' },
+            { subName: 'Quản lý thực đơn', subPath: 'eat-plan' }
+          ],
+          path: 'schedule'
         }
       ]
     : [
@@ -184,6 +193,15 @@ export default function SideBar() {
             { subName: 'Thử thách đã tham gia', subPath: 'my-challenges' }
           ],
           path: 'challenge'
+        },
+        {
+          name: 'Thực đơn & Dinh dưỡng',
+          icon: FaUtensils,
+          menus: [
+            { subName: 'Lịch ăn uống của tôi', subPath: 'my-eat-schedule' },
+            { subName: 'Quản lý thực đơn', subPath: 'eat-plan' }
+          ],
+          path: 'schedule'
         }
       ]
 
@@ -218,16 +236,16 @@ export default function SideBar() {
                 </NavLink>
               </li>
              
-              {/* <li>
-                <NavLink to={'/cooking'} className='link-custom '>
+              <li>
+                <NavLink to={'/meal-plan'} className='link-custom '>
                   <FaUtensils size={25} className='min-w-max' />
                   Thực đơn
                 </NavLink>
-              </li> */}
+              </li>
               <li>
-                <NavLink to={'/meal-plan'} className='link-custom '>
+                <NavLink to={'/schedule/my-eat-schedule'} className='link-custom '>
                   <BsFillCalendarHeartFill size={25} className='min-w-max' />
-                  Kế hoạch dinh dưỡng
+                  Lịch ăn uống
                 </NavLink>
               </li>
               {/* <li>
