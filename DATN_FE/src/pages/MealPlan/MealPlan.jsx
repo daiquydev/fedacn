@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { FaPlus, FaUtensils, FaSortAmountDown, FaFilter, FaCalendarAlt } from 'react-icons/fa'
+import { useState, useEffect, useRef } from 'react'
+import { FaPlus, FaUtensils, FaSortAmountDown, FaFilter, FaCalendarAlt, FaTimes } from 'react-icons/fa'
 import { IoMdTime } from 'react-icons/io'
 import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch } from 'react-icons/ai'
@@ -15,6 +15,7 @@ export default function MealPlan() {
     duration: 'all',
     category: 'all'
   })
+  const createModalRef = useRef(null)
 
   // Mock data for meal plans
   const mealPlans = [
@@ -141,6 +142,23 @@ export default function MealPlan() {
       return 0;
     });
 
+  // Xử lý click bên ngoài modal để đóng
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (createModalRef.current && !createModalRef.current.contains(event.target)) {
+        setShowCreateModal(false);
+      }
+    }
+    if (showCreateModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCreateModal]);
+
   const handleOpenCreateModal = () => {
     setShowCreateModal(true);
   }
@@ -195,11 +213,11 @@ export default function MealPlan() {
           </div>
 
           {/* Filters */}
-          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 col-span-full lg:col-span-2">
             {/* Sort filter */}
-            <div className="relative">
+            <div className="relative w-full">
               <select
-                className="appearance-none w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+                className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
                 value={filter.sort}
                 onChange={(e) => handleFilterChange('sort', e.target.value)}
               >
@@ -207,13 +225,16 @@ export default function MealPlan() {
                 <option value="oldest">Cũ nhất</option>
                 <option value="popular">Phổ biến nhất</option>
               </select>
-              <FaSortAmountDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+              <FaSortAmountDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z"/></svg>
+              </div>
             </div>
 
             {/* Duration filter */}
-            <div className="relative">
+            <div className="relative w-full">
               <select
-                className="appearance-none w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+                className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
                 value={filter.duration}
                 onChange={(e) => handleFilterChange('duration', e.target.value)}
               >
@@ -222,13 +243,16 @@ export default function MealPlan() {
                 <option value="medium">Trung bình (4-7 ngày)</option>
                 <option value="long">Dài ({'>'} 7 ngày)</option>
               </select>
-              <IoMdTime className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+              <IoMdTime className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z"/></svg>
+              </div>
             </div>
 
             {/* Category filter */}
-            <div className="relative">
+            <div className="relative w-full">
               <select
-                className="appearance-none w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+                className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
                 value={filter.category}
                 onChange={(e) => handleFilterChange('category', e.target.value)}
               >
@@ -240,7 +264,10 @@ export default function MealPlan() {
                 <option value="gia đình">Gia đình</option>
                 <option value="keto">Keto</option>
               </select>
-              <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+              <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z"/></svg>
+              </div>
             </div>
           </div>
         </div>
@@ -278,7 +305,38 @@ export default function MealPlan() {
 
       {/* Create Meal Plan Modal */}
       {showCreateModal && (
-        <CreateMealPlanModal onClose={handleCloseCreateModal} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center transform translate-x-20">
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
+            onClick={() => setShowCreateModal(false)}
+          ></div>
+          
+          {/* Modal Content */}
+          <div 
+            ref={createModalRef} 
+            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-auto my-4 z-20 max-h-[90vh] overflow-y-auto"
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <FaPlus className="mr-2 text-green-500" /> Tạo Thực Đơn Mới
+              </h2>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6">
+              {/* Nội dung form tạo thực đơn */}
+              <CreateMealPlanModal onClose={handleCloseCreateModal} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

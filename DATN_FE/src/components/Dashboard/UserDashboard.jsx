@@ -30,7 +30,7 @@ const UserDashboard = () => {
   // Mock data cho demo
   const mockChallenges = [
     {
-      _id: 'c1',
+      _id: '1',
       title: 'Chạy 100km trong 30 ngày',
       progress: 65,
       endDate: moment().add(10, 'days').toISOString(),
@@ -40,7 +40,7 @@ const UserDashboard = () => {
 
   const mockEvents = [
     {
-      _id: 'e1',
+      _id: '1',
       title: 'Marathon Hồ Gươm',
       eventDate: moment().add(5, 'days').toISOString(),
       image: 'https://images2.thanhnien.vn/thumb_w/686/528068263637045248/2024/8/25/tbm7637-17245883933481176972446-0-646-1600-1846-crop-1724588660716339719111.jpg'
@@ -49,7 +49,7 @@ const UserDashboard = () => {
 
   const mockDiets = [
     {
-      _id: 'd1',
+      _id: '1',
       title: 'Chế độ ăn Clean Eating',
       startDate: moment().subtract(3, 'days').toISOString(),
       endDate: moment().add(18, 'days').toISOString(),
@@ -195,7 +195,7 @@ const UserDashboard = () => {
             <DashboardCard 
               title="Thực đơn đang áp dụng"
               icon={<FaUtensils className="text-green-500" />}
-              footerLink="/diet"
+              footerLink="/schedule/my-eat-schedule"
               footerText="Xem tất cả thực đơn"
               gradientFrom="from-green-50"
               gradientTo="to-emerald-50"
@@ -235,7 +235,7 @@ const UserDashboard = () => {
                   
                   <div className="flex justify-end">
                     <button 
-                      onClick={() => navigate(`/diet/${diet._id}`)}
+                      onClick={() => navigate(`/meal-plan/${diet._id}`)}
                       className="text-xs bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors"
                     >
                       Xem chi tiết
@@ -270,7 +270,7 @@ const UserDashboard = () => {
                   <span>Khám phá thử thách</span>
                 </Link>
                 <Link 
-                  to="/diet"
+                  to="/schedule/my-eat-schedule"
                   className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-all shadow-md hover:shadow-lg"
                 >
                   <FaUtensils className="w-4 h-4" />

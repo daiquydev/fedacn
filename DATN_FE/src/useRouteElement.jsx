@@ -16,10 +16,15 @@ import Challenge from "./pages/Challenge/Challenge"
 import ChallengeDetail from "./pages/Challenge/ChallengeDetail"
 import MyChallenge from "./pages/Challenge/MyChallenge"
 import CreateChallenge from "./pages/Challenge/CreateChallenge"
-import MyMealSchedule from './pages/MealSchedule/MyMealSchedule'
-import DayMealScheduleDetail from './pages/MealSchedule/DayMealScheduleDetail'
-import EditDayMealSchedule from './pages/MealSchedule/EditDayMealSchedule'
-import MealAlternativesPage from './pages/MealSchedule/MealAlternativesPage'
+import { 
+  MyMealSchedule, 
+  DayMealScheduleDetail, 
+  EditDayMealSchedule, 
+  MealAlternativesPage,
+  MealStats,
+  MealCompleted,
+  MealReminders
+} from './pages/MealSchedule'
 import MealPlanManagement from './pages/MealSchedule/MealPlanManagement'
 
 const HomeLanding = lazy(() => import('./pages/HomeLanding'))
@@ -550,6 +555,36 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <MealPlanManagement />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-schedule/stats',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealStats />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-schedule/completed',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealCompleted />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-schedule/reminders',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealReminders />
               </Suspense>
             </MainLayout>
           )

@@ -205,7 +205,6 @@ export default function DayMealScheduleDetail() {
         meal.id === mealId ? { ...meal, note: note } : meal
       )
     }));
-    setNoteModalOpen(false);
   };
   
   // Get total calories for completed and remaining meals
@@ -264,7 +263,8 @@ export default function DayMealScheduleDetail() {
                   <FaCheckCircle className="mr-2" /> Hoàn thành
                 </div>
               ) : isToday() ? (
-                <div className="mt-2 sm:mt-0 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg">
+                <div className="mt-2 sm:mt-0 px-3 py-1
+                .5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg">
                   Hôm nay
                 </div>
               ) : null}
@@ -289,7 +289,7 @@ export default function DayMealScheduleDetail() {
               <FaUtensils className="mr-2 text-green-600" /> Các bữa ăn
             </h2>
             
-            <div className="space-y-4 mb-6">
+            <div className="space-y-4 mb-6 relative">
               {dayData.meals.map((meal) => (
                 <MealCard 
                   key={meal.id} 
@@ -453,9 +453,13 @@ export default function DayMealScheduleDetail() {
       {/* Note Modal */}
       {noteModalOpen && selectedMeal && (
         <MealNoteModal
-          meal={selectedMeal}
+          isOpen={noteModalOpen}
           onClose={() => setNoteModalOpen(false)}
-          onSave={handleSaveNote}
+          onSaveNote={(note) => {
+            handleSaveNote(selectedMeal.id, note);
+            setNoteModalOpen(false);
+          }}
+          initialNote={selectedMeal.note}
         />
       )}
     </div>

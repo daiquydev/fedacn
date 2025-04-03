@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaFilter, FaSearch } from 'react-icons/fa'
+import { FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaFilter, FaSearch, 
+  FaPlusCircle, FaTimes, FaImage, FaUpload } from 'react-icons/fa'
 import { MdSportsSoccer, MdDirectionsRun } from 'react-icons/md'
 import { IoIosFitness } from 'react-icons/io'
 import moment from 'moment'
@@ -86,6 +87,22 @@ export default function SportEvent() {
   const [events, setEvents] = useState(mockEvents);
   const [filterCategory, setFilterCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // State cho modal tạo sự kiện mới
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    name: '',
+    date: '',
+    time: '',
+    location: '',
+    category: '',
+    maxParticipants: '',
+    image: '',
+    description: ''
+  });
+  const [imagePreview, setImagePreview] = useState('');
+  const [errors, setErrors] = useState({});
+  const fileInputRef = useRef(null);
 
   const handleEventClick = (eventId) => {
     navigate(`/sport-event/${eventId}`);
@@ -154,13 +171,151 @@ export default function SportEvent() {
     }
   };
 
+  // Hàm xử lý tạo sự kiện mới
+  const handleCreateEvent = (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    const validationErrors = {};
+    if (!newEvent.name.trim()) validationErrors.name = 'Vui lòng nhập tên sự kiện';
+    if (!newEvent.date) validationErrors.date = 'Vui lòng chọn ngày';
+    if (!newEvent.time) validationErrors.time = 'Vui lòng chọn giờ';
+    if (!newEvent.location.trim()) validationErrors.location = 'Vui lòng nhập địa điểm';
+    if (!newEvent.category) validationErrors.category = 'Vui lòng chọn thể loại';
+    if (!newEvent.maxParticipants || newEvent.maxParticipants <= 0) {
+      validationErrors.maxParticipants = 'Vui lòng nhập số người tham gia hợp lệ';
+    }
+    if (!newEvent.image.trim()) validationErrors.image = 'Vui lòng nhập URL hình ảnh';
+    if (!newEvent.description.trim()) validationErrors.description = 'Vui lòng nhập mô tả sự kiện';
+    
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    
+    // Tạo sự kiện mới
+    const dateTime = `${newEvent.date}T${newEvent.time}:00Z`;
+    const newEventObj = {
+      id: Date.now(), // Tạo ID ngẫu nhiên
+      name: newEvent.name,
+      date: dateTime,
+      location: newEvent.location,
+      category: newEvent.category,
+      participants: 0,
+      maxParticipants: parseInt(newEvent.maxParticipants),
+      image: newEvent.image,
+      isJoined: false,
+      description: newEvent.description
+    };
+    
+    // Thêm sự kiện mới vào danh sách
+    setEvents([...events, newEventObj]);
+    
+    // Reset form và đóng modal
+    setNewEvent({
+      name: '',
+      date: '',
+      time: '',
+      location: '',
+      category: '',
+      maxParticipants: '',
+      image: '',
+      description: ''
+    });
+    setImagePreview('');
+    setShowCreateModal(false);
+  };
+  
+  // Hàm xử lý thay đổi input
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewEvent({
+      ...newEvent,
+      [name]: value
+    });
+    
+    // Xóa lỗi khi người dùng nhập
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: null
+      });
+    }
+  };
+  
+  // Hàm xử lý preview image
+  const handleImageChange = (e) => {
+    const value = e.target.value;
+    setNewEvent({
+      ...newEvent,
+      image: value
+    });
+    
+    if (value.trim() && (value.startsWith('http://') || value.startsWith('https://'))) {
+      setImagePreview(value);
+    } else {
+      setImagePreview('');
+    }
+    
+    if (errors.image) {
+      setErrors({
+        ...errors,
+        image: null
+      });
+    }
+  };
+  
+  // Simulated upload image
+  const handleUploadClick = () => {
+    fileInputRef.current.click();
+  };
+  
+  const handleFileChange = (e) => {
+    // Giả lập tải file lên và nhận URL
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        // Thông thường sẽ upload lên server và nhận URL thật
+        // Ở đây giả lập với một URL từ Unsplash
+        const imageUrl = "https://images.unsplash.com/photo-1603988363607-e1e4a66962c6";
+        setNewEvent({
+          ...newEvent,
+          image: imageUrl
+        });
+        setImagePreview(imageUrl);
+        
+        if (errors.image) {
+          setErrors({
+            ...errors,
+            image: null
+          });
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
         <div className="p-6">
-          <div className="flex items-center mb-6">
-            <MdSportsSoccer className="text-green-500 mr-3" size={30} />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sự kiện thể thao</h1>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <MdSportsSoccer className="text-green-500 mr-3" size={30} />
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sự kiện thể thao</h1>
+            </div>
+            
+            {/* Nút tạo sự kiện mới */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors"
+            >
+              <FaPlusCircle className="mr-2" />
+              Tạo sự kiện mới
+            </button>
           </div>
           
           <p className="text-gray-600 dark:text-gray-300 mb-6">
@@ -278,6 +433,208 @@ export default function SportEvent() {
           )}
         </div>
       </div>
+      
+      {/* Modal tạo sự kiện mới */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <FaPlusCircle className="mr-2 text-green-500" />
+                  Tạo sự kiện mới
+                </h2>
+                <button 
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <FaTimes size={24} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreateEvent}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {/* Tên sự kiện */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tên sự kiện *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={newEvent.name}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border ${errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                      placeholder="Nhập tên sự kiện"
+                    />
+                    {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+                  </div>
+                  
+                  {/* Ngày */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Ngày *
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={newEvent.date}
+                      onChange={handleInputChange}
+                      min={moment().format('YYYY-MM-DD')}
+                      className={`w-full p-2 border ${errors.date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    />
+                    {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
+                  </div>
+                  
+                  {/* Giờ */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Giờ *
+                    </label>
+                    <input
+                      type="time"
+                      name="time"
+                      value={newEvent.time}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border ${errors.time ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    />
+                    {errors.time && <p className="mt-1 text-sm text-red-500">{errors.time}</p>}
+                  </div>
+                  
+                  {/* Địa điểm */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Địa điểm *
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={newEvent.location}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border ${errors.location ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                      placeholder="Nhập địa điểm tổ chức"
+                    />
+                    {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
+                  </div>
+                  
+                  {/* Thể loại */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Thể loại *
+                    </label>
+                    <select
+                      name="category"
+                      value={newEvent.category}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border ${errors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    >
+                      <option value="">Chọn thể loại</option>
+                      {['Running', 'Cycling', 'Yoga', 'Basketball', 'Swimming'].map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
+                  </div>
+                  
+                  {/* Số người tham gia tối đa */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Số người tham gia tối đa *
+                    </label>
+                    <input
+                      type="number"
+                      name="maxParticipants"
+                      value={newEvent.maxParticipants}
+                      onChange={handleInputChange}
+                      min="1"
+                      className={`w-full p-2 border ${errors.maxParticipants ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                      placeholder="Ví dụ: 50"
+                    />
+                    {errors.maxParticipants && <p className="mt-1 text-sm text-red-500">{errors.maxParticipants}</p>}
+                  </div>
+                  
+                  {/* Hình ảnh */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Hình ảnh *
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="image"
+                        value={newEvent.image}
+                        onChange={handleImageChange}
+                        className={`flex-1 p-2 border ${errors.image ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                        placeholder="Nhập URL hình ảnh"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleUploadClick}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
+                      >
+                        <FaUpload className="mr-2" /> Tải lên
+                      </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </div>
+                    {errors.image && <p className="mt-1 text-sm text-red-500">{errors.image}</p>}
+                    
+                    {/* Image preview */}
+                    {imagePreview && (
+                      <div className="mt-3">
+                        <div className="relative w-full h-40">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover rounded-md border border-gray-300 dark:border-gray-600"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Mô tả */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Mô tả *
+                    </label>
+                    <textarea
+                      name="description"
+                      value={newEvent.description}
+                      onChange={handleInputChange}
+                      rows="4"
+                      className={`w-full p-2 border ${errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                      placeholder="Mô tả chi tiết về sự kiện"
+                    ></textarea>
+                    {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                  >
+                    Tạo sự kiện
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

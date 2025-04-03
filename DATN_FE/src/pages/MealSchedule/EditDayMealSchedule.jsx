@@ -18,7 +18,8 @@ const EditDayMealSchedule = () => {
         { id: 1, name: 'Bữa sáng', type: 'Sáng', time: '07:00', calories: 400, nutrients: { protein: 20, carbs: 30, fat: 10 } },
         { id: 2, name: 'Bữa trưa', type: 'Trưa', time: '12:00', calories: 600, nutrients: { protein: 30, carbs: 40, fat: 20 } },
         { id: 3, name: 'Bữa tối', type: 'Tối', time: '18:00', calories: 500, nutrients: { protein: 25, carbs: 35, fat: 15 } }
-      ]
+      ],
+      date : new Date().toISOString().split('T')[0]
     });
   }, []);
 

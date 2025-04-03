@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCalendarAlt, FaArrowLeft, FaArrowRight, FaCheckCircle, FaRegClock, FaList, FaRegCalendarCheck, FaExclamationCircle, FaUtensils, FaChartLine, FaCheckSquare, FaBell, FaRegEdit, FaCalendarDay } from 'react-icons/fa';
 import MealProgress from './components/MealProgress';
+import { toast } from 'react-hot-toast';
 
 export default function MyMealSchedule() {
   const navigate = useNavigate();
@@ -11,6 +12,49 @@ export default function MyMealSchedule() {
   const [currentWeek, setCurrentWeek] = useState(getCurrentWeek());
   const [daysInWeek, setDaysInWeek] = useState([]);
   const [recentDays, setRecentDays] = useState([]);
+  const [currentMeals, setCurrentMeals] = useState([]);
+
+  // Thêm state và ref để theo dõi bữa ăn đã hoàn thành
+  const [completedMealIds, setCompletedMealIds] = useState(() => {
+    const saved = localStorage.getItem('completedMealIds');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const completedMealIdsRef = useRef(completedMealIds);
+  
+  // Cập nhật ref khi state thay đổi
+  useEffect(() => {
+    completedMealIdsRef.current = completedMealIds;
+    localStorage.setItem('completedMealIds', JSON.stringify(completedMealIds));
+  }, [completedMealIds]);
+  
+  // Hàm đánh dấu bữa ăn hoàn thành
+  const markMealAsCompleted = (mealId) => {
+    // Cập nhật state với bản sao mới
+    const newCompletedMealIds = [...completedMealIdsRef.current, mealId];
+    setCompletedMealIds(newCompletedMealIds);
+    
+    // Cập nhật meals state
+    setCurrentMeals(prevMeals => 
+      prevMeals.map(item => 
+        item.id === mealId ? { ...item, completed: true } : item
+      )
+    );
+    
+    // Hiển thị thông báo
+    toast.success('Đã hoàn thành!');
+    
+    // Force re-render nếu cần
+    setForceUpdate(prev => prev + 1);
+  };
+  
+  // Thêm state riêng biệt để force re-render
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // Kiểm tra xem bữa ăn có hoàn thành hay không
+  const isMealCompleted = (mealId) => {
+    return completedMealIds.includes(mealId) || 
+           currentMeals.some(meal => meal.id === mealId && meal.completed);
+  };
 
   // Lấy ngày đầu tiên của tuần hiện tại
   function getCurrentWeek() {
@@ -95,8 +139,8 @@ export default function MyMealSchedule() {
           id: 1,
           title: 'Thực đơn giảm cân 7 ngày',
           image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-          startDate: '2024-01-10T00:00:00Z',
-          endDate: '2024-01-16T23:59:59Z',
+          startDate: '2025-04-02T00:00:00Z',
+          endDate: '2025-04-08T23:59:59Z',
           duration: 7,
           progress: 40,
           completedDays: 2,
@@ -115,8 +159,8 @@ export default function MyMealSchedule() {
           id: 2,
           title: 'Thực đơn tăng cơ 14 ngày',
           image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
-          startDate: '2024-01-05T00:00:00Z',
-          endDate: '2024-01-18T23:59:59Z',
+          startDate: '2025-04-05T00:00:00Z',
+          endDate: '2025-04-18T23:59:59Z',
           duration: 14,
           progress: 70,
           completedDays: 10,
@@ -154,6 +198,7 @@ export default function MyMealSchedule() {
       setRecentDays(recentDaysData);
       setActiveMealPlans(mockData);
       setSelectedPlan(mockData[0]);
+      setCurrentMeals(mockData[0].todayMeals);
       setLoading(false);
     }, 800);
   }, []);
@@ -175,7 +220,7 @@ export default function MyMealSchedule() {
     <div className="min-h-screen py-6 px-4 md:px-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
-          <FaCalendarAlt className="mr-2 text-green-600" /> Lịch thực đơn của tôi
+          <FaCalendarAlt className="mr-2 text-green-600" /> Thực đơn của tôi
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Theo dõi và quản lý thực đơn hàng ngày của bạn
@@ -355,14 +400,14 @@ export default function MyMealSchedule() {
                         <div 
                           key={meal.id}
                           className={`p-3 rounded-lg border ${
-                            meal.completed 
+                            isMealCompleted(meal.id) 
                               ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/10' 
                               : 'border-gray-200 dark:border-gray-700'
                           }`}
                         >
                           <div className="flex justify-between items-center">
                             <div className="flex items-center">
-                              {meal.completed && (
+                              {isMealCompleted(meal.id) && (
                                 <div className="mr-2 text-green-600 dark:text-green-400">
                                   <FaCheckCircle />
                                 </div>
@@ -374,13 +419,22 @@ export default function MyMealSchedule() {
                             </div>
                             <div className="text-right">
                               <span className="text-sm font-medium text-gray-900 dark:text-white">{meal.calories} kcal</span>
-                              {!meal.completed && (
+                              {!isMealCompleted(meal.id) ? (
                                 <button 
                                   className="block mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                  onClick={() => navigate(`/schedule/eat-schedule/mark-complete/${meal.id}`)}
+                                  onClick={() => markMealAsCompleted(meal.id)}
                                 >
                                   Đánh dấu hoàn thành
                                 </button>
+                              ) : (
+                                <div className="flex items-center justify-end mt-1">
+                                  <span className="text-xs text-green-600 dark:text-green-400 flex items-center">
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                                    </svg>
+                                    Đã hoàn thành
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -390,14 +444,20 @@ export default function MyMealSchedule() {
                     
                     <div className="mt-4 flex justify-between">
                       <button
-                        onClick={() => navigate(`/schedule/eat-schedule/edit-today`)}
+                        onClick={() => {
+                          // Lấy ngày hiện tại và định dạng thành YYYY-MM-DD
+                          const today = new Date().toISOString().split('T')[0];
+                          
+                          // Điều hướng đến trang edit với tham số ngày hiện tại
+                          navigate(`/schedule/eat-schedule/edit/${today}`);
+                        }}
                         className="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                       >
                         <FaRegEdit className="mr-1" /> Điều chỉnh các bữa ăn
                       </button>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <span className="font-medium text-green-600 dark:text-green-400">
-                          {selectedPlan.todayMeals.filter(m => m.completed).length}/{selectedPlan.todayMeals.length}
+                          {selectedPlan.todayMeals.filter(m => isMealCompleted(m.id)).length}/{selectedPlan.todayMeals.length}
                         </span> bữa ăn đã hoàn thành
                       </div>
                     </div>
