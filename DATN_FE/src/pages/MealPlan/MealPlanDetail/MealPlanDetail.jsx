@@ -194,7 +194,7 @@ export default function MealPlanDetail() {
   // Chuyển hướng đến trang lịch thực đơn
   const goToMealSchedule = () => {
     setShowSuccessModal(false);
-    navigate('/schedule/eat-schedule');
+    navigate('/schedule/my-eat-schedule');
   };
 
   const handleShare = () => {
@@ -644,7 +644,7 @@ export default function MealPlanDetail() {
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
               >
                 <MdDateRange className="mr-2" />
-                Đi đến lịch thực đơn của tôi
+                Đi đến trang thực đơn của tôi
               </button>
               <button 
                 onClick={() => setShowSuccessModal(false)}

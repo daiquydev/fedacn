@@ -23,7 +23,8 @@ import {
   MealAlternativesPage,
   MealStats,
   MealCompleted,
-  MealReminders
+  MealReminders,
+  MealPlanEdit
 } from './pages/MealSchedule'
 import MealPlanManagement from './pages/MealSchedule/MealPlanManagement'
 
@@ -585,6 +586,16 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <MealReminders />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/schedule/eat-plan/edit/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MealPlanEdit />
               </Suspense>
             </MainLayout>
           )

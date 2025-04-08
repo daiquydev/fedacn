@@ -11,7 +11,7 @@ const mockEvents = [
   {
     id: 1,
     name: "Summer Marathon 2024",
-    date: "2024-06-15T07:00:00Z",
+    date: "2025-06-15T07:00:00Z",
     location: "City Park",
     category: "Running",
     participants: 215,
@@ -23,7 +23,7 @@ const mockEvents = [
   {
     id: 2,
     name: "Cycling Tour",
-    date: "2024-07-10T08:30:00Z",
+    date: "2025-07-10T08:30:00Z",
     location: "Countryside Route",
     category: "Cycling",
     participants: 78,
@@ -35,7 +35,7 @@ const mockEvents = [
   {
     id: 3,
     name: "Yoga in the Park",
-    date: "2024-05-25T16:00:00Z",
+    date: "2025-05-25T16:00:00Z",
     location: "Harmony Garden",
     category: "Yoga",
     participants: 45,
@@ -47,7 +47,7 @@ const mockEvents = [
   {
     id: 7,
     name: "Basketball Tournament",
-    date: "2024-08-05T14:00:00Z",
+    date: "2025-08-05T14:00:00Z",
     location: "City Sports Center",
     category: "Basketball",
     participants: 120,
@@ -59,7 +59,7 @@ const mockEvents = [
   {
     id: 8,
     name: "Swimming Challenge",
-    date: "2024-07-20T09:00:00Z",
+    date: "2025-07-20T09:00:00Z",
     location: "Olympic Pool",
     category: "Swimming",
     participants: 55,
@@ -71,7 +71,7 @@ const mockEvents = [
   {
     id: 9,
     name: "Trail Running Adventure",
-    date: "2024-09-12T07:30:00Z",
+    date: "2025-09-12T07:30:00Z",
     location: "Mountain Trails",
     category: "Running",
     participants: 89,

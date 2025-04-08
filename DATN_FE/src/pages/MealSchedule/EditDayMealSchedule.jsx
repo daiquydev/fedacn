@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaTrash, FaPlus, FaSave, FaTimes } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
+import EditMealModal from './components/EditMealModal';
 
 const EditDayMealSchedule = () => {
   const navigate = useNavigate();
@@ -24,8 +26,27 @@ const EditDayMealSchedule = () => {
   }, []);
 
   const handleEditMeal = (id) => {
-    setSelectedMeal(dayData.meals.find(meal => meal.id === id));
-    setEditModalOpen(true);
+    try {
+      // Kiểm tra dayData và dayData.meals tồn tại
+      if (!dayData || !dayData.meals) {
+        toast.error('Dữ liệu không khả dụng, vui lòng tải lại trang');
+        return;
+      }
+      
+      //Tìm meal và kiểm tra tồn tại
+      const mealToEdit = dayData.meals.find(meal => meal.id === id);
+      if (!mealToEdit) {
+        toast.error('Không tìm thấy bữa ăn, vui lòng tải lại trang');
+        return;
+      }
+      
+      // Set selected meal và mở modal
+      setSelectedMeal(mealToEdit);
+      setEditModalOpen(true);
+    } catch (error) {
+      console.error('Lỗi khi chỉnh sửa bữa ăn:', error);
+      toast.error('Có lỗi xảy ra khi chỉnh sửa bữa ăn');
+    }
   };
 
   const handleDeleteMeal = (id) => {
@@ -37,8 +58,54 @@ const EditDayMealSchedule = () => {
   };
 
   const handleAddMeal = () => {
-    setSelectedMeal(null);
-    setEditModalOpen(true);
+    try {
+      // Kiểm tra dayData tồn tại
+      if (!dayData) {
+        toast.error('Dữ liệu không khả dụng, vui lòng tải lại trang');
+        return false;
+      }
+      
+      // Tạo ID đúng loại - sử dụng số nguyên thay vì string nếu các ID hiện tại là số
+      const maxId = dayData.meals.reduce((max, meal) => Math.max(max, typeof meal.id === 'number' ? meal.id : 0), 0);
+      const newId = maxId + 1;
+      
+      // Tạo bữa ăn mới với cấu trúc phù hợp
+      const newMeal = {
+        id: newId,
+        name: "Bữa ăn mới",
+        type: "Khác",
+        time: "12:00", 
+        calories: 0,
+        nutrients: { // Đảm bảo cấu trúc giống với các bữa ăn hiện có
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        }
+      };
+      
+      // Cập nhật state
+      setDayData(prevData => ({
+        ...prevData,
+        meals: [...prevData.meals, newMeal]
+      }));
+      
+      // Đánh dấu có thay đổi
+      setUnsavedChanges(true);
+      
+      // // Tự động chỉnh sửa bữa ăn mới tạo
+      // setTimeout(() => {
+      //   handleEditMeal(newId);
+      // }, 100);
+      
+      // Thông báo thành công
+      toast.success('Đã thêm bữa ăn mới');
+      
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi thêm bữa ăn mới:', error);
+      toast.error('Có lỗi xảy ra khi thêm bữa ăn mới');
+      return false;
+    }
   };
 
   const handleSaveEditedMeal = (meal) => {
@@ -230,12 +297,30 @@ const EditDayMealSchedule = () => {
         </div>
       </div>
       
-      {editModalOpen && (
+      {editModalOpen && selectedMeal && (
         <EditMealModal
           meal={selectedMeal}
-          onClose={() => setEditModalOpen(false)}
-          onSave={selectedMeal ? handleSaveEditedMeal : handleSaveNewMeal}
-          isNew={!selectedMeal}
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedMeal(null);
+          }}
+          onSave={(updatedMeal) => {
+            try {
+              if (!updatedMeal || !updatedMeal.id) {
+                throw new Error('Dữ liệu không hợp lệ');
+              }
+              
+              if (dayData.meals.some(m => m.id === updatedMeal.id)) {
+                handleSaveEditedMeal(updatedMeal);
+              } else {
+                handleSaveNewMeal(updatedMeal);
+              }
+            } catch (error) {
+              console.error('Lỗi khi lưu bữa ăn:', error);
+              toast.error('Có lỗi xảy ra khi lưu bữa ăn');
+            }
+          }}
+          isNew={false}
         />
       )}
     </div>

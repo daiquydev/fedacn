@@ -18,6 +18,7 @@ import { currentAccount, updateRequest } from '../../../apis/userApi'
 import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
 import { FaUtensils } from 'react-icons/fa'
+import { IoIosArrowForward } from 'react-icons/io'
 
 export default function SideBar() {
   let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
@@ -34,6 +35,8 @@ export default function SideBar() {
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 60
   })
+
+  const [openMenus, setOpenMenus] = useState({})
 
   const checkSubmenu = () => {
     if (userData?.data.result[0]?.role === 1) {
@@ -282,19 +285,32 @@ export default function SideBar() {
               </li>
 
               {(open || isTabletMid) && (
-                <div className='border-y py-5 border-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Người dùng</small>
-                  {subMenusList?.map((menu) => (
-                    <div key={menu.name} className='flex flex-col gap-1'>
-                      <Submenu data={menu} />
-                    </div>
-                  ))}
+                <div className='border-y py-4 border-slate-300 dark:border-slate-700'>
+                  <small className='pl-3 text-slate-500 dark:text-slate-400 font-medium inline-block mb-2'>
+                    Người dùng
+                  </small>
+                  <div className='flex flex-col'>
+                    {subMenusList?.map((menu) => (
+                      <div key={menu.name} className='mb-1 last:mb-0'>
+                        <Submenu 
+                          data={menu} 
+                          isOpen={openMenus[menu.name]}
+                          onToggle={() => {
+                            setOpenMenus(prev => ({
+                              ...prev,
+                              [menu.name]: !prev[menu.name]
+                            }))
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <li>
-                <NavLink to={'/bookmark'} className='link-custom '>
+                <NavLink to={'/bookmark'} className='link-custom'>
                   <MdBook size={25} className='min-w-max' />
-                  Mục đã lưu
+                  <span className='font-medium'>Mục đã lưu</span>
                 </NavLink>
               </li>
             </ul>

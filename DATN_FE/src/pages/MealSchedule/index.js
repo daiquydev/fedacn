@@ -10,3 +10,4 @@ export { default as MealPlanManagement } from './MealPlanManagement';
 export { default as MealStats } from './MealStats';
 export { default as MealCompleted } from './MealCompleted';
 export { default as MealReminders } from './MealReminders';
+export { default as MealPlanEdit } from './MealPlanEdit';

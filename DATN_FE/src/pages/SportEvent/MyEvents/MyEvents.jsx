@@ -39,7 +39,7 @@ const mockJoinedEvents = [
     category: "Basketball",
     participants: 68,
     maxParticipants: 80,
-    image: "https://images.unsplash.com/photo-1546519638-68e109acd27d",
+    image: "https://www.secsports.com/imgproxy/zIXmm0sfOOiSX42VjM_P7d0A64oGOkV0uBY1G-vFkrM/rs:fit:1980:0:0:g:ce/aHR0cHM6Ly9zdG9yYWdlLmdvb2dsZWFwaXMuY29tL3NlY3Nwb3J0cy1wcm9kL3VwbG9hZC8yMDI0LzAxLzMxLzQ5MTYyMTUxLWI0ZjQtNDhkNC1hMGJlLWU4YjhjNDNhMWNmNi5qcGc.jpg",
     isJoined: true,
     joinDate: "2024-03-20T09:15:00Z"
   }
