@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
-import { FaTimes, FaUpload, FaUtensils, FaCalendarAlt, FaTag, FaPlus, FaTrash, FaArrowLeft, FaArrowRight, FaGripLines } from 'react-icons/fa'
+import { useState, useRef, useEffect } from 'react'
+import { FaTimes, FaUpload, FaUtensils, FaCalendarAlt, FaTag, FaPlus, FaTrash, FaArrowLeft, FaArrowRight, FaGripLines, FaSearch, FaFilter } from 'react-icons/fa'
 import { IoMdTime } from 'react-icons/io'
+import { MdClose, MdFastfood } from 'react-icons/md'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 
@@ -19,27 +20,15 @@ export default function CreateMealPlanModal({ onClose }) {
       meals: [
         { 
           type: 'Sáng', 
-          content: '', 
-          calories: '', 
-          protein: '', 
-          carbs: '', 
-          fat: '' 
+          foods: []
         },
         { 
           type: 'Trưa', 
-          content: '', 
-          calories: '', 
-          protein: '', 
-          carbs: '', 
-          fat: '' 
+          foods: []
         },
         { 
           type: 'Tối', 
-          content: '', 
-          calories: '', 
-          protein: '', 
-          carbs: '', 
-          fat: '' 
+          foods: []
         },
       ]
     }
@@ -47,11 +36,121 @@ export default function CreateMealPlanModal({ onClose }) {
   const [activeDay, setActiveDay] = useState(1)
   const [imagePreview, setImagePreview] = useState(null)
   const [notes, setNotes] = useState('')
+  const [errors, setErrors] = useState({
+    title: false,
+    description: false,
+    image: false,
+    meals: {}
+  })
+
+  // Thêm các state để quản lý việc chọn món ăn
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [selectedMealIndex, setSelectedMealIndex] = useState(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [availableFoods, setAvailableFoods] = useState([]);
 
   const categories = [
     'Giảm cân', 'Tăng cơ', 'Ăn sạch', 'Thuần chay', 
     'Gia đình', 'Keto', 'Dinh dưỡng thể thao'
   ]
+
+  // Khởi tạo mock data cho các món ăn
+  useEffect(() => {
+    const foodsData = [
+      {
+        id: 'f1',
+        name: 'Yến mạch sữa hạnh nhân',
+        category: 'Sáng',
+        calories: 320,
+        protein: 12,
+        carbs: 45,
+        fat: 10,
+        image: 'https://images.unsplash.com/photo-1517747614396-d21a78b850e8?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
+      },
+      {
+        id: 'f2',
+        name: 'Salad gà nướng',
+        category: 'Trưa',
+        calories: 450,
+        protein: 35,
+        carbs: 25,
+        fat: 20,
+        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'
+      },
+      {
+        id: 'f3',
+        name: 'Cá hồi nướng với măng tây',
+        category: 'Tối',
+        calories: 480,
+        protein: 30,
+        carbs: 40,
+        fat: 15,
+        image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'
+      },
+      {
+        id: 'f4',
+        name: 'Sữa chua Hy Lạp với quả mọng',
+        category: 'Snack',
+        calories: 180,
+        protein: 15,
+        carbs: 15,
+        fat: 5,
+        image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho 150g sữa chua Hy Lạp vào bát.</li><li>Thêm hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi).</li><li>Có thể thêm một ít hạt chia và mật ong (tùy chọn).</li></ol>'
+      },
+      {
+        id: 'f5',
+        name: 'Bánh mì nguyên cám với trứng',
+        category: 'Sáng',
+        calories: 350,
+        protein: 18,
+        carbs: 40,
+        fat: 12,
+        image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nướng bánh mì nguyên cám.</li><li>Chiên trứng với chút dầu olive.</li><li>Đặt trứng lên bánh mì, thêm rau xanh và gia vị.</li></ol>'
+      },
+      {
+        id: 'f6',
+        name: 'Cơm gạo lứt với đậu hũ',
+        category: 'Trưa',
+        calories: 420,
+        protein: 20,
+        carbs: 65,
+        fat: 8,
+        image: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với nước theo tỉ lệ 1:2.</li><li>Cắt đậu hũ thành khối vuông và ướp với xì dầu, tỏi.</li><li>Chiên hoặc nướng đậu hũ đến khi vàng.</li><li>Phục vụ với rau xanh và sốt.</li></ol>'
+      },
+      {
+        id: 'f7',
+        name: 'Sinh tố protein',
+        category: 'Snack',
+        calories: 280,
+        protein: 24,
+        carbs: 30,
+        fat: 8,
+        image: 'https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1 muỗng bột protein, 240ml sữa hạnh nhân, 1 muỗng bơ đậu phộng.</li><li>Xay đến khi mịn.</li></ol>'
+      },
+      {
+        id: 'f8',
+        name: 'Thịt gà nướng rau củ',
+        category: 'Tối',
+        calories: 450,
+        protein: 40,
+        carbs: 30,
+        fat: 15,
+        image: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt gà với gia vị, dầu olive trong 30 phút.</li><li>Cắt rau củ thành miếng vừa.</li><li>Xếp thịt gà và rau củ vào khay nướng.</li><li>Nướng ở 200°C trong khoảng 25-30 phút.</li></ol>'
+      },
+    ];
+    
+    setAvailableFoods(foodsData);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -78,21 +177,66 @@ export default function CreateMealPlanModal({ onClose }) {
     }
   }
 
-  const handleMealChange = (dayIndex, mealIndex, field, value) => {
-    const updatedMealDays = [...mealDays]
-    updatedMealDays[dayIndex].meals[mealIndex][field] = value
-    setMealDays(updatedMealDays)
-  }
+  // Hàm tính tổng dinh dưỡng cho một bữa ăn
+  const calculateMealNutrition = (foods) => {
+    return foods.reduce((total, food) => {
+      return {
+        calories: total.calories + (food.calories || 0),
+        protein: total.protein + (food.protein || 0),
+        carbs: total.carbs + (food.carbs || 0),
+        fat: total.fat + (food.fat || 0)
+      };
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  };
+
+  // Mở modal chọn món ăn
+  const openFoodSelector = (dayIndex, mealIndex) => {
+    setSelectedDayIndex(dayIndex);
+    setSelectedMealIndex(mealIndex);
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setShowFoodModal(true);
+  };
+
+  // Thêm món ăn vào bữa ăn
+  const addFoodToMeal = (food) => {
+    const updatedMealDays = [...mealDays];
+    const uniqueId = `${food.id}-${Date.now()}`;
+    
+    // Thêm món ăn với ID duy nhất để tránh trùng lặp
+    updatedMealDays[selectedDayIndex].meals[selectedMealIndex].foods.push({
+      ...food,
+      uniqueId
+    });
+    
+    setMealDays(updatedMealDays);
+  };
+
+  // Xóa món ăn khỏi bữa ăn
+  const removeFoodFromMeal = (dayIndex, mealIndex, foodUniqueId) => {
+    const updatedMealDays = [...mealDays];
+    updatedMealDays[dayIndex].meals[mealIndex].foods = 
+      updatedMealDays[dayIndex].meals[mealIndex].foods.filter(
+        food => food.uniqueId !== foodUniqueId
+      );
+    
+    setMealDays(updatedMealDays);
+  };
+
+  // Lọc danh sách món ăn theo từ khóa và danh mục
+  const getFilteredFoods = () => {
+    return availableFoods.filter(food => {
+      const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || food.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  };
 
   const handleAddMeal = (dayIndex) => {
     const updatedMealDays = [...mealDays]
     updatedMealDays[dayIndex].meals.push({ 
       type: 'Snack', 
-      content: '', 
-      calories: '', 
-      protein: '', 
-      carbs: '', 
-      fat: '' 
+      foods: []
     })
     setMealDays(updatedMealDays)
   }
@@ -105,15 +249,22 @@ export default function CreateMealPlanModal({ onClose }) {
     setMealDays(updatedMealDays)
   }
 
+  // Hàm cập nhật tên bữa ăn
+  const handleMealTypeChange = (dayIndex, mealIndex, value) => {
+    const updatedMealDays = [...mealDays];
+    updatedMealDays[dayIndex].meals[mealIndex].type = value;
+    setMealDays(updatedMealDays);
+  };
+
   // Thêm hàm thêm ngày mới
   const handleAddDay = () => {
     const newDay = {
       id: `day-${Date.now()}`, // tạo id duy nhất
       day: mealDays.length + 1,
       meals: [
-        { type: 'Sáng', content: '', calories: '', protein: '', carbs: '', fat: '' },
-        { type: 'Trưa', content: '', calories: '', protein: '', carbs: '', fat: '' },
-        { type: 'Tối', content: '', calories: '', protein: '', carbs: '', fat: '' },
+        { type: 'Sáng', foods: [] },
+        { type: 'Trưa', foods: [] },
+        { type: 'Tối', foods: [] },
       ]
     }
     setMealDays(prev => [...prev, newDay])
@@ -189,8 +340,6 @@ export default function CreateMealPlanModal({ onClose }) {
   const handleDragOver = (e, targetDayIndex) => {
     e.preventDefault()
     if (draggedDayIndex === null || draggedDayIndex === targetDayIndex) return
-    
-    // Hiển thị visual feedback ở đây nếu cần
   }
   
   const handleDrop = (e, targetDayIndex) => {
@@ -218,12 +367,52 @@ export default function CreateMealPlanModal({ onClose }) {
     setDraggedDayIndex(null)
   }
 
+  const validateForm = () => {
+    const newErrors = {
+      title: formData.title.trim() === '',
+      description: formData.description.trim() === '',
+      image: !formData.image,
+      meals: {}
+    }
+    
+    let isValid = !newErrors.title && !newErrors.description && !newErrors.image
+    
+    // Kiểm tra tất cả các bữa ăn trong tất cả các ngày
+    mealDays.forEach((day, dayIndex) => {
+      if (!newErrors.meals[dayIndex]) newErrors.meals[dayIndex] = {}
+      
+      day.meals.forEach((meal, mealIndex) => {
+        if (!newErrors.meals[dayIndex][mealIndex]) newErrors.meals[dayIndex][mealIndex] = {}
+        
+        // Kiểm tra loại bữa ăn
+        const typeEmpty = meal.type.trim() === ''
+        newErrors.meals[dayIndex][mealIndex].type = typeEmpty
+        
+        // Kiểm tra xem có món ăn nào không
+        const noFoods = meal.foods.length === 0
+        newErrors.meals[dayIndex][mealIndex].foods = noFoods
+        
+        if (typeEmpty || noFoods) {
+          isValid = false
+        }
+      })
+    })
+    
+    setErrors(newErrors)
+    return isValid
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
-    // Here you would typically send the data to your backend
-    // For now, we'll just log it and close the modal
-    console.log({ ...formData, mealDays, notes })
-    onClose()
+    
+    if (validateForm()) {
+      // Form hợp lệ, tiến hành submit
+      console.log({ ...formData, mealDays, notes })
+      onClose()
+    } else {
+      // Hiển thị thông báo lỗi
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   return (
@@ -244,6 +433,18 @@ export default function CreateMealPlanModal({ onClose }) {
         
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Thêm thông báo lỗi ở đầu form nếu có */}
+          {(errors.title || errors.description || errors.image) && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400">
+              <p className="font-medium">Vui lòng điền đầy đủ thông tin:</p>
+              <ul className="mt-2 pl-5 list-disc">
+                {errors.title && <li>Tên thực đơn không được để trống</li>}
+                {errors.description && <li>Mô tả không được để trống</li>}
+                {errors.image && <li>Vui lòng tải lên ảnh đại diện</li>}
+              </ul>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Left column - Basic info */}
             <div className="md:col-span-1 space-y-5">
@@ -310,8 +511,9 @@ export default function CreateMealPlanModal({ onClose }) {
                   onChange={handleInputChange}
                   required
                   placeholder="Ví dụ: Thực đơn giảm cân 7 ngày"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
+                  className={`w-full px-4 py-3 border ${errors.title ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm`}
                 />
+                {errors.title && <p className="mt-1 text-sm text-red-600 dark:text-red-400">Vui lòng nhập tên thực đơn</p>}
               </div>
               
                 <div>
@@ -325,8 +527,9 @@ export default function CreateMealPlanModal({ onClose }) {
                   required
                   placeholder="Mô tả ngắn gọn về thực đơn của bạn"
                   rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
+                  className={`w-full px-4 py-3 border ${errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm`}
                 />
+                {errors.description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">Vui lòng nhập mô tả thực đơn</p>}
               </div>
               
                 <div>
@@ -476,84 +679,131 @@ export default function CreateMealPlanModal({ onClose }) {
                           Chi tiết Ngày {day.day}
                         </h4>
                         
-                        {day.meals.map((meal, mealIndex) => (
-                          <div key={mealIndex} className="mb-6 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md">
-                            <div className="flex justify-between items-center mb-3">
-                              <div className="flex items-center">
-                                <input
-                                  type="text"
-                                  value={meal.type}
-                                  onChange={(e) => handleMealChange(dayIndex, mealIndex, 'type', e.target.value)}
-                                  className="font-medium text-green-600 dark:text-green-400 border-none py-1 px-2 rounded focus:ring-2 focus:ring-green-500 bg-transparent text-lg"
-                                  placeholder="Loại bữa ăn"
-                                />
+                        {day.meals.map((meal, mealIndex) => {
+                          // Tính tổng dinh dưỡng cho bữa ăn
+                          const mealNutrition = calculateMealNutrition(meal.foods);
+                          
+                          return (
+                            <div key={mealIndex} className="mb-6 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md">
+                              <div className="flex justify-between items-center mb-3">
+                                <div className="flex items-center">
+                                  <input
+                                    type="text"
+                                    value={meal.type}
+                                    onChange={(e) => handleMealTypeChange(dayIndex, mealIndex, e.target.value)}
+                                    className={`font-medium text-green-600 dark:text-green-400 border-none py-1 px-2 rounded focus:ring-2 focus:ring-green-500 bg-transparent text-lg ${errors.meals[dayIndex]?.[mealIndex]?.type ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
+                                    placeholder="Loại bữa ăn"
+                                  />
+                                  {errors.meals[dayIndex]?.[mealIndex]?.type && (
+                                    <span className="text-red-500 ml-2 text-sm">*</span>
+                                  )}
+                                </div>
+                                
+                                {day.meals.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveMeal(dayIndex, mealIndex)}
+                                    className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                  >
+                                    <FaTimes className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                               
-                              {day.meals.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMeal(dayIndex, mealIndex)}
-                                  className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                >
-                                  <FaTimes className="w-4 h-4" />
-                                </button>
-                              )}
+                              {/* Hiển thị thông tin dinh dưỡng tổng hợp */}
+                              <div className="grid grid-cols-4 gap-3 mb-4">
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Calo</label>
+                                  <div className="font-medium text-gray-800 dark:text-gray-200">
+                                    {mealNutrition.calories || 0} <span className="text-xs text-gray-500">Kcal</span>
+                                  </div>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Protein</label>
+                                  <div className="font-medium text-gray-800 dark:text-gray-200">
+                                    {mealNutrition.protein || 0} <span className="text-xs text-gray-500">g</span>
+                                  </div>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Carbs</label>
+                                  <div className="font-medium text-gray-800 dark:text-gray-200">
+                                    {mealNutrition.carbs || 0} <span className="text-xs text-gray-500">g</span>
+                                  </div>
+                                </div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Chất béo</label>
+                                  <div className="font-medium text-gray-800 dark:text-gray-200">
+                                    {mealNutrition.fat || 0} <span className="text-xs text-gray-500">g</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Hiển thị danh sách món ăn đã chọn */}
+                              <div className="mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Danh sách món ăn:</h5>
+                                  <button
+                                    type="button"
+                                    onClick={() => openFoodSelector(dayIndex, mealIndex)}
+                                    className="text-sm flex items-center text-green-600 dark:text-green-500 hover:text-green-700 dark:hover:text-green-400"
+                                  >
+                                    <FaPlus className="mr-1" /> Thêm món ăn
+                                  </button>
+                                </div>
+                                
+                                {meal.foods.length === 0 ? (
+                                  <div className="py-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-750 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                                    <MdFastfood className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" />
+                                    <p className="text-sm">Chưa có món ăn nào được chọn</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => openFoodSelector(dayIndex, mealIndex)}
+                                      className="mt-3 inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700"
+                                    >
+                                      <FaPlus className="mr-1.5 h-3 w-3" /> Chọn món ăn
+                                    </button>
+                                    {errors.meals[dayIndex]?.[mealIndex]?.foods && (
+                                      <p className="mt-2 text-sm text-red-600 dark:text-red-400">Vui lòng thêm ít nhất một món ăn</p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-3">
+                                    {meal.foods.map((food, foodIndex) => (
+                                      <div key={food.uniqueId} className="flex items-start p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        {food.image && (
+                                          <div className="flex-shrink-0 mr-3">
+                                            <img src={food.image} alt={food.name} className="h-16 w-16 object-cover rounded-md" />
+                                          </div>
+                                        )}
+                                        <div className="flex-grow min-w-0">
+                                          <div className="flex justify-between items-start">
+                                            <h6 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{food.name}</h6>
+                                            <button
+                                              type="button"
+                                              onClick={() => removeFoodFromMeal(dayIndex, mealIndex, food.uniqueId)}
+                                              className="ml-2 text-gray-400 hover:text-red-500"
+                                            >
+                                              <FaTimes />
+                                            </button>
+                                          </div>
+                                          <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-2">
+                                            <span>{food.calories} kcal</span>
+                                            <span>•</span>
+                                            <span>P: {food.protein}g</span>
+                                            <span>•</span> 
+                                            <span>C: {food.carbs}g</span>
+                                            <span>•</span>
+                                            <span>F: {food.fat}g</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            
-                            <div className="mb-4">
-                              <textarea
-                                placeholder="Mô tả chi tiết bữa ăn này (ví dụ: 1 bát phở gà, 1 quả cam, 1 ly nước chanh...)"
-                                value={meal.content}
-                                onChange={(e) => handleMealChange(dayIndex, mealIndex, 'content', e.target.value)}
-                                rows="3"
-                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                              />
-                            </div>
-                            
-                            <div className="grid grid-cols-4 gap-3">
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Calo</label>
-                                <input
-                                  type="text"
-                                  placeholder="Kcal"
-                                  value={meal.calories}
-                                  onChange={(e) => handleMealChange(dayIndex, mealIndex, 'calories', e.target.value)}
-                                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                              </div>
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Protein</label>
-                                <input
-                                  type="text"
-                                  placeholder="g"
-                                  value={meal.protein}
-                                  onChange={(e) => handleMealChange(dayIndex, mealIndex, 'protein', e.target.value)}
-                                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                              </div>
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Carbs</label>
-                                <input
-                                  type="text"
-                                  placeholder="g"
-                                  value={meal.carbs}
-                                  onChange={(e) => handleMealChange(dayIndex, mealIndex, 'carbs', e.target.value)}
-                                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                              </div>
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Chất béo</label>
-                                <input
-                                  type="text"
-                                  placeholder="g"
-                                  value={meal.fat}
-                                  onChange={(e) => handleMealChange(dayIndex, mealIndex, 'fat', e.target.value)}
-                                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                         
                         <button
                           type="button"
@@ -588,6 +838,164 @@ export default function CreateMealPlanModal({ onClose }) {
           </div>
         </form>
       </div>
+
+      {/* Modal chọn món ăn */}
+      {showFoodModal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-60 flex justify-center items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-auto border dark:border-gray-700 flex flex-col">
+            {/* Header modal */}
+            <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-4 rounded-t-xl flex justify-between items-center sticky top-0 z-10">
+              <h2 className="text-lg font-bold flex items-center">
+                <MdFastfood className="mr-2" /> Chọn món ăn
+              </h2>
+              <button 
+                onClick={() => setShowFoodModal(false)}
+                className="text-white hover:text-gray-200 transition-colors p-1 hover:bg-white/10 rounded-full"
+              >
+                <MdClose className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Phần tìm kiếm và lọc - tối ưu layout và bỏ bớt icon */}
+            <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-750 sticky top-[60px] z-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="md:col-span-2 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm kiếm món ăn..."
+                    className="pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                <div className="w-full">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none"
+                    // style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.75rem center", backgroundSize: "1.5em 1.5em"}}
+                  >
+                    <option value="all">Tất cả loại món ăn</option>
+                    <option value="Sáng">Bữa sáng</option>
+                    <option value="Trưa">Bữa trưa</option>
+                    <option value="Tối">Bữa tối</option>
+                    <option value="Snack">Ăn nhẹ</option>
+                  </select>
+                </div>
+              </div>
+              {/* Hiển thị số món đã chọn */}
+              {selectedDayIndex !== null && selectedMealIndex !== null && (
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center">
+                  <div>
+                    Đã chọn: <span className="font-medium text-green-600 dark:text-green-500">
+                      {mealDays[selectedDayIndex].meals[selectedMealIndex].foods.length}
+                    </span> món ăn
+                  </div>
+                  {mealDays[selectedDayIndex].meals[selectedMealIndex].foods.length > 0 && (
+                    <button 
+                      className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
+                      onClick={() => {
+                        const updatedMealDays = [...mealDays];
+                        updatedMealDays[selectedDayIndex].meals[selectedMealIndex].foods = [];
+                        setMealDays(updatedMealDays);
+                      }}
+                    >
+                      Xóa tất cả
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Danh sách món ăn */}
+            <div className="flex-grow overflow-auto p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {getFilteredFoods().length === 0 ? (
+                  <div className="col-span-full py-10 text-center text-gray-500 dark:text-gray-400">
+                    <MdFastfood className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" />
+                    <p>Không tìm thấy món ăn phù hợp</p>
+                  </div>
+                ) : (
+                  getFilteredFoods().map(food => {
+                    // Kiểm tra xem món ăn đã được chọn chưa
+                    const isSelected = selectedDayIndex !== null && 
+                      selectedMealIndex !== null && 
+                      mealDays[selectedDayIndex].meals[selectedMealIndex].foods.some(
+                        f => f.id === food.id
+                      );
+                      
+                    return (
+                      <div 
+                        key={food.id} 
+                        className={`flex bg-white dark:bg-gray-750 rounded-lg border ${isSelected 
+                          ? 'border-green-500 dark:border-green-500 shadow-md ring-2 ring-green-500 ring-opacity-50' 
+                          : 'border-gray-200 dark:border-gray-700'
+                        } overflow-hidden hover:shadow-md transition-all cursor-pointer relative`}
+                        onClick={() => addFoodToMeal(food)}
+                      >
+                        {/* Chỉ báo đã chọn */}
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1.5 z-10 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                        
+                        {food.image && (
+                          <div className="w-24 h-24 flex-shrink-0">
+                            <img src={food.image} alt={food.name} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="p-3 flex-grow min-w-0">
+                          <h5 className="font-medium text-gray-900 dark:text-gray-100 truncate mb-1">
+                            {food.name}
+                          </h5>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            <span className="inline-block px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
+                              {food.category}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-1.5">
+                            <span>{food.calories} kcal</span>
+                            <span>•</span>
+                            <span>P: {food.protein}g</span>
+                            <span>•</span> 
+                            <span>C: {food.carbs}g</span>
+                            <span>•</span>
+                            <span>F: {food.fat}g</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Footer modal */}
+            <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-750 sticky bottom-0">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedDayIndex !== null && selectedMealIndex !== null && (
+                    <>Đã chọn {mealDays[selectedDayIndex].meals[selectedMealIndex].foods.length} món ăn</>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFoodModal(false)}
+                  className="px-4 py-2 font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-colors"
+                >
+                  Hoàn tất
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList } from 'react-icons/fa'
+import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList, FaUtensils } from 'react-icons/fa'
 import { MdFastfood, MdClose, MdSchedule, MdDateRange } from 'react-icons/md'
 import { IoMdTime } from 'react-icons/io'
 import NutritionChart from './components/NutritionChart'
@@ -22,6 +22,10 @@ export default function MealPlanDetail() {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [startDate, setStartDate] = useState(getCurrentDate())
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  
+  // Thêm state để quản lý modal cách chế biến
+  const [showCookingModal, setShowCookingModal] = useState(false)
+  const [activeMeal, setActiveMeal] = useState(null)
   
   // Mock data - in a real app, this would be fetched from an API
   useEffect(() => {
@@ -64,7 +68,8 @@ export default function MealPlanDetail() {
                   calories: 320,
                   protein: 12,
                   carbs: 45,
-                  fat: 10
+                  fat: 10,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
                 },
                 {
                   type: 'Trưa',
@@ -72,7 +77,8 @@ export default function MealPlanDetail() {
                   calories: 450,
                   protein: 35,
                   carbs: 25,
-                  fat: 20
+                  fat: 20,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'
                 },
                 {
                   type: 'Tối',
@@ -80,7 +86,8 @@ export default function MealPlanDetail() {
                   calories: 480,
                   protein: 30,
                   carbs: 40,
-                  fat: 15
+                  fat: 15,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'
                 },
                 {
                   type: 'Snack',
@@ -88,7 +95,8 @@ export default function MealPlanDetail() {
                   calories: 180,
                   protein: 15,
                   carbs: 15,
-                  fat: 5
+                  fat: 5,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho 150g sữa chua Hy Lạp vào bát.</li><li>Thêm hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi).</li><li>Có thể thêm một ít hạt chia và mật ong (tùy chọn).</li></ol>'
                 }
               ]
             },
@@ -213,6 +221,18 @@ export default function MealPlanDetail() {
       month: 'long', 
       day: 'numeric' 
     }).format(date);
+  };
+
+  // Hàm mở modal cách chế biến
+  const handleOpenCookingModal = (meal) => {
+    setActiveMeal(meal);
+    setShowCookingModal(true);
+  };
+
+  // Hàm đóng modal cách chế biến
+  const handleCloseCookingModal = () => {
+    setShowCookingModal(false);
+    setActiveMeal(null);
   };
 
   if (loading) {
@@ -404,7 +424,11 @@ export default function MealPlanDetail() {
             {/* Active day meals */}
             {mealPlan.days.map((day) => (
               day.day === activeDay && (
-                <DayMealPlan key={day.day} day={day} />
+                <DayMealPlan 
+                  key={day.day} 
+                  day={day} 
+                  onViewCooking={handleOpenCookingModal} 
+                />
               )
             ))}
           </div>
@@ -651,6 +675,72 @@ export default function MealPlanDetail() {
                 className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
               >
                 Ở lại trang này
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal hiển thị cách chế biến */}
+      {showCookingModal && activeMeal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 pb-2 border-b dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <FaUtensils className="text-green-600 mr-2" /> 
+                Cách chế biến: {activeMeal.type}
+              </h3>
+              <button 
+                onClick={handleCloseCookingModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <MdClose size={24} />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Thành phần:</h4>
+              <div className="bg-gray-50 dark:bg-gray-750 p-3 rounded-lg mb-4">
+                <p className="text-gray-700 dark:text-gray-300">{activeMeal.content}</p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Thông tin dinh dưỡng:</h4>
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Calories</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{activeMeal.calories}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Protein</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{activeMeal.protein}g</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Carbs</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{activeMeal.carbs}g</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Chất béo</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{activeMeal.fat}g</p>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Hướng dẫn chi tiết:</h4>
+              <div 
+                className="prose prose-sm max-w-none dark:prose-invert bg-gray-50 dark:bg-gray-750 p-4 rounded-lg" 
+                dangerouslySetInnerHTML={{ __html: activeMeal.cooking }}
+              />
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={handleCloseCookingModal}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-colors"
+              >
+                Đóng
               </button>
             </div>
           </div>

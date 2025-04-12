@@ -1,7 +1,7 @@
-import { FaClock, FaFireAlt, FaLeaf, FaFish, FaOilCan } from 'react-icons/fa'
+import { FaClock, FaFireAlt, FaLeaf, FaFish, FaOilCan, FaUtensils } from 'react-icons/fa'
 import { GiWheat } from 'react-icons/gi'
 
-export default function DayMealPlan({ day }) {
+export default function DayMealPlan({ day, onViewCooking }) {
   // Calculate total nutrition for the day
   const totalNutrition = day.meals.reduce(
     (acc, meal) => {
@@ -107,6 +107,19 @@ export default function DayMealPlan({ day }) {
                   <span className="font-medium text-gray-700 dark:text-gray-300">{meal.fat}g</span>
                 </div>
               </div>
+              
+              {/* Thêm nút xem cách chế biến */}
+              {meal.cooking && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => onViewCooking(meal)}
+                    className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm transition-colors text-sm"
+                  >
+                    <FaUtensils className="mr-1.5" />
+                    Xem cách chế biến
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
