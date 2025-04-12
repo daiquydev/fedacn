@@ -56,15 +56,15 @@ const mockChallenge1 = {
     currentValue: 65,
     targetValue: 100,
     streak: 5,
-    lastUpdate: "2024-04-20T10:30:00Z",
+    lastUpdate: "2025-03-20T10:30:00Z",
     rank: 23,
     achievements: [
-      { id: 1, name: "First Mile", icon: "🏃‍♂️", description: "Completed first mile", dateEarned: "2024-04-03T08:15:00Z" },
-      { id: 2, name: "Early Bird", icon: "🌅", description: "5 morning runs", dateEarned: "2024-04-10T06:30:00Z" }
+      { id: 1, name: "First Mile", icon: "🏃‍♂️", description: "Completed first mile", dateEarned: "2025-03-03T08:15:00Z" },
+      { id: 2, name: "Early Bird", icon: "🌅", description: "5 morning runs", dateEarned: "2025-03-10T06:30:00Z" }
     ],
     recentActivities: [
-      { id: 1, date: "2024-04-20T10:30:00Z", value: 5, unit: "km", evidence: "run_track_1.jpg" },
-      { id: 2, date: "2024-04-19T09:15:00Z", value: 4.2, unit: "km", evidence: "run_track_2.jpg" }
+      { id: 1, date: "2025-03-20T10:30:00Z", value: 5, unit: "km", evidence: "run_track_1.jpg" },
+      { id: 2, date: "2025-03-19T09:15:00Z", value: 4.2, unit: "km", evidence: "run_track_2.jpg" }
     ]
   }
 }
@@ -72,6 +72,46 @@ const mockChallenge1 = {
 // Mock data 2 (id = 2)
 const mockChallenge2 = {
   id: 2,
+  title: "Cycling Adventure Challenge",
+  startDate: "2025-03-10T00:00:00Z",
+  endDate: "2025-04-10T23:59:59Z",
+  category: "Cycling",
+  description: "Thử thách đạp xe 300km trong 30 ngày. Khám phá những cung đường mới và kết nối với cộng đồng đạp xe!",
+  targetValue: 300,
+  targetUnit: "km",
+  rules: [
+    "Đạp xe ít nhất 10km mỗi ngày",
+    "Khuyến khích đạp xe ở địa điểm mới mỗi tuần",
+    "Chia sẻ hình ảnh cung đường đẹp"
+  ],
+  rewards: [
+    "Huy hiệu Road Explorer",
+    "15 điểm thành tích",
+    "Phần quà từ nhà tài trợ"
+  ],
+  image: "https://images.unsplash.com/photo-1541625602330-2277a4c46182",
+  creator: {
+    id: 2,
+    name: "Mai Linh",
+    avatar: "",
+    isVerified: true
+  },
+  participants: 178,
+  maxParticipants: 400,
+  progress: 40,
+  isJoined: false,
+  likes: 67,
+  shares: 32,
+  posts: 18,
+  badges: ["road-explorer", "hill-climber"],
+  sponsorLogos: [
+    "sponsor3.png",
+    "sponsor4.png"
+  ]
+}
+
+const mockChallenge3 = {
+  id: 33,
   title: "Cycling Adventure Challenge",
   startDate: "2024-04-10T00:00:00Z",
   endDate: "2024-05-10T23:59:59Z",
@@ -305,7 +345,11 @@ export default function ChallengeDetail() {
     // Lựa chọn mockdata dựa vào id từ URL
     if (id === '0') {
       setChallenge(mockChallenge1)
-    } else {
+    } 
+    else if (id === '1') {
+      setChallenge(mockChallenge3)
+    }
+    else {
       setChallenge(mockChallenge2)
     }
   }, [id])

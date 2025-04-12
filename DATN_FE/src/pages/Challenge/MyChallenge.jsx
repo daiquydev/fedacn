@@ -10,8 +10,8 @@ const mockMyChallenges = [
   {
     id: 1,
     title: "30 Days Running Challenge",
-    startDate: "2024-04-01T00:00:00Z",
-    endDate: "2024-04-30T23:59:59Z",
+    startDate: "2025-03-30T00:00:00Z",
+    endDate: "2025-04-30T23:59:59Z",
     category: "Running",
     targetValue: 100,
     targetUnit: "km",
@@ -19,7 +19,7 @@ const mockMyChallenges = [
     progress: 65,
     image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5",
     streak: 5,
-    lastUpdate: "2024-03-20T10:00:00Z",
+    lastUpdate: "2025-04-01T10:00:00Z",
     rank: 3,
     totalParticipants: 215,
     achievements: [
@@ -29,7 +29,7 @@ const mockMyChallenges = [
     recentActivities: [
       {
         id: 1,
-        date: "2024-03-20T10:00:00Z",
+        date: "2025-04-01T10:00:00Z",
         value: 5,
         unit: "km",
         evidence: "activity1.jpg"
@@ -609,17 +609,19 @@ export default function MyChallenge() {
 
                   <div className="mt-4 flex space-x-2">
                     <button
-                      onClick={() => navigate(`/challenge/${0}`)}
+                      onClick={() => navigate(`/challenge/${challenge.status === 'completed' ? 1 : 0}`)}
                       className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
                       Chi tiết
                     </button>
-                    <button
-                      onClick={() => handleUploadEvidence(challenge.id)}
-                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-                    >
-                      <FaUpload />
-                    </button>
+                    {challenge.status !== 'completed' && (
+                      <button
+                        onClick={() => handleUploadEvidence(challenge.id)}
+                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                      >
+                        <FaUpload />
+                      </button>
+                    )}
                   </div>
 
                   {renderEvidences(challenge.id)}
