@@ -20,15 +20,18 @@ export default function CreateMealPlanModal({ onClose }) {
       meals: [
         { 
           type: 'Sáng', 
-          foods: []
+          foods: [],
+          description: ''
         },
         { 
           type: 'Trưa', 
-          foods: []
+          foods: [],
+          description: ''
         },
         { 
           type: 'Tối', 
-          foods: []
+          foods: [],
+          description: ''
         },
       ]
     }
@@ -67,7 +70,7 @@ export default function CreateMealPlanModal({ onClose }) {
         protein: 12,
         carbs: 45,
         fat: 10,
-        image: 'https://images.unsplash.com/photo-1517747614396-d21a78b850e8?w=600',
+        image: 'https://cdn.tgdd.vn//News/1507981//cach-lam-sua-hanh-nhan-yen-mach-845x564.jpg',
         cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
       },
       {
@@ -147,6 +150,94 @@ export default function CreateMealPlanModal({ onClose }) {
         image: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=600',
         cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt gà với gia vị, dầu olive trong 30 phút.</li><li>Cắt rau củ thành miếng vừa.</li><li>Xếp thịt gà và rau củ vào khay nướng.</li><li>Nướng ở 200°C trong khoảng 25-30 phút.</li></ol>'
       },
+      {
+        id: 'f9',
+        name: 'Phở bò',
+        category: 'Sáng',
+        calories: 420,
+        protein: 25,
+        carbs: 60,
+        fat: 10,
+        image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ninh xương bò và các gia vị (hồi, quế, đinh hương, thảo quả) trong 6-8 giờ.</li><li>Thái mỏng thịt bò tươi.</li><li>Luộc bánh phở.</li><li>Xếp bánh phở vào tô, đặt thịt bò lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm hành, ngò, giá đỗ và ớt tươi.</li></ol>'
+      },
+      {
+        id: 'f10',
+        name: 'Bún chả',
+        category: 'Trưa',
+        calories: 550,
+        protein: 30,
+        carbs: 70,
+        fat: 18,
+        image: 'https://images.unsplash.com/photo-1576577445504-6af96477db52?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt với hành, tỏi, đường, nước mắm, tiêu.</li><li>Nướng thịt trên bếp than hoa.</li><li>Làm nước chấm với nước mắm, đường, tỏi, ớt, chanh.</li><li>Trụng bún.</li><li>Ăn kèm với rau sống, chả nướng và nước chấm.</li></ol>'
+      },
+      {
+        id: 'f11',
+        name: 'Cháo yến mạch bơ đậu phộng',
+        category: 'Sáng',
+        calories: 350,
+        protein: 14,
+        carbs: 42,
+        fat: 14,
+        image: 'https://cdn.tgdd.vn/2020/12/CookProductThumb/maxresdefault(6)-620x620-1.jpg',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 300ml nước hoặc sữa.</li><li>Thêm 1 muỗng canh bơ đậu phộng khi yến mạch đã mềm.</li><li>Thêm chút mật ong hoặc đường nâu và quế.</li><li>Trang trí với chuối thái lát và hạt chia.</li></ol>'
+      },
+      {
+        id: 'f12',
+        name: 'Bánh xèo',
+        category: 'Tối',
+        calories: 480,
+        protein: 18,
+        carbs: 50,
+        fat: 25,
+        image: 'https://daylambanh.edu.vn/wp-content/uploads/2019/03/banh-xeo-bang-bot-pha-san-600x400.jpg',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột gạo với nghệ, muối và nước cốt dừa.</li><li>Làm nóng chảo, thêm dầu và đổ bột vào.</li><li>Thêm thịt heo, tôm và giá đỗ.</li><li>Đậy nắp để bánh chín giòn.</li><li>Gấp đôi bánh lại và dùng với rau sống và nước mắm pha.</li></ol>'
+      },
+      {
+        id: 'f13',
+        name: 'Cơm tấm sườn nướng',
+        category: 'Trưa',
+        calories: 650,
+        protein: 35,
+        carbs: 85,
+        fat: 20,
+        image: 'https://images.unsplash.com/photo-1562967915-92ae0c320a01?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp sườn với sả, tỏi, đường, nước mắm, dầu hào.</li><li>Nướng sườn trên lửa than hoặc trong lò.</li><li>Nấu cơm tấm.</li><li>Làm nước mắm pha với đường, chanh, tỏi, ớt.</li><li>Phục vụ kèm đồ chua, dưa leo, cà chua.</li></ol>'
+      },
+      {
+        id: 'f14',
+        name: 'Khoai lang nướng',
+        category: 'Snack',
+        calories: 150,
+        protein: 2,
+        carbs: 35,
+        fat: 0,
+        image: 'https://images.unsplash.com/photo-1596451190630-186aff535bf2?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Rửa sạch khoai lang.</li><li>Dùng nĩa đâm vài lỗ trên khoai.</li><li>Nướng ở 200°C trong 45-60 phút hoặc đến khi mềm.</li><li>Có thể thêm chút bơ hoặc quế (tùy chọn).</li></ol>'
+      },
+      {
+        id: 'f15',
+        name: 'Canh rau củ',
+        category: 'Tối',
+        calories: 120,
+        protein: 5,
+        carbs: 20,
+        fat: 2,
+        image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Đun sôi nước với xương hoặc nước dùng.</li><li>Thêm hành tím, tỏi băm nhỏ.</li><li>Thêm các loại rau củ (cà rốt, khoai tây, bắp cải).</li><li>Nêm với muối, tiêu và hạt nêm.</li><li>Nấu cho đến khi rau củ mềm.</li></ol>'
+      },
+      {
+        id: 'f16',
+        name: 'Gỏi cuốn',
+        category: 'Trưa',
+        calories: 220,
+        protein: 15,
+        carbs: 30,
+        fat: 5,
+        image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRCsjxYbiyrPJtHVT-UR8G1C1DKaDwT3ssTtw&s',
+        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc tôm và thịt heo.</li><li>Nhúng bánh tráng vào nước ấm.</li><li>Xếp rau xà lách, bún, rau thơm, thịt heo và tôm lên bánh tráng.</li><li>Cuộn chặt bánh tráng lại.</li><li>Làm nước sốt tương từ tương hột, đường, tỏi, ớt và nước cốt chanh.</li></ol>'
+      }
     ];
     
     setAvailableFoods(foodsData);
@@ -236,7 +327,8 @@ export default function CreateMealPlanModal({ onClose }) {
     const updatedMealDays = [...mealDays]
     updatedMealDays[dayIndex].meals.push({ 
       type: 'Snack', 
-      foods: []
+      foods: [],
+      description: ''
     })
     setMealDays(updatedMealDays)
   }
@@ -262,9 +354,9 @@ export default function CreateMealPlanModal({ onClose }) {
       id: `day-${Date.now()}`, // tạo id duy nhất
       day: mealDays.length + 1,
       meals: [
-        { type: 'Sáng', foods: [] },
-        { type: 'Trưa', foods: [] },
-        { type: 'Tối', foods: [] },
+        { type: 'Sáng', foods: [], description: '' },
+        { type: 'Trưa', foods: [], description: '' },
+        { type: 'Tối', foods: [], description: '' },
       ]
     }
     setMealDays(prev => [...prev, newDay])
@@ -414,6 +506,13 @@ export default function CreateMealPlanModal({ onClose }) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
+
+  // Hàm cập nhật mô tả bữa ăn
+  const handleMealDescriptionChange = (dayIndex, mealIndex, value) => {
+    const updatedMealDays = [...mealDays];
+    updatedMealDays[dayIndex].meals[mealIndex].description = value;
+    setMealDays(updatedMealDays);
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-60 flex justify-center items-start pt-10 pb-20">
@@ -736,6 +835,20 @@ export default function CreateMealPlanModal({ onClose }) {
                                     {mealNutrition.fat || 0} <span className="text-xs text-gray-500">g</span>
                                   </div>
                                 </div>
+                              </div>
+                              
+                              {/* Thêm phần mô tả bữa ăn */}
+                              <div className="mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Mô tả bữa ăn:</h5>
+                                </div>
+                                <textarea
+                                  value={meal.description || ''}
+                                  onChange={(e) => handleMealDescriptionChange(dayIndex, mealIndex, e.target.value)}
+                                  placeholder="Thêm mô tả, lưu ý hoặc ghi chú về bữa ăn này (tùy chọn)"
+                                  rows="2"
+                                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                />
                               </div>
                               
                               {/* Hiển thị danh sách món ăn đã chọn */}
