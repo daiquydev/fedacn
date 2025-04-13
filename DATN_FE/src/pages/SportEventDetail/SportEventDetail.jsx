@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { AiFillHeart } from 'react-icons/ai'
+import { AiFillHeart, AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { CiHeart } from 'react-icons/ci'
 import { FaCheckCircle, FaUserFriends, FaMedal, FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes, FaImage, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaUserCircle, FaUsers, FaRunning } from 'react-icons/fa'
-import { MdPublic } from 'react-icons/md'
+import { MdPublic, MdVideocam, MdOutlineHistoryEdu, MdErrorOutline, MdCheckCircle } from 'react-icons/md'
 import moment from 'moment'
 import useravatar from '../../assets/images/useravatar.jpg'
 import { RiGitRepositoryPrivateFill } from 'react-icons/ri'
@@ -11,7 +11,6 @@ import { LiaComments } from 'react-icons/lia'
 import Comments from '../../pages/Home/components/Comments'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
-import { MdVideocam, MdOutlineHistoryEdu } from 'react-icons/md'
 import { allSportEvents, mockLeaderboard, mockPosts, mockLiveSessionParticipants } from '../../data/sportEvents'
 import toast from 'react-hot-toast'
 
@@ -65,6 +64,19 @@ export default function SportEventDetail() {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showSessionNotification, setShowSessionNotification] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
+
+  // --- State for Progress Update ---
+  const [progressUpdate, setProgressUpdate] = useState({ 
+    value: '', 
+    distance: '', 
+    time: '', // Format: HH:MM or HH:MM:SS
+    calories: '', 
+    notes: '' 
+  });
+  const [isProgressSubmitting, setIsProgressSubmitting] = useState(false);
+  const [progressError, setProgressError] = useState(null);
+  const [progressSuccess, setProgressSuccess] = useState(false);
+  // --- End Progress Update State ---
 
   // --- Logic to find the next upcoming session --- 
   const findNextSession = () => {
@@ -244,6 +256,77 @@ export default function SportEventDetail() {
 
   // Filter followed users currently in the live session
   const followedInSession = mockLiveSessionParticipants.filter(p => p.isFollowed);
+
+  // --- Handle Progress Input Change ---
+  const handleProgressInputChange = (e) => {
+    const { name, value } = e.target;
+    setProgressUpdate(prev => ({ ...prev, [name]: value }));
+    // Clear error/success on input change
+    setProgressError(null);
+    setProgressSuccess(false);
+  };
+
+  // --- Handle Progress Update Submission ---
+  const handleUpdateProgress = async (e) => {
+    e.preventDefault();
+    setIsProgressSubmitting(true);
+    setProgressError(null);
+    setProgressSuccess(false);
+
+    // Basic Validation (add more as needed)
+    if (!progressUpdate.value || isNaN(parseFloat(progressUpdate.value)) || parseFloat(progressUpdate.value) <= 0) {
+      setProgressError(`Vui lòng nhập giá trị hợp lệ cho ${event.targetUnit}.`);
+      setIsProgressSubmitting(false);
+      return;
+    }
+    // Add validation for time format if needed
+
+    try {
+      // --- Placeholder API Call ---
+      console.log("Submitting progress update:", progressUpdate);
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
+      // On success:
+      // 1. Get the updated event data (or simulate it)
+      // 2. Update the event state
+      // 3. Add to the userDailyProgress list
+      // 4. Reset the form
+
+      const newProgressEntry = {
+        date: new Date().toISOString(),
+        value: parseFloat(progressUpdate.value),
+        unit: event.targetUnit,
+        distance: progressUpdate.distance ? parseFloat(progressUpdate.distance) : null,
+        time: progressUpdate.time || null,
+        calories: progressUpdate.calories ? parseInt(progressUpdate.calories, 10) : null,
+        notes: progressUpdate.notes || null
+      };
+
+      // Simulate updating event state
+      setEvent(prevEvent => ({
+        ...prevEvent,
+        // Update overall progress if applicable (logic depends on event type/goals)
+        progress: Math.min(100, (prevEvent.progress || 0) + (parseFloat(progressUpdate.value) / prevEvent.targetValue * 100)), 
+        userDailyProgress: [
+          newProgressEntry,
+          ...(prevEvent.userDailyProgress || [])
+        ]
+      }));
+      
+      setProgressUpdate({ value: '', distance: '', time: '', calories: '', notes: '' }); // Reset form
+      setProgressSuccess(true);
+      toast.success("Cập nhật tiến độ thành công!");
+      // Optionally hide success message after a delay
+      setTimeout(() => setProgressSuccess(false), 3000);
+
+    } catch (err) {
+      console.error("Error updating progress:", err);
+      setProgressError("Không thể cập nhật tiến độ. Vui lòng thử lại.");
+      toast.error("Lỗi cập nhật tiến độ.");
+    } finally {
+      setIsProgressSubmitting(false);
+    }
+  };
+  // --- End Progress Update Logic ---
 
   if (isLoading) {
     return (
@@ -651,63 +734,56 @@ export default function SportEventDetail() {
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Thời gian</p>
                       <p className="font-medium">{moment(event.startDate).format('DD/MM')} - {moment(event.endDate).format('DD/MM/YYYY')}</p>
-            </div>
-          </div>
+                    </div>
+                  </div>
 
                   <div className="flex items-center">
                     <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full mr-3">
                       <FaMapMarkerAlt className="text-blue-500" />
                     </div>
-            <div>
+                    <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Địa điểm</p>
                       <p className="font-medium">{event.location}</p>
                     </div>
-            </div>
+                  </div>
 
                   <div className="flex items-center">
                     <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mr-3">
                       <FaTrophy className="text-green-500" />
                     </div>
-              <div>
+                    <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Mục tiêu</p>
                       <p className="font-medium">{event.targetValue} {event.targetUnit}</p>
                     </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <span className="bg-green-500 w-2 h-6 mr-2 rounded-sm"></span>
-                  Tiến độ Tổng của bạn
-                </h2>
-                
-                <div className="mb-4">
+
+                {/* Overall Progress Bar - Moved here for better context */}
+                <div className="mt-8 mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+                    Tiến độ Tổng cộng
+                  </h3>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {event.progress}% hoàn thành
+                      {Math.round(event.progress || 0)}% hoàn thành
                     </span>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {Math.round(event.progress * event.targetValue / 100)}/{event.targetValue} {event.targetUnit}
+                      {Math.round((event.progress || 0) * event.targetValue / 100)}/{event.targetValue} {event.targetUnit}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div 
-                      className="bg-green-500 h-2.5 rounded-full" 
-                      style={{ width: `${event.progress}%` }}
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-500 ease-out" 
+                      style={{ width: `${event.progress || 0}%` }}
                     ></div>
                   </div>
                 </div>
                 
-                <div className="mt-6 flex justify-center space-x-4">
-                  {event.eventType === 'offline' && (
-                    <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                      Cập nhật tiến độ
-                    </button>
-                  )}
+                {/* Share Progress Button */}
+                <div className="mt-6 flex justify-center">
                   <button 
                     onClick={handleShareProgress} 
-                    className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center"
+                    className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center shadow-md hover:shadow-lg"
                   >
                     <PiShareFatLight className="mr-2" />
                     Chia sẻ Tiến độ
@@ -715,24 +791,127 @@ export default function SportEventDetail() {
                 </div>
               </div>
               
-              {event.video && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm overflow-hidden">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center">
-                    <span className="bg-yellow-500 w-2 h-6 mr-2 rounded-sm"></span>
-                    Video sự kiện
+              {/* Progress Update Section (Conditional) */}
+              {event.eventType === 'offline' && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold mb-6 flex items-center">
+                    <span className="bg-blue-500 w-2 h-6 mr-2 rounded-sm"></span>
+                    Cập nhật Tiến độ Hôm nay
                   </h2>
-                <div className="aspect-w-16 aspect-h-9">
-                  <iframe
-                      src={event.video}
-                      title="Event Video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                      className="rounded-lg w-full h-[400px]"
-                  ></iframe>
-                </div>
-              </div>
-            )}
+                  
+                  <form onSubmit={handleUpdateProgress} className="space-y-4">
+                    {/* Main Value Input (Based on Target Unit) */}
+                    <div>
+                      <label htmlFor="progressValue" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        {`Số ${event.targetUnit} hoàn thành`}
+                      </label>
+                      <input
+                        type="number"
+                        id="progressValue"
+                        name="value"
+                        value={progressUpdate.value}
+                        onChange={handleProgressInputChange}
+                        placeholder={`Nhập số ${event.targetUnit}`}
+                        min="0" // Allow 0 if needed, adjust validation accordingly
+                        step="any" // Allow decimals if appropriate for the unit
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        required
+                      />
+                    </div>
 
+                    {/* Optional Fields Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Distance */}
+                      <div>
+                        <label htmlFor="progressDistance" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Khoảng cách (km)</label>
+                        <input
+                          type="number"
+                          id="progressDistance"
+                          name="distance"
+                          value={progressUpdate.distance}
+                          onChange={handleProgressInputChange}
+                          placeholder="VD: 5.5"
+                          min="0"
+                          step="0.1"
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+                      {/* Time */}
+                      <div>
+                        <label htmlFor="progressTime" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Thời gian (HH:MM:SS)</label>
+                        <input
+                          type="text" // Use text to allow flexible format, validation needed
+                          id="progressTime"
+                          name="time"
+                          value={progressUpdate.time}
+                          onChange={handleProgressInputChange}
+                          placeholder="VD: 01:15:30"
+                          pattern="^\d{1,2}:\d{2}(:\d{2})?$" // Basic pattern, refine if needed
+                          title="Nhập theo định dạng HH:MM hoặc HH:MM:SS"
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+                      {/* Calories */}
+                       <div>
+                        <label htmlFor="progressCalories" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Calories (kcal)</label>
+                        <input
+                          type="number"
+                          id="progressCalories"
+                          name="calories"
+                          value={progressUpdate.calories}
+                          onChange={handleProgressInputChange}
+                          placeholder="VD: 350"
+                          min="0"
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label htmlFor="progressNotes" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ghi chú (Tùy chọn)</label>
+                      <textarea
+                        id="progressNotes"
+                        name="notes"
+                        rows="2"
+                        value={progressUpdate.notes}
+                        onChange={handleProgressInputChange}
+                        placeholder="Thêm ghi chú về buổi tập..."
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      ></textarea>
+                    </div>
+
+                    {/* Submit Button and Feedback */}
+                    <div className="flex items-center justify-end space-x-4 pt-2">
+                      {progressError && (
+                        <p className="text-sm text-red-500 flex items-center">
+                          <MdErrorOutline className="mr-1"/> {progressError}
+                        </p>
+                      )}
+                      {progressSuccess && (
+                        <p className="text-sm text-green-500 flex items-center">
+                          <MdCheckCircle className="mr-1"/> Đã cập nhật!
+                        </p>
+                      )}
+                      <button 
+                        type="submit"
+                        disabled={isProgressSubmitting}
+                        className={`px-6 py-2 rounded-lg text-white transition flex items-center justify-center min-w-[120px] ${isProgressSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
+                      >
+                        {isProgressSubmitting ? (
+                           <AiOutlineLoading3Quarters className="animate-spin mr-2" />
+                        ) : (
+                           <FaCheckCircle className="mr-2" />
+                        )}
+                        {isProgressSubmitting ? 'Đang lưu...' : 'Lưu tiến độ'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )} 
+              {/* End Progress Update Section */} 
+
+              {/* Daily Progress History */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
                 <h2 className="text-xl font-semibold mb-4 flex items-center">
                   <span className="bg-cyan-500 w-2 h-6 mr-2 rounded-sm"></span>
@@ -750,7 +929,7 @@ export default function SportEventDetail() {
                             <div className={`p-2 rounded-full mr-3 ${progress.calories ? 'bg-cyan-100 dark:bg-cyan-900/30' : 'bg-gray-100 dark:bg-gray-900/30'}`}>
                               <BsCalendarCheck className={progress.calories ? 'text-cyan-500' : 'text-gray-500'} />
                             </div>
-              <div>
+                            <div>
                               <p className="font-medium text-gray-700 dark:text-gray-300">{moment(progress.date).format('dddd, DD/MM/YYYY')}</p>
                               <p className="text-sm text-gray-500 dark:text-gray-400">{moment(progress.date).format('HH:mm')}</p>
                             </div>
@@ -1037,12 +1216,14 @@ export default function SportEventDetail() {
                 </div>
                   </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                <h2 className="text-xl font-semibold mb-4">Tổng số calories đã đốt</h2>
-                <div className="flex items-center text-3xl font-bold text-red-500">
-                  {mockLeaderboard.totalCaloriesBurned.toLocaleString()} <span className="ml-2 text-gray-500 text-lg font-normal">kcal</span>
+              {event.eventType !== 'online' && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold mb-4">Tổng số calories đã đốt</h2>
+                  <div className="flex items-center text-3xl font-bold text-red-500">
+                    {mockLeaderboard.totalCaloriesBurned.toLocaleString()} <span className="ml-2 text-gray-500 text-lg font-normal">kcal</span>
+                  </div>
                 </div>
-                        </div>
+              )}
                       </div>
           )}
 

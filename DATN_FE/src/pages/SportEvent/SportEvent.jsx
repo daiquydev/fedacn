@@ -116,15 +116,22 @@ export default function SportEvent() {
     // Validate form
     const validationErrors = {};
     if (!newEvent.name.trim()) validationErrors.name = 'Vui lòng nhập tên sự kiện';
-    if (!newEvent.date) validationErrors.date = 'Vui lòng chọn ngày';
-    if (!newEvent.time) validationErrors.time = 'Vui lòng chọn giờ';
-    if (newEvent.eventType === 'online') {
-      if (!newEvent.endDate) validationErrors.endDate = 'Vui lòng chọn ngày kết thúc';
-      if (!newEvent.endTime) validationErrors.endTime = 'Vui lòng chọn giờ kết thúc';
-    }
+    if (!newEvent.date) validationErrors.date = 'Vui lòng chọn ngày bắt đầu';
+    if (!newEvent.time) validationErrors.time = 'Vui lòng chọn giờ bắt đầu';
+    
+    // Validate end date/time for ALL types
+    if (!newEvent.endDate) validationErrors.endDate = 'Vui lòng chọn ngày kết thúc';
+    if (!newEvent.endTime) validationErrors.endTime = 'Vui lòng chọn giờ kết thúc';
+
+    // Validate location only for offline events
     if (newEvent.eventType === 'offline' && !newEvent.location.trim()) {
       validationErrors.location = 'Vui lòng nhập địa điểm';
     }
+    // Validate platform only for online events
+    if (newEvent.eventType === 'online' && !newEvent.location.trim()) {
+      validationErrors.location = 'Vui lòng nhập nền tảng'; // Assuming location field is used for platform too
+    }
+    
     if (!newEvent.category) validationErrors.category = 'Vui lòng chọn thể loại';
     if (!newEvent.maxParticipants || newEvent.maxParticipants <= 0) {
       validationErrors.maxParticipants = 'Vui lòng nhập số người tham gia hợp lệ';
@@ -139,7 +146,7 @@ export default function SportEvent() {
     
     // Tạo sự kiện mới
     const dateTime = `${newEvent.date}T${newEvent.time}:00Z`;
-    const endDateTime = newEvent.eventType === 'online' ? `${newEvent.endDate}T${newEvent.endTime}:00Z` : '';
+    const endDateTime = `${newEvent.endDate}T${newEvent.endTime}:00Z`; // Always create endDateTime
     const newEventObj = {
       id: Date.now(), // Tạo ID ngẫu nhiên
       name: newEvent.name,
@@ -481,35 +488,33 @@ export default function SportEvent() {
                   {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time}</p>}
                 </div>
                 
-                {/* End Date/Time for Online Events */}
-                {newEvent.eventType === 'online' && (
-                  <>
-                    <div>
-                      <label htmlFor="eventEndDate" className="block text-sm font-medium mb-1">Ngày kết thúc</label>
-                      <input
-                        type="date"
-                        id="eventEndDate"
-                        name="endDate"
-                        value={newEvent.endDate}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
-                      />
-                      {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="eventEndTime" className="block text-sm font-medium mb-1">Giờ kết thúc</label>
-                      <input
-                        type="time"
-                        id="eventEndTime"
-                        name="endTime"
-                        value={newEvent.endTime}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
-                      />
-                      {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>}
-                    </div>
-                  </>
-                )}
+                {/* End Date/Time - Now shown for ALL event types */}
+                <>
+                  <div>
+                    <label htmlFor="eventEndDate" className="block text-sm font-medium mb-1">Ngày kết thúc</label>
+                    <input
+                      type="date"
+                      id="eventEndDate"
+                      name="endDate"
+                      value={newEvent.endDate}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    />
+                    {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="eventEndTime" className="block text-sm font-medium mb-1">Giờ kết thúc</label>
+                    <input
+                      type="time"
+                      id="eventEndTime"
+                      name="endTime"
+                      value={newEvent.endTime}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    />
+                    {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>}
+                  </div>
+                </>
               </div>
 
               {/* Location (for offline) or Platform (for online) */}
