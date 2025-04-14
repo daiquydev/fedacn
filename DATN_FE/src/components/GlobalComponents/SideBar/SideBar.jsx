@@ -137,8 +137,8 @@ export default function SideBar() {
           name: 'Sự kiện của tôi',
           icon: FaRunning,
           menus: [
-            { subName: 'Sự kiện đã tham gia', subPath: 'my-events' },
-            { subName: 'Lịch sử sự kiện', subPath: 'history' }
+            { subName: 'Sự kiện Đang Tham gia', subPath: 'da-tham-gia' },
+            { subName: 'Lịch sử sự kiện', subPath: 'lich-su' }
           ],
           path: 'sport-event'
         },
@@ -184,8 +184,8 @@ export default function SideBar() {
           name: 'Sự kiện của tôi',
           icon: FaRunning,
           menus: [
-            { subName: 'Sự kiện đã tham gia', subPath: 'my-events' },
-            { subName: 'Lịch sử sự kiện', subPath: 'history' }
+            { subName: 'Sự kiện Đang Tham gia', subPath: 'da-tham-gia' },
+            { subName: 'Lịch sử sự kiện', subPath: 'lich-su' }
           ],
           path: 'sport-event'
         },

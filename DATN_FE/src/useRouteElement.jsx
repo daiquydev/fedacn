@@ -70,8 +70,9 @@ const Bookmark = lazy(() => import('./pages/Bookmark'))
 const Search = lazy(() => import('./pages/Search'))
 const SportEvent = lazy(() => import('./pages/SportEvent'))
 const EventDetail = lazy(() => import('./pages/SportEvent/EventDetail'))
-const MyEvents = lazy(() => import('./pages/SportEvent/MyEvents'))
+const JoinedEvents = lazy(() => import('./pages/SportEvent/JoinedEvents'))
 const EventHistory = lazy(() => import('./pages/SportEvent/EventHistory'))
+const SportEventDetail = lazy(() => import('./pages/SportEventDetail'))
 const MealPlan = lazy(() => import('./pages/MealPlan/MealPlan'))
 const MealPlanDetail = lazy(() => import('./pages/MealPlan/MealPlanDetail/MealPlanDetail'))
 
@@ -419,7 +420,7 @@ export default function useRouteElement() {
           )
         },
         {
-          path: '/sport-event',
+          path: 'sport-event',
           element: (
             <MainLayout>
               <Suspense>
@@ -429,31 +430,31 @@ export default function useRouteElement() {
           )
         },
         {
-          path: '/sport-event/my-events',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <MyEvents />
-              </Suspense>
-            </MainLayout>
-          )
-        },
-        {
-          path: '/sport-event/history',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <EventHistory />
-              </Suspense>
-            </MainLayout>
-          )
-        },
-        {
           path: '/sport-event/:id',
           element: (
             <MainLayout>
               <Suspense>
-                <EventDetail />
+                <SportEventDetail />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/da-tham-gia',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <JoinedEvents />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/lich-su',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <EventHistory />
               </Suspense>
             </MainLayout>
           )

@@ -1,91 +1,20 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaFilter, FaSearch, 
-  FaPlusCircle, FaTimes, FaImage, FaUpload } from 'react-icons/fa'
-import { MdSportsSoccer, MdDirectionsRun } from 'react-icons/md'
+  FaPlusCircle, FaTimes, FaImage, FaUpload, FaVideo } from 'react-icons/fa'
+import { MdSportsSoccer, MdDirectionsRun, MdVideocam, MdLocationOn } from 'react-icons/md'
 import { IoIosFitness } from 'react-icons/io'
 import moment from 'moment'
+import { allSportEvents } from '../../data/sportEvents' // Import data from central file
 
-// Mock data for upcoming events
-const mockEvents = [
-  {
-    id: 1,
-    name: "Summer Marathon 2024",
-    date: "2025-06-15T07:00:00Z",
-    location: "City Park",
-    category: "Running",
-    participants: 215,
-    maxParticipants: 500,
-    image: "https://images.unsplash.com/photo-1530549387789-4c1017266635",
-    isJoined: false,
-    description: "Tham gia cuộc thi chạy marathon mùa hè hấp dẫn với nhiều phần thưởng và sự kiện đồng hành. Phù hợp với mọi cấp độ người chạy."
-  },
-  {
-    id: 2,
-    name: "Cycling Tour",
-    date: "2025-07-10T08:30:00Z",
-    location: "Countryside Route",
-    category: "Cycling",
-    participants: 78,
-    maxParticipants: 150,
-    image: "https://images.unsplash.com/photo-1517649763962-0c623066013b",
-    isJoined: true,
-    description: "Khám phá những cung đường đẹp nhất với cộng đồng đam mê xe đạp. Tour kéo dài 35km qua những khung cảnh tuyệt đẹp."
-  },
-  {
-    id: 3,
-    name: "Yoga in the Park",
-    date: "2025-05-25T16:00:00Z",
-    location: "Harmony Garden",
-    category: "Yoga",
-    participants: 45,
-    maxParticipants: 60,
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b",
-    isJoined: false,
-    description: "Tham gia buổi yoga ngoài trời cùng các huấn luyện viên chuyên nghiệp. Phù hợp cho mọi cấp độ từ người mới bắt đầu đến nâng cao."
-  },
-  {
-    id: 7,
-    name: "Basketball Tournament",
-    date: "2025-08-05T14:00:00Z",
-    location: "City Sports Center",
-    category: "Basketball",
-    participants: 120,
-    maxParticipants: 200,
-    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc",
-    isJoined: false,
-    description: "Giải đấu bóng rổ hàng năm với các đội từ nhiều khu vực. Đăng ký theo đội hoặc cá nhân để được xếp vào đội."
-  },
-  {
-    id: 8,
-    name: "Swimming Challenge",
-    date: "2025-07-20T09:00:00Z",
-    location: "Olympic Pool",
-    category: "Swimming",
-    participants: 55,
-    maxParticipants: 100,
-    image: "https://images.unsplash.com/photo-1530549387789-4c1017266635",
-    isJoined: false,
-    description: "Thử thách bơi với nhiều cự ly khác nhau. Có huấn luyện viên hỗ trợ và nhiều giải thưởng hấp dẫn."
-  },
-  {
-    id: 9,
-    name: "Trail Running Adventure",
-    date: "2025-09-12T07:30:00Z",
-    location: "Mountain Trails",
-    category: "Running",
-    participants: 89,
-    maxParticipants: 150,
-    image: "https://images.unsplash.com/photo-1483721310020-03333e577078",
-    isJoined: false,
-    description: "Trải nghiệm chạy bộ địa hình với độ cao và thử thách đa dạng. Phù hợp cho người có kinh nghiệm chạy địa hình."
-  }
-];
+// Remove internal mockEvents
+// const mockEvents = [...]; 
 
 export default function SportEvent() {
   const navigate = useNavigate();
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState(allSportEvents); // Use imported data
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterEventType, setFilterEventType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   
   // State cho modal tạo sự kiện mới
@@ -94,11 +23,14 @@ export default function SportEvent() {
     name: '',
     date: '',
     time: '',
+    endDate: '',
+    endTime: '',
     location: '',
     category: '',
     maxParticipants: '',
     image: '',
-    description: ''
+    description: '',
+    eventType: 'offline'
   });
   const [imagePreview, setImagePreview] = useState('');
   const [errors, setErrors] = useState({});
@@ -111,29 +43,33 @@ export default function SportEvent() {
   const handleJoinEvent = (eventId, e) => {
     e.stopPropagation(); // Prevent the click from bubbling up to the card
     
-    // Update the event's joined status in the state
+    // Update the event's joined status in the local state (for immediate UI feedback)
     setEvents(prevEvents => 
       prevEvents.map(event => 
         event.id === eventId 
-          ? { ...event, isJoined: true, participants: event.participants + 1 }
+          ? { ...event, isJoined: true, participants: (event.participants || 0) + 1 } // Ensure participants is a number
           : event
       )
     );
     
-    // After a short delay, navigate to MyEvents page
-    setTimeout(() => {
-      navigate('/sport-event/my-events', { state: { joinedEvent: eventId } });
-    }, 1000);
+    // Navigate immediately to the detail page with a state flag
+    navigate(`/sport-event/${eventId}`, { state: { justJoined: true } });
+    
+    // Remove the delayed navigation to MyEvents
+    // setTimeout(() => {
+    //   navigate('/sport-event/my-events', { state: { joinedEvent: eventId } });
+    // }, 1000);
   };
 
-  // Filter events based on category and search query
+  // Filter events based on category, event type, and search query
   const filteredEvents = events.filter(event => {
     const matchesCategory = filterCategory === 'all' || event.category.toLowerCase() === filterCategory.toLowerCase();
+    const matchesEventType = filterEventType === 'all' || event.eventType === filterEventType;
     const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           event.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesEventType && matchesSearch;
   });
 
   // Extract unique categories for the filter dropdown
@@ -141,7 +77,7 @@ export default function SportEvent() {
 
   // Group events by month
   const eventsByMonth = filteredEvents.reduce((acc, event) => {
-    const month = moment(event.date).format('MMMM YYYY');
+    const month = moment(event.date).format('MMMM YYYY'); // Use 'date' field for consistency
     if (!acc[month]) {
       acc[month] = [];
     }
@@ -156,16 +92,18 @@ export default function SportEvent() {
 
   const getCategoryIcon = (category) => {
     switch(category.toLowerCase()) {
-      case 'running':
+      case 'chạy bộ': // Updated category name
         return <FaRunning className="text-green-500" />;
-      case 'cycling':
+      case 'đạp xe': // Updated category name
         return <MdDirectionsRun className="text-green-500" />;
       case 'yoga':
         return <IoIosFitness className="text-green-500" />;
-      case 'basketball':
+      case 'bóng rổ': // Updated category name
         return <MdSportsSoccer className="text-green-500" />;
-      case 'swimming':
+      case 'bơi lội': // Updated category name
         return <IoIosFitness className="text-green-500" />;
+      case 'fitness': // Added fitness category
+        return <IoIosFitness className="text-green-500" />; // Use fitness icon
       default:
         return <MdSportsSoccer className="text-green-500" />;
     }
@@ -178,9 +116,22 @@ export default function SportEvent() {
     // Validate form
     const validationErrors = {};
     if (!newEvent.name.trim()) validationErrors.name = 'Vui lòng nhập tên sự kiện';
-    if (!newEvent.date) validationErrors.date = 'Vui lòng chọn ngày';
-    if (!newEvent.time) validationErrors.time = 'Vui lòng chọn giờ';
-    if (!newEvent.location.trim()) validationErrors.location = 'Vui lòng nhập địa điểm';
+    if (!newEvent.date) validationErrors.date = 'Vui lòng chọn ngày bắt đầu';
+    if (!newEvent.time) validationErrors.time = 'Vui lòng chọn giờ bắt đầu';
+    
+    // Validate end date/time for ALL types
+    if (!newEvent.endDate) validationErrors.endDate = 'Vui lòng chọn ngày kết thúc';
+    if (!newEvent.endTime) validationErrors.endTime = 'Vui lòng chọn giờ kết thúc';
+
+    // Validate location only for offline events
+    if (newEvent.eventType === 'offline' && !newEvent.location.trim()) {
+      validationErrors.location = 'Vui lòng nhập địa điểm';
+    }
+    // Validate platform only for online events
+    if (newEvent.eventType === 'online' && !newEvent.location.trim()) {
+      validationErrors.location = 'Vui lòng nhập nền tảng'; // Assuming location field is used for platform too
+    }
+    
     if (!newEvent.category) validationErrors.category = 'Vui lòng chọn thể loại';
     if (!newEvent.maxParticipants || newEvent.maxParticipants <= 0) {
       validationErrors.maxParticipants = 'Vui lòng nhập số người tham gia hợp lệ';
@@ -195,35 +146,43 @@ export default function SportEvent() {
     
     // Tạo sự kiện mới
     const dateTime = `${newEvent.date}T${newEvent.time}:00Z`;
+    const endDateTime = `${newEvent.endDate}T${newEvent.endTime}:00Z`; // Always create endDateTime
     const newEventObj = {
       id: Date.now(), // Tạo ID ngẫu nhiên
       name: newEvent.name,
       date: dateTime,
+      endDate: endDateTime,
       location: newEvent.location,
       category: newEvent.category,
       participants: 0,
       maxParticipants: parseInt(newEvent.maxParticipants),
       image: newEvent.image,
+      description: newEvent.description,
       isJoined: false,
-      description: newEvent.description
+      eventType: newEvent.eventType,
+      videoCallUrl: newEvent.eventType === 'online' ? `https://meet.jit.si/NutriCommunity-${newEvent.name.replace(/\s+/g, '-')}` : ''
     };
     
     // Thêm sự kiện mới vào danh sách
     setEvents([...events, newEventObj]);
     
-    // Reset form và đóng modal
+    // Đóng modal và reset form
+    setShowCreateModal(false);
     setNewEvent({
       name: '',
       date: '',
       time: '',
+      endDate: '',
+      endTime: '',
       location: '',
       category: '',
       maxParticipants: '',
       image: '',
-      description: ''
+      description: '',
+      eventType: 'offline'
     });
     setImagePreview('');
-    setShowCreateModal(false);
+    setErrors({});
   };
   
   // Hàm xử lý thay đổi input
@@ -299,342 +258,385 @@ export default function SportEvent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <MdSportsSoccer className="text-green-500 mr-3" size={30} />
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sự kiện thể thao</h1>
-            </div>
-            
-            {/* Nút tạo sự kiện mới */}
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors"
-            >
-              <FaPlusCircle className="mr-2" />
-              Tạo sự kiện mới
-            </button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">Sự kiện Thể thao</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Tìm kiếm sự kiện..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <FaSearch className="absolute left-3 top-3 text-gray-400" />
           </div>
           
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Tham gia các sự kiện thể thao cùng cộng đồng NutriCommunity để cải thiện sức khỏe và kết nối với những người có cùng đam mê!
-          </p>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-            <div className="flex items-center">
-              <FaFilter className="mr-2 text-green-500" />
-              <span className="mr-2 text-gray-700 dark:text-gray-300">Lọc theo:</span>
-              <select 
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category === 'all' ? 'Tất cả' : category}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="relative flex-grow max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Tìm kiếm sự kiện..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="all">Tất cả Thể loại</option>
+            {categories.filter(cat => cat !== 'all').map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
 
-          {filteredEvents.length > 0 ? (
-            sortedMonths.map(month => (
-              <div key={month} className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                  {month}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {eventsByMonth[month].map(event => (
-                    <div 
-                      key={event.id} 
-                      className={`bg-white dark:bg-gray-900 border ${event.isJoined ? 'border-green-500' : 'border-gray-200 dark:border-gray-700'} rounded-lg shadow-md overflow-hidden cursor-pointer transform transition-transform hover:scale-105`}
-                      onClick={() => handleEventClick(event.id)}
-                    >
-                      <div className="relative h-40">
-                        <img 
-                          src={event.image} 
-                          alt={event.name} 
-                          className="w-full h-full object-cover"
-                        />
-                        {event.isJoined && (
-                          <div className="absolute top-2 right-2 bg-green-500 text-white text-xs py-1 px-2 rounded-full">
-                            Đã tham gia
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
-                          {getCategoryIcon(event.category)}
-                          <span className="ml-2">{event.name}</span>
-                        </h3>
-                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-1">
-                          <FaCalendarAlt className="mr-2 text-green-500" />
-                          {moment(event.date).format('DD/MM/YYYY - HH:mm')}
-                        </div>
-                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-1">
-                          <FaMapMarkerAlt className="mr-2 text-green-500" />
-                          {event.location}
-                        </div>
-                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-1">
-                          <FaUserFriends className="mr-2 text-green-500" />
-                          {event.participants}/{event.maxParticipants} người tham gia
-                        </div>
-                        <div className="mt-2">
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                            <div 
-                              className="bg-green-500 h-2.5 rounded-full" 
-                              style={{ width: `${(event.participants / event.maxParticipants) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-3 line-clamp-2">
-                          {event.description}
-                        </p>
-                        <div className="mt-4">
-                          <button 
-                            className={`w-full py-2 px-4 rounded-md transition-colors ${
-                              event.isJoined
-                                ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                : 'bg-green-500 text-white hover:bg-green-600'
-                            }`}
-                            onClick={(e) => event.isJoined ? null : handleJoinEvent(event.id, e)}
-                          >
-                            {event.isJoined ? 'Đã tham gia' : 'Tham gia ngay'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
-                Không tìm thấy sự kiện nào phù hợp với bộ lọc hoặc tìm kiếm hiện tại.
-              </p>
-            </div>
-          )}
+          <select
+            value={filterEventType}
+            onChange={(e) => setFilterEventType(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="all">Tất cả Loại sự kiện</option>
+            <option value="offline">Sự kiện Trực tiếp</option>
+            <option value="online">Sự kiện Trực tuyến</option>
+          </select>
+          
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center justify-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          >
+            <FaPlusCircle className="mr-2" />
+            Tạo sự kiện
+          </button>
         </div>
       </div>
       
-      {/* Modal tạo sự kiện mới */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                  <FaPlusCircle className="mr-2 text-green-500" />
-                  Tạo sự kiện mới
-                </h2>
-                <button 
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      {sortedMonths.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-lg text-gray-600">Không tìm thấy sự kiện nào phù hợp.</p>
+        </div>
+      ) : (
+        sortedMonths.map(month => (
+          <div key={month} className="mb-10">
+            <h2 className="text-xl font-semibold mb-4">{moment(month, 'MMMM YYYY').format('Tháng M, YYYY')}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {eventsByMonth[month].map(event => (
+                <div
+                  key={event.id}
+                  onClick={() => handleEventClick(event.id)}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
                 >
-                  <FaTimes size={24} />
-                </button>
-              </div>
-              
-              <form onSubmit={handleCreateEvent}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {/* Tên sự kiện */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Tên sự kiện *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={newEvent.name}
-                      onChange={handleInputChange}
-                      className={`w-full p-2 border ${errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                      placeholder="Nhập tên sự kiện"
+                  <div className="relative h-48">
+                    <img
+                      src={event.image} // Use 'image' field
+                      alt={event.name}
+                      className="w-full h-full object-cover"
                     />
-                    {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-                  </div>
-                  
-                  {/* Ngày */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Ngày *
-                    </label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={newEvent.date}
-                      onChange={handleInputChange}
-                      min={moment().format('YYYY-MM-DD')}
-                      className={`w-full p-2 border ${errors.date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                    />
-                    {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
-                  </div>
-                  
-                  {/* Giờ */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Giờ *
-                    </label>
-                    <input
-                      type="time"
-                      name="time"
-                      value={newEvent.time}
-                      onChange={handleInputChange}
-                      className={`w-full p-2 border ${errors.time ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                    />
-                    {errors.time && <p className="mt-1 text-sm text-red-500">{errors.time}</p>}
-                  </div>
-                  
-                  {/* Địa điểm */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Địa điểm *
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={newEvent.location}
-                      onChange={handleInputChange}
-                      className={`w-full p-2 border ${errors.location ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                      placeholder="Nhập địa điểm tổ chức"
-                    />
-                    {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
-                  </div>
-                  
-                  {/* Thể loại */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Thể loại *
-                    </label>
-                    <select
-                      name="category"
-                      value={newEvent.category}
-                      onChange={handleInputChange}
-                      className={`w-full p-2 border ${errors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                    >
-                      <option value="">Chọn thể loại</option>
-                      {['Running', 'Cycling', 'Yoga', 'Basketball', 'Swimming'].map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                    {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
-                  </div>
-                  
-                  {/* Số người tham gia tối đa */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Số người tham gia tối đa *
-                    </label>
-                    <input
-                      type="number"
-                      name="maxParticipants"
-                      value={newEvent.maxParticipants}
-                      onChange={handleInputChange}
-                      min="1"
-                      className={`w-full p-2 border ${errors.maxParticipants ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                      placeholder="Ví dụ: 50"
-                    />
-                    {errors.maxParticipants && <p className="mt-1 text-sm text-red-500">{errors.maxParticipants}</p>}
-                  </div>
-                  
-                  {/* Hình ảnh */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Hình ảnh *
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        name="image"
-                        value={newEvent.image}
-                        onChange={handleImageChange}
-                        className={`flex-1 p-2 border ${errors.image ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                        placeholder="Nhập URL hình ảnh"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleUploadClick}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
-                      >
-                        <FaUpload className="mr-2" /> Tải lên
-                      </button>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        className="hidden"
-                      />
+                    <div className="absolute top-3 right-3 bg-white dark:bg-gray-900 text-red-500 font-medium px-3 py-1 rounded-full text-sm">
+                      {event.participants}/{event.maxParticipants} người tham gia
                     </div>
-                    {errors.image && <p className="mt-1 text-sm text-red-500">{errors.image}</p>}
+                    <div className="absolute top-3 left-3 bg-white dark:bg-gray-900 text-blue-500 font-medium px-3 py-1 rounded-full text-sm flex items-center">
+                      {event.eventType === 'online' ? (
+                        <>
+                          <FaVideo className="mr-1" />
+                          <span>Trực tuyến</span>
+                        </>
+                      ) : (
+                        <>
+                          <MdLocationOn className="mr-1" />
+                          <span>Trực tiếp</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    <div className="flex items-center mb-2">
+                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium mr-2">
+                        {event.category}
+                      </span>
+                      {getCategoryIcon(event.category)}
+                    </div>
                     
-                    {/* Image preview */}
-                    {imagePreview && (
-                      <div className="mt-3">
-                        <div className="relative w-full h-40">
-                          <img 
-                            src={imagePreview} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover rounded-md border border-gray-300 dark:border-gray-600"
-                          />
-                        </div>
-                      </div>
+                    <h3 className="text-lg font-semibold mb-2 truncate">{event.name}</h3>
+                    
+                    <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
+                      <FaCalendarAlt className="mr-2" />
+                      <span>{moment(event.date).format('ddd, D/M/YYYY • HH:mm')}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-gray-600 dark:text-gray-400 mb-3">
+                      <FaMapMarkerAlt className="mr-2" />
+                      <span className="truncate">{event.location}</span>
+                    </div>
+                    
+                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{event.description}</p>
+                    
+                    {event.isJoined ? (
+                      <button
+                        className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium cursor-default"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Đã tham gia
+                      </button>
+                    ) : (
+                      <button
+                        className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium"
+                        onClick={(e) => handleJoinEvent(event.id, e)}
+                      >
+                        Tham gia sự kiện
+                      </button>
                     )}
                   </div>
-                  
-                  {/* Mô tả */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Mô tả *
-                    </label>
-                    <textarea
-                      name="description"
-                      value={newEvent.description}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+      
+      {/* Create Event Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-semibold">Tạo Sự kiện Thể thao Mới</h2>
+              <button onClick={() => {
+                setShowCreateModal(false)
+                setErrors({})
+                setNewEvent({
+                  name: '',
+                  date: '',
+                  time: '',
+                  endDate: '',
+                  endTime: '',
+                  location: '',
+                  category: '',
+                  maxParticipants: '',
+                  image: '',
+                  description: '',
+                  eventType: 'offline'
+                })
+                setImagePreview('')
+              }} className="text-gray-500 hover:text-gray-700">
+                <FaTimes size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateEvent} className="space-y-6">
+              {/* Form fields... updated with Vietnamese labels and placeholders */}
+              <div>
+                <label htmlFor="eventName" className="block text-sm font-medium mb-1">Tên sự kiện</label>
+                <input
+                  type="text"
+                  id="eventName"
+                  name="name"
+                  value={newEvent.name}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              </div>
+              
+              {/* Event Type Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Loại sự kiện</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="eventType"
+                      value="offline"
+                      checked={newEvent.eventType === 'offline'}
                       onChange={handleInputChange}
-                      rows="4"
-                      className={`w-full p-2 border ${errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                      placeholder="Mô tả chi tiết về sự kiện"
-                    ></textarea>
-                    {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
-                  </div>
+                      className="mr-2"
+                    />
+                    Trực tiếp
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="eventType"
+                      value="online"
+                      checked={newEvent.eventType === 'online'}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    Trực tuyến
+                  </label>
+                </div>
+              </div>
+              
+              {/* Dates and Times */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="eventDate" className="block text-sm font-medium mb-1">Ngày bắt đầu</label>
+                  <input
+                    type="date"
+                    id="eventDate"
+                    name="date"
+                    value={newEvent.date}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  />
+                  {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
+                </div>
+                <div>
+                  <label htmlFor="eventTime" className="block text-sm font-medium mb-1">Giờ bắt đầu</label>
+                  <input
+                    type="time"
+                    id="eventTime"
+                    name="time"
+                    value={newEvent.time}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  />
+                  {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time}</p>}
                 </div>
                 
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                {/* End Date/Time - Now shown for ALL event types */}
+                <>
+                  <div>
+                    <label htmlFor="eventEndDate" className="block text-sm font-medium mb-1">Ngày kết thúc</label>
+                    <input
+                      type="date"
+                      id="eventEndDate"
+                      name="endDate"
+                      value={newEvent.endDate}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    />
+                    {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="eventEndTime" className="block text-sm font-medium mb-1">Giờ kết thúc</label>
+                    <input
+                      type="time"
+                      id="eventEndTime"
+                      name="endTime"
+                      value={newEvent.endTime}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    />
+                    {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>}
+                  </div>
+                </>
+              </div>
+
+              {/* Location (for offline) or Platform (for online) */}
+              <div>
+                <label htmlFor="eventLocation" className="block text-sm font-medium mb-1">
+                  {newEvent.eventType === 'offline' ? 'Địa điểm' : 'Nền tảng (VD: Zoom, Google Meet)'}
+                </label>
+                <input
+                  type="text"
+                  id="eventLocation"
+                  name="location"
+                  value={newEvent.location}
+                  onChange={handleInputChange}
+                  placeholder={newEvent.eventType === 'offline' ? 'VD: Công viên Thống Nhất' : 'VD: Google Meet'}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                />
+                {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
+              </div>
+              
+              {/* Category and Max Participants */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="eventCategory" className="block text-sm font-medium mb-1">Thể loại</label>
+                  <select
+                    id="eventCategory"
+                    name="category"
+                    value={newEvent.category}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800"
                   >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  >
-                    Tạo sự kiện
-                  </button>
+                    <option value="">Chọn thể loại</option>
+                    {categories.filter(cat => cat !== 'all').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                 </div>
-              </form>
-            </div>
+                <div>
+                  <label htmlFor="maxParticipants" className="block text-sm font-medium mb-1">Số người tham gia tối đa</label>
+                  <input
+                    type="number"
+                    id="maxParticipants"
+                    name="maxParticipants"
+                    value={newEvent.maxParticipants}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  />
+                  {errors.maxParticipants && <p className="text-red-500 text-sm mt-1">{errors.maxParticipants}</p>}
+                </div>
+              </div>
+              
+              {/* Image URL and Preview */}
+              <div>
+                <label htmlFor="eventImage" className="block text-sm font-medium mb-1">URL Hình ảnh bìa</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="text"
+                    id="eventImage"
+                    name="image"
+                    placeholder="Dán URL hình ảnh vào đây"
+                    value={newEvent.image}
+                    onChange={handleImageChange} // Use handleImageChange to update preview
+                    className="flex-grow px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleUploadClick} 
+                    className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100"
+                  >
+                    <FaUpload />
+                  </button>
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange} // Handle direct file upload
+                    className="hidden"
+                    accept="image/*"
+                  />
+                </div>
+                {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image}</p>}
+                {imagePreview && (
+                  <div className="mt-4">
+                    <img src={imagePreview} alt="Xem trước hình ảnh" className="max-h-40 rounded-lg object-cover" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Description */}
+              <div>
+                <label htmlFor="eventDescription" className="block text-sm font-medium mb-1">Mô tả sự kiện</label>
+                <textarea
+                  id="eventDescription"
+                  name="description"
+                  value={newEvent.description}
+                  onChange={handleInputChange}
+                  rows="4"
+                  placeholder="Cung cấp thông tin chi tiết về sự kiện..."
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                ></textarea>
+                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+              </div>
+              
+              <div className="flex justify-end space-x-4 pt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setShowCreateModal(false)} 
+                  className="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                >
+                  Tạo sự kiện
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 } 

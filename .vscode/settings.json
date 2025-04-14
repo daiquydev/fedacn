@@ -3923,7 +3923,7 @@
   "git.enableCommitSigning": false,
 
   // Whether git is enabled.
-  "git.enabled": false,
+  "git.enabled": true,
 
   // Commit all changes when there are no staged changes.
   "git.enableSmartCommit": false,
@@ -3962,7 +3962,7 @@
   "git.ignoreWindowsGit27Warning": false,
 
   // Controls when to show commit message input validation.
-  "git.inputValidation": "warn",
+  "git.inputValidation": true,
 
   // Controls the commit message length threshold for showing a warning.
   "git.inputValidationLength": 72,
