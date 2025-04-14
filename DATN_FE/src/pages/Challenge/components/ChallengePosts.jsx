@@ -61,7 +61,7 @@ export default function ChallengePosts({ challengeId, userProgress, canPost }) {
     <div className="mt-8">
       <h2 className="text-2xl font-semibold mb-6 flex items-center">
         <span>Bài đăng cộng đồng</span>
-        {canPost && (
+        {/* {canPost && (
           <button
             onClick={() => setCreatePostModalOpen(true)}
             className="ml-auto text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-3 py-1 rounded-full flex items-center"
@@ -69,7 +69,7 @@ export default function ChallengePosts({ challengeId, userProgress, canPost }) {
             <FaRegEdit className="mr-1" /> 
             Tạo bài viết
           </button>
-        )}
+        )} */}
       </h2>
       
       <div className="space-y-6">

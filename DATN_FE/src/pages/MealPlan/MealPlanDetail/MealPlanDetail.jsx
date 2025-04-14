@@ -60,84 +60,236 @@ export default function MealPlanDetail() {
           },
           days: [
             {
+              id: 1,
               day: 1,
               meals: [
-                {
-                  type: 'Sáng',
-                  content: 'Yến mạch nấu với sữa hạnh nhân + 1 quả chuối + 5 quả hạnh nhân',
+                { 
+                  type: 'Sáng', 
+                  content: 'Yến mạch sữa hạnh nhân với trái cây',
                   calories: 320,
                   protein: 12,
                   carbs: 45,
                   fat: 10,
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
                 },
-                {
-                  type: 'Trưa',
-                  content: 'Salad gà nướng với rau xanh, cà chua, dưa chuột, dầu olive',
+                { 
+                  type: 'Trưa', 
+                  content: 'Salad gà nướng với rau xanh',
                   calories: 450,
                   protein: 35,
                   carbs: 25,
                   fat: 20,
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'
                 },
-                {
-                  type: 'Tối',
-                  content: 'Cá hồi nướng với măng tây và khoai lang nướng',
+                { 
+                  type: 'Tối', 
+                  content: 'Cá hồi nướng với măng tây',
                   calories: 480,
                   protein: 30,
                   carbs: 40,
                   fat: 15,
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'
-                },
-                {
-                  type: 'Snack',
-                  content: 'Sữa chua Hy Lạp với hỗn hợp quả mọng',
-                  calories: 180,
-                  protein: 15,
-                  carbs: 15,
-                  fat: 5,
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho 150g sữa chua Hy Lạp vào bát.</li><li>Thêm hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi).</li><li>Có thể thêm một ít hạt chia và mật ong (tùy chọn).</li></ol>'
                 }
               ]
             },
             {
+              id: 2,
               day: 2,
               meals: [
-                {
-                  type: 'Sáng',
-                  content: 'Sinh tố protein với sữa, chuối, bơ và bột protein',
+                { 
+                  type: 'Sáng', 
+                  content: 'Bánh mì nguyên cám với trứng',
                   calories: 350,
-                  protein: 25,
-                  carbs: 30,
-                  fat: 12
+                  protein: 18,
+                  carbs: 40,
+                  fat: 12,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nướng bánh mì nguyên cám.</li><li>Chiên trứng với chút dầu olive.</li><li>Đặt trứng lên bánh mì, thêm rau xanh và gia vị.</li></ol>'
                 },
-                {
-                  type: 'Trưa',
-                  content: 'Bún trộn thịt bò xào với nhiều rau sống và ít bún',
+                { 
+                  type: 'Trưa', 
+                  content: 'Cơm gạo lứt với đậu hũ',
                   calories: 420,
-                  protein: 30,
-                  carbs: 35,
-                  fat: 15
-                },
-                {
-                  type: 'Tối',
-                  content: 'Đậu hũ sốt cà chua với cơm gạo lứt',
-                  calories: 380,
                   protein: 20,
-                  carbs: 50,
-                  fat: 10
+                  carbs: 65,
+                  fat: 8,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với nước theo tỉ lệ 1:2.</li><li>Cắt đậu hũ thành khối vuông và ướp với xì dầu, tỏi.</li><li>Chiên hoặc nướng đậu hũ đến khi vàng.</li><li>Phục vụ với rau xanh và sốt.</li></ol>'
                 },
-                {
-                  type: 'Snack',
-                  content: 'Táo xanh với 1 muỗng bơ đậu phộng',
-                  calories: 200,
-                  protein: 5,
-                  carbs: 20,
-                  fat: 10
+                { 
+                  type: 'Tối', 
+                  content: 'Thịt gà nướng rau củ',
+                  calories: 450,
+                  protein: 40,
+                  carbs: 30,
+                  fat: 15,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt gà với gia vị, dầu olive trong 30 phút.</li><li>Cắt rau củ thành miếng vừa.</li><li>Xếp thịt gà và rau củ vào khay nướng.</li><li>Nướng ở 200°C trong khoảng 25-30 phút.</li></ol>'
                 }
               ]
             },
-            // Days 3-7 would be similar structures
+            {
+              id: 3,
+              day: 3,
+              meals: [
+                { 
+                  type: 'Sáng', 
+                  content: 'Sinh tố protein với trái cây',
+                  calories: 280,
+                  protein: 24,
+                  carbs: 30,
+                  fat: 8,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1 muỗng bột protein, 240ml sữa hạnh nhân, 1 muỗng bơ đậu phộng.</li><li>Xay đến khi mịn.</li></ol>'
+                },
+                { 
+                  type: 'Trưa', 
+                  content: 'Bún chả',
+                  calories: 550,
+                  protein: 30,
+                  carbs: 70,
+                  fat: 18,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt với hành, tỏi, đường, nước mắm, tiêu.</li><li>Nướng thịt trên bếp than hoa.</li><li>Làm nước chấm với nước mắm, đường, tỏi, ớt, chanh.</li><li>Trụng bún.</li><li>Ăn kèm với rau sống, chả nướng và nước chấm.</li></ol>'
+                },
+                { 
+                  type: 'Tối', 
+                  content: 'Canh rau củ với một ít thịt heo nạc',
+                  calories: 320,
+                  protein: 25,
+                  carbs: 30,
+                  fat: 12,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Đun sôi nước với xương hoặc nước dùng.</li><li>Thêm hành tím, tỏi băm nhỏ.</li><li>Thêm các loại rau củ (cà rốt, khoai tây, bắp cải).</li><li>Thêm thịt heo nạc thái mỏng.</li><li>Nêm với muối, tiêu và hạt nêm.</li><li>Nấu cho đến khi rau củ mềm.</li></ol>'
+                }
+              ]
+            },
+            {
+              id: 4,
+              day: 4,
+              meals: [
+                { 
+                  type: 'Sáng', 
+                  content: 'Phở gà',
+                  calories: 420,
+                  protein: 25,
+                  carbs: 60,
+                  fat: 10,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ninh xương gà và các gia vị (hồi, quế, đinh hương) trong 4-6 giờ.</li><li>Luộc thịt gà và xé sợi.</li><li>Luộc bánh phở.</li><li>Xếp bánh phở vào tô, đặt thịt gà lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm hành, ngò, giá đỗ và ớt tươi.</li></ol>'
+                },
+                { 
+                  type: 'Trưa', 
+                  content: 'Gỏi cuốn tôm thịt',
+                  calories: 220,
+                  protein: 15,
+                  carbs: 30,
+                  fat: 5,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc tôm và thịt heo.</li><li>Nhúng bánh tráng vào nước ấm.</li><li>Xếp rau xà lách, bún, rau thơm, thịt heo và tôm lên bánh tráng.</li><li>Cuộn chặt bánh tráng lại.</li><li>Làm nước sốt tương từ tương hột, đường, tỏi, ớt và nước cốt chanh.</li></ol>'
+                },
+                { 
+                  type: 'Tối', 
+                  content: 'Cơm chiên dương châu',
+                  calories: 480,
+                  protein: 20,
+                  carbs: 65,
+                  fat: 15,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu cơm trước và để nguội.</li><li>Cắt thịt xá xíu, lạp xưởng, thịt nguội thành hạt lựu.</li><li>Cắt nhỏ hành, tỏi, cà rốt, đậu Hà Lan.</li><li>Đánh trứng và làm trứng chén.</li><li>Xào tất cả nguyên liệu với cơm nguội.</li><li>Nêm gia vị vừa ăn.</li></ol>'
+                }
+              ]
+            },
+            {
+              id: 5,
+              day: 5,
+              meals: [
+                { 
+                  type: 'Sáng', 
+                  content: 'Cháo yến mạch bơ đậu phộng',
+                  calories: 350,
+                  protein: 14,
+                  carbs: 42,
+                  fat: 14,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 300ml nước hoặc sữa.</li><li>Thêm 1 muỗng canh bơ đậu phộng khi yến mạch đã mềm.</li><li>Thêm chút mật ong hoặc đường nâu và quế.</li><li>Trang trí với chuối thái lát và hạt chia.</li></ol>'
+                },
+                { 
+                  type: 'Trưa', 
+                  content: 'Cơm tấm sườn nướng',
+                  calories: 650,
+                  protein: 35,
+                  carbs: 85,
+                  fat: 20,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp sườn với sả, tỏi, đường, nước mắm, dầu hào.</li><li>Nướng sườn trên lửa than hoặc trong lò.</li><li>Nấu cơm tấm.</li><li>Làm nước mắm pha với đường, chanh, tỏi, ớt.</li><li>Phục vụ kèm đồ chua, dưa leo, cà chua.</li></ol>'
+                },
+                { 
+                  type: 'Tối', 
+                  content: 'Bánh xèo',
+                  calories: 480,
+                  protein: 18,
+                  carbs: 50,
+                  fat: 25,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột gạo với nghệ, muối và nước cốt dừa.</li><li>Làm nóng chảo, thêm dầu và đổ bột vào.</li><li>Thêm thịt heo, tôm và giá đỗ.</li><li>Đậy nắp để bánh chín giòn.</li><li>Gấp đôi bánh lại và dùng với rau sống và nước mắm pha.</li></ol>'
+                }
+              ]
+            },
+            {
+              id: 6,
+              day: 6,
+              meals: [
+                { 
+                  type: 'Sáng', 
+                  content: 'Bánh mì kẹp trứng cà chua',
+                  calories: 380,
+                  protein: 15,
+                  carbs: 45,
+                  fat: 18,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Chiên trứng với muối và tiêu.</li><li>Thái mỏng cà chua.</li><li>Cắt đôi bánh mì và phết mayonnaise.</li><li>Đặt trứng, cà chua và một ít rau vào giữa bánh mì.</li></ol>'
+                },
+                { 
+                  type: 'Trưa', 
+                  content: 'Bún bò Huế',
+                  calories: 520,
+                  protein: 30,
+                  carbs: 65,
+                  fat: 15,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu nước dùng từ xương bò, sả, gừng và các gia vị.</li><li>Thái thịt bò và giò heo thành lát mỏng.</li><li>Trụng bún rồi cho vào tô.</li><li>Xếp thịt bò và giò heo lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm rau sống, chanh và ớt.</li></ol>'
+                },
+                { 
+                  type: 'Tối', 
+                  content: 'Salad cá ngừ với trứng luộc',
+                  calories: 390,
+                  protein: 35,
+                  carbs: 20,
+                  fat: 18,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc trứng trong 8 phút, sau đó bóc vỏ và cắt làm tư.</li><li>Chuẩn bị rau xanh như xà lách, cải mầm, cà chua bi.</li><li>Mở hộp cá ngừ, để ráo nước.</li><li>Trộn tất cả nguyên liệu với dầu olive, chanh và gia vị.</li></ol>'
+                }
+              ]
+            },
+            {
+              id: 7,
+              day: 7,
+              meals: [
+                { 
+                  type: 'Sáng', 
+                  content: 'Pancake bột yến mạch với mật ong',
+                  calories: 400,
+                  protein: 12,
+                  carbs: 60,
+                  fat: 10,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột yến mạch, baking powder, một chút muối.</li><li>Thêm sữa, trứng và khuấy đều.</li><li>Đổ từng muỗng bột vào chảo nóng.</li><li>Chiên đến khi vàng hai mặt.</li><li>Phục vụ với mật ong và một ít quả mọng.</li></ol>'
+                },
+                { 
+                  type: 'Trưa', 
+                  content: 'Cơm gà Hải Nam',
+                  calories: 580,
+                  protein: 32,
+                  carbs: 75,
+                  fat: 15,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc gà nguyên con với gừng, hành lá.</li><li>Dùng nước luộc gà để nấu cơm.</li><li>Thái gà thành miếng vừa ăn.</li><li>Làm nước sốt từ gừng, tỏi, dầu mè.</li><li>Phục vụ cơm với gà và sốt, kèm dưa chuột.</li></ol>'
+                },
+                { 
+                  type: 'Tối', 
+                  content: 'Súp kem nấm với bánh mì nướng',
+                  calories: 360,
+                  protein: 10,
+                  carbs: 45,
+                  fat: 16,
+                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Xào hành tây, tỏi với bơ.</li><li>Thêm nấm đã thái nhỏ và xào đến khi vàng.</li><li>Thêm bột mì, khuấy đều.</li><li>Từ từ thêm nước dùng gà và kem tươi.</li><li>Nấu nhỏ lửa đến khi súp sánh.</li><li>Nướng bánh mì với một ít bơ tỏi.</li><li>Phục vụ súp nóng với bánh mì.</li></ol>'
+                }
+              ]
+            }
           ]
         };
         

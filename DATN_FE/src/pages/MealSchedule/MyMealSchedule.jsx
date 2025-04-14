@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarAlt, FaArrowLeft, FaArrowRight, FaCheckCircle, FaRegClock, FaList, FaRegCalendarCheck, FaExclamationCircle, FaUtensils, FaChartLine, FaCheckSquare, FaBell, FaRegEdit, FaCalendarDay } from 'react-icons/fa';
+import { FaCalendarAlt, FaArrowLeft, FaArrowRight, FaCheckCircle, FaRegClock, FaList, FaRegCalendarCheck, FaExclamationCircle, FaUtensils, FaChartLine, FaCheckSquare, FaBell, FaRegEdit, FaCalendarDay, FaUsers, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import MealProgress from './components/MealProgress';
 import { toast } from 'react-hot-toast';
 
@@ -13,6 +13,10 @@ export default function MyMealSchedule() {
   const [daysInWeek, setDaysInWeek] = useState([]);
   const [recentDays, setRecentDays] = useState([]);
   const [currentMeals, setCurrentMeals] = useState([]);
+  
+  // Thêm state cho modal hiển thị cách chế biến
+  const [showCookingModal, setShowCookingModal] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
 
   // Thêm state và ref để theo dõi bữa ăn đã hoàn thành
   const [completedMealIds, setCompletedMealIds] = useState(() => {
@@ -52,7 +56,7 @@ export default function MyMealSchedule() {
   
   // Kiểm tra xem bữa ăn có hoàn thành hay không
   const isMealCompleted = (mealId) => {
-    return completedMealIds.includes(mealId) || 
+    return completedMealIds.includes(mealId) && 
            currentMeals.some(meal => meal.id === mealId && meal.completed);
   };
 
@@ -148,11 +152,17 @@ export default function MyMealSchedule() {
           category: 'Giảm cân',
           calories: 1500,
           activeDay: '2024-01-15T00:00:00Z',
+          activeUsers: 245,
+          activeUsersTrend: 15, // Tăng 15 người so với hôm qua
           todayMeals: [
-            {id: 1, type: 'Sáng', name: 'Yến mạch sữa hạnh nhân với trái cây', calories: 350, completed: true},
-            {id: 2, type: 'Trưa', name: 'Salad gà nướng với rau xanh', calories: 450, completed: false},
-            {id: 3, type: 'Tối', name: 'Cá hồi nướng với măng tây', calories: 480, completed: false},
-            {id: 4, type: 'Snack', name: 'Sữa chua Hy Lạp với hỗn hợp quả mọng', calories: 180, completed: true}
+            {id: 1, type: 'Sáng', name: 'Yến mạch sữa hạnh nhân với trái cây', calories: 350, completed: true, 
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'},
+            {id: 2, type: 'Trưa', name: 'Salad gà nướng với rau xanh', calories: 450, completed: false,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'},
+            {id: 3, type: 'Tối', name: 'Cá hồi nướng với măng tây', calories: 480, completed: false,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'},
+            {id: 4, type: 'Snack', name: 'Sữa chua Hy Lạp với hỗn hợp quả mọng', calories: 180, completed: true,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho 150g sữa chua Hy Lạp vào bát.</li><li>Thêm hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi).</li><li>Có thể thêm một ít hạt chia và mật ong (tùy chọn).</li></ol>'}
           ]
         },
         {
@@ -168,11 +178,17 @@ export default function MyMealSchedule() {
           category: 'Tăng cơ',
           calories: 2500,
           activeDay: '2024-01-16T00:00:00Z',
+          activeUsers: 173,
+          activeUsersTrend: -8, // Giảm 8 người so với hôm qua
           todayMeals: [
-            {id: 1, type: 'Sáng', name: 'Smoothie protein với chuối và bơ', calories: 550, completed: true},
-            {id: 2, type: 'Trưa', name: 'Cơm gạo lứt với ức gà và rau', calories: 650, completed: true},
-            {id: 3, type: 'Tối', name: 'Bít tết bò với khoai lang nướng', calories: 750, completed: false},
-            {id: 4, type: 'Snack', name: 'Sữa và một nắm hạt', calories: 300, completed: true}
+            {id: 1, type: 'Sáng', name: 'Smoothie protein với chuối và bơ', calories: 550, completed: true,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1/2 quả bơ, 1 muỗng bột protein, 240ml sữa hạnh nhân.</li><li>Thêm đá nếu thích đồ uống lạnh.</li><li>Xay đến khi hỗn hợp mịn.</li><li>Có thể thêm mật ong hoặc quế để tăng hương vị.</li></ol>'},
+            {id: 2, type: 'Trưa', name: 'Cơm gạo lứt với ức gà và rau', calories: 650, completed: true,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với tỉ lệ 1:2 (gạo:nước).</li><li>Ướp ức gà với muối, tiêu, bột tỏi, và dầu olive.</li><li>Nướng hoặc áp chảo ức gà đến khi chín.</li><li>Cắt ức gà thành miếng vừa ăn.</li><li>Xào rau củ với dầu olive và tỏi.</li><li>Trình bày gạo lứt, ức gà và rau củ trên đĩa.</li></ol>'},
+            {id: 3, type: 'Tối', name: 'Bít tết bò với khoai lang nướng', calories: 750, completed: false,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt bò với muối, tiêu, tỏi, và một chút dầu olive trong 30 phút.</li><li>Rửa sạch và cắt khoai lang thành miếng vừa.</li><li>Trộn khoai lang với dầu olive, muối, tiêu, bột paprika.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút.</li><li>Nướng hoặc áp chảo thịt bò theo mức độ chín mong muốn.</li><li>Để thịt nghỉ trong 5 phút trước khi cắt và phục vụ.</li></ol>'},
+            {id: 4, type: 'Snack', name: 'Sữa và một nắm hạt', calories: 300, completed: true,
+             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Chuẩn bị một ly sữa tươi hoặc sữa hạnh nhân không đường.</li><li>Trộn các loại hạt như hạnh nhân, hạt điều, óc chó, và hạt bí ngô.</li><li>Có thể rang nhẹ các loại hạt trước khi ăn để tăng hương vị.</li></ol>'}
           ]
         }
       ];
@@ -377,6 +393,53 @@ export default function MyMealSchedule() {
                 </div>
               </div>
 
+              {/* Phần người dùng đang áp dụng - đặt ngay sau phần hành động nhanh */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-md p-5 mb-6 border border-blue-100 dark:border-blue-800">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-medium text-gray-900 dark:text-white flex items-center">
+                    <FaUsers className="mr-2 text-blue-600 dark:text-blue-400" /> 
+                    Người dùng cùng áp dụng
+                  </h3>
+                  <div className={`flex items-center text-sm font-medium ${selectedPlan.activeUsersTrend > 0 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : 'text-red-600 dark:text-red-400'}`}>
+                    {selectedPlan.activeUsersTrend > 0 
+                      ? <FaArrowUp className="mr-1" /> 
+                      : <FaArrowDown className="mr-1" />}
+                    {Math.abs(selectedPlan.activeUsersTrend)} so với hôm qua
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline">
+                    <div className="text-4xl font-bold text-blue-700 dark:text-blue-300">
+                      {selectedPlan.activeUsers.toLocaleString()}
+                    </div>
+                    <div className="ml-2 text-base text-blue-600 dark:text-blue-400">
+                      người đang theo dõi hôm nay
+                    </div>
+                  </div>
+                  
+                  <div className="w-1/3">
+                    <div className="flex space-x-1">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <div 
+                          key={i} 
+                          className={`h-2 flex-1 rounded-full ${
+                            i < Math.ceil(selectedPlan.activeUsers / 50) 
+                              ? 'bg-blue-600 dark:bg-blue-400' 
+                              : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-1 text-xs text-blue-700 dark:text-blue-300 text-right">
+                      Thực đơn này đang được cộng đồng ưa chuộng
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Today's meals */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Today Column */}
@@ -419,23 +482,35 @@ export default function MyMealSchedule() {
                             </div>
                             <div className="text-right">
                               <span className="text-sm font-medium text-gray-900 dark:text-white">{meal.calories} kcal</span>
-                              {!isMealCompleted(meal.id) ? (
-                                <button 
-                                  className="block mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                  onClick={() => markMealAsCompleted(meal.id)}
-                                >
-                                  Đánh dấu hoàn thành
-                                </button>
-                              ) : (
-                                <div className="flex items-center justify-end mt-1">
+                              <div className="flex mt-1 space-x-2 justify-end">
+                                {!isMealCompleted(meal.id) ? (
+                                  <button 
+                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                    onClick={() => markMealAsCompleted(meal.id)}
+                                  >
+                                    Đánh dấu hoàn thành
+                                  </button>
+                                ) : (
                                   <span className="text-xs text-green-600 dark:text-green-400 flex items-center">
                                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
                                     </svg>
                                     Đã hoàn thành
                                   </span>
-                                </div>
-                              )}
+                                )}
+                                {meal.cooking && (
+                                  <button 
+                                    className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMeal(meal);
+                                      setShowCookingModal(true);
+                                    }}
+                                  >
+                                    Cách chế biến
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -559,6 +634,57 @@ export default function MyMealSchedule() {
             >
               Thực đơn đã lưu
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cách chế biến */}
+      {showCookingModal && selectedMeal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex justify-center items-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-auto">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {selectedMeal.name} - {selectedMeal.type}
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowCookingModal(false);
+                  setSelectedMeal(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <div 
+                className="prose dark:prose-invert prose-sm max-w-none" 
+                dangerouslySetInnerHTML={{ __html: selectedMeal.cooking }}
+              />
+              <div className="mt-4 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-300">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                  </svg>
+                  <p>
+                    Món ăn này cung cấp {selectedMeal.calories} calo, góp phần vào chế độ dinh dưỡng hàng ngày của bạn.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowCookingModal(false);
+                  setSelectedMeal(null);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

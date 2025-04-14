@@ -74,7 +74,7 @@ const mockChallenge2 = {
   id: 2,
   title: "Cycling Adventure Challenge",
   startDate: "2025-03-10T00:00:00Z",
-  endDate: "2025-04-10T23:59:59Z",
+  endDate: "2025-05-10T23:59:59Z",
   category: "Cycling",
   description: "Thử thách đạp xe 300km trong 30 ngày. Khám phá những cung đường mới và kết nối với cộng đồng đạp xe!",
   targetValue: 300,

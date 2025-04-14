@@ -213,7 +213,7 @@ export default function CreateMealPlanModal({ onClose }) {
         protein: 2,
         carbs: 35,
         fat: 0,
-        image: 'https://images.unsplash.com/photo-1596451190630-186aff535bf2?w=600',
+        image: 'https://afamilycdn.com/150157425591193600/2024/9/19/untitled-1-09020008-1726738169086-17267381692741128852785.jpg',
         cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Rửa sạch khoai lang.</li><li>Dùng nĩa đâm vài lỗ trên khoai.</li><li>Nướng ở 200°C trong 45-60 phút hoặc đến khi mềm.</li><li>Có thể thêm chút bơ hoặc quế (tùy chọn).</li></ol>'
       },
       {
