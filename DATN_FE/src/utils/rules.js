@@ -294,3 +294,42 @@ export const schemaSendOtp = yup.object({
     .min(5, 'Độ dài từ 5 - 160 ký tự')
     .max(160, 'Độ dài từ 5 - 160 ký tự')
 })
+
+export const schemaHealthProfile = yup.object().shape({
+  gender: yup.string().required('Vui lòng chọn giới tính'),
+  age: yup
+    .number()
+    .required('Vui lòng nhập tuổi')
+    .positive('Tuổi phải là số dương')
+    .integer('Tuổi phải là số nguyên')
+    .max(120, 'Tuổi không hợp lệ'),
+  height: yup
+    .number()
+    .required('Vui lòng nhập chiều cao')
+    .positive('Chiều cao phải là số dương')
+    .min(50, 'Chiều cao tối thiểu là 50cm')
+    .max(250, 'Chiều cao tối đa là 250cm'),
+  weight: yup
+    .number()
+    .required('Vui lòng nhập cân nặng')
+    .positive('Cân nặng phải là số dương')
+    .min(20, 'Cân nặng tối thiểu là 20kg')
+    .max(300, 'Cân nặng tối đa là 300kg'),
+  activity_level: yup.string().required('Vui lòng chọn mức độ hoạt động'),
+  health_goal: yup.string().required('Vui lòng chọn mục tiêu sức khỏe'),
+  target_weight: yup
+    .number()
+    .nullable()
+    .transform((value) => (isNaN(value) ? null : value))
+    .when('health_goal', {
+      is: (val) => val === 'Giảm cân' || val === 'Tăng cân',
+      then: (schema) =>
+        schema
+          .required('Vui lòng nhập cân nặng mục tiêu')
+          .positive('Cân nặng mục tiêu phải là số dương')
+          .min(20, 'Cân nặng mục tiêu tối thiểu là 20kg')
+          .max(300, 'Cân nặng mục tiêu tối đa là 300kg')
+    }),
+  dietary_preferences: yup.string().nullable(),
+  allergies: yup.string().nullable()
+})

@@ -16,6 +16,7 @@ import MeBlog from './components/MeBlog'
 import MeAlbum from './components/MeAlbum'
 import MeRecipe from './components/MeRecipe'
 import { FaCheckCircle } from 'react-icons/fa'
+import HealthProfile from './components/HealthProfile'
 
 export default function Me() {
   const [modalAvatar, setModalAvatar] = useState(false)
@@ -170,7 +171,10 @@ export default function Me() {
           />
         </div>
         {userData?.data.result[0].role === 0 ? (
-          <>{toggleState === 0 && <MePost user={userData?.data.result[0]} />}</>
+          <>
+            {toggleState === 0 && <MePost user={userData?.data.result[0]} />}
+            {toggleState === 1 && <HealthProfile />}
+          </>
         ) : (
           <>
             {toggleState === 0 && <MePost user={userData?.data.result[0]} />}

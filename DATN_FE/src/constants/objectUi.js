@@ -29,6 +29,10 @@ export const navBarsProfileUser = [
   {
     id: 0,
     title: 'Diễn đàn'
+  },
+  {
+    id: 1,
+    title: 'Sức khỏe'
   }
 ]
 
