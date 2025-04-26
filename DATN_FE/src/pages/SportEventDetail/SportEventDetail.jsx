@@ -812,9 +812,9 @@ export default function SportEventDetail() {
                         value={progressUpdate.value}
                         onChange={handleProgressInputChange}
                         placeholder={`Nhập số ${event.targetUnit}`}
-                        min="0" // Allow 0 if needed, adjust validation accordingly
-                        step="any" // Allow decimals if appropriate for the unit
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        min="0"
+                        step="any"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
                         required
                       />
                     </div>
@@ -833,22 +833,22 @@ export default function SportEventDetail() {
                           placeholder="VD: 5.5"
                           min="0"
                           step="0.1"
-                          className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
                         />
                       </div>
                       {/* Time */}
                       <div>
                         <label htmlFor="progressTime" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Thời gian (HH:MM:SS)</label>
                         <input
-                          type="text" // Use text to allow flexible format, validation needed
+                          type="text"
                           id="progressTime"
                           name="time"
                           value={progressUpdate.time}
                           onChange={handleProgressInputChange}
                           placeholder="VD: 01:15:30"
-                          pattern="^\d{1,2}:\d{2}(:\d{2})?$" // Basic pattern, refine if needed
+                          pattern="^\d{1,2}:\d{2}(:\d{2})?$"
                           title="Nhập theo định dạng HH:MM hoặc HH:MM:SS"
-                          className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
                         />
                       </div>
                       {/* Calories */}
@@ -862,7 +862,7 @@ export default function SportEventDetail() {
                           onChange={handleProgressInputChange}
                           placeholder="VD: 350"
                           min="0"
-                          className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
                         />
                       </div>
                     </div>
@@ -877,7 +877,7 @@ export default function SportEventDetail() {
                         value={progressUpdate.notes}
                         onChange={handleProgressInputChange}
                         placeholder="Thêm ghi chú về buổi tập..."
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
                       ></textarea>
                     </div>
 

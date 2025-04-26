@@ -1,9 +1,67 @@
 import { useState, useRef, useEffect } from 'react'
-import { FaTimes, FaUpload, FaUtensils, FaCalendarAlt, FaTag, FaPlus, FaTrash, FaArrowLeft, FaArrowRight, FaGripLines, FaSearch, FaFilter } from 'react-icons/fa'
+import { FaTimes, FaUpload, FaUtensils, FaCalendarAlt, FaTag, FaPlus, FaTrash, FaArrowLeft, FaArrowRight, FaGripLines, FaSearch, FaFilter, FaExclamationTriangle } from 'react-icons/fa'
 import { IoMdTime } from 'react-icons/io'
-import { MdClose, MdFastfood } from 'react-icons/md'
+import { MdClose, MdFastfood, MdError } from 'react-icons/md'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+
+// Toast Component
+const Toast = ({ message, type = 'error', onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed top-4 right-4 z-50 animate-fade-in-down">
+      <div className={`${
+        type === 'error' ? 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100' : 
+        type === 'success' ? 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100' :
+        'bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100'
+      } px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2`}>
+        {type === 'error' && <MdError className="w-5 h-5" />}
+        <p>{message}</p>
+        <button 
+          onClick={onClose}
+          className="ml-auto p-1 hover:bg-black hover:bg-opacity-10 rounded-full"
+        >
+          <MdClose className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Confirm Dialog Component
+const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+        <div className="flex items-center mb-4 text-amber-500">
+          <FaExclamationTriangle className="w-6 h-6 mr-3" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Xác nhận</h3>
+        </div>
+        <p className="text-gray-700 dark:text-gray-300 mb-6">{message}</p>
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function CreateMealPlanModal({ onClose }) {
   const fileInputRef = useRef(null)
@@ -53,6 +111,19 @@ export default function CreateMealPlanModal({ onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [availableFoods, setAvailableFoods] = useState([]);
+  
+  // Thêm state cho dialog và toast
+  const [confirmDialog, setConfirmDialog] = useState({
+    show: false,
+    message: '',
+    action: null
+  });
+  
+  const [toast, setToast] = useState({
+    show: false,
+    message: '',
+    type: 'error'
+  });
 
   const categories = [
     'Giảm cân', 'Tăng cơ', 'Ăn sạch', 'Thuần chay', 
@@ -243,6 +314,36 @@ export default function CreateMealPlanModal({ onClose }) {
     setAvailableFoods(foodsData);
   }, []);
 
+  // Kiểm tra xem một ngày có đầy đủ thông tin hay không
+  const isDayComplete = (dayIndex) => {
+    const day = mealDays[dayIndex];
+    return day.meals.every(meal => 
+      meal.type.trim() !== '' && meal.foods.length > 0
+    );
+  };
+
+  // Kiểm tra và cảnh báo trước khi chuyển ngày
+  const validateBeforeDayChange = (targetDayIndex) => {
+    const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
+    
+    if (!isDayComplete(currentDayIndex)) {
+      setToast({
+        show: true,
+        message: 'Vui lòng hoàn thành tất cả các bữa ăn trong ngày hiện tại trước khi chuyển sang ngày khác.',
+        type: 'error'
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Handle day change with validation
+  const handleDayChange = (newDay) => {
+    if (validateBeforeDayChange()) {
+      setActiveDay(newDay);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -333,12 +434,26 @@ export default function CreateMealPlanModal({ onClose }) {
     setMealDays(updatedMealDays)
   }
 
+  // Cập nhật hàm xóa bữa ăn với xác nhận
   const handleRemoveMeal = (dayIndex, mealIndex) => {
     if (mealDays[dayIndex].meals.length <= 1) return // Keep at least one meal
     
-    const updatedMealDays = [...mealDays]
-    updatedMealDays[dayIndex].meals.splice(mealIndex, 1)
-    setMealDays(updatedMealDays)
+    setConfirmDialog({
+      show: true,
+      message: `Bạn có chắc chắn muốn xóa bữa ${mealDays[dayIndex].meals[mealIndex].type} không?`,
+      action: () => {
+        const updatedMealDays = [...mealDays]
+        updatedMealDays[dayIndex].meals.splice(mealIndex, 1)
+        setMealDays(updatedMealDays)
+        
+        setConfirmDialog({ show: false, message: '', action: null })
+        setToast({
+          show: true,
+          message: 'Đã xóa bữa ăn thành công.',
+          type: 'success'
+        })
+      }
+    });
   }
 
   // Hàm cập nhật tên bữa ăn
@@ -348,115 +463,75 @@ export default function CreateMealPlanModal({ onClose }) {
     setMealDays(updatedMealDays);
   };
 
-  // Thêm hàm thêm ngày mới
+  // Cập nhật hàm thêm ngày mới để thêm vào sau ngày hiện tại
   const handleAddDay = () => {
+    const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
+    const newDayIndex = currentDayIndex + 1;
+    
     const newDay = {
       id: `day-${Date.now()}`, // tạo id duy nhất
-      day: mealDays.length + 1,
+      day: newDayIndex + 1, // Số thứ tự tạm thời
       meals: [
         { type: 'Sáng', foods: [], description: '' },
         { type: 'Trưa', foods: [], description: '' },
         { type: 'Tối', foods: [], description: '' },
       ]
     }
-    setMealDays(prev => [...prev, newDay])
-    setActiveDay(newDay.day)
+    
+    // Tạo bản sao của mảng ngày
+    const updatedMealDays = [...mealDays];
+    
+    // Chèn ngày mới vào sau ngày hiện tại
+    updatedMealDays.splice(newDayIndex, 0, newDay);
+    
+    // Cập nhật lại số thứ tự ngày
+    const reindexedDays = updatedMealDays.map((day, index) => ({
+      ...day,
+      day: index + 1
+    }));
+    
+    setMealDays(reindexedDays);
+    setActiveDay(newDayIndex + 1); // Đặt active day là ngày mới
+    
+    setToast({
+      show: true,
+      message: 'Đã thêm ngày mới thành công.',
+      type: 'success'
+    });
   }
 
-  // Thêm hàm xóa ngày
+  // Cập nhật hàm xóa ngày với xác nhận
   const handleRemoveDay = (dayIndex) => {
     if (mealDays.length <= 1) return // Giữ ít nhất 1 ngày
     
-    const updatedMealDays = [...mealDays]
-    updatedMealDays.splice(dayIndex, 1)
-    
-    // Cập nhật lại số thứ tự ngày
-    const reindexedDays = updatedMealDays.map((day, index) => ({
-      ...day,
-      day: index + 1
-    }))
-    
-    setMealDays(reindexedDays)
-    
-    // Điều chỉnh active day nếu cần
-    if (activeDay > reindexedDays.length) {
-      setActiveDay(reindexedDays.length)
-    }
-  }
-
-  // Thêm hàm di chuyển ngày sang trái
-  const handleMoveLeft = (dayIndex) => {
-    if (dayIndex === 0) return // Không thể di chuyển sang trái ngày đầu tiên
-    
-    const updatedMealDays = [...mealDays]
-    const dayToMove = updatedMealDays[dayIndex]
-    updatedMealDays.splice(dayIndex, 1) // Xóa ngày tại vị trí hiện tại
-    updatedMealDays.splice(dayIndex - 1, 0, dayToMove) // Chèn vào vị trí mới
-    
-    // Cập nhật lại số thứ tự ngày
-    const reindexedDays = updatedMealDays.map((day, index) => ({
-      ...day,
-      day: index + 1
-    }))
-    
-    setMealDays(reindexedDays)
-    setActiveDay(dayIndex) // Cập nhật active day theo vị trí mới
-  }
-
-  // Thêm hàm di chuyển ngày sang phải
-  const handleMoveRight = (dayIndex) => {
-    if (dayIndex === mealDays.length - 1) return // Không thể di chuyển sang phải ngày cuối cùng
-    
-    const updatedMealDays = [...mealDays]
-    const dayToMove = updatedMealDays[dayIndex]
-    updatedMealDays.splice(dayIndex, 1) // Xóa ngày tại vị trí hiện tại
-    updatedMealDays.splice(dayIndex + 1, 0, dayToMove) // Chèn vào vị trí mới
-    
-    // Cập nhật lại số thứ tự ngày
-    const reindexedDays = updatedMealDays.map((day, index) => ({
-      ...day,
-      day: index + 1
-    }))
-    
-    setMealDays(reindexedDays)
-    setActiveDay(dayIndex + 2) // Cập nhật active day theo vị trí mới
-  }
-
-  // Bắt đầu drag
-  const [draggedDayIndex, setDraggedDayIndex] = useState(null)
-  
-  const handleDragStart = (dayIndex) => {
-    setDraggedDayIndex(dayIndex)
-  }
-  
-  const handleDragOver = (e, targetDayIndex) => {
-    e.preventDefault()
-    if (draggedDayIndex === null || draggedDayIndex === targetDayIndex) return
-  }
-  
-  const handleDrop = (e, targetDayIndex) => {
-    e.preventDefault()
-    if (draggedDayIndex === null || draggedDayIndex === targetDayIndex) return
-    
-    const updatedMealDays = [...mealDays]
-    const dayToMove = { ...updatedMealDays[draggedDayIndex] }
-    
-    updatedMealDays.splice(draggedDayIndex, 1)
-    updatedMealDays.splice(targetDayIndex, 0, dayToMove)
-    
-    // Cập nhật lại số thứ tự ngày
-    const reindexedDays = updatedMealDays.map((day, index) => ({
-      ...day,
-      day: index + 1
-    }))
-    
-    setMealDays(reindexedDays)
-    setActiveDay(targetDayIndex + 1)
-    setDraggedDayIndex(null)
-  }
-  
-  const handleDragEnd = () => {
-    setDraggedDayIndex(null)
+    setConfirmDialog({
+      show: true,
+      message: `Bạn có chắc chắn muốn xóa Ngày ${mealDays[dayIndex].day} không?`,
+      action: () => {
+        const updatedMealDays = [...mealDays]
+        updatedMealDays.splice(dayIndex, 1)
+        
+        // Cập nhật lại số thứ tự ngày
+        const reindexedDays = updatedMealDays.map((day, index) => ({
+          ...day,
+          day: index + 1
+        }))
+        
+        setMealDays(reindexedDays)
+        
+        // Điều chỉnh active day nếu cần
+        if (activeDay > reindexedDays.length) {
+          setActiveDay(reindexedDays.length)
+        }
+        
+        setConfirmDialog({ show: false, message: '', action: null })
+        setToast({
+          show: true,
+          message: 'Đã xóa ngày thành công.',
+          type: 'success'
+        })
+      }
+    });
   }
 
   const validateForm = () => {
@@ -549,7 +624,7 @@ export default function CreateMealPlanModal({ onClose }) {
             <div className="md:col-span-1 space-y-5">
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                  Ảnh đại diện
+                  Ảnh đại diện <span className="text-red-500">*</span>
                 </label>
                 <div 
                   onClick={() => fileInputRef.current.click()}
@@ -601,7 +676,7 @@ export default function CreateMealPlanModal({ onClose }) {
               <div className="space-y-4">
                 <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                    <FaUtensils className="inline mr-2 text-green-600 dark:text-green-500" /> Tên thực đơn
+                    <FaUtensils className="inline mr-2 text-green-600 dark:text-green-500" /> Tên thực đơn <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -617,7 +692,7 @@ export default function CreateMealPlanModal({ onClose }) {
               
                 <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                  Mô tả ngắn
+                  Mô tả ngắn <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="description"
@@ -633,7 +708,7 @@ export default function CreateMealPlanModal({ onClose }) {
               
                 <div>
                   <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                    <FaTag className="inline mr-2 text-green-600 dark:text-green-500" /> Phân loại
+                    <FaTag className="inline mr-2 text-green-600 dark:text-green-500" /> Phân loại <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="category"
@@ -685,85 +760,63 @@ export default function CreateMealPlanModal({ onClose }) {
                 
                 {/* Day tabs - Cải tiến giao diện */}
                 <div className="mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Danh sách ngày:</div>
-                  <div className="flex flex-nowrap items-center space-x-2 max-w-full overflow-x-auto py-1 px-0.5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                  {mealDays.map((day, index) => (
-                      <div 
-                        key={day.id || index}
-                        className={`flex items-center rounded-lg transition-all duration-200 ${
-                          activeDay === day.day 
-                            ? 'bg-green-600 text-white shadow-md' 
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-650'
-                        } ${draggedDayIndex === index ? 'opacity-50 scale-95' : ''}`}
-                        draggable="true"
-                        onDragStart={() => handleDragStart(index)}
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDrop={(e) => handleDrop(e, index)}
-                        onDragEnd={handleDragEnd}
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Chọn ngày:</div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
+                          if (currentDayIndex > 0 && validateBeforeDayChange()) {
+                            setActiveDay(mealDays[currentDayIndex - 1].day);
+                          }
+                        }}
+                        disabled={activeDay === 1}
+                        className={`p-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                          activeDay === 1 
+                            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
                       >
-                        <div className="flex items-center px-1.5 cursor-grab group">
-                          <FaGripLines className="w-3 h-3 text-current opacity-70 group-hover:opacity-100" />
-                        </div>
-                    <button
-                      type="button"
-                          className="px-3 py-2 text-sm font-medium"
-                      onClick={() => setActiveDay(day.day)}
-                    >
-                      Ngày {day.day}
-                    </button>
-                        <div className="flex items-center space-x-1 pr-1.5">
-                          {index > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => handleMoveLeft(index)}
-                              className="p-1 rounded-full hover:bg-black hover:bg-opacity-10 transition-colors"
-                              title="Di chuyển sang trái"
-                            >
-                              <FaArrowLeft className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                          {index < mealDays.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleMoveRight(index)}
-                              className="p-1 rounded-full hover:bg-black hover:bg-opacity-10 transition-colors"
-                              title="Di chuyển sang phải"
-                            >
-                              <FaArrowRight className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                          {mealDays.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDay(index)}
-                              className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors"
-                              title="Xóa ngày"
-                            >
-                              <FaTrash className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Nút thêm ngày */}
-                    <button
-                      type="button"
-                      onClick={handleAddDay}
-                      className="flex items-center px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-green-500 dark:hover:border-green-500 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-500 transition-colors"
-                      title="Thêm ngày mới"
-                    >
-                      <FaPlus className="w-4 h-4" />
-                      <span className="ml-1 font-medium">Thêm ngày</span>
-                    </button>
-                  </div>
-                  
-                  {/* Thông tin hướng dẫn */}
-                  <div className="flex items-center mt-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-750 p-2 rounded-lg">
-                    <svg className="w-4 h-4 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
-                    </svg>
-                    <p>Kéo để thay đổi thứ tự ngày, hoặc sử dụng nút mũi tên. Thêm ngày mới bằng nút +</p>
+                        <FaArrowLeft className="w-4 h-4" />
+                      </button>
+                      
+                      <select
+                        value={activeDay}
+                        onChange={(e) => {
+                          const newDay = parseInt(e.target.value);
+                          if (validateBeforeDayChange()) {
+                            setActiveDay(newDay);
+                          }
+                        }}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white appearance-none min-w-[120px]"
+                        style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundSize: "1.5em 1.5em", backgroundRepeat: "no-repeat"}}
+                      >
+                        {mealDays.map((day) => (
+                          <option key={day.id || day.day} value={day.day}>
+                            Ngày {day.day}
+                          </option>
+                        ))}
+                      </select>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
+                          if (currentDayIndex < mealDays.length - 1 && validateBeforeDayChange()) {
+                            setActiveDay(mealDays[currentDayIndex + 1].day);
+                          }
+                        }}
+                        disabled={activeDay === mealDays.length}
+                        className={`p-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                          activeDay === mealDays.length 
+                            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <FaArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
@@ -786,15 +839,18 @@ export default function CreateMealPlanModal({ onClose }) {
                             <div key={mealIndex} className="mb-6 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md">
                               <div className="flex justify-between items-center mb-3">
                                 <div className="flex items-center">
-                                  <input
-                                    type="text"
-                                    value={meal.type}
-                                    onChange={(e) => handleMealTypeChange(dayIndex, mealIndex, e.target.value)}
-                                    className={`font-medium text-green-600 dark:text-green-400 border-none py-1 px-2 rounded focus:ring-2 focus:ring-green-500 bg-transparent text-lg ${errors.meals[dayIndex]?.[mealIndex]?.type ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
-                                    placeholder="Loại bữa ăn"
-                                  />
+                                  <div className="relative flex items-center">
+                                    <input
+                                      type="text"
+                                      value={meal.type}
+                                      onChange={(e) => handleMealTypeChange(dayIndex, mealIndex, e.target.value)}
+                                      className={`font-medium text-green-600 dark:text-green-400 border-none py-1 px-2 rounded focus:ring-2 focus:ring-green-500 bg-transparent text-lg ${errors.meals[dayIndex]?.[mealIndex]?.type ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
+                                      placeholder="Loại bữa ăn"
+                                    />
+                                    <span className="text-red-500 ml-1">*</span>
+                                  </div>
                                   {errors.meals[dayIndex]?.[mealIndex]?.type && (
-                                    <span className="text-red-500 ml-2 text-sm">*</span>
+                                    <span className="text-red-500 ml-2 text-sm">Bắt buộc</span>
                                   )}
                                 </div>
                                 
@@ -854,7 +910,7 @@ export default function CreateMealPlanModal({ onClose }) {
                               {/* Hiển thị danh sách món ăn đã chọn */}
                               <div className="mb-4">
                                 <div className="flex justify-between items-center mb-2">
-                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Danh sách món ăn:</h5>
+                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Danh sách món ăn: <span className="text-red-500">*</span></h5>
                                   <button
                                     type="button"
                                     onClick={() => openFoodSelector(dayIndex, mealIndex)}
@@ -918,13 +974,66 @@ export default function CreateMealPlanModal({ onClose }) {
                           );
                         })}
                         
-                        <button
-                          type="button"
-                          onClick={() => handleAddMeal(dayIndex)}
-                          className="w-full py-3 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-500 hover:border-green-500 dark:hover:border-green-500 transition-colors"
-                        >
-                          <FaPlus className="mr-2" /> Thêm bữa ăn
-                        </button>
+                        <div className="flex justify-between mt-6 space-x-3">
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Kiểm tra nếu có nhiều hơn 1 ngày
+                                if (mealDays.length > 1) {
+                                  const dayIndex = mealDays.findIndex(day => day.day === activeDay);
+                                  handleRemoveDay(dayIndex);
+                                }
+                              }}
+                              className="px-3 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center"
+                              disabled={mealDays.length <= 1}
+                            >
+                              <FaTrash className="mr-1.5" />
+                              Xóa ngày
+                            </button>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Kiểm tra dữ liệu của ngày hiện tại
+                              const dayIndex = mealDays.findIndex(day => day.day === activeDay);
+                              let hasErrors = false;
+                              
+                              // Kiểm tra từng bữa ăn trong ngày
+                              mealDays[dayIndex].meals.forEach((meal, mealIndex) => {
+                                if (!meal.type.trim() || meal.foods.length === 0) {
+                                  hasErrors = true;
+                                  // Cập nhật lỗi
+                                  const newErrors = {...errors};
+                                  if (!newErrors.meals[dayIndex]) newErrors.meals[dayIndex] = {};
+                                  if (!newErrors.meals[dayIndex][mealIndex]) newErrors.meals[dayIndex][mealIndex] = {};
+                                  
+                                  if (!meal.type.trim()) newErrors.meals[dayIndex][mealIndex].type = true;
+                                  if (meal.foods.length === 0) newErrors.meals[dayIndex][mealIndex].foods = true;
+                                  
+                                  setErrors(newErrors);
+                                }
+                              });
+                              
+                              if (!hasErrors) {
+                                // Nếu không có lỗi, thêm ngày mới và chuyển đến ngày đó
+                                handleAddDay();
+                              } else {
+                                // Hiển thị thông báo popup thay vì alert
+                                setToast({
+                                  show: true,
+                                  message: 'Vui lòng hoàn thành tất cả các bữa ăn trong ngày hiện tại trước khi thêm ngày mới.',
+                                  type: 'error'
+                                });
+                              }
+                            }}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center ml-auto"
+                          >
+                            Thêm ngày tiếp theo
+                            <FaArrowRight className="ml-1.5" />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1108,6 +1217,24 @@ export default function CreateMealPlanModal({ onClose }) {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Render toast message */}
+      {toast.show && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast({...toast, show: false})} 
+        />
+      )}
+      
+      {/* Render confirm dialog */}
+      {confirmDialog.show && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.action}
+          onCancel={() => setConfirmDialog({show: false, message: '', action: null})}
+        />
       )}
     </div>
   )

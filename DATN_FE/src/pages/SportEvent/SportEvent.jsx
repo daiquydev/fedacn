@@ -269,7 +269,7 @@ export default function SportEvent() {
               placeholder="Tìm kiếm sự kiện..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
             />
             <FaSearch className="absolute left-3 top-3 text-gray-400" />
           </div>
@@ -277,7 +277,8 @@ export default function SportEvent() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white appearance-none"
+            style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundSize: "1.5em 1.5em", backgroundRepeat: "no-repeat"}}
           >
             <option value="all">Tất cả Thể loại</option>
             {categories.filter(cat => cat !== 'all').map(category => (
@@ -288,7 +289,8 @@ export default function SportEvent() {
           <select
             value={filterEventType}
             onChange={(e) => setFilterEventType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white appearance-none"
+            style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundSize: "1.5em 1.5em", backgroundRepeat: "no-repeat"}}
           >
             <option value="all">Tất cả Loại sự kiện</option>
             <option value="offline">Sự kiện Trực tiếp</option>
@@ -420,41 +422,41 @@ export default function SportEvent() {
             <form onSubmit={handleCreateEvent} className="space-y-6">
               {/* Form fields... updated with Vietnamese labels and placeholders */}
               <div>
-                <label htmlFor="eventName" className="block text-sm font-medium mb-1">Tên sự kiện</label>
+                <label htmlFor="eventName" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Tên sự kiện</label>
                 <input
                   type="text"
                   id="eventName"
                   name="name"
                   value={newEvent.name}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
               
               {/* Event Type Selection */}
               <div>
-                <label className="block text-sm font-medium mb-1">Loại sự kiện</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Loại sự kiện</label>
                 <div className="flex gap-4">
-                  <label className="flex items-center">
+                  <label className="flex items-center text-gray-700 dark:text-gray-200">
                     <input 
                       type="radio" 
                       name="eventType"
                       value="offline"
                       checked={newEvent.eventType === 'offline'}
                       onChange={handleInputChange}
-                      className="mr-2"
+                      className="mr-2 text-red-500 focus:ring-red-500"
                     />
                     Trực tiếp
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center text-gray-700 dark:text-gray-200">
                     <input 
                       type="radio" 
                       name="eventType"
                       value="online"
                       checked={newEvent.eventType === 'online'}
                       onChange={handleInputChange}
-                      className="mr-2"
+                      className="mr-2 text-red-500 focus:ring-red-500"
                     />
                     Trực tuyến
                   </label>
@@ -464,26 +466,26 @@ export default function SportEvent() {
               {/* Dates and Times */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="eventDate" className="block text-sm font-medium mb-1">Ngày bắt đầu</label>
+                  <label htmlFor="eventDate" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Ngày bắt đầu</label>
                   <input
                     type="date"
                     id="eventDate"
                     name="date"
                     value={newEvent.date}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                   />
                   {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
                 </div>
                 <div>
-                  <label htmlFor="eventTime" className="block text-sm font-medium mb-1">Giờ bắt đầu</label>
+                  <label htmlFor="eventTime" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Giờ bắt đầu</label>
                   <input
                     type="time"
                     id="eventTime"
                     name="time"
                     value={newEvent.time}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                   />
                   {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time}</p>}
                 </div>
@@ -491,26 +493,26 @@ export default function SportEvent() {
                 {/* End Date/Time - Now shown for ALL event types */}
                 <>
                   <div>
-                    <label htmlFor="eventEndDate" className="block text-sm font-medium mb-1">Ngày kết thúc</label>
+                    <label htmlFor="eventEndDate" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Ngày kết thúc</label>
                     <input
                       type="date"
                       id="eventEndDate"
                       name="endDate"
                       value={newEvent.endDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                     />
                     {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
                   </div>
                   <div>
-                    <label htmlFor="eventEndTime" className="block text-sm font-medium mb-1">Giờ kết thúc</label>
+                    <label htmlFor="eventEndTime" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Giờ kết thúc</label>
                     <input
                       type="time"
                       id="eventEndTime"
                       name="endTime"
                       value={newEvent.endTime}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                     />
                     {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>}
                   </div>
@@ -519,7 +521,7 @@ export default function SportEvent() {
 
               {/* Location (for offline) or Platform (for online) */}
               <div>
-                <label htmlFor="eventLocation" className="block text-sm font-medium mb-1">
+                <label htmlFor="eventLocation" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">
                   {newEvent.eventType === 'offline' ? 'Địa điểm' : 'Nền tảng (VD: Zoom, Google Meet)'}
                 </label>
                 <input
@@ -529,7 +531,7 @@ export default function SportEvent() {
                   value={newEvent.location}
                   onChange={handleInputChange}
                   placeholder={newEvent.eventType === 'offline' ? 'VD: Công viên Thống Nhất' : 'VD: Google Meet'}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                 />
                 {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
               </div>
@@ -537,13 +539,14 @@ export default function SportEvent() {
               {/* Category and Max Participants */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="eventCategory" className="block text-sm font-medium mb-1">Thể loại</label>
+                  <label htmlFor="eventCategory" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Thể loại</label>
                   <select
                     id="eventCategory"
                     name="category"
                     value={newEvent.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white appearance-none"
+                    style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundSize: "1.5em 1.5em", backgroundRepeat: "no-repeat"}}
                   >
                     <option value="">Chọn thể loại</option>
                     {categories.filter(cat => cat !== 'all').map(cat => (
@@ -553,7 +556,7 @@ export default function SportEvent() {
                   {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                 </div>
                 <div>
-                  <label htmlFor="maxParticipants" className="block text-sm font-medium mb-1">Số người tham gia tối đa</label>
+                  <label htmlFor="maxParticipants" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Số người tham gia tối đa</label>
                   <input
                     type="number"
                     id="maxParticipants"
@@ -561,7 +564,7 @@ export default function SportEvent() {
                     value={newEvent.maxParticipants}
                     onChange={handleInputChange}
                     min="1"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                   />
                   {errors.maxParticipants && <p className="text-red-500 text-sm mt-1">{errors.maxParticipants}</p>}
                 </div>
@@ -569,7 +572,7 @@ export default function SportEvent() {
               
               {/* Image URL and Preview */}
               <div>
-                <label htmlFor="eventImage" className="block text-sm font-medium mb-1">URL Hình ảnh bìa</label>
+                <label htmlFor="eventImage" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">URL Hình ảnh bìa</label>
                 <div className="flex items-center gap-4">
                   <input
                     type="text"
@@ -577,20 +580,20 @@ export default function SportEvent() {
                     name="image"
                     placeholder="Dán URL hình ảnh vào đây"
                     value={newEvent.image}
-                    onChange={handleImageChange} // Use handleImageChange to update preview
-                    className="flex-grow px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                    onChange={handleImageChange} 
+                    className="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                   />
                   <button 
                     type="button"
                     onClick={handleUploadClick} 
-                    className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 bg-white dark:bg-gray-700"
                   >
                     <FaUpload />
                   </button>
                   <input 
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleFileChange} // Handle direct file upload
+                    onChange={handleFileChange}
                     className="hidden"
                     accept="image/*"
                   />
@@ -605,7 +608,7 @@ export default function SportEvent() {
               
               {/* Description */}
               <div>
-                <label htmlFor="eventDescription" className="block text-sm font-medium mb-1">Mô tả sự kiện</label>
+                <label htmlFor="eventDescription" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Mô tả sự kiện</label>
                 <textarea
                   id="eventDescription"
                   name="description"
@@ -613,7 +616,7 @@ export default function SportEvent() {
                   onChange={handleInputChange}
                   rows="4"
                   placeholder="Cung cấp thông tin chi tiết về sự kiện..."
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
                 ></textarea>
                 {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
               </div>
@@ -622,7 +625,7 @@ export default function SportEvent() {
                 <button 
                   type="button" 
                   onClick={() => setShowCreateModal(false)} 
-                  className="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
                 >
                   Hủy
                 </button>
