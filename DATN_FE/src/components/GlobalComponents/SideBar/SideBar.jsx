@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
 // * React icons
-import { FaCookieBite, FaShareAlt, FaRunning, FaTrophy } from 'react-icons/fa'
+import { FaCookieBite, FaShareAlt, FaRunning, FaTrophy, FaChartLine } from 'react-icons/fa'
 import { BsFillCalendarHeartFill, BsFillHeartFill, BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
 import { MdMenu, MdSportsSoccer } from 'react-icons/md'
@@ -281,6 +281,15 @@ export default function SideBar() {
                 >
                   <FaTrophy size={25} className='min-w-max' />
                   Thử thách cộng đồng
+                </NavLink>
+              </li>
+              <li>
+                <NavLink 
+                  to={'/user-stats'} 
+                  className='link-custom'
+                >
+                  <FaChartLine size={25} className='min-w-max' />
+                  Thống kê tiến trình
                 </NavLink>
               </li>
 

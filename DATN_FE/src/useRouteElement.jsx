@@ -27,6 +27,7 @@ import {
   MealPlanEdit
 } from './pages/MealSchedule'
 import MealPlanManagement from './pages/MealSchedule/MealPlanManagement'
+import UserStats from './pages/UserStats'
 
 const HomeLanding = lazy(() => import('./pages/HomeLanding'))
 const Login = lazy(() => import('./pages/Login'))
@@ -597,6 +598,16 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <MealPlanEdit />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/user-stats',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <UserStats />
               </Suspense>
             </MainLayout>
           )
