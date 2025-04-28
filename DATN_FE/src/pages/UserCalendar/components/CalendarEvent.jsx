@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaUtensils, FaTrophy } from 'react-icons/fa'
+import { FaUtensils, FaTrophy, FaClock } from 'react-icons/fa'
 import { MdSportsSoccer } from 'react-icons/md'
 
 export default function CalendarEvent({ event, onClick, isCompact = false }) {
@@ -7,13 +7,13 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
   const getBgColor = () => {
     switch(event.type) {
       case 'event':
-        return 'bg-blue-100 dark:bg-blue-900/60 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200'
+        return 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-200'
       case 'challenge':
-        return 'bg-green-100 dark:bg-green-900/60 border-green-300 dark:border-green-700 text-green-800 dark:text-green-200'
+        return 'bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 dark:border-green-400 text-green-700 dark:text-green-200'
       case 'mealPlan':
-        return 'bg-orange-100 dark:bg-orange-900/60 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200'
+        return 'bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-500 dark:border-orange-400 text-orange-700 dark:text-orange-200'
       default:
-        return 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200'
+        return 'bg-gray-50 dark:bg-gray-800 border-l-4 border-gray-500 dark:border-gray-400 text-gray-700 dark:text-gray-200'
     }
   }
   
@@ -33,19 +33,29 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
   
   return (
     <div 
-      className={`px-2 py-1 rounded border ${getBgColor()} ${
+      className={`px-2 py-1.5 rounded ${getBgColor()} ${
         isCompact ? 'text-xs' : 'text-sm'
-      } cursor-pointer hover:opacity-90 truncate`}
+      } cursor-pointer hover:brightness-95 dark:hover:brightness-125 transition-all shadow-sm`}
       onClick={onClick}
+      title={event.title}
     >
-      <div className="flex items-center gap-1 truncate">
+      <div className="flex items-center gap-1.5 truncate">
         {getEventIcon()}
-        <span className="truncate">
+        <span className="font-medium truncate">
           {isCompact && event.type === 'mealPlan' && event.mealType ? `${event.mealType}: ` : ''}
           {event.title}
-          {event.startTime && !isCompact && ` (${event.startTime}${event.endTime ? ` - ${event.endTime}` : ''})`}
         </span>
       </div>
+      
+      {!isCompact && event.startTime && (
+        <div className="flex items-center gap-1 mt-1 text-xs opacity-80">
+          <FaClock size={10} />
+          <span>
+            {event.startTime}
+            {event.endTime ? ` - ${event.endTime}` : ''}
+          </span>
+        </div>
+      )}
     </div>
   )
 } 

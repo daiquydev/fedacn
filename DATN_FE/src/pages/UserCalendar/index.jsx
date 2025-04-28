@@ -5,10 +5,11 @@ import CalendarGrid from './components/CalendarGrid'
 import EventDetails from './components/EventDetails'
 import { mockEvents, mockChallenges, mockMealPlans } from './components/CalendarMockData'
 import { filterEvents } from './utils/calendarUtils'
+import { HiOutlineCalendar } from 'react-icons/hi'
 
 export default function UserCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [currentView, setCurrentView] = useState('month') // 'month', 'week', 'day'
+  const [currentView, setCurrentView] = useState('month') // 'month', 'week', 'day', 'agenda'
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [filters, setFilters] = useState({
@@ -70,6 +71,11 @@ export default function UserCalendar() {
 
   const handleDateClick = (date) => {
     setSelectedDate(date)
+    // Optionally change to day view when clicking on a date
+    if (currentView === 'month' || currentView === 'week') {
+      setCurrentView('day')
+      setCurrentDate(date)
+    }
   }
 
   const handleEventClick = (event) => {
@@ -97,7 +103,10 @@ export default function UserCalendar() {
       className="w-full h-full p-4 bg-white dark:bg-color-primary-dark dark:text-gray-300"
     >
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 dark:text-white">Lịch Cá Nhân</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <HiOutlineCalendar className="text-3xl text-green-500 dark:text-green-400" />
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Lịch Cá Nhân</h1>
+        </div>
         
         {/* Calendar Controls */}
         <CalendarHeader 
@@ -112,7 +121,7 @@ export default function UserCalendar() {
         />
         
         {/* Calendar Grid */}
-        <div className="bg-white dark:bg-color-primary-dark shadow rounded-lg overflow-hidden mt-4">
+        <div className="bg-white dark:bg-color-primary-dark shadow-md rounded-xl overflow-hidden my-4 border border-gray-200 dark:border-gray-700">
           <CalendarGrid 
             currentDate={currentDate}
             currentView={currentView}

@@ -40,20 +40,17 @@ export default function DayView({ currentDate, calendarItems, onDateClick, onEve
   const allDayEvents = getAllDayEvents()
   
   return (
-    <div className="day-view overflow-auto" style={{ height: '70vh' }}>
+    <div className="day-view">
       <div className="flex flex-col">
-        {/* Date header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold">
-            {format(currentDate, 'EEEE, d MMMM yyyy', { locale: vi })}
+        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-bold mb-2">
+            {format(currentDate, 'EEEE, dd/MM/yyyy', { locale: vi })}
           </h2>
-        </div>
-        
-        {/* All-day events */}
-        {allDayEvents.length > 0 && (
-          <div className="border-b border-gray-200 dark:border-gray-700 p-2">
-            <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">Cả ngày</div>
-            <div className="space-y-2">
+          
+          {/* All-day events */}
+          {allDayEvents.length > 0 && (
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Sự kiện cả ngày:</h3>
               {allDayEvents.map((event, index) => (
                 <CalendarEvent 
                   key={`${event.id}-${index}`}
@@ -62,17 +59,16 @@ export default function DayView({ currentDate, calendarItems, onDateClick, onEve
                 />
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
         
-        {/* Time slots */}
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-y-auto max-h-[calc(100vh-300px)]">
           {/* Time column */}
-          <div className="w-20 flex-shrink-0 border-r border-gray-200 dark:border-gray-700">
+          <div className="w-20 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/20">
             {timeSlots.map(time => (
               <div 
                 key={time} 
-                className="h-20 border-b border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 text-right pr-2 pt-2"
+                className="h-24 border-b border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 text-right pr-2 pt-1"
               >
                 {time}
               </div>
@@ -84,14 +80,24 @@ export default function DayView({ currentDate, calendarItems, onDateClick, onEve
             {timeSlots.map((time, index) => {
               const hour = parseInt(time.split(':')[0])
               const events = getEventsForHour(hour)
+              const isCurrentHour = new Date().getHours() === hour && isSameDay(currentDate, new Date())
               
               return (
                 <div 
                   key={index} 
-                  className="h-20 border-b border-gray-200 dark:border-gray-700 relative"
+                  className={`h-24 border-b border-gray-200 dark:border-gray-700 relative ${
+                    isCurrentHour ? 'bg-blue-50/50 dark:bg-blue-900/10' : 
+                    hour >= 8 && hour < 18 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/30'
+                  }`}
                 >
+                  {isCurrentHour && (
+                    <div className="absolute left-0 right-0 border-t-2 border-red-400 dark:border-red-500 z-10" 
+                      style={{ top: `${Math.floor(new Date().getMinutes() / 60 * 100)}%` }}
+                    ></div>
+                  )}
+                  
                   {events.length > 0 ? (
-                    <div className="p-1 space-y-1 absolute inset-0 overflow-y-auto">
+                    <div className="p-1.5 space-y-1.5 absolute inset-0 overflow-y-auto">
                       {events.map((event, eventIndex) => (
                         <CalendarEvent 
                           key={`${event.id}-${eventIndex}`}
