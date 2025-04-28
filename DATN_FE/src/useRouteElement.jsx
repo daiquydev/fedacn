@@ -28,6 +28,7 @@ import {
 } from './pages/MealSchedule'
 import MealPlanManagement from './pages/MealSchedule/MealPlanManagement'
 import UserStats from './pages/UserStats'
+import UserCalendar from './pages/UserCalendar'
 
 const HomeLanding = lazy(() => import('./pages/HomeLanding'))
 const Login = lazy(() => import('./pages/Login'))
@@ -608,6 +609,16 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <UserStats />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/user-calendar',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <UserCalendar />
               </Suspense>
             </MainLayout>
           )

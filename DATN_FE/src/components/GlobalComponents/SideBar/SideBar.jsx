@@ -19,6 +19,7 @@ import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
 import { FaUtensils } from 'react-icons/fa'
 import { IoIosArrowForward } from 'react-icons/io'
+import { FaCalendarAlt } from 'react-icons/fa'
 
 export default function SideBar() {
   let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
@@ -249,6 +250,12 @@ export default function SideBar() {
                 <NavLink to={'/schedule/my-eat-schedule'} className='link-custom '>
                   <BsFillCalendarHeartFill size={25} className='min-w-max' />
                   Lịch ăn uống
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to={'/user-calendar'} className='link-custom '>
+                  <FaCalendarAlt size={25} className='min-w-max' />
+                  Lịch Cá Nhân
                 </NavLink>
               </li>
               {/* <li>
