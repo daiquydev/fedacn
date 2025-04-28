@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { AiFillHeart, AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { CiHeart } from 'react-icons/ci'
-import { FaCheckCircle, FaUserFriends, FaMedal, FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes, FaImage, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaUserCircle, FaUsers, FaRunning } from 'react-icons/fa'
+import { FaCheckCircle, FaUserFriends, FaMedal, FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes, FaImage, FaCalendarAlt, FaMapMarkerAlt, FaTrophy, FaUserCircle, FaUsers } from 'react-icons/fa'
 import { MdPublic, MdVideocam, MdOutlineHistoryEdu, MdErrorOutline, MdCheckCircle } from 'react-icons/md'
 import moment from 'moment'
 import useravatar from '../../assets/images/useravatar.jpg'
@@ -13,6 +13,10 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import { allSportEvents, mockLeaderboard, mockPosts, mockLiveSessionParticipants } from '../../data/sportEvents'
 import toast from 'react-hot-toast'
+import AttendanceTracker from '../../components/AttendanceTracker'
+import SessionAttendanceSummary from '../../components/SessionAttendanceSummary'
+import SessionNotification from '../../components/SessionNotification'
+import ParticipantsList from '../../components/ParticipantsList'
 
 export default function SportEventDetail() {
   const { id } = useParams();
@@ -118,6 +122,27 @@ export default function SportEventDetail() {
     }
     // Remove event dependency as we use nextSession now
   }, [nextSession]); 
+
+  // Check if there's an upcoming session to show notification
+  useEffect(() => {
+    if (nextSession) {
+      const now = moment();
+      const sessionStart = moment(nextSession.sessionDate);
+      const minutesUntilSession = sessionStart.diff(now, 'minutes');
+      
+      // Show notification if session is starting within 30 minutes or has already started
+      if ((minutesUntilSession <= 30 && minutesUntilSession > 0) || isSessionActive) {
+        setShowSessionNotification(true);
+      }
+    }
+  }, [nextSession, isSessionActive]);
+  
+  // Handle joining session from notification
+  const handleJoinSessionFromNotification = () => {
+    setShowSessionNotification(false);
+    setShowVideoCall(true);
+    setActiveTab('details');
+  };
 
   const handleLike = () => {
     setIsLiked(!isLiked)
@@ -327,6 +352,20 @@ export default function SportEventDetail() {
     }
   };
   // --- End Progress Update Logic ---
+
+  // Convert mockLiveSessionParticipants to the format expected by ParticipantsList
+  const formatParticipantsForList = () => {
+    return mockLiveSessionParticipants.map(participant => ({
+      id: participant.id || participant.rank, // Use proper ID if available, otherwise rank
+      name: participant.name,
+      avatar: participant.avatar || useravatar,
+      isFollowed: participant.isFollowed || false,
+      isOnline: true, // For live session, all participants are online
+      // Additional status information that could be used
+      progress: participant.progress,
+      joinedAt: participant.joinedAt || new Date().toISOString()
+    }));
+  };
 
   if (isLoading) {
     return (
@@ -564,7 +603,9 @@ export default function SportEventDetail() {
                     <span className="bg-purple-500 w-2 h-6 mr-2 rounded-sm"></span>
                     Lịch sử các Buổi học
                   </h2>
-                  <ul className="space-y-4 max-h-72 overflow-y-auto pr-2">
+                  
+                  {/* Session Listing */}
+                  <ul className="space-y-4 max-h-72 overflow-y-auto pr-2 mb-4">
                     {event.sessions
                       .sort((a, b) => moment(a.sessionDate).diff(moment(b.sessionDate))) // Sort by date ascending
                       .map((session) => {
@@ -577,7 +618,7 @@ export default function SportEventDetail() {
                         } else if (nextSession && session.sessionId === nextSession.sessionId) {
                           statusText = 'Sắp diễn ra';
                           statusColorClass = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"; // Yellow for upcoming
-                        } else if (moment().isAfter(moment(session.sessionDate))) {
+                        
                            // Check if it was the *next* session but now time has passed the start time
                            // And it's not marked completed yet - could be missed or in progress if `isSessionActive` logic applied here
                            if(nextSession && session.sessionId === nextSession.sessionId && !isSessionActive) {
@@ -613,11 +654,42 @@ export default function SportEventDetail() {
                                 </span>
                               </div>
                             </div>
+
+                            {/* View button for completed sessions */}
+                            {session.isCompleted && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <details className="group">
+                                  <summary className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 cursor-pointer">
+                                    <svg className="w-4 h-4 mr-1.5 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                    Xem thông tin điểm danh
+                                  </summary>
+                                  <div className="mt-3">
+                                    <SessionAttendanceSummary 
+                                      session={session}
+                                      userId="current-user-id" // Replace with actual user ID when available
+                                    />
+                                  </div>
+                                </details>
+                              </div>
+                            )}
                           </li>
                         );
                       })
                     }
                   </ul>
+
+                  {/* Attendance Tips */}
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mt-4">
+                    <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-2">Lưu ý về điểm danh:</h3>
+                    <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-400 text-sm">
+                      <li>Vui lòng check-in khi bắt đầu tham gia buổi học</li>
+                      <li>Nếu bạn cần tạm thời rời khỏi buổi học, hãy check-out</li>
+                      <li>Khi quay lại, check-in lại để tiếp tục tính thời gian tham gia</li>
+                      <li>Hệ thống sẽ tự động ghi nhận thời gian đầu và cuối, cũng như thời gian vắng mặt</li>
+                    </ul>
+                  </div>
                 </div>
               )}
               
@@ -633,22 +705,47 @@ export default function SportEventDetail() {
                     </button>
                   </div>
                   
-                  <div className="aspect-w-16 aspect-h-9">
-                    <iframe
-                      src={event.videoCallUrl}
-                      allow="camera; microphone; display-capture; autoplay; clipboard-write; encrypted-media"
-                      allowFullScreen
-                      className="w-full h-[500px] rounded-lg border-0"
-                    ></iframe>
-                  </div>
-                  
-                  <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                    <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-2">Lưu ý:</h3>
-                    <ul className="list-disc list-inside space-y-1 text-yellow-700 dark:text-yellow-400">
-                      <li>Vui lòng cho phép trình duyệt truy cập camera và micro của bạn</li>
-                      <li>Đảm bảo bạn có kết nối internet ổn định</li>
-                      <li>Nếu bạn gặp vấn đề, hãy thử tải lại trang</li>
-                    </ul>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-2">
+                      <div className="aspect-w-16 aspect-h-9">
+                        <iframe
+                          src={event.videoCallUrl}
+                          allow="camera; microphone; display-capture; autoplay; clipboard-write; encrypted-media"
+                          allowFullScreen
+                          className="w-full h-[500px] rounded-lg border-0"
+                        ></iframe>
+                      </div>
+                      
+                      <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-2">Lưu ý:</h3>
+                        <ul className="list-disc list-inside space-y-1 text-yellow-700 dark:text-yellow-400">
+                          <li>Vui lòng cho phép trình duyệt truy cập camera và micro của bạn</li>
+                          <li>Đảm bảo bạn có kết nối internet ổn định</li>
+                          <li>Nếu bạn gặp vấn đề, hãy thử tải lại trang</li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-4">
+                      {/* Attendance Tracking Component */}
+                      <AttendanceTracker 
+                        session={nextSession}
+                        isActive={isSessionActive}
+                        userId="current-user-id" // Replace with actual user ID when available
+                      />
+                      
+                      {/* Participants List */}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                        <h3 className="text-lg font-semibold mb-3">Người tham gia ({mockLiveSessionParticipants.length})</h3>
+                        <ParticipantsList
+                          participants={formatParticipantsForList()}
+                          initialLimit={5}
+                          size="md"
+                          title=""
+                          showCount={false}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1374,6 +1471,15 @@ export default function SportEventDetail() {
           )}
         </div>
       </div>
+
+      {/* Session Notification */}
+      {showSessionNotification && nextSession && (
+        <SessionNotification 
+          session={nextSession}
+          onJoinSession={handleJoinSessionFromNotification}
+          onDismiss={() => setShowSessionNotification(false)}
+        />
+      )}
     </div>
   )
 } 

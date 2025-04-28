@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaTrophy, FaRunning, FaCalendarAlt, FaUpload, FaMedal, FaCamera, FaTimes, FaCloudUploadAlt, FaCheck } from 'react-icons/fa'
+import { FaTrophy, FaCalendarAlt, FaRunning, FaSwimmer, FaBiking, FaDumbbell, FaMedal, FaUpload, FaImage, FaVideo, FaCheck, FaChartBar, FaCloudUploadAlt, FaTimes, FaSync } from 'react-icons/fa'
+import { MdDirectionsWalk } from 'react-icons/md'
 import moment from 'moment'
+import { toast } from 'react-hot-toast'
 import ChallengeProgress from './components/ChallengeProgress'
-import toast from 'react-hot-toast'
+import SmartWatchSync from './components/SmartWatchSync'
 
 // Mock data
 const mockMyChallenges = [
@@ -217,223 +219,10 @@ const mockMyChallenges = [
   }
 ];
 
-// Thêm một modal component để upload evidence
-const EvidenceUploadModal = ({ isOpen, onClose, onSubmit, challengeId }) => {
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [caption, setCaption] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    // Chỉ cho phép upload tối đa 5 file
-    if (selectedFiles.length + files.length > 5) {
-      toast.error('Chỉ được tải lên tối đa 5 file!');
-      return;
-    }
-    
-    // Kiểm tra kích thước file (tối đa 5MB mỗi file)
-    const validFiles = files.filter(file => file.size <= 5 * 1024 * 1024);
-    if (validFiles.length < files.length) {
-      toast.error('Một số file quá lớn, kích thước tối đa là 5MB!');
-    }
-    
-    // Tạo preview URLs cho các file hình ảnh
-    const newFiles = validFiles.map(file => ({
-      file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-      type: file.type.startsWith('image/') ? 'image' : 'video'
-    }));
-    
-    setSelectedFiles(prev => [...prev, ...newFiles]);
-  };
-
-  const removeFile = (index) => {
-    setSelectedFiles(prev => {
-      const newFiles = [...prev];
-      // Giải phóng URL object để tránh memory leak
-      if (newFiles[index].preview) {
-        URL.revokeObjectURL(newFiles[index].preview);
-      }
-      newFiles.splice(index, 1);
-      return newFiles;
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (selectedFiles.length === 0) {
-      toast.error('Vui lòng tải lên ít nhất một bằng chứng!');
-      return;
-    }
-    
-    setIsUploading(true);
-    
-    try {
-      // Tạo FormData để gửi lên server
-      const formData = new FormData();
-      formData.append('challengeId', challengeId);
-      formData.append('caption', caption);
-      
-      selectedFiles.forEach((fileObj, index) => {
-        formData.append(`file${index}`, fileObj.file);
-      });
-      
-      // Giả lập API call
-      setTimeout(() => {
-        // Đây là nơi bạn sẽ gọi API thực tế
-        // await challengeApi.uploadEvidence(formData);
-        
-        toast.success('Tải lên bằng chứng thành công!');
-        
-        // Cleanup
-        selectedFiles.forEach(fileObj => {
-          if (fileObj.preview) {
-            URL.revokeObjectURL(fileObj.preview);
-          }
-        });
-        
-        // Đóng modal và cập nhật state
-        onSubmit(challengeId, {
-          id: Date.now(),
-          files: selectedFiles.map(f => ({
-            url: f.preview || '',
-            type: f.type
-          })),
-          caption,
-          timestamp: new Date().toISOString()
-        });
-        
-        setIsUploading(false);
-        setSelectedFiles([]);
-        setCaption('');
-        onClose();
-      }, 1500);
-    } catch (error) {
-      console.error('Error uploading evidence:', error);
-      toast.error('Có lỗi xảy ra khi tải lên bằng chứng!');
-      setIsUploading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-xl overflow-hidden">
-        <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Tải lên bằng chứng hoàn thành
-          </h3>
-          <button 
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 focus:outline-none"
-          >
-            <FaTimes />
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-4">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mô tả (không bắt buộc)
-            </label>
-            <textarea
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              placeholder="Mô tả về bằng chứng hoàn thành của bạn..."
-              rows="3"
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tải lên hình ảnh/video
-            </label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {selectedFiles.map((fileObj, index) => (
-                <div key={index} className="relative w-24 h-24 border rounded overflow-hidden">
-                  {fileObj.type === 'image' ? (
-                    <img 
-                      src={fileObj.preview} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 text-center p-1">
-                        Video
-                      </span>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeFile(index)}
-                    className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-bl"
-                  >
-                    <FaTimes size={12} />
-                  </button>
-                </div>
-              ))}
-              
-              {selectedFiles.length < 5 && (
-                <label className="w-24 h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded flex items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <FaCamera className="text-gray-400" />
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    multiple
-                  />
-                </label>
-              )}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Tối đa 5 file, mỗi file không quá 5MB. Định dạng hỗ trợ: JPEG, PNG, GIF, MP4.
-            </p>
-          </div>
-          
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md mr-2 hover:bg-gray-300 dark:hover:bg-gray-600"
-              disabled={isUploading}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <>
-                  <span className="animate-spin mr-2">
-                    <FaCloudUploadAlt />
-                  </span>
-                  Đang tải lên...
-                </>
-              ) : (
-                <>
-                  <FaCloudUploadAlt className="mr-2" />
-                  Tải lên
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 export default function MyChallenge() {
   const navigate = useNavigate()
   const [myChallenges, setMyChallenges] = useState(mockMyChallenges)
   const [activeTab, setActiveTab] = useState('active') // active, completed
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
   const [evidences, setEvidences] = useState({});
 
@@ -444,62 +233,30 @@ export default function MyChallenge() {
     return moment(challenge.endDate).isBefore(moment())
   })
 
-  const handleUploadEvidence = (challengeId) => {
-    setSelectedChallengeId(challengeId);
-    setUploadModalOpen(true);
-  }
-
-  const handleEvidenceSubmitted = (challengeId, evidenceData) => {
-    setEvidences(prev => ({
-      ...prev,
-      [challengeId]: [...(prev[challengeId] || []), evidenceData]
-    }));
-    
-    const updatedChallenges = myChallenges.map(challenge => {
-      if (challenge.id === challengeId) {
-        const newProgress = Math.min(100, challenge.progress + 10);
-        return { ...challenge, progress: newProgress };
-      }
-      return challenge;
-    });
-    
-    setMyChallenges(updatedChallenges);
-    
-    toast.success('Bằng chứng đã được cập nhật!');
-  }
-
   const handleRemoveChallenge = (challengeId) => {
     setMyChallenges(prev => prev.filter(c => c.id !== challengeId))
   }
 
-  const renderEvidences = (challengeId) => {
-    const challengeEvidences = evidences[challengeId] || [];
-    if (challengeEvidences.length === 0) return null;
+  const renderActivities = (challengeId) => {
+    // Lấy challenge cụ thể từ danh sách
+    const challenge = myChallenges.find(c => c.id === challengeId);
+    if (!challenge || !challenge.recentActivities || challenge.recentActivities.length === 0) {
+      return null;
+    }
     
     return (
       <div className="mt-4">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Bằng chứng đã nộp
+          Hoạt động gần đây từ thiết bị
         </h4>
         <div className="flex flex-wrap gap-2">
-          {challengeEvidences.map((evidence, index) => (
-            <div key={index} className="relative w-16 h-16 border rounded overflow-hidden">
-              {evidence.files[0]?.type === 'image' ? (
-                <img 
-                  src={evidence.files[0]?.url} 
-                  alt="Evidence" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Video</span>
-                </div>
-              )}
-              {evidence.files.length > 1 && (
-                <div className="absolute bottom-0 right-0 bg-black bg-opacity-60 text-white text-xs px-1">
-                  +{evidence.files.length - 1}
-                </div>
-              )}
+          {challenge.recentActivities.slice(0, 3).map((activity, index) => (
+            <div key={index} className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm flex items-center">
+              <span className="mr-2 text-blue-600 dark:text-blue-400">⌚</span>
+              <div>
+                <div className="font-medium">{activity.value} {activity.unit}</div>
+                <div className="text-xs text-gray-500">{moment(activity.date).fromNow()}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -614,31 +371,57 @@ export default function MyChallenge() {
                     >
                       Chi tiết
                     </button>
-                    {challenge.status !== 'completed' && (
-                      <button
-                        onClick={() => handleUploadEvidence(challenge.id)}
-                        className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-                      >
-                        <FaUpload />
-                      </button>
-                    )}
                   </div>
 
-                  {renderEvidences(challenge.id)}
+                  {renderActivities(challenge.id)}
+                  
+                  {challenge.status !== 'completed' && (
+                    <div className="mt-4">
+                      <SmartWatchSync 
+                        challenge={challenge} 
+                        onActivityComplete={(activityData) => {
+                          // Cập nhật thách thức với dữ liệu mới từ hoạt động
+                          const updatedChallenges = myChallenges.map(c => {
+                            if (c.id === challenge.id) {
+                              // Tính toán tiến độ mới
+                              const newCurrentValue = c.currentValue + activityData.value;
+                              const newProgress = Math.min(100, Math.round((newCurrentValue / c.targetValue) * 100));
+                              
+                              return {
+                                ...c,
+                                currentValue: newCurrentValue,
+                                progress: newProgress,
+                                lastUpdate: activityData.date,
+                                // Thêm hoạt động mới vào đầu danh sách
+                                recentActivities: [
+                                  {
+                                    id: activityData.id,
+                                    date: activityData.date,
+                                    value: activityData.value,
+                                    unit: activityData.unit,
+                                    source: activityData.source,
+                                    deviceName: activityData.deviceName,
+                                    evidence: activityData.category + '_activity.jpg'
+                                  },
+                                  ...(c.recentActivities || [])
+                                ]
+                              };
+                            }
+                            return c;
+                          });
+                          
+                          // Cập nhật state với các thử thách đã được cập nhật
+                          setMyChallenges(updatedChallenges);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
-
-      {/* Modal upload evidence */}
-      <EvidenceUploadModal 
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onSubmit={handleEvidenceSubmitted}
-        challengeId={selectedChallengeId}
-      />
     </div>
   )
 } 

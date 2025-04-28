@@ -6,6 +6,8 @@ import { MdSportsSoccer, MdDirectionsRun, MdVideocam, MdLocationOn } from 'react
 import { IoIosFitness } from 'react-icons/io'
 import moment from 'moment'
 import { allSportEvents } from '../../data/sportEvents' // Import data from central file
+import SportEventCard from './components/SportEventCard'
+import useravatar from '../../assets/images/useravatar.jpg'
 
 // Remove internal mockEvents
 // const mockEvents = [...]; 
@@ -257,6 +259,36 @@ export default function SportEvent() {
     }
   };
 
+  // Sample mock participants with follow status
+  const getMockParticipantsForEvent = (eventId) => {
+    // In a real application, this would come from an API
+    // This is sample data to demonstrate the functionality
+    const followedUsers = [1, 3, 5, 7]; // User IDs that the current user follows
+    
+    // Generate random participants for each event
+    const baseParticipants = [
+      { id: 1, name: "Nguyễn Văn A", avatar: "", isFollowed: followedUsers.includes(1) },
+      { id: 2, name: "Trần Thị B", avatar: "", isFollowed: followedUsers.includes(2) },
+      { id: 3, name: "Lê Văn C", avatar: "", isFollowed: followedUsers.includes(3) },
+      { id: 4, name: "Phạm Thị D", avatar: "", isFollowed: followedUsers.includes(4) },
+      { id: 5, name: "Hoàng Văn E", avatar: "", isFollowed: followedUsers.includes(5) },
+      { id: 6, name: "Ngô Thị F", avatar: "", isFollowed: followedUsers.includes(6) },
+      { id: 7, name: "Đặng Văn G", avatar: "", isFollowed: followedUsers.includes(7) },
+    ];
+    
+    // Use event ID to deterministically select random participants
+    const seed = eventId % 100;
+    const count = (seed % 5) + 2; // 2-6 participants
+    const selected = [];
+    
+    for (let i = 0; i < count; i++) {
+      const index = (seed + i) % baseParticipants.length;
+      selected.push(baseParticipants[index]);
+    }
+    
+    return selected;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -317,74 +349,12 @@ export default function SportEvent() {
             <h2 className="text-xl font-semibold mb-4">{moment(month, 'MMMM YYYY').format('Tháng M, YYYY')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {eventsByMonth[month].map(event => (
-                <div
+                <SportEventCard
                   key={event.id}
-                  onClick={() => handleEventClick(event.id)}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
-                >
-                  <div className="relative h-48">
-                    <img
-                      src={event.image} // Use 'image' field
-                      alt={event.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 right-3 bg-white dark:bg-gray-900 text-red-500 font-medium px-3 py-1 rounded-full text-sm">
-                      {event.participants}/{event.maxParticipants} người tham gia
-                    </div>
-                    <div className="absolute top-3 left-3 bg-white dark:bg-gray-900 text-blue-500 font-medium px-3 py-1 rounded-full text-sm flex items-center">
-                      {event.eventType === 'online' ? (
-                        <>
-                          <FaVideo className="mr-1" />
-                          <span>Trực tuyến</span>
-                        </>
-                      ) : (
-                        <>
-                          <MdLocationOn className="mr-1" />
-                          <span>Trực tiếp</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="p-4">
-                    <div className="flex items-center mb-2">
-                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium mr-2">
-                        {event.category}
-                      </span>
-                      {getCategoryIcon(event.category)}
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold mb-2 truncate">{event.name}</h3>
-                    
-                    <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
-                      <FaCalendarAlt className="mr-2" />
-                      <span>{moment(event.date).format('ddd, D/M/YYYY • HH:mm')}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 dark:text-gray-400 mb-3">
-                      <FaMapMarkerAlt className="mr-2" />
-                      <span className="truncate">{event.location}</span>
-                    </div>
-                    
-                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{event.description}</p>
-                    
-                    {event.isJoined ? (
-                      <button
-                        className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium cursor-default"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Đã tham gia
-                      </button>
-                    ) : (
-                      <button
-                        className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium"
-                        onClick={(e) => handleJoinEvent(event.id, e)}
-                      >
-                        Tham gia sự kiện
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  event={event}
+                  participants={getMockParticipantsForEvent(event.id)}
+                  onJoin={(eventId) => handleJoinEvent(eventId, new Event('click'))}
+                />
               ))}
             </div>
           </div>

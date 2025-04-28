@@ -15,6 +15,33 @@ import toast from 'react-hot-toast'
 import IngerdientItem from './components/IngerdientItem/IngerdientItem'
 import useSound from 'use-sound'
 import like from '../../assets/sounds/like.mp3'
+import ParticipantsList from '../../components/ParticipantsList'
+import useravatar from '../../assets/images/useravatar.jpg'
+
+// Sample dummy participants data with follow status
+const getDummyParticipants = (recipe) => {
+  if (!recipe) return [];
+  
+  // Generate random participant data based on recipe ID for demo
+  const seed = parseInt(recipe._id?.slice(-4), 16) || 0;
+  const count = (seed % 5) + 5; // 5-10 participants for detail page
+  
+  // Hardcoded followed users (in a real app, this would come from user's follow list)
+  const followedIds = [1, 3, 5, 7];
+  
+  const participants = [];
+  for (let i = 0; i < count; i++) {
+    const id = ((seed + i) % 15) + 1;
+    participants.push({
+      id,
+      name: `Người dùng ${id}`,
+      avatar: "", // Empty for default avatar
+      isFollowed: followedIds.includes(id)
+    });
+  }
+  
+  return participants;
+};
 
 export default function RecipeDetail() {
   const { id } = useParams()
@@ -202,12 +229,14 @@ export default function RecipeDetail() {
                             <span className=''> {data?.data.result.recipe[0].total_bookmarks} lượt lưu</span>
                           </div>
                           <div className='flex flex-row items-center text-gray-500 font-medium pr-3 border-r-2 '>
-                            <AiFillHeart className='text-red-400 mr-1' />
-                            <span className=''> {data?.data.result.recipe[0].total_likes} lượt thích</span>
+                            <FaComment className='mr-1 text-yellow-500' />
+                            <span className=''>{data?.data.result.recipe[0].total_comments} bình luận</span>
                           </div>
-                          <div className='flex pr-3 flex-row text-gray-500 font-medium items-center'>
-                            <FaComment className='text-blue-400 mr-1' />
-                            {data?.data.result.recipe[0].total_comments} bình luận
+                          <div onClick={handleLike} className='flex flex-row items-center text-gray-500 cursor-pointer font-medium  '>
+                            <AiFillHeart className={` text-lg ${data?.data.result.recipe[0].is_liked ? 'text-red-500' : 'text-green-400'}`} />
+                            <span className='ml-1'>
+                              {data?.data.result.recipe[0].total_likes} {''} lượt thích
+                            </span>
                           </div>
                         </div>
                         <span onClick={handleLike}>
@@ -228,6 +257,21 @@ export default function RecipeDetail() {
                       </div>
                     </div>
                   </header>
+                  
+                  {/* Users who have tried this recipe */}
+                  <div className="mt-4 mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <ParticipantsList 
+                      participants={getDummyParticipants(data?.data.result.recipe[0])}
+                      initialLimit={5}
+                      size="md"
+                      title="Người đã thử công thức này"
+                      showCount={true}
+                    />
+                  </div>
+
+                  <div className='border-b-2 mb-6 dark:border-gray-700'>
+                  </div>
+
                   {data?.data.result.recipe[0].unit === '' ? null : (
                     <div className='flex gap-2 flex-wrap mb-10 items-center'>
                       <div className='bg-yellow-50 flex font-medium justify-center items-center text-gray-600  p-1.5 text-sm rounded-full'>

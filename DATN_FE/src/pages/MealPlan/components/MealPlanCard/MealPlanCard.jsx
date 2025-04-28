@@ -1,5 +1,34 @@
 import { FaRegComment, FaRegHeart, FaHeart, FaRegClock, FaCheckCircle } from 'react-icons/fa'
 import { useState } from 'react'
+import ParticipantsList from '../../../../components/ParticipantsList'
+import useravatar from '../../../../assets/images/useravatar.jpg'
+
+// Sample dummy participants data with follow status
+const getDummyParticipants = (plan) => {
+  // Ensure the number of participants matches the actual followers count
+  const followersCount = plan.followers || plan.followersCount || 5; // Default to 5 if not specified
+  
+  // Generate up to 8 participants maximum (for UI purposes)
+  const count = Math.min(followersCount, 8);
+  
+  // Hardcoded followed users (in a real app, this would come from user's follow list)
+  const followedIds = [1, 3, 5, 7];
+  
+  const participants = [];
+  const seed = parseInt(plan.id) || Math.floor(Math.random() * 100);
+  
+  for (let i = 0; i < count; i++) {
+    const id = ((seed + i) % followersCount) + 1;
+    participants.push({
+      id,
+      name: `Người dùng ${id}`,
+      avatar: "", // Empty for default avatar
+      isFollowed: followedIds.includes(id)
+    });
+  }
+  
+  return participants;
+};
 
 export default function MealPlanCard({ plan, onClick }) {
   const [liked, setLiked] = useState(false)
@@ -67,6 +96,17 @@ export default function MealPlanCard({ plan, onClick }) {
               {formatDate(plan.createdAt)}
             </span>
           </div>
+        </div>
+        
+        {/* Participants */}
+        <div className="mb-3">
+          <ParticipantsList 
+            participants={getDummyParticipants(plan)}
+            initialLimit={3}
+            size="sm"
+            title={`${plan.followers || plan.followersCount || plan.likes || 0} người theo dõi`}
+            showCount={false}
+          />
         </div>
 
         {/* Category and interactions */}

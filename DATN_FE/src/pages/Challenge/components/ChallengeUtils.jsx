@@ -85,4 +85,18 @@ export const calculateStreakDays = (activities) => {
   }
   
   return maxStreak;
+};
+
+// Hàm lấy màu dựa vào trạng thái của thử thách
+export const getStatusColor = (status) => {
+  switch (status) {
+    case 'upcoming':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+    case 'ongoing':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+    case 'completed':
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  }
 }; 

@@ -9,6 +9,7 @@ import useravatar from '../../assets/images/useravatar.jpg'
 import ChallengeLeaderboard from './components/ChallengeLeaderboard'
 import ChallengePosts from './components/ChallengePosts'
 import ModalUploadChallengePost from './components/ModalUploadChallengePost'
+import SmartWatchSync from './components/SmartWatchSync'
 import { useQuery } from '@tanstack/react-query'
 import { currentAccount } from '../../apis/userApi'
 import { toast } from 'react-hot-toast'
@@ -150,144 +151,6 @@ const mockChallenge3 = {
   ]
 }
 
-// Modal cho Upload Evidence
-const EvidenceUploadModal = ({ isOpen, onClose, onSubmit, challengeId }) => {
-  const [files, setFiles] = useState([]);
-  const [caption, setCaption] = useState('');
-  const [value, setValue] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setFiles(selectedFiles);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Kiểm tra dữ liệu đầu vào
-    if (!value || isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-      toast.error('Vui lòng nhập giá trị hợp lệ');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    // Giả lập API call
-    setTimeout(() => {
-      onSubmit({
-        files,
-        caption,
-        value: parseFloat(value),
-        date: new Date().toISOString()
-      });
-      
-      // Reset form
-      setFiles([]);
-      setCaption('');
-      setValue('');
-      
-      setIsSubmitting(false);
-      onClose();
-    }, 1000);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 relative">
-        <button 
-          onClick={onClose} 
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          ✕
-        </button>
-        
-        <h2 className="text-xl font-bold mb-4 pr-8">Nộp bằng chứng hoàn thành</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              Thành tích đạt được
-            </label>
-            <div className="flex items-center">
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                required
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              />
-              <span className="ml-2 text-gray-600 dark:text-gray-400">km</span>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              Mô tả (không bắt buộc)
-            </label>
-            <textarea
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              rows="3"
-            ></textarea>
-          </div>
-          
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              Tải lên hình ảnh
-            </label>
-            <input 
-              type="file" 
-              accept="image/*" 
-              multiple
-              onChange={handleFileChange}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Có thể tải lên nhiều file (tối đa 5MB/file)
-            </p>
-          </div>
-          
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Đang tải lên...
-                </>
-              ) : (
-                <>
-                  <FaCloudUploadAlt className="mr-2" />
-                  Gửi bằng chứng
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 // Modal xác nhận rời thử thách
 const LeaveConfirmModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
@@ -324,7 +187,6 @@ export default function ChallengeDetail() {
   const navigate = useNavigate()
   const [challenge, setChallenge] = useState(null)
   const [isLiked, setIsLiked] = useState(false)
-  const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [showUserProgress, setShowUserProgress] = useState(false)
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false)
@@ -545,11 +407,11 @@ export default function ChallengeDetail() {
             {challenge.isJoined ? (
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => setUploadModalOpen(true)}
+                  onClick={() => setCreatePostModalOpen(true)}
                   className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
-                  <FaCloudUploadAlt />
-                  <span>Thêm minh chứng</span>
+                  <FaRegEdit />
+                  <span>Đăng bài</span>
                 </button>
                 <button
                   onClick={toggleUserProgress}
@@ -579,6 +441,52 @@ export default function ChallengeDetail() {
               </button>
             )}
           </div>
+
+          {/* Hiển thị Component SmartWatchSync khi đã tham gia */}
+          {challenge.isJoined && <SmartWatchSync 
+            challenge={challenge}
+            onActivityComplete={(activityData) => {
+              // Cập nhật tiến độ của thử thách với dữ liệu mới từ hoạt động
+              const newValue = (challenge.userProgress?.currentValue || 0) + activityData.value;
+              const newProgress = Math.min(100, Math.round((newValue / challenge.targetValue) * 100));
+              
+              // Tính toán streak
+              const lastActivity = challenge.userProgress?.recentActivities?.[0];
+              const lastActivityDate = lastActivity ? moment(lastActivity.date) : null;
+              const today = moment();
+              const isConsecutiveDay = lastActivityDate && 
+                                      today.diff(lastActivityDate, 'days') <= 1;
+              
+              const newStreak = isConsecutiveDay 
+                                ? (challenge.userProgress?.streak || 0) + 1 
+                                : 1;
+              
+              // Cập nhật dữ liệu thử thách
+              setChallenge(prev => ({
+                ...prev,
+                progress: newProgress,
+                userProgress: {
+                  ...prev.userProgress,
+                  currentValue: newValue,
+                  streak: newStreak,
+                  lastUpdate: activityData.date,
+                  recentActivities: [
+                    {
+                      id: activityData.id,
+                      date: activityData.date,
+                      value: activityData.value,
+                      unit: activityData.unit,
+                      evidence: `${activityData.category.toLowerCase()}_activity.jpg`
+                    },
+                    ...(prev.userProgress?.recentActivities || [])
+                  ]
+                }
+              }));
+              
+              // Thông báo thành công
+              toast.success(`Đã cập nhật tiến độ: +${activityData.value} ${challenge.targetUnit}`);
+            }}
+          />}
 
           {/* User Progress Section (hiển thị khi đã tham gia và khi showUserProgress = true) */}
           {challenge.isJoined && showUserProgress && challenge.userProgress && (
@@ -792,7 +700,7 @@ export default function ChallengeDetail() {
                 <div className="md:hidden bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-800">
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setUploadModalOpen(true)}
+                      onClick={() => setCreatePostModalOpen(true)}
                       className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors"
                     >
                       <FaCloudUploadAlt className="mr-1" />
@@ -853,14 +761,6 @@ export default function ChallengeDetail() {
         </div>
       </div>
 
-      {/* Modal Upload Evidence */}
-      <EvidenceUploadModal
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onSubmit={handleEvidenceUpload}
-        challengeId={challenge.id}
-      />
-
       {/* Modal Confirm Leave Challenge */}
       <LeaveConfirmModal
         isOpen={leaveConfirmOpen}
@@ -905,34 +805,27 @@ export default function ChallengeDetail() {
               </div>
             </div>
             
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  // Có thể thêm thông báo "Đã sao chép" ở đây
-                }}
-                className="flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                <FaCopy className="w-4 h-4" />
-                <span>Sao chép liên kết</span>
+            <div className="mb-4 flex space-x-2">
+              <button className="flex-1 flex justify-center items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">
+                <FaFacebook />
+                <span>Facebook</span>
               </button>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
-                  className="p-2 text-white bg-blue-600 rounded-full hover:bg-blue-700"
-                >
-                  <FaFacebook className="w-5 h-5" />
-                </button>
-                
-                <button
-                  onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(`Cùng tham gia thử thách: ${challenge.title}`)}`, '_blank')}
-                  className="p-2 text-white bg-blue-400 rounded-full hover:bg-blue-500"
-                >
-                  <FaTwitter className="w-5 h-5" />
-                </button>
-              </div>
+              <button className="flex-1 flex justify-center items-center space-x-2 bg-blue-400 hover:bg-blue-500 text-white p-2 rounded">
+                <FaTwitter />
+                <span>Twitter</span>
+              </button>
             </div>
+            
+            <button 
+              className="w-full flex justify-center items-center space-x-2 bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded"
+              onClick={() => {
+                navigator.clipboard.writeText('https://sharelink/test');
+                toast.success('Đã sao chép đường dẫn');
+              }}
+            >
+              <FaCopy />
+              <span>Sao chép liên kết</span>
+            </button>
           </div>
         </div>
       )}
