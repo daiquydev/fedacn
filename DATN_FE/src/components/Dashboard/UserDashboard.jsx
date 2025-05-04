@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, createRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTrophy, FaRegCalendarAlt, FaUtensils, FaArrowRight, FaRegClock, FaChevronRight } from 'react-icons/fa';
+import { FaTrophy, FaRegCalendarAlt, FaUtensils, FaArrowRight, FaRegClock, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
 import { MdUpdate, MdDashboard } from 'react-icons/md';
 import moment from 'moment';
 import 'moment/locale/vi';
@@ -15,19 +15,23 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   
   // Truy vấn dữ liệu người dùng
-  const { data: profileData } = useQuery({
+  const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => getProfile()
+    queryFn: () => getProfile(),
+    retry: 1,
+    onError: (error) => {
+      console.error("Lỗi khi tải thông tin người dùng:", error);
+    }
   });
   
   // TODO: Thay thế mock data bằng API calls thực tế
   // Ví dụ: 
   // const { data: challengesData } = useQuery({
   //   queryKey: ['userChallenges'],
-  //   queryFn: () => getChallenges({ joined: true, limit: 3 })
+  //   queryFn: () => getChallenges({ joined: true, limit: 5 })
   // });
   
-  // Mock data cho demo
+  // Mock data cho demo - đã mở rộng để có nhiều mục hơn
   const mockChallenges = [
     {
       _id: '1',
@@ -35,6 +39,27 @@ const UserDashboard = () => {
       progress: 65,
       endDate: moment().add(10, 'days').toISOString(),
       image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8'
+    },
+    {
+      _id: '2',
+      title: 'Tập luyện 20 phút mỗi ngày',
+      progress: 45,
+      endDate: moment().add(15, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'
+    },
+    {
+      _id: '3',
+      title: 'Đạp xe 200km trong tháng',
+      progress: 80,
+      endDate: moment().add(5, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1541625602330-2277a4c46182'
+    },
+    {
+      _id: '4',
+      title: 'Uống đủ 2L nước mỗi ngày',
+      progress: 30,
+      endDate: moment().add(20, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1544148103-0773bf10d330'
     }
   ];
 
@@ -44,6 +69,30 @@ const UserDashboard = () => {
       title: 'Marathon Hồ Gươm',
       eventDate: moment().add(5, 'days').toISOString(),
       image: 'https://images2.thanhnien.vn/thumb_w/686/528068263637045248/2024/8/25/tbm7637-17245883933481176972446-0-646-1600-1846-crop-1724588660716339719111.jpg'
+    },
+    {
+      _id: '2',
+      title: 'Giải chạy VnExpress Marathon',
+      eventDate: moment().add(12, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1530549387789-4c1017266635'
+    },
+    {
+      _id: '3',
+      title: 'Giải đạp xe Đà Lạt',
+      eventDate: moment().add(20, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b'
+    },
+    {
+      _id: '4',
+      title: 'Giải bơi lội Phú Quốc',
+      eventDate: moment().add(15, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1530549387789-4c1017266635'
+    },
+    {
+      _id: '5',
+      title: 'Fitness Challenge Hà Nội',
+      eventDate: moment().add(8, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1434596922112-19c563067271'
     }
   ];
 
@@ -54,6 +103,20 @@ const UserDashboard = () => {
       startDate: moment().subtract(3, 'days').toISOString(),
       endDate: moment().add(18, 'days').toISOString(),
       image: 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2'
+    },
+    {
+      _id: '2',
+      title: 'Chế độ Low Carb cho người tập luyện',
+      startDate: moment().subtract(5, 'days').toISOString(),
+      endDate: moment().add(25, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+    },
+    {
+      _id: '3',
+      title: 'Thực đơn giàu protein',
+      startDate: moment().subtract(1, 'days').toISOString(),
+      endDate: moment().add(30, 'days').toISOString(),
+      image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435'
     }
   ];
 
@@ -73,7 +136,7 @@ const UserDashboard = () => {
         {hasActiveData ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Thử thách đang tham gia */}
-            <DashboardCard 
+            <DashboardCardSlider 
               title="Thử thách đang tham gia"
               icon={<FaTrophy className="text-yellow-500" />}
               footerLink="/challenge/my-challenges"
@@ -89,9 +152,9 @@ const UserDashboard = () => {
               footerHoverColor="hover:text-yellow-700"
               darkFooterColor="dark:text-yellow-400"
               darkHoverFooterColor="dark:hover:text-yellow-300"
-            >
-              {mockChallenges.map(challenge => (
-                <div key={challenge._id} className="relative">
+              items={mockChallenges}
+              renderItem={(challenge, isActive) => (
+                <div key={challenge._id} className={`relative transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 absolute top-0 left-0 right-0'}`}>
                   <div className="flex gap-3 items-center mb-3">
                     <div 
                       className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-yellow-300 dark:border-yellow-600" 
@@ -134,11 +197,11 @@ const UserDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
-            </DashboardCard>
+              )}
+            />
 
             {/* Sự kiện sắp tới */}
-            <DashboardCard 
+            <DashboardCardSlider 
               title="Sự kiện sắp tới"
               icon={<FaRegCalendarAlt className="text-red-500" />}
               footerLink="/sport-event/my-events"
@@ -154,9 +217,9 @@ const UserDashboard = () => {
               footerHoverColor="hover:text-red-700"
               darkFooterColor="dark:text-red-400"
               darkHoverFooterColor="dark:hover:text-red-300"
-            >
-              {mockEvents.map(event => (
-                <div key={event._id} className="flex flex-col h-full">
+              items={mockEvents}
+              renderItem={(event, isActive) => (
+                <div key={event._id} className={`flex flex-col h-full transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 absolute top-0 left-0 right-0'}`}>
                   <div className="flex gap-3 items-center mb-3">
                     <div 
                       className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-red-300 dark:border-red-700" 
@@ -188,11 +251,11 @@ const UserDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
-            </DashboardCard>
+              )}
+            />
 
             {/* Thực đơn đang áp dụng */}
-            <DashboardCard 
+            <DashboardCardSlider 
               title="Thực đơn đang áp dụng"
               icon={<FaUtensils className="text-green-500" />}
               footerLink="/schedule/my-eat-schedule"
@@ -208,9 +271,9 @@ const UserDashboard = () => {
               footerHoverColor="hover:text-green-700"
               darkFooterColor="dark:text-green-400"
               darkHoverFooterColor="dark:hover:text-green-300"
-            >
-              {mockDiets.map(diet => (
-                <div key={diet._id} className="flex flex-col h-full">
+              items={mockDiets}
+              renderItem={(diet, isActive) => (
+                <div key={diet._id} className={`flex flex-col h-full transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 absolute top-0 left-0 right-0'}`}>
                   <div className="flex gap-3 items-center mb-3">
                     <div 
                       className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-green-300 dark:border-green-700" 
@@ -242,8 +305,8 @@ const UserDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
-            </DashboardCard>
+              )}
+            />
           </div>
         ) : (
           // Trạng thái khi chưa có dữ liệu
@@ -292,11 +355,12 @@ const UserDashboard = () => {
   );
 };
 
-// Tạo component con cho mỗi card trong dashboard để đảm bảo tính nhất quán
-const DashboardCard = ({ 
+// Tạo component con cho mỗi card có tính năng slide tự động
+const DashboardCardSlider = ({ 
   title, 
   icon, 
-  children, 
+  items = [], 
+  renderItem,
   footerLink, 
   footerText,
   gradientFrom = "from-gray-50",
@@ -309,22 +373,198 @@ const DashboardCard = ({
   footerColor = "text-blue-600",
   footerHoverColor = "hover:text-blue-800",
   darkFooterColor = "dark:text-blue-400", 
-  darkHoverFooterColor = "dark:hover:text-blue-300"
+  darkHoverFooterColor = "dark:hover:text-blue-300",
+  slideDuration = 5000, // Thời gian mỗi slide (mặc định 5 giây)
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [cardHeight, setCardHeight] = useState('auto');
+  const itemRefs = useRef([]);
+  const autoPlayRef = useRef(null);
+  const slideContainerRef = useRef(null);
+
+  // Khởi tạo mảng refs cho mỗi item
+  useEffect(() => {
+    itemRefs.current = Array(items.length).fill().map((_, i) => itemRefs.current[i] || createRef());
+  }, [items.length]);
+
+  // Tính toán chiều cao tối đa của các items để card có kích thước cố định
+  useEffect(() => {
+    if (items.length === 0) return;
+
+    const calculateMaxHeight = () => {
+      // Kiểm tra refs trước khi sử dụng
+      if (!itemRefs.current || itemRefs.current.length === 0) return 0;
+
+      // Đặt tất cả các items về visible để đo - kiểm tra null trước khi truy cập
+      itemRefs.current.forEach((ref, index) => {
+        if (ref && ref.current) {
+          ref.current.style.opacity = "1";
+          ref.current.style.position = "relative";
+        }
+      });
+      
+      // Đo chiều cao
+      let maxHeight = 0;
+      itemRefs.current.forEach(ref => {
+        if (ref && ref.current) {
+          const height = ref.current.offsetHeight;
+          maxHeight = Math.max(maxHeight, height);
+        }
+      });
+
+      // Đặt lại các items không phải current về ẩn
+      itemRefs.current.forEach((ref, index) => {
+        if (ref && ref.current && index !== currentIndex) {
+          ref.current.style.opacity = "0";
+          ref.current.style.position = "absolute";
+        }
+      });
+
+      // Thêm padding để tránh chặt cụt nội dung
+      return maxHeight > 0 ? maxHeight + 4 : 200; // Giá trị mặc định nếu không thể tính
+    };
+
+    // Cần timeout để đảm bảo DOM đã render
+    const timer = setTimeout(() => {
+      const maxItemHeight = calculateMaxHeight();
+      if (maxItemHeight > 0) {
+        setCardHeight(`${maxItemHeight}px`);
+      }
+    }, 100);
+
+    // Tính lại kích thước khi cửa sổ thay đổi kích thước
+    const handleResize = () => {
+      const newMaxHeight = calculateMaxHeight();
+      if (newMaxHeight > 0) {
+        setCardHeight(`${newMaxHeight}px`);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, [items.length, currentIndex]);
+
+  // Xử lý tự động chuyển slide
+  useEffect(() => {
+    if (items.length <= 1) return;
+    
+    if (isAutoPlaying) {
+      autoPlayRef.current = setTimeout(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length);
+      }, slideDuration);
+    }
+    
+    return () => {
+      if (autoPlayRef.current) {
+        clearTimeout(autoPlayRef.current);
+      }
+    };
+  }, [currentIndex, isAutoPlaying, items.length, slideDuration]);
+
+  // Pause auto-play when hover
+  const handleMouseEnter = () => {
+    setIsAutoPlaying(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsAutoPlaying(true);
+  };
+
+  // Navigation handlers
+  const goToPrevious = () => {
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + items.length) % items.length);
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length);
+  };
+
+  const goToSlide = (index) => {
+    setCurrentIndex(index);
+  };
+
   return (
-    <div className={`bg-gradient-to-br ${gradientFrom} ${gradientTo} ${darkGradientFrom} ${darkGradientTo} p-4 rounded-xl border ${borderColor} ${darkBorderColor} hover:shadow-lg transition-all duration-300 group h-full flex flex-col`}>
-      <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-        <div className="text-lg">{icon}</div>
-        <h4 className="font-semibold text-gray-800 dark:text-gray-100">{title}</h4>
+    <div 
+      className={`bg-gradient-to-br ${gradientFrom} ${gradientTo} ${darkGradientFrom} ${darkGradientTo} p-4 rounded-xl border ${borderColor} ${darkBorderColor} hover:shadow-lg transition-all duration-300 group h-full flex flex-col`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <div className="text-lg">{icon}</div>
+          <h4 className="font-semibold text-gray-800 dark:text-gray-100">{title}</h4>
+        </div>
+        {items.length > 1 && (
+          <div className="flex gap-1">
+            <button 
+              onClick={goToPrevious}
+              className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
+            >
+              <FaChevronLeft className="w-3 h-3" />
+            </button>
+            <button 
+              onClick={goToNext}
+              className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
+            >
+              <FaChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
       
-      <div className="flex-grow mb-3">
-        {children.length > 0 ? children : (
+      <div 
+        ref={slideContainerRef} 
+        className="flex-grow mb-3 relative" 
+        style={{ height: cardHeight, minHeight: '150px' }}
+      >
+        {items.length > 0 ? (
+          items.map((item, index) => {
+            const isActive = index === currentIndex;
+            // Kiểm tra itemRefs trước khi truy cập
+            const ref = itemRefs.current && index < itemRefs.current.length ? itemRefs.current[index] : null;
+            
+            return (
+              <div 
+                key={index} 
+                ref={ref} 
+                className={`w-full transition-all duration-300 ${
+                  isActive 
+                    ? 'opacity-100 relative z-10' 
+                    : 'opacity-0 absolute top-0 left-0 right-0 z-0'
+                }`}
+              >
+                {renderItem(item, isActive)}
+              </div>
+            );
+          })
+        ) : (
           <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
             Chưa có {title.toLowerCase()}
           </div>
         )}
       </div>
+      
+      {/* Slide indicators */}
+      {items.length > 1 && (
+        <div className="flex justify-center gap-1.5 my-2">
+          {items.map((_, index) => (
+            <button 
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentIndex 
+                  ? 'bg-gray-600 dark:bg-gray-300 w-3' 
+                  : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
       
       <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-auto">
         <Link 
