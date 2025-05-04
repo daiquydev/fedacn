@@ -154,47 +154,54 @@ const UserDashboard = () => {
               darkHoverFooterColor="dark:hover:text-yellow-300"
               items={mockChallenges}
               renderItem={(challenge, isActive) => (
-                <div key={challenge._id} className={`relative transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 absolute top-0 left-0 right-0'}`}>
-                  <div className="flex gap-3 items-center mb-3">
-                    <div 
-                      className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-yellow-300 dark:border-yellow-600" 
-                      style={{backgroundImage: `url(${challenge.image})`}}
-                    />
-                    <div className="flex-grow overflow-hidden">
-                      <h5 className="font-medium text-gray-800 dark:text-white line-clamp-1 group-hover:text-yellow-600 transition-colors duration-200">{challenge.title}</h5>
-                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <FaRegClock className="mr-1" />
-                        <span>{moment(challenge.endDate).locale('vi').fromNow()}</span>
+                <div key={challenge._id} className="relative overflow-hidden rounded-lg">
+                  {/* Background image with overlay */}
+                  <div 
+                    className="absolute inset-0 z-0 bg-cover bg-center opacity-85 dark:opacity-15"
+                    style={{backgroundImage: `url(${challenge.image})`}}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-yellow-50/90 to-yellow-50/60 dark:from-gray-800/90 dark:to-gray-800/60"></div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="relative z-10 p-4">
+                    <div className="mb-1">
+                      <h5 className="font-semibold text-gray-800 dark:text-white text-base line-clamp-1 group-hover:text-yellow-600 transition-colors duration-200">
+                        {challenge.title}
+                      </h5>
+                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        <FaRegClock className="mr-1.5" />
+                        <span>Kết thúc {moment(challenge.endDate).locale('vi').fromNow()}</span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600 dark:text-gray-300">Tiến độ</span>
-                      <span className="font-medium text-yellow-600 dark:text-yellow-400">{challenge.progress}%</span>
+                    
+                    <div className="mb-4 mt-3">
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-gray-700 dark:text-gray-200 font-medium">Tiến độ</span>
+                        <span className="font-bold text-yellow-600 dark:text-yellow-400">{challenge.progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200/70 rounded-full h-2.5 dark:bg-gray-700/70 backdrop-blur-sm">
+                        <div 
+                          className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2.5 rounded-full shadow-sm" 
+                          style={{ width: `${challenge.progress}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                      <div 
-                        className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full" 
-                        style={{ width: `${challenge.progress}%` }}
-                      />
+                    
+                    <div className="flex justify-between items-center mt-3">
+                      <button 
+                        onClick={() => navigate(`/challenge/${challenge._id}`)}
+                        className="text-xs text-gray-600 hover:text-yellow-600 dark:text-gray-300 dark:hover:text-yellow-400 flex items-center transition-colors font-medium"
+                      >
+                        Xem chi tiết <FaChevronRight className="ml-1 w-2.5 h-2.5" />
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/challenge/${challenge._id}?action=update`)}
+                        className="text-xs bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors shadow-sm"
+                      >
+                        <MdUpdate className="mr-1" /> Cập nhật
+                      </button>
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mt-3">
-                    <button 
-                      onClick={() => navigate(`/challenge/${challenge._id}`)}
-                      className="text-xs text-gray-600 hover:text-yellow-600 dark:text-gray-300 dark:hover:text-yellow-400 flex items-center transition-colors"
-                    >
-                      Xem chi tiết <FaChevronRight className="ml-1 w-2.5 h-2.5" />
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/challenge/${challenge._id}?action=update`)}
-                      className="text-xs bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-2.5 py-1.5 rounded-md flex items-center transition-colors"
-                    >
-                      <MdUpdate className="mr-1" /> Cập nhật
-                    </button>
                   </div>
                 </div>
               )}
@@ -219,36 +226,41 @@ const UserDashboard = () => {
               darkHoverFooterColor="dark:hover:text-red-300"
               items={mockEvents}
               renderItem={(event, isActive) => (
-                <div key={event._id} className={`flex flex-col h-full transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 absolute top-0 left-0 right-0'}`}>
-                  <div className="flex gap-3 items-center mb-3">
-                    <div 
-                      className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-red-300 dark:border-red-700" 
-                      style={{backgroundImage: `url(${event.image})`}}
-                    />
-                    <div className="flex-grow overflow-hidden">
-                      <h5 className="font-medium text-gray-800 dark:text-white line-clamp-1 group-hover:text-red-600 transition-colors duration-200">
+                <div key={event._id} className="relative overflow-hidden rounded-lg">
+                  {/* Background image with overlay */}
+                  <div 
+                    className="absolute inset-0 z-0 bg-cover bg-center opacity-85 dark:opacity-15"
+                    style={{backgroundImage: `url(${event.image})`}}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-red-50/90 to-red-50/60 dark:from-gray-800/90 dark:to-gray-800/60"></div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="relative z-10 p-4 flex flex-col h-full">
+                    <div className="mb-1">
+                      <h5 className="font-semibold text-gray-800 dark:text-white text-base line-clamp-1 group-hover:text-red-600 transition-colors duration-200">
                         {event.title}
                       </h5>
-                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <FaRegCalendarAlt className="mr-1" />
-                        <span>{moment(event.eventDate).locale('vi').format('DD/MM/YYYY')}</span>
+                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        <FaRegCalendarAlt className="mr-1.5" />
+                        <span>Diễn ra vào {moment(event.eventDate).locale('vi').format('DD/MM/YYYY')}</span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex-grow mb-4">
-                    <div className="inline-flex px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-xs text-red-600 dark:text-red-400">
-                      {moment(event.eventDate).diff(moment(), 'days')} ngày nữa
+                    
+                    <div className="flex-grow mt-4 mb-4">
+                      <div className="inline-flex px-3 py-1.5 bg-red-100/70 dark:bg-red-900/30 backdrop-blur-sm rounded text-xs font-medium text-red-600 dark:text-red-400 shadow-sm">
+                        <span className="font-bold mr-1">Còn lại:</span> {moment(event.eventDate).diff(moment(), 'days')} ngày nữa
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={() => navigate(`/sport-event/${event._id}`)}
-                      className="text-xs bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors"
-                    >
-                      Xem chi tiết
-                    </button>
+                    
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={() => navigate(`/sport-event/${event._id}`)}
+                        className="text-xs bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors shadow-sm"
+                      >
+                        Xem chi tiết
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -273,36 +285,41 @@ const UserDashboard = () => {
               darkHoverFooterColor="dark:hover:text-green-300"
               items={mockDiets}
               renderItem={(diet, isActive) => (
-                <div key={diet._id} className={`flex flex-col h-full transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 absolute top-0 left-0 right-0'}`}>
-                  <div className="flex gap-3 items-center mb-3">
-                    <div 
-                      className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-green-300 dark:border-green-700" 
-                      style={{backgroundImage: `url(${diet.image})`}}
-                    />
-                    <div className="flex-grow overflow-hidden">
-                      <h5 className="font-medium text-gray-800 dark:text-white line-clamp-1 group-hover:text-green-600 transition-colors duration-200">
+                <div key={diet._id} className="relative overflow-hidden rounded-lg">
+                  {/* Background image with overlay */}
+                  <div 
+                    className="absolute inset-0 z-0 bg-cover bg-center opacity-85 dark:opacity-15"
+                    style={{backgroundImage: `url(${diet.image})`}}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-green-50/90 to-green-50/60 dark:from-gray-800/90 dark:to-gray-800/60"></div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="relative z-10 p-4 flex flex-col h-full">
+                    <div className="mb-1">
+                      <h5 className="font-semibold text-gray-800 dark:text-white text-base line-clamp-1 group-hover:text-green-600 transition-colors duration-200">
                         {diet.title}
                       </h5>
-                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <FaRegCalendarAlt className="mr-1" />
-                        <span>Ngày {moment(diet.startDate).locale('vi').format('DD/MM')} - {moment(diet.endDate).locale('vi').format('DD/MM/YYYY')}</span>
+                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        <FaRegCalendarAlt className="mr-1.5" />
+                        <span>Từ {moment(diet.startDate).locale('vi').format('DD/MM')} đến {moment(diet.endDate).locale('vi').format('DD/MM/YYYY')}</span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex-grow mb-4">
-                    <div className="inline-flex px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-xs text-green-600 dark:text-green-400">
-                      Còn {moment(diet.endDate).diff(moment(), 'days')} ngày
+                    
+                    <div className="flex-grow mt-4 mb-4">
+                      <div className="inline-flex px-3 py-1.5 bg-green-100/70 dark:bg-green-900/30 backdrop-blur-sm rounded text-xs font-medium text-green-600 dark:text-green-400 shadow-sm">
+                        <span className="font-bold mr-1">Còn lại:</span> {moment(diet.endDate).diff(moment(), 'days')} ngày
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={() => navigate(`/meal-plan/${diet._id}`)}
-                      className="text-xs bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors"
-                    >
-                      Xem chi tiết
-                    </button>
+                    
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={() => navigate(`/meal-plan/${diet._id}`)}
+                        className="text-xs bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors shadow-sm"
+                      >
+                        Xem chi tiết
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
