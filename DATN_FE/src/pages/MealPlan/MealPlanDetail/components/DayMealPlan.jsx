@@ -1,4 +1,4 @@
-import { FaClock, FaFireAlt, FaLeaf, FaFish, FaOilCan, FaUtensils } from 'react-icons/fa'
+import { FaClock, FaFireAlt, FaLeaf, FaFish, FaOilCan, FaUtensils, FaInfoCircle } from 'react-icons/fa'
 import { GiWheat } from 'react-icons/gi'
 
 export default function DayMealPlan({ day, onViewCooking }) {
@@ -84,42 +84,56 @@ export default function DayMealPlan({ day, onViewCooking }) {
             
             {/* Meal content */}
             <div className="p-4">
-              <p className="text-gray-800 dark:text-gray-200 mb-3">
-                {meal.content}
-              </p>
-              
-              {/* Nutrition info */}
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Calories</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{meal.calories} kcal</span>
-                </div>
-                <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Protein</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{meal.protein}g</span>
-                </div>
-                <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Carbs</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{meal.carbs}g</span>
-                </div>
-                <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Chất béo</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{meal.fat}g</span>
+              {/* Thêm layout với hình ảnh */}
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Hiển thị hình ảnh nếu có */}
+                {meal.image && (
+                  <div className="w-full md:w-1/3 h-48 rounded-lg overflow-hidden">
+                    <img 
+                      src={meal.image} 
+                      alt={meal.content} 
+                      className="w-full h-full object-cover transition-transform hover:scale-105"
+                    />
+                  </div>
+                )}
+                
+                <div className="w-full md:w-2/3">
+                  <p className="text-gray-800 dark:text-gray-200 mb-3">
+                    {meal.content}
+                  </p>
+                  
+                  {/* Nutrition info */}
+                  <div className="grid grid-cols-4 gap-2 mt-2 mb-3">
+                    <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Calories</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{meal.calories} kcal</span>
+                    </div>
+                    <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Protein</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{meal.protein}g</span>
+                    </div>
+                    <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Carbs</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{meal.carbs}g</span>
+                    </div>
+                    <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Chất béo</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{meal.fat}g</span>
+                    </div>
+                  </div>
+                  
+                  {/* Thêm nút xem cách chế biến nhỏ hơn */}
+                  {meal.cooking && (
+                    <button
+                      onClick={() => onViewCooking(meal)}
+                      className="inline-flex items-center text-xs font-medium text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                    >
+                      <FaInfoCircle className="mr-1" />
+                      Xem cách chế biến
+                    </button>
+                  )}
                 </div>
               </div>
-              
-              {/* Thêm nút xem cách chế biến */}
-              {meal.cooking && (
-                <div className="mt-3">
-                  <button
-                    onClick={() => onViewCooking(meal)}
-                    className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm transition-colors text-sm"
-                  >
-                    <FaUtensils className="mr-1.5" />
-                    Xem cách chế biến
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         ))}

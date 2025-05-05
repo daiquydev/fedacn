@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaUpload, FaTimes, FaTrophy, FaRunning, FaCalendarAlt, FaUserFriends } from 'react-icons/fa'
+import { FaUpload, FaTimes, FaTrophy, FaRunning, FaCalendarAlt, FaUserFriends, FaRedoAlt } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 
@@ -12,6 +12,8 @@ export default function CreateChallenge() {
     description: '',
     category: 'running',
     type: 'public', // public, group, private
+    isRecurring: false, // Thêm trường isRecurring để xác định thử thách có định kỳ hay không
+    recurringType: 'weekly', // weekly, monthly, yearly
     startDate: '',
     endDate: '',
     targetValue: '',
@@ -32,10 +34,10 @@ export default function CreateChallenge() {
   ]
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type, checked } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }))
   }
 
@@ -256,6 +258,52 @@ export default function CreateChallenge() {
                   <option value="private">Riêng tư</option>
                 </select>
               </div>
+            </div>
+
+            {/* Thêm phần chọn thử thách có định kỳ hay không */}
+            <div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isRecurring"
+                  name="isRecurring"
+                  checked={formData.isRecurring}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="isRecurring" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <FaRedoAlt className="mr-2 text-green-500" />
+                  Thử thách định kỳ
+                </label>
+              </div>
+              
+              {formData.isRecurring && (
+                <div className="mt-3 ml-6 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Chu kỳ lặp lại
+                  </label>
+                  <select
+                    name="recurringType"
+                    value={formData.recurringType}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-green-500 dark:focus:border-green-400 focus:outline-none appearance-none"
+                    style={{
+                      backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                      backgroundPosition: "right 0.5rem center",
+                      backgroundRepeat: "no-repeat",
+                      backgroundSize: "1.5em 1.5em",
+                      paddingRight: "2.5rem"
+                    }}
+                  >
+                    <option value="weekly">Hàng tuần</option>
+                    <option value="monthly">Hàng tháng</option>
+                    <option value="yearly">Hàng năm</option>
+                  </select>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Thử thách định kỳ sẽ tự động được tạo lại theo chu kỳ đã chọn sau khi kết thúc.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

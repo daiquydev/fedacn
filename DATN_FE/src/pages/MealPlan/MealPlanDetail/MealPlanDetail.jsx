@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList, FaUtensils } from 'react-icons/fa'
+import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList, FaUtensils, FaFire, FaInfoCircle } from 'react-icons/fa'
 import { MdFastfood, MdClose, MdSchedule, MdDateRange } from 'react-icons/md'
 import { IoMdTime } from 'react-icons/io'
 import NutritionChart from './components/NutritionChart'
@@ -49,7 +49,7 @@ export default function MealPlanDetail() {
           comments: 24,
           rating: 4.7,
           ratingCount: 48,
-          createdAt: '2023-12-15T09:00:00Z',
+          createdAt: '2024-12-15T09:00:00Z',
           image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000',
           notes: '<p>Thực đơn này được thiết kế để cung cấp đủ dinh dưỡng trong khi giúp bạn tạo ra sự thiếu hụt calo để giảm cân. Uống ít nhất 2 lít nước mỗi ngày và kết hợp với tập thể dục 30 phút mỗi ngày để có kết quả tốt nhất.</p><p>Bạn có thể điều chỉnh khẩu phần ăn tùy theo nhu cầu calo cá nhân. Nếu bạn cảm thấy đói, hãy thêm protein và rau xanh thay vì carbs.</p>',
           averageNutrition: {
@@ -70,6 +70,7 @@ export default function MealPlanDetail() {
                   protein: 12,
                   carbs: 45,
                   fat: 10,
+                  image: 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
                 },
                 { 
@@ -79,6 +80,7 @@ export default function MealPlanDetail() {
                   protein: 35,
                   carbs: 25,
                   fat: 20,
+                  image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'
                 },
                 { 
@@ -88,6 +90,7 @@ export default function MealPlanDetail() {
                   protein: 30,
                   carbs: 40,
                   fat: 15,
+                  image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'
                 }
               ]
@@ -103,6 +106,7 @@ export default function MealPlanDetail() {
                   protein: 18,
                   carbs: 40,
                   fat: 12,
+                  image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nướng bánh mì nguyên cám.</li><li>Chiên trứng với chút dầu olive.</li><li>Đặt trứng lên bánh mì, thêm rau xanh và gia vị.</li></ol>'
                 },
                 { 
@@ -112,6 +116,7 @@ export default function MealPlanDetail() {
                   protein: 20,
                   carbs: 65,
                   fat: 8,
+                  image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với nước theo tỉ lệ 1:2.</li><li>Cắt đậu hũ thành khối vuông và ướp với xì dầu, tỏi.</li><li>Chiên hoặc nướng đậu hũ đến khi vàng.</li><li>Phục vụ với rau xanh và sốt.</li></ol>'
                 },
                 { 
@@ -121,6 +126,7 @@ export default function MealPlanDetail() {
                   protein: 40,
                   carbs: 30,
                   fat: 15,
+                  image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt gà với gia vị, dầu olive trong 30 phút.</li><li>Cắt rau củ thành miếng vừa.</li><li>Xếp thịt gà và rau củ vào khay nướng.</li><li>Nướng ở 200°C trong khoảng 25-30 phút.</li></ol>'
                 }
               ]
@@ -136,6 +142,7 @@ export default function MealPlanDetail() {
                   protein: 24,
                   carbs: 30,
                   fat: 8,
+                  image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1 muỗng bột protein, 240ml sữa hạnh nhân, 1 muỗng bơ đậu phộng.</li><li>Xay đến khi mịn.</li></ol>'
                 },
                 { 
@@ -145,6 +152,7 @@ export default function MealPlanDetail() {
                   protein: 30,
                   carbs: 70,
                   fat: 18,
+                  image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt với hành, tỏi, đường, nước mắm, tiêu.</li><li>Nướng thịt trên bếp than hoa.</li><li>Làm nước chấm với nước mắm, đường, tỏi, ớt, chanh.</li><li>Trụng bún.</li><li>Ăn kèm với rau sống, chả nướng và nước chấm.</li></ol>'
                 },
                 { 
@@ -154,6 +162,7 @@ export default function MealPlanDetail() {
                   protein: 25,
                   carbs: 30,
                   fat: 12,
+                  image: 'https://cdn.tgdd.vn/Files/2020/05/05/1253676/cach-nau-2-mon-canh-thit-xay-vien-rau-ru-va-canh-cai-thao-thit-xay-de-lam-day-du-dinh-duong-12.jpg',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Đun sôi nước với xương hoặc nước dùng.</li><li>Thêm hành tím, tỏi băm nhỏ.</li><li>Thêm các loại rau củ (cà rốt, khoai tây, bắp cải).</li><li>Thêm thịt heo nạc thái mỏng.</li><li>Nêm với muối, tiêu và hạt nêm.</li><li>Nấu cho đến khi rau củ mềm.</li></ol>'
                 }
               ]
@@ -169,6 +178,7 @@ export default function MealPlanDetail() {
                   protein: 25,
                   carbs: 60,
                   fat: 10,
+                  image: 'https://images.unsplash.com/photo-1576577445504-6af96477db52?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ninh xương gà và các gia vị (hồi, quế, đinh hương) trong 4-6 giờ.</li><li>Luộc thịt gà và xé sợi.</li><li>Luộc bánh phở.</li><li>Xếp bánh phở vào tô, đặt thịt gà lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm hành, ngò, giá đỗ và ớt tươi.</li></ol>'
                 },
                 { 
@@ -178,6 +188,7 @@ export default function MealPlanDetail() {
                   protein: 15,
                   carbs: 30,
                   fat: 5,
+                  image: 'https://images.unsplash.com/photo-1562967914-01efa7e87832?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc tôm và thịt heo.</li><li>Nhúng bánh tráng vào nước ấm.</li><li>Xếp rau xà lách, bún, rau thơm, thịt heo và tôm lên bánh tráng.</li><li>Cuộn chặt bánh tráng lại.</li><li>Làm nước sốt tương từ tương hột, đường, tỏi, ớt và nước cốt chanh.</li></ol>'
                 },
                 { 
@@ -187,6 +198,7 @@ export default function MealPlanDetail() {
                   protein: 20,
                   carbs: 65,
                   fat: 15,
+                  image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu cơm trước và để nguội.</li><li>Cắt thịt xá xíu, lạp xưởng, thịt nguội thành hạt lựu.</li><li>Cắt nhỏ hành, tỏi, cà rốt, đậu Hà Lan.</li><li>Đánh trứng và làm trứng chén.</li><li>Xào tất cả nguyên liệu với cơm nguội.</li><li>Nêm gia vị vừa ăn.</li></ol>'
                 }
               ]
@@ -202,6 +214,7 @@ export default function MealPlanDetail() {
                   protein: 14,
                   carbs: 42,
                   fat: 14,
+                  image: 'https://preview.redd.it/i-made-peanut-butter-oatmeal-for-breakfast-this-morning-v0-o4g2gnencwvc1.jpg?width=640&crop=smart&auto=webp&s=e81787eb05fb12ab8da9da3d3f6c94e4c015f595',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 300ml nước hoặc sữa.</li><li>Thêm 1 muỗng canh bơ đậu phộng khi yến mạch đã mềm.</li><li>Thêm chút mật ong hoặc đường nâu và quế.</li><li>Trang trí với chuối thái lát và hạt chia.</li></ol>'
                 },
                 { 
@@ -211,6 +224,7 @@ export default function MealPlanDetail() {
                   protein: 35,
                   carbs: 85,
                   fat: 20,
+                  image: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp sườn với sả, tỏi, đường, nước mắm, dầu hào.</li><li>Nướng sườn trên lửa than hoặc trong lò.</li><li>Nấu cơm tấm.</li><li>Làm nước mắm pha với đường, chanh, tỏi, ớt.</li><li>Phục vụ kèm đồ chua, dưa leo, cà chua.</li></ol>'
                 },
                 { 
@@ -220,6 +234,7 @@ export default function MealPlanDetail() {
                   protein: 18,
                   carbs: 50,
                   fat: 25,
+                  image: 'https://bizweb.dktcdn.net/100/514/078/products/banh-xeo-3-mien-day-nghe-rosa-bien-hoa-dong-nai-2.jpg?v=1716438613080',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột gạo với nghệ, muối và nước cốt dừa.</li><li>Làm nóng chảo, thêm dầu và đổ bột vào.</li><li>Thêm thịt heo, tôm và giá đỗ.</li><li>Đậy nắp để bánh chín giòn.</li><li>Gấp đôi bánh lại và dùng với rau sống và nước mắm pha.</li></ol>'
                 }
               ]
@@ -235,6 +250,7 @@ export default function MealPlanDetail() {
                   protein: 15,
                   carbs: 45,
                   fat: 18,
+                  image: 'https://images.unsplash.com/photo-1613769049987-b31b641f25b1?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Chiên trứng với muối và tiêu.</li><li>Thái mỏng cà chua.</li><li>Cắt đôi bánh mì và phết mayonnaise.</li><li>Đặt trứng, cà chua và một ít rau vào giữa bánh mì.</li></ol>'
                 },
                 { 
@@ -244,6 +260,7 @@ export default function MealPlanDetail() {
                   protein: 30,
                   carbs: 65,
                   fat: 15,
+                  image: 'https://tourhue.vn/wp-content/uploads/2024/08/quan-bun-bo-hue-1.png',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu nước dùng từ xương bò, sả, gừng và các gia vị.</li><li>Thái thịt bò và giò heo thành lát mỏng.</li><li>Trụng bún rồi cho vào tô.</li><li>Xếp thịt bò và giò heo lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm rau sống, chanh và ớt.</li></ol>'
                 },
                 { 
@@ -253,6 +270,7 @@ export default function MealPlanDetail() {
                   protein: 35,
                   carbs: 20,
                   fat: 18,
+                  image: 'https://monngonmoingay.com/wp-content/smush-webp/2017/08/salad-trung-ca-ngu-500.jpg.webp',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc trứng trong 8 phút, sau đó bóc vỏ và cắt làm tư.</li><li>Chuẩn bị rau xanh như xà lách, cải mầm, cà chua bi.</li><li>Mở hộp cá ngừ, để ráo nước.</li><li>Trộn tất cả nguyên liệu với dầu olive, chanh và gia vị.</li></ol>'
                 }
               ]
@@ -268,6 +286,7 @@ export default function MealPlanDetail() {
                   protein: 12,
                   carbs: 60,
                   fat: 10,
+                  image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột yến mạch, baking powder, một chút muối.</li><li>Thêm sữa, trứng và khuấy đều.</li><li>Đổ từng muỗng bột vào chảo nóng.</li><li>Chiên đến khi vàng hai mặt.</li><li>Phục vụ với mật ong và một ít quả mọng.</li></ol>'
                 },
                 { 
@@ -277,6 +296,7 @@ export default function MealPlanDetail() {
                   protein: 32,
                   carbs: 75,
                   fat: 15,
+                  image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc gà nguyên con với gừng, hành lá.</li><li>Dùng nước luộc gà để nấu cơm.</li><li>Thái gà thành miếng vừa ăn.</li><li>Làm nước sốt từ gừng, tỏi, dầu mè.</li><li>Phục vụ cơm với gà và sốt, kèm dưa chuột.</li></ol>'
                 },
                 { 
@@ -286,6 +306,7 @@ export default function MealPlanDetail() {
                   protein: 10,
                   carbs: 45,
                   fat: 16,
+                  image: 'https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2022/2/21/1016491/Sup-Nam-Banh-My.jpg',
                   cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Xào hành tây, tỏi với bơ.</li><li>Thêm nấm đã thái nhỏ và xào đến khi vàng.</li><li>Thêm bột mì, khuấy đều.</li><li>Từ từ thêm nước dùng gà và kem tươi.</li><li>Nấu nhỏ lửa đến khi súp sánh.</li><li>Nướng bánh mì với một ít bơ tỏi.</li><li>Phục vụ súp nóng với bánh mì.</li></ol>'
                 }
               ]
@@ -556,21 +577,47 @@ export default function MealPlanDetail() {
               <MdFastfood className="mr-2 text-green-600" /> Kế hoạch bữa ăn theo ngày
             </h2>
             
-            {/* Day tabs */}
-            <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto">
-              {mealPlan.days.map((day) => (
-                <button
-                  key={day.day}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    activeDay === day.day 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  onClick={() => setActiveDay(day.day)}
-                >
-                  Ngày {day.day}
-                </button>
-              ))}
+            {/* Thay đổi từ nút ngày sang select dropdown */}
+            <div className="mb-6">
+              <div className="max-w-xs mx-auto">
+                <label htmlFor="day-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Chọn ngày thực đơn (Tổng số ngày: {mealPlan.duration})
+                </label>
+                <div className="relative">
+                  <select
+                    id="day-select"
+                    className="block w-full p-3 pl-4 pr-10 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:focus:ring-green-600 dark:focus:border-green-600 appearance-none transition-colors"
+                    value={activeDay}
+                    onChange={(e) => setActiveDay(Number(e.target.value))}
+                  >
+                    {mealPlan.days.map((day) => (
+                      <option key={day.day} value={day.day}>
+                        Ngày {day.day} - {day.day === 1 ? 'Bắt đầu' : day.day === mealPlan.duration ? 'Kết thúc' : `Ngày ${day.day}/${mealPlan.duration}`}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                    </svg>
+                  </div>
+                </div>
+                {/* <div className="mt-2 flex flex-wrap gap-2">
+                  {mealPlan.days.map((day) => (
+                    <button 
+                      key={day.day}
+                      onClick={() => setActiveDay(day.day)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                        activeDay === day.day 
+                          ? 'bg-green-600 text-white shadow-md' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {day.day}
+                    </button>
+                  ))}
+                </div> */}
+              </div>
             </div>
             
             {/* Active day meals */}

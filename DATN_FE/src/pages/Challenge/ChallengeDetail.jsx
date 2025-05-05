@@ -30,7 +30,6 @@ const mockChallenge1 = {
     "Hoàn thành trong thời gian quy định"
   ],
   rewards: [
-    "Huy hiệu Marathon Bronze",
     "10 điểm thành tích",
     "Cơ hội nhận quà từ nhà tài trợ"
   ],
@@ -52,6 +51,13 @@ const mockChallenge1 = {
   sponsorLogos: [
     "sponsor1.png",
     "sponsor2.png"
+  ],
+  participantsList: [
+    { id: 101, name: "Nguyễn Văn A", avatar: "", isFollowing: true, progress: 75 },
+    { id: 102, name: "Trần Thị B", avatar: "", isFollowing: true, progress: 60 },
+    { id: 103, name: "Lê Văn C", avatar: "", isFollowing: false, progress: 80 },
+    { id: 104, name: "Phạm Thị D", avatar: "", isFollowing: false, progress: 45 },
+    { id: 105, name: "Hoàng Văn E", avatar: "", isFollowing: true, progress: 30 }
   ],
   userProgress: {
     currentValue: 65,
@@ -86,7 +92,6 @@ const mockChallenge2 = {
     "Chia sẻ hình ảnh cung đường đẹp"
   ],
   rewards: [
-    "Huy hiệu Road Explorer",
     "15 điểm thành tích",
     "Phần quà từ nhà tài trợ"
   ],
@@ -108,6 +113,13 @@ const mockChallenge2 = {
   sponsorLogos: [
     "sponsor3.png",
     "sponsor4.png"
+  ],
+  participantsList: [
+    { id: 201, name: "Vũ Thị F", avatar: "", isFollowing: true, progress: 65 },
+    { id: 202, name: "Ngô Văn G", avatar: "", isFollowing: false, progress: 55 },
+    { id: 203, name: "Đặng Thị H", avatar: "", isFollowing: true, progress: 70 },
+    { id: 204, name: "Bùi Văn I", avatar: "", isFollowing: false, progress: 40 },
+    { id: 205, name: "Phan Thị K", avatar: "", isFollowing: true, progress: 85 }
   ]
 }
 
@@ -126,7 +138,6 @@ const mockChallenge3 = {
     "Chia sẻ hình ảnh cung đường đẹp"
   ],
   rewards: [
-    "Huy hiệu Road Explorer",
     "15 điểm thành tích",
     "Phần quà từ nhà tài trợ"
   ],
@@ -148,6 +159,13 @@ const mockChallenge3 = {
   sponsorLogos: [
     "sponsor3.png",
     "sponsor4.png"
+  ],
+  participantsList: [
+    { id: 301, name: "Trương Văn L", avatar: "", isFollowing: true, progress: 60 },
+    { id: 302, name: "Lý Thị M", avatar: "", isFollowing: false, progress: 50 },
+    { id: 303, name: "Dương Văn N", avatar: "", isFollowing: true, progress: 75 },
+    { id: 304, name: "Hồ Thị P", avatar: "", isFollowing: false, progress: 35 },
+    { id: 305, name: "Đinh Văn Q", avatar: "", isFollowing: true, progress: 80 }
   ]
 }
 
@@ -612,33 +630,61 @@ export default function ChallengeDetail() {
               <div>
                 <h2 className="text-xl font-semibold mb-3">Phần thưởng</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {challenge.rewards.map((reward, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                    >
-                      <FaTrophy className="text-yellow-500" size={20} />
-                      <span className="text-gray-700 dark:text-gray-300">{reward}</span>
-                    </div>
-                  ))}
+                  {challenge.rewards
+                    .filter(reward => reward.includes("điểm thành tích"))
+                    .map((reward, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      >
+                        <FaTrophy className="text-yellow-500" size={20} />
+                        <span className="text-gray-700 dark:text-gray-300">{reward}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
 
-              {challenge.sponsorLogos.length > 0 && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-3">Nhà tài trợ</h2>
-                  <div className="flex items-center space-x-6">
-                    {challenge.sponsorLogos.map((logo, index) => (
-                      <img
-                        key={index}
-                        src={logo}
-                        alt={`Sponsor ${index + 1}`}
-                        className="h-12 object-contain"
-                      />
-                    ))}
+              {/* Phần người tham gia chi tiết */}
+              <div>
+                <h2 className="text-xl font-semibold mb-3">Người tham gia</h2>
+                {challenge.participantsList && (
+                  <div className="space-y-3">
+                    {/* Sắp xếp để hiển thị người follow trước */}
+                    {[...challenge.participantsList]
+                      .sort((a, b) => (b.isFollowing ? 1 : 0) - (a.isFollowing ? 1 : 0))
+                      .map((participant) => (
+                        <div key={participant.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={participant.avatar || useravatar}
+                              alt={participant.name}
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <div>
+                              <div className="font-medium">{participant.name}</div>
+                              {participant.isFollowing && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                  Đang theo dõi
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm text-gray-500">
+                              {participant.progress}%
+                            </div>
+                            <div className="w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                              <div
+                                className="bg-green-600 h-2 rounded-full"
+                                style={{ width: `${participant.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="space-y-6">
