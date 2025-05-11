@@ -18,8 +18,8 @@ import { toast } from 'react-hot-toast'
 const mockChallenge1 = {
   id: 1,
   title: "30 Days Running Challenge",
-  startDate: "2025-03-01T00:00:00Z",
-  endDate: "2025-04-30T23:59:59Z",
+  startDate: "2025-04-20T00:00:00Z",
+  endDate: "2025-05-20T23:59:59Z",
   category: "Running",
   description: "Thử thách chạy bộ 100km trong 30 ngày. Cải thiện sức khỏe và nhận huy hiệu đặc biệt!",
   targetValue: 100,

@@ -592,14 +592,14 @@ const UserProgressChart = ({ healthMetricsHistory = [], activityHistory = [], us
               <line
                 x1={padding.left}
                 y1={targetY}
-                x2={chartWidth - padding.right}
+                x2={chartWidth - padding.right- 80}
                 y2={targetY}
                 stroke="#f56565"
                 strokeWidth="1"
                 strokeDasharray="5,5"
               />
               <text
-                x={chartWidth - padding.right + 5}
+                x={chartWidth - padding.right - 80}
                 y={targetY + 5}
                 textAnchor="start"
                 fontSize="12"

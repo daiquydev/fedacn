@@ -13,8 +13,8 @@ export default function MealProgress({ mealPlanId }) {
       const mockProgressData = {
         overview: {
           planName: 'Thực đơn giảm cân 7 ngày',
-          startDate: '2024-01-10T00:00:00Z',
-          endDate: '2024-01-16T23:59:59Z',
+          startDate: '2025-05-01T00:00:00Z',
+          endDate: '2025-05-07T23:59:59Z',
           completedDays: 4,
           totalDays: 7,
           completionRate: 57,
@@ -22,13 +22,13 @@ export default function MealProgress({ mealPlanId }) {
           averageCompletion: 85
         },
         weeklyData: [
-          { day: 'CN', date: '10/01', completion: 100, calories: 1430 },
-          { day: 'T2', date: '11/01', completion: 90, calories: 1380 },
-          { day: 'T3', date: '12/01', completion: 75, calories: 1400 },
-          { day: 'T4', date: '13/01', completion: 80, calories: 1410 },
-          { day: 'T5', date: '14/01', completion: 0, calories: 1450 },
-          { day: 'T6', date: '15/01', completion: 0, calories: 1420 },
-          { day: 'T7', date: '16/01', completion: 0, calories: 1400 }
+          { day: 'T5', date: '01/05', completion: 100, calories: 1430 },
+          { day: 'T6', date: '02/05', completion: 90, calories: 1380 },
+          { day: 'T7', date: '03/05', completion: 75, calories: 1400 },
+          { day: 'CN', date: '04/05', completion: 80, calories: 1410 },
+          { day: 'T2', date: '05/05', completion: 0, calories: 1450 },
+          { day: 'T3', date: '06/05', completion: 0, calories: 1420 },
+          { day: 'T4', date: '07/05', completion: 0, calories: 1400 }
         ],
         achievements: [
           { id: 1, title: 'Ngày đầu tiên', description: 'Hoàn thành ngày đầu tiên của kế hoạch', achieved: true, date: '2024-01-10T20:15:30Z' },

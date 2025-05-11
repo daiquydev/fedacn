@@ -1,34 +1,55 @@
 import { BiSolidPencil } from 'react-icons/bi'
 import { BsFillCameraFill } from 'react-icons/bs'
+import { FaHeartbeat, FaCheckCircle, FaRegEdit } from 'react-icons/fa'
+import { motion } from 'framer-motion'
 import useravatar from '../../assets/images/useravatar.jpg'
 import avatarbg from '../../assets/images/avatarbg.jpg'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { currentAccount } from '../../apis/userApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import MePost from './components/MePost'
-import TabsProfile from '../../components/GlobalComponents/TabsProfile'
-import ModalUploadAvatar from './components/ModalUploadAvatar'
-import ModalUploadCoverAvatar from './components/ModalUploadCoverAvatar'
 import ThreeDots from './components/ThreeDots'
 import ModalUpdateProfile from './components/ModalUpdateProfile'
-import { navBarsProfileChef, navBarsProfileUser } from '../../constants/objectUi'
-import MeBlog from './components/MeBlog'
-import MeAlbum from './components/MeAlbum'
-import MeRecipe from './components/MeRecipe'
-import { FaCheckCircle } from 'react-icons/fa'
-import HealthProfile from './components/HealthProfile'
+import ModalUploadAvatar from './components/ModalUploadAvatar'
+import ModalUploadCoverAvatar from './components/ModalUploadCoverAvatar'
+import HealthProfile from './components/HealthProfile/HealthProfile'
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: [0.6, -0.05, 0.01, 0.99] }
+  }
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+}
 
 export default function Me() {
   const [modalAvatar, setModalAvatar] = useState(false)
   const [modalCoverAvatar, setModalCoverAvatar] = useState(false)
   const [modalUpdateProfile, setModalUpdateProfile] = useState(false)
-  const [toggleState, setToggleState] = useState(0)
-
-  const toggleTab = (index) => {
-    setToggleState(index)
+  const [scrollPosition, setScrollPosition] = useState(0)
+  
+  const handleScroll = () => {
+    const position = window.scrollY
+    setScrollPosition(position)
   }
 
-  const getActiveClass = (index, className) => (toggleState === index ? className : '')
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
   const openModalAvatar = () => {
     setModalAvatar(true)
   }
@@ -52,6 +73,7 @@ export default function Me() {
   const closeModalUpdateProfile = () => {
     setModalUpdateProfile(false)
   }
+  
   const { data: userData } = useQuery({
     queryKey: ['me'],
     queryFn: () => {
@@ -60,135 +82,167 @@ export default function Me() {
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5
   })
-  console.log(userData?.data.result[0])
+  
+  const user = userData?.data?.result?.[0]
 
   return (
-    <div>
-      <div className='h-full rounded-lg text-gray-900 dark:text-white'>
-        <div className='w-full'>
-          <div className='w-full h-[18rem]'>
-            <div className='relative'>
+    <motion.div 
+      initial="hidden" 
+      animate="visible" 
+      variants={staggerContainer}
+      className="min-h-screen bg-gray-50 dark:bg-gray-900"
+    >
+      {/* Profile Header */}
+      <div className='relative'>
+        {/* Cover Image with Parallax Effect */}
+        <div 
+          className='w-full h-[28rem] overflow-hidden relative'
+          style={{ 
+            transform: `translateY(${scrollPosition * 0.2}px)` 
+          }}
+        >
+          <motion.img
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5 }}
+            alt='cover background'
+            src={user?.cover_avatar ? user.cover_avatar : avatarbg}
+            className='w-full h-full object-cover filter brightness-[0.85]'
+          />
+          <div className='absolute inset-0 bg-gradient-to-b from-transparent to-black/70'></div>
+          
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className='absolute top-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full text-white transition-all duration-300'
+            onClick={openModalCoverAvatar}
+          >
+            <BsFillCameraFill className="text-xl" />
+          </motion.button>
+        </div>
+        
+        {/* Profile Info Section */}
+        <motion.div 
+          variants={fadeInUp}
+          className='absolute bottom-0 left-0 right-0 px-6 py-8 flex flex-col md:flex-row items-center md:items-end gap-6 text-white'
+        >
+          {/* Profile Image */}
+          <div className='relative -mt-20'>
+            <motion.div
+              initial={{ scale: 0, borderRadius: "50%" }}
+              animate={{ scale: 1, borderRadius: "50%" }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className='h-40 w-40 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden shadow-xl'
+            >
               <img
-                alt='avatar bg'
-                src={userData?.data.result[0].cover_avatar ? userData?.data.result[0].cover_avatar : avatarbg}
-                className='w-full shadow-md rounded-lg h-[18rem] relative object-cover'
+                className='h-full w-full object-cover'
+                src={user?.avatar ? user.avatar : useravatar}
+                alt='avatar'
               />
-              <div
-                className='absolute top-2 left-2 text-3xl cursor-pointer text-gray-600 hover:text-gray-700 dark:text-red-900 dark:hover:text-red-950'
-                onClick={openModalCoverAvatar}
-              >
-                <BsFillCameraFill />
-              </div>
-              <div className='px-2 w-full md:flex md:flex-row gap-2 top-60 pb-5 absolute'>
-                <img
-                  className='h-40 w-40 ml-2 border border-red-200 rounded-full  object-cover relative'
-                  src={userData?.data.result[0].avatar ? userData?.data.result[0].avatar : useravatar}
-                  alt='avatar'
-                />
-                <div
-                  onClick={openModalAvatar}
-                  className='absolute top-28 left-32 p-2 bg-gray-300 rounded-full text-2xl cursor-pointer text-gray-600 hover:text-gray-700 dark:text-red-900 dark:hover:text-red-950'
+            </motion.div>
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className='absolute bottom-2 right-2 bg-white/90 dark:bg-gray-900/90 p-2 rounded-full text-lg text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-md'
+              onClick={openModalAvatar}
+            >
+              <BsFillCameraFill />
+            </motion.button>
+          </div>
+          
+          {/* User Info */}
+          <motion.div 
+            variants={fadeInUp} 
+            className='flex-1 text-center md:text-left'
+          >
+            <div className='flex items-center gap-2 justify-center md:justify-start'>
+              <h1 className='text-3xl font-bold'>{user?.name}</h1>
+              {user?.role === 1 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.6 }}
+                  className='text-blue-400'
                 >
-                  <BsFillCameraFill />
-                </div>
-                <div className='w-full lg:flex mr-10 mb-8 items-end justify-between '>
-                  <div className='md:mt-16 flex-col flex justify-end'>
-                    <div className='px-2'>
-                      <div className='text-3xl flex items-center gap-2 whitespace-nowrap text-gray-800 dark:text-white font-semibold'>
-                        {userData?.data.result[0].name}
-                        {userData?.data.result[0].role === 1 && (
-                          <div className='text-blue-400 rounded-full flex justify-center items-center '>
-                            <FaCheckCircle size={20} />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className='text-lg whitespace-nowrap text-gray-600 dark:text-gray-400'>
-                        @{userData?.data.result[0].user_name}
-                      </div>
-                      {userData?.data.result[0].role === 0 && (
-                        <>
-                          {userData?.data.result[0].followers_count >= 3 ? (
-                            <div>
-                              {userData?.data.result[0].upgrade_request?.type === 0 ? (
-                                <span className='text-sm font-semibold'>
-                                  Lưu ý: Bạn đã gửi yêu cầu nâng cấp lên đầu bếp, vui lòng chờ xác nhận từ admin !
-                                </span>
-                              ) : (
-                                <span className='text-sm font-semibold'>
-                                  Lưu ý: Bạn đã đạt đủ điều kiện để nâng cấp lên đầu bếp, hãy nâng cấp ngay !
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <div>
-                              {userData?.data.result[0].upgrade_request?.type === 1 && (
-                                <span className='text-sm font-semibold'>
-                                  Lưu ý: Bạn đã gửi yêu cầu nâng cấp lên đầu bếp, vui lòng chờ xác nhận từ admin !
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    <div className='py-2 flex divide-x divide-gray-400 divide-solid'>
-                      <span className='text-center px-2'>
-                        <span className='font-bold text-red-700'>{userData?.data.result[0].followers_count}</span>
-                        <span className='text-gray-600 dark:text-white'> Người theo dõi</span>
-                      </span>
-                      <span className='text-center px-2'>
-                        <span className='font-bold text-red-700'>{userData?.data.result[0].posts_count}</span>
-                        <span className='text-gray-600 dark:text-white'> Bài đăng</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className='flex justify-between items-center'>
-                    <button
-                      type='button'
-                      onClick={openModalUpdateProfile}
-                      className='rounded-lg btn-sm btn flex items-center justify-center hover:bg-red-600 bg-red-700 text-sm text-white font-medium transition-all duration-300 ease-in-out '
-                    >
-                      <BiSolidPencil className='' />
-                      Chỉnh sửa thông tin
-                    </button>
-                    <div className='px-3 text-2xl hover:text-red-600 cursor-pointer transition-all duration-300'>
-                      <ThreeDots user={userData?.data.result[0]} />
-                    </div>
-                  </div>
-                </div>
+                  <FaCheckCircle size={22} />
+                </motion.div>
+              )}
+            </div>
+            <div className='text-lg text-gray-300 mt-1'>@{user?.user_name}</div>
+            
+            {/* User Stats */}
+            <motion.div 
+              variants={fadeInUp}
+              className='flex items-center gap-6 mt-4 text-gray-200'
+            >
+              <div className='flex flex-col items-center md:items-start'>
+                <span className='text-2xl font-bold text-white'>{user?.followers_count || 0}</span>
+                <span className='text-sm'>Người theo dõi</span>
               </div>
+              <div className='w-px h-10 bg-gray-400/50'></div>
+              <div className='flex flex-col items-center md:items-start'>
+                <span className='text-2xl font-bold text-white'>{user?.posts_count || 0}</span>
+                <span className='text-sm'>Bài đăng</span>
+              </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Action Buttons */}
+          <motion.div 
+            variants={fadeInUp}
+            className='flex items-center gap-3'
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={openModalUpdateProfile}
+              className='px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-2 text-white font-medium transition-all duration-300'
+            >
+              <BiSolidPencil />
+              <span>Chỉnh sửa</span>
+            </motion.button>
+            
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className='p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm cursor-pointer'
+            >
+              <ThreeDots user={user} />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </div>
+      
+      {/* Main Content */}
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className='bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-8'
+        >
+          <div className='p-6 flex items-center gap-4 border-b border-gray-200 dark:border-gray-700'>
+            <div className='p-3 bg-red-50 dark:bg-red-900/20 rounded-full text-red-600 dark:text-red-400'>
+              <FaHeartbeat className='text-xl' />
+            </div>
+            <div>
+              <h2 className='text-2xl font-bold text-gray-800 dark:text-white'>Hồ sơ Sức khỏe Của Tôi</h2>
+              <p className='text-gray-600 dark:text-gray-400'>
+                Quản lý thông tin sức khỏe và nhận đề xuất phù hợp
+              </p>
             </div>
           </div>
-        </div>
-        <div className='mt-[20rem] md:mt-64 lg:mt-48 dark:shadow-sm shadow-md dark:shadow-red-600 py-3 px-4'>
-          {/* <NavBarProfile /> */}
-          <TabsProfile
-            toggleTab={toggleTab}
-            getActiveClass={getActiveClass}
-            navBarsProfile={userData?.data.result[0].role === 0 ? navBarsProfileUser : navBarsProfileChef}
-          />
-        </div>
-        {userData?.data.result[0].role === 0 ? (
-          <>
-            {toggleState === 0 && <MePost user={userData?.data.result[0]} />}
-            {toggleState === 1 && <HealthProfile />}
-          </>
-        ) : (
-          <>
-            {toggleState === 0 && <MePost user={userData?.data.result[0]} />}
-            {toggleState === 1 && <MeRecipe />}
-            {toggleState === 2 && <MeAlbum />}
-            {toggleState === 3 && <MeBlog />}
-          </>
-        )}
+          
+          <HealthProfile />
+        </motion.div>
       </div>
+      
+      {/* Modals */}
       {modalAvatar && <ModalUploadAvatar closeModalAvatar={closeModalAvatar} />}
       {modalCoverAvatar && <ModalUploadCoverAvatar closeModalCoverAvatar={closeModalCoverAvatar} />}
       {modalUpdateProfile && (
-        <ModalUpdateProfile handleCloseModalUpdateProfile={closeModalUpdateProfile} user={userData?.data.result[0]} />
+        <ModalUpdateProfile handleCloseModalUpdateProfile={closeModalUpdateProfile} user={user} />
       )}
-    </div>
+    </motion.div>
   )
 }

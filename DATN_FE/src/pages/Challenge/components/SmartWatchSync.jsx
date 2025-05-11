@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BsSmartwatch } from 'react-icons/bs';
-import { FaSync, FaRunning, FaSwimmer, FaBiking, FaCheck, FaPause, FaPlay, FaStop } from 'react-icons/fa';
+import { FaSync, FaRunning, FaSwimmer, FaBiking, FaCheck, FaPause, FaPlay, FaStop, FaInfoCircle } from 'react-icons/fa';
 import { MdDirectionsWalk, MdFitnessCenter, MdSportsGymnastics, MdMonitorHeart } from 'react-icons/md';
 import { GiNightSleep } from 'react-icons/gi';
 import moment from 'moment';
 import { toast } from 'react-hot-toast';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 // Hàm xác định loại dữ liệu từ đồng hồ thông minh cần cho thử thách
 const getSmartWatchDataType = (category) => {
@@ -108,6 +109,34 @@ const mockSmartWatchData = (category, targetValue, startDate, endDate) => {
   }
   
   return data;
+};
+
+// Tùy chỉnh tooltip cho biểu đồ
+const CustomTooltip = ({ active, payload, label, unit }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <p className="font-medium text-gray-900 dark:text-gray-100">{label}</p>
+        <p className="text-green-600 dark:text-green-400">
+          <span className="font-medium">Đạt được:</span> {data.value} {unit}
+        </p>
+        <p className="text-blue-600 dark:text-blue-400">
+          <span className="font-medium">Mục tiêu:</span> {data.target} {unit}
+        </p>
+        {data.completed ? (
+          <div className="flex items-center text-green-600 dark:text-green-400 text-sm mt-1">
+            <FaCheck className="mr-1" /> Đã đạt mục tiêu
+          </div>
+        ) : (
+          <div className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            Chưa đạt mục tiêu
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
 };
 
 const SmartWatchSync = ({ challenge, onActivityComplete }) => {
@@ -401,31 +430,77 @@ const SmartWatchSync = ({ challenge, onActivityComplete }) => {
       </div>
       
       <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4">
-        <div className="text-gray-800 dark:text-white font-medium mb-2 flex items-center">
-          {dataType.icon} Lịch sử hoạt động (Cập nhật lần cuối: {lastSynced})
-        </div>
-        
-        <div className="overflow-x-auto">
-          <div className="flex space-x-2 py-2" style={{ minWidth: `${smartWatchData.length * 60}px` }}>
-            {smartWatchData.map((day, index) => (
-              <div key={index} className="w-14 text-center">
-                <div className={`h-20 mx-auto relative ${day.completed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700/30'} rounded-t-md flex items-end justify-center`}>
-                  <div 
-                    className={`w-8 ${day.completed ? 'bg-green-500' : 'bg-blue-400'} rounded-sm`}
-                    style={{ height: `${(day.value / day.target) * 100}%`, minHeight: '4px' }}
-                  ></div>
-                  {day.completed && (
-                    <div className="absolute top-1 right-1">
-                      <FaCheck className="text-green-600 dark:text-green-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{day.date}</div>
-                <div className="text-xs font-medium text-blue-600 dark:text-blue-400">{day.value} {dataType.unit}</div>
-              </div>
-            ))}
+        <div className="text-gray-800 dark:text-white font-medium mb-2 flex items-center justify-between">
+          <div className="flex items-center">
+            {dataType.icon} Lịch sử hoạt động (Cập nhật lần cuối: {lastSynced})
+          </div>
+          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+            <FaInfoCircle className="mr-1" /> 
+            <span>Mục tiêu hàng ngày: {smartWatchData.length > 0 ? smartWatchData[0].target : 0} {dataType.unit}</span>
           </div>
         </div>
+        
+        {smartWatchData.length > 0 ? (
+          <div className="mt-4" style={{ height: "250px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={smartWatchData}
+                margin={{ top: 5, right: 50, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis 
+                  dataKey="date" 
+                  fontSize={12} 
+                  tickMargin={8}
+                  stroke="#94a3b8"
+                />
+                <YAxis 
+                  fontSize={12} 
+                  tickMargin={8} 
+                  stroke="#94a3b8"
+                  label={{ value: dataType.unit, angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 12 } }}
+                />
+                <Tooltip content={<CustomTooltip unit={dataType.unit} />} />
+                <Legend 
+                  verticalAlign="top" 
+                  height={36}
+                  iconType="circle"
+                  iconSize={8}
+                  formatter={(value) => <span className="text-sm font-medium">{value}</span>}
+                />
+                <ReferenceLine 
+                  y={smartWatchData[0]?.target || 0} 
+                  label={{ value: 'Mục tiêu', position: 'right', fontSize: 12, fill: '#64748b' }} 
+                  stroke="#059669" 
+                  strokeDasharray="3 3" 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  name="Hoạt động"
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  activeDot={{ r: 6, fill: '#1d4ed8', stroke: '#ffffff' }}
+                  dot={(props) => {
+                    const { cx, cy, payload } = props;
+                    return payload.completed ? (
+                      <svg x={cx - 6} y={cy - 6} width={12} height={12} fill="#16a34a">
+                        <circle cx="6" cy="6" r="5" fill="#16a34a" />
+                        <circle cx="6" cy="6" r="3" fill="#ffffff" />
+                      </svg>
+                    ) : (
+                      <circle cx={cx} cy={cy} r={4} fill="#3b82f6" />
+                    );
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center h-40 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <p className="text-gray-500 dark:text-gray-400">Chưa có dữ liệu hoạt động</p>
+          </div>
+        )}
         
         <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
           <p>Dữ liệu được thu thập tự động từ thiết bị đeo {isConnected ? (
