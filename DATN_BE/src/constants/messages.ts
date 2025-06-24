@@ -200,6 +200,56 @@ export const RECIPE_MESSAGE = {
   GET_THREE_TOP_RECIPES_SUCCESS: 'Lấy 3 công thức nổi bật thành công'
 }
 
+export const MEAL_PLAN_MESSAGE = {
+  CREATE_MEAL_PLAN_SUCCESS: 'Tạo thực đơn thành công',
+  GET_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn thành công',
+  GET_MY_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn của tôi thành công',
+  GET_MEAL_PLAN_DETAIL_SUCCESS: 'Lấy chi tiết thực đơn thành công',
+  UPDATE_MEAL_PLAN_SUCCESS: 'Cập nhật thực đơn thành công',
+  DELETE_MEAL_PLAN_SUCCESS: 'Xóa thực đơn thành công',
+  LIKE_MEAL_PLAN_SUCCESS: 'Like thực đơn thành công',
+  UNLIKE_MEAL_PLAN_SUCCESS: 'Unlike thực đơn thành công',
+  BOOKMARK_MEAL_PLAN_SUCCESS: 'Bookmark thực đơn thành công',
+  UNBOOKMARK_MEAL_PLAN_SUCCESS: 'Unbookmark thực đơn thành công',
+  GET_BOOKMARKED_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn đã bookmark thành công',
+  COMMENT_MEAL_PLAN_SUCCESS: 'Bình luận thực đơn thành công',
+  GET_MEAL_PLAN_COMMENTS_SUCCESS: 'Lấy bình luận thực đơn thành công',
+  APPLY_MEAL_PLAN_SUCCESS: 'Áp dụng thực đơn thành công',
+  GET_FEATURED_MEAL_PLANS_SUCCESS: 'Lấy thực đơn nổi bật thành công',
+  GET_TRENDING_MEAL_PLANS_SUCCESS: 'Lấy thực đơn đang thịnh hành thành công',
+  MEAL_PLAN_NOT_FOUND: 'Không tìm thấy thực đơn',
+  TITLE_REQUIRED: 'Tiêu đề không được để trống',
+  DURATION_INVALID: 'Thời gian không hợp lệ',
+  CATEGORY_INVALID: 'Danh mục không hợp lệ',
+  UNAUTHORIZED_ACCESS: 'Không có quyền truy cập',
+  ALREADY_LIKED: 'Đã like thực đơn này rồi',
+  ALREADY_BOOKMARKED: 'Đã bookmark thực đơn này rồi',
+  NOT_LIKED: 'Chưa like thực đơn này',
+  NOT_BOOKMARKED: 'Chưa bookmark thực đơn này'
+}
+
+export const USER_MEAL_SCHEDULE_MESSAGE = {
+  GET_USER_MEAL_SCHEDULES_SUCCESS: 'Lấy danh sách lịch thực đơn thành công',
+  GET_USER_MEAL_SCHEDULE_DETAIL_SUCCESS: 'Lấy chi tiết lịch thực đơn thành công',
+  UPDATE_USER_MEAL_SCHEDULE_SUCCESS: 'Cập nhật lịch thực đơn thành công',
+  DELETE_USER_MEAL_SCHEDULE_SUCCESS: 'Xóa lịch thực đơn thành công',
+  GET_DAY_MEAL_ITEMS_SUCCESS: 'Lấy món ăn trong ngày thành công',
+  COMPLETE_MEAL_ITEM_SUCCESS: 'Hoàn thành món ăn thành công',
+  SKIP_MEAL_ITEM_SUCCESS: 'Bỏ qua món ăn thành công',
+  SUBSTITUTE_MEAL_ITEM_SUCCESS: 'Thay thế món ăn thành công',
+  GET_DAY_NUTRITION_STATS_SUCCESS: 'Lấy thống kê dinh dưỡng ngày thành công',
+  GET_SCHEDULE_OVERVIEW_SUCCESS: 'Lấy tổng quan lịch thực đơn thành công',
+  GET_COMPLETED_MEAL_ITEMS_SUCCESS: 'Lấy lịch sử món ăn đã hoàn thành thành công',
+  UPDATE_REMINDERS_SUCCESS: 'Cập nhật nhắc nhở thành công',
+  GET_PROGRESS_REPORT_SUCCESS: 'Lấy báo cáo tiến độ thành công',
+  SCHEDULE_NOT_FOUND: 'Không tìm thấy lịch thực đơn',
+  MEAL_ITEM_NOT_FOUND: 'Không tìm thấy món ăn',
+  UNAUTHORIZED_ACCESS: 'Không có quyền truy cập',
+  MEAL_ITEM_ALREADY_COMPLETED: 'Món ăn đã được hoàn thành',
+  RATING_INVALID: 'Đánh giá không hợp lệ',
+  ACTUAL_SERVINGS_INVALID: 'Khẩu phần thực tế không hợp lệ'
+}
+
 export const ALBUM_MESSAGE = {
   CREATE_ALBUM_SUCCESS: 'Tạo album thành công',
   GET_LIST_ALBUM_SUCCESS: 'Lấy danh sách album thành công',

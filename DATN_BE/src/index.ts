@@ -26,6 +26,8 @@ import writterRouter from './routes/adminRoutes/writter.routes'
 import { createServer } from 'http'
 import initSocket from './utils/socket'
 import notificationsRouter from './routes/userRoutes/notification.routes'
+import mealPlansRouter from './routes/userRoutes/mealPlan.routes'
+import userMealSchedulesRouter from './routes/userRoutes/userMealSchedule.routes'
 import { trainRecipesRecommender } from './utils/recommend'
 
 const app: Express = express()
@@ -77,6 +79,8 @@ app.use('/api/albums', albumsRouter)
 app.use('/api/ingredients', ingredientsRouter)
 app.use('/api/search', seachRouter)
 app.use('/api/notifications', notificationsRouter)
+app.use('/api/meal-plans', mealPlansRouter)
+app.use('/api/user-meal-schedules', userMealSchedulesRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)
 app.use('/api/admin', userAdminRouter)
