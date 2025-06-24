@@ -33,6 +33,14 @@ class MealPlanService {
 
       // Tạo các bữa ăn trong ngày
       for (const mealData of meals) {
+        // Validate: phải có recipe_id HOẶC name
+        if (!mealData.recipe_id && !mealData.name) {
+          throw new ErrorWithStatus({
+            message: 'Món ăn phải có recipe_id hoặc name',
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+
         await MealPlanMealModel.create({
           ...mealData,
           meal_plan_day_id: newDay._id

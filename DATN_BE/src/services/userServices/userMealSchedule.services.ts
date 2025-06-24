@@ -492,6 +492,169 @@ class UserMealScheduleService {
 
     return updatedSchedule
   }
+
+  // Reschedule meal item to different date/time
+  async rescheduleMealItemService({ meal_item_id, user_id, new_date, new_time }: any) {
+    const mealItem = await UserMealItemModel.findById(meal_item_id)
+
+    if (!mealItem) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.MEAL_ITEM_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Kiểm tra quyền truy cập thông qua schedule với type casting
+    const schedule = await UserMealScheduleModel.findOne({
+      _id: (mealItem as any).schedule_id,
+      user_id: new ObjectId(user_id)
+    })
+
+    if (!schedule) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.UNAUTHORIZED_ACCESS,
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    const updateData: any = {}
+    if (new_date) {
+      updateData.schedule_date = new Date(new_date)
+    }
+    if (new_time) {
+      updateData.scheduled_time = new_time
+    }
+    updateData.rescheduled_at = new Date()
+
+    const updatedMealItem = await UserMealItemModel.findByIdAndUpdate(
+      meal_item_id,
+      updateData,
+      { new: true }
+    )
+      .populate('recipe_id', 'title image calories')
+
+    return updatedMealItem
+  }
+
+  // Swap two meal items between dates
+  async swapMealItemsService({ meal_item_id_1, meal_item_id_2, user_id }: any) {
+    const [mealItem1, mealItem2] = await Promise.all([
+      UserMealItemModel.findById(meal_item_id_1),
+      UserMealItemModel.findById(meal_item_id_2)
+    ])
+
+    if (!mealItem1 || !mealItem2) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.MEAL_ITEM_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Kiểm tra quyền truy cập
+    const [schedule1, schedule2] = await Promise.all([
+      UserMealScheduleModel.findOne({
+        _id: (mealItem1 as any).schedule_id,
+        user_id: new ObjectId(user_id)
+      }),
+      UserMealScheduleModel.findOne({
+        _id: (mealItem2 as any).schedule_id,
+        user_id: new ObjectId(user_id)
+      })
+    ])
+
+    if (!schedule1 || !schedule2) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.UNAUTHORIZED_ACCESS,
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    // Hoán đổi ngày và thời gian
+    const temp_date = (mealItem1 as any).schedule_date
+    const temp_time = (mealItem1 as any).scheduled_time
+
+    await Promise.all([
+      UserMealItemModel.findByIdAndUpdate(meal_item_id_1, {
+        schedule_date: (mealItem2 as any).schedule_date,
+        scheduled_time: (mealItem2 as any).scheduled_time,
+        swapped_at: new Date()
+      }),
+      UserMealItemModel.findByIdAndUpdate(meal_item_id_2, {
+        schedule_date: temp_date,
+        scheduled_time: temp_time,
+        swapped_at: new Date()
+      })
+    ])
+
+    return { message: 'Hoán đổi thành công' }
+  }
+
+  // Add meal item to existing schedule
+  async addMealItemToScheduleService({ schedule_id, user_id, meal_data }: any) {
+    const schedule = await UserMealScheduleModel.findOne({
+      _id: new ObjectId(schedule_id),
+      user_id: new ObjectId(user_id)
+    })
+
+    if (!schedule) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.SCHEDULE_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Validate: phải có recipe_id HOẶC name
+    if (!meal_data.recipe_id && !meal_data.name) {
+      throw new ErrorWithStatus({
+        message: 'Món ăn phải có recipe_id hoặc name',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const newMealItem = await UserMealItemModel.create({
+      schedule_id: new ObjectId(schedule_id),
+      recipe_id: meal_data.recipe_id ? new ObjectId(meal_data.recipe_id) : null,
+      name: meal_data.name || 'Món ăn tùy chỉnh',
+      meal_type: meal_data.meal_type,
+      schedule_date: new Date(meal_data.schedule_date),
+      scheduled_time: meal_data.scheduled_time,
+      calories: meal_data.calories || 0,
+      protein: meal_data.protein || 0,
+      carbs: meal_data.carbs || 0,
+      fat: meal_data.fat || 0,
+      status: MealItemStatus.pending
+    })
+
+    return newMealItem
+  }
+
+  // Remove meal item from schedule
+  async removeMealItemFromScheduleService({ meal_item_id, user_id }: any) {
+    const mealItem = await UserMealItemModel.findById(meal_item_id)
+
+    if (!mealItem) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.MEAL_ITEM_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Kiểm tra quyền truy cập
+    const schedule = await UserMealScheduleModel.findOne({
+      _id: (mealItem as any).schedule_id,
+      user_id: new ObjectId(user_id)
+    })
+
+    if (!schedule) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.UNAUTHORIZED_ACCESS,
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    await UserMealItemModel.findByIdAndDelete(meal_item_id)
+    return { message: 'Xóa món ăn thành công' }
+  }
 }
 
 const userMealScheduleServices = new UserMealScheduleService()

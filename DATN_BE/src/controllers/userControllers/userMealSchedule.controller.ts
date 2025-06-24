@@ -211,6 +211,91 @@ export const updateRemindersController = async (req: Request, res: Response) => 
   })
 }
 
+// Reschedule meal item
+export const rescheduleMealItemController = async (req: Request, res: Response) => {
+  const { meal_item_id, new_date, new_time } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await userMealScheduleServices.rescheduleMealItemService({
+    meal_item_id,
+    user_id: user.user_id,
+    new_date,
+    new_time
+  })
+
+  return res.json({
+    result,
+    message: USER_MEAL_SCHEDULE_MESSAGE.RESCHEDULE_MEAL_ITEM_SUCCESS
+  })
+}
+
+// Swap meal items
+export const swapMealItemsController = async (req: Request, res: Response) => {
+  const { meal_item_id_1, meal_item_id_2 } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await userMealScheduleServices.swapMealItemsService({
+    meal_item_id_1,
+    meal_item_id_2,
+    user_id: user.user_id
+  })
+
+  return res.json({
+    result,
+    message: USER_MEAL_SCHEDULE_MESSAGE.SWAP_MEAL_ITEMS_SUCCESS
+  })
+}
+
+// Add meal item to schedule
+export const addMealItemController = async (req: Request, res: Response) => {
+  const { schedule_id, meal_data } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await userMealScheduleServices.addMealItemToScheduleService({
+    schedule_id,
+    user_id: user.user_id,
+    meal_data
+  })
+
+  return res.json({
+    result,
+    message: USER_MEAL_SCHEDULE_MESSAGE.ADD_MEAL_ITEM_SUCCESS
+  })
+}
+
+// Remove meal item from schedule
+export const removeMealItemController = async (req: Request, res: Response) => {
+  const { meal_item_id } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await userMealScheduleServices.removeMealItemFromScheduleService({
+    meal_item_id,
+    user_id: user.user_id
+  })
+
+  return res.json({
+    result,
+    message: USER_MEAL_SCHEDULE_MESSAGE.REMOVE_MEAL_ITEM_SUCCESS
+  })
+}
+
+// Update meal item details
+export const updateMealItemController = async (req: Request, res: Response) => {
+  const { meal_item_id, updateData } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await userMealScheduleServices.updateMealItemService({
+    meal_item_id,
+    user_id: user.user_id,
+    updateData
+  })
+
+  return res.json({
+    result,
+    message: USER_MEAL_SCHEDULE_MESSAGE.UPDATE_MEAL_ITEM_SUCCESS
+  })
+}
+
 // Lấy progress report
 export const getProgressReportController = async (req: Request, res: Response) => {
   const { schedule_id } = req.params

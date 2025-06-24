@@ -8,6 +8,11 @@ import {
   completeMealItemController,
   skipMealItemController,
   substituteMealItemController,
+  rescheduleMealItemController,
+  swapMealItemsController,
+  addMealItemController,
+  removeMealItemController,
+  updateMealItemController,
   getDayNutritionStatsController,
   getScheduleOverviewStatsController,
   getCompletedMealItemsController,
@@ -131,5 +136,50 @@ userMealScheduleRouter.post('/meal-items/skip', accessTokenValidator, wrapReques
  * Body: { meal_item_id: string, substitute_recipe_id: string, notes?: string }
  */
 userMealScheduleRouter.post('/meal-items/substitute', accessTokenValidator, wrapRequestHandler(substituteMealItemController))
+
+/**
+ * Description: Reschedule meal item
+ * Path: /user-meal-schedules/meal-items/reschedule
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { meal_item_id: string, new_date?: string, new_time?: string }
+ */
+userMealScheduleRouter.post('/meal-items/reschedule', accessTokenValidator, wrapRequestHandler(rescheduleMealItemController))
+
+/**
+ * Description: Swap two meal items
+ * Path: /user-meal-schedules/meal-items/swap
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { meal_item_id_1: string, meal_item_id_2: string }
+ */
+userMealScheduleRouter.post('/meal-items/swap', accessTokenValidator, wrapRequestHandler(swapMealItemsController))
+
+/**
+ * Description: Add meal item to schedule
+ * Path: /user-meal-schedules/meal-items/add
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { schedule_id: string, meal_data: object }
+ */
+userMealScheduleRouter.post('/meal-items/add', accessTokenValidator, wrapRequestHandler(addMealItemController))
+
+/**
+ * Description: Remove meal item from schedule
+ * Path: /user-meal-schedules/meal-items/remove
+ * Method: DELETE
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { meal_item_id: string }
+ */
+userMealScheduleRouter.delete('/meal-items/remove', accessTokenValidator, wrapRequestHandler(removeMealItemController))
+
+/**
+ * Description: Update meal item details
+ * Path: /user-meal-schedules/meal-items/update
+ * Method: PUT
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { meal_item_id: string, updateData: object }
+ */
+userMealScheduleRouter.put('/meal-items/update', accessTokenValidator, wrapRequestHandler(updateMealItemController))
 
 export default userMealScheduleRouter
