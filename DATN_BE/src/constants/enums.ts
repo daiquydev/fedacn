@@ -166,3 +166,49 @@ export const UnitValue = {
   pill: 'viên',
   fruit: 'trái/quả'
 }
+
+// Meal Plan Categories
+export enum MealPlanCategory {
+  loseWeight,
+  gainWeight,
+  gainMuscle,
+  healthy,
+  vegetarian,
+  keto,
+  lowCarb,
+  highProtein,
+  diabetes,
+  heartHealthy
+}
+
+// Meal Plan Status
+export enum MealPlanStatus {
+  draft,
+  published,
+  archived
+}
+
+// Schedule Status
+export enum ScheduleStatus {
+  active,
+  completed,
+  paused,
+  cancelled
+}
+
+// Meal Types
+export enum MealType {
+  breakfast,
+  lunch,
+  dinner,
+  snack,
+  snack2
+}
+
+// Meal Item Status
+export enum MealItemStatus {
+  pending,
+  completed,
+  skipped,
+  substituted
+}
