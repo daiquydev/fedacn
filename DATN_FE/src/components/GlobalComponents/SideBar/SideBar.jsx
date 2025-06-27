@@ -264,12 +264,12 @@ export default function SideBar() {
                   Album
                 </NavLink>
               </li> */}
-              <li>
+              {/* <li>
                 <NavLink to={'/blog'} className='link-custom '>
                   <FaShareAlt size={25} className='min-w-max' />
                   Góc chia sẻ
                 </NavLink>
-              </li>
+              </li> */}
               <li>
                 <NavLink 
                   to={'/sport-event'} 
@@ -330,41 +330,7 @@ export default function SideBar() {
                 </NavLink>
               </li>
             </ul>
-            {open && (
-              <div className='flex-1 text-sm z-50 max-h-48 my-auto whitespace-pre w-full  font-medium  '>
-                {userData?.data.result[0]?.role === 0 && (
-                  <div className='flex border-y border-slate-300 p-4 items-center justify-between'>
-                    {userData?.data.result[0]?.followers_count >= 3 ? (
-                      <>
-                        <div className=''>
-                          <p className='text-green-500 pb-1'>Đủ điều kiện nâng cấp !</p>
-                          <small>Nâng cấp ngay !</small>
-                        </div>
-                        <p
-                          onClick={onSubmitRequest}
-                          className='text-green-800 cursor-pointer hover:text-green-400 py-1.5 px-3 text-xs bg-green-50 dark:bg-green-100 rounded-xl'
-                        >
-                          Nâng cấp
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <p className='text-green-500 pb-1'>Bạn có phải đầu bếp ?</p>
-                          <small>Hãy liên hệ với chúng tôi !</small>
-                        </div>
-                        <p
-                          onClick={handleOpenModalRequest}
-                          className='text-green-800 cursor-pointer hover:text-green-400 py-1.5 px-3 text-xs bg-green-50 dark:bg-green-100 rounded-xl'
-                        >
-                          Liên hệ
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+           
           </div>
           {/* <motion.div
           onClick={() => {

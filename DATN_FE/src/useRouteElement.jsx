@@ -11,24 +11,7 @@ import SendEmail from './pages/ForgotPassword/components/SendEmail'
 import InputConfirm from './pages/ForgotPassword/components/InputConfirm'
 import ChangePassForm from './pages/ForgotPassword/components/ChangePassForm'
 import ChangeSuccess from './pages/ForgotPassword/components/ChangeSuccess'
-import WorkoutScheduleDetail from './pages/WorkoutScheduleDetail'
-import Challenge from "./pages/Challenge/Challenge"
-import ChallengeDetail from "./pages/Challenge/ChallengeDetail"
-import MyChallenge from "./pages/Challenge/MyChallenge"
-import CreateChallenge from "./pages/Challenge/CreateChallenge"
-import { 
-  MyMealSchedule, 
-  DayMealScheduleDetail, 
-  EditDayMealSchedule, 
-  MealAlternativesPage,
-  MealStats,
-  MealCompleted,
-  MealReminders,
-  MealPlanEdit
-} from './pages/MealSchedule'
-import MealPlanManagement from './pages/MealSchedule/MealPlanManagement'
-import UserStats from './pages/UserStats'
-import UserCalendar from './pages/UserCalendar'
+// Converted to lazy imports for better code splitting
 
 const HomeLanding = lazy(() => import('./pages/HomeLanding'))
 const Login = lazy(() => import('./pages/Login'))
@@ -49,6 +32,25 @@ const IBW = lazy(() => import('./pages/IBW'))
 const LBM = lazy(() => import('./pages/LBM'))
 const CaloBurned = lazy(() => import('./pages/CaloBurned'))
 const WaterPerDay = lazy(() => import('./pages/WaterPerDay'))
+// Challenge system components - converted to lazy loading
+const Challenge = lazy(() => import('./pages/Challenge/Challenge'))
+const ChallengeDetail = lazy(() => import('./pages/Challenge/ChallengeDetail'))
+const MyChallenge = lazy(() => import('./pages/Challenge/MyChallenge'))
+const CreateChallenge = lazy(() => import('./pages/Challenge/CreateChallenge'))
+// MealSchedule components - converted to lazy loading
+const MyMealSchedule = lazy(() => import('./pages/MealSchedule/MyMealSchedule'))
+const DayMealScheduleDetail = lazy(() => import('./pages/MealSchedule/DayMealScheduleDetail'))
+const EditDayMealSchedule = lazy(() => import('./pages/MealSchedule/EditDayMealSchedule'))
+const MealAlternativesPage = lazy(() => import('./pages/MealSchedule/MealAlternativesPage'))
+const MealStats = lazy(() => import('./pages/MealSchedule/MealStats'))
+const MealCompleted = lazy(() => import('./pages/MealSchedule/MealCompleted'))
+const MealReminders = lazy(() => import('./pages/MealSchedule/MealReminders'))
+const MealPlanEdit = lazy(() => import('./pages/MealSchedule/MealPlanEdit'))
+const MealPlanManagement = lazy(() => import('./pages/MealSchedule/MealPlanManagement'))
+// User components - converted to lazy loading
+const UserStats = lazy(() => import('./pages/UserStats'))
+const UserCalendar = lazy(() => import('./pages/UserCalendar'))
+const WorkoutScheduleDetail = lazy(() => import('./pages/WorkoutScheduleDetail'))
 const UserProfile = lazy(() => import('./pages/UserProfile'))
 const CreateBlog = lazy(() => import('./pages/CreateBlog'))
 const BlogList = lazy(() => import('./pages/BlogList'))
