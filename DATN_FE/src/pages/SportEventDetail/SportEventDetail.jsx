@@ -17,6 +17,7 @@ import AttendanceTracker from '../../components/AttendanceTracker'
 import SessionAttendanceSummary from '../../components/SessionAttendanceSummary'
 import SessionNotification from '../../components/SessionNotification'
 import ParticipantsList from '../../components/ParticipantsList'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function SportEventDetail() {
   const { id } = useParams();
@@ -1431,7 +1432,7 @@ export default function SportEventDetail() {
                     {post.images.map((image, index) => (
                       <img
                         key={index}
-                        src={image}
+                        src={getImageUrl(image)}
                             alt={`Post image ${index}`} 
                             className={`rounded-lg w-full ${
                               post.images.length === 1 ? 'max-h-96 object-contain' : 'h-48 object-cover'

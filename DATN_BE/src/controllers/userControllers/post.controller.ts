@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import type { Express } from 'express'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { POST_MESSAGE } from '~/constants/messages'
 import { TokenPayload } from '~/models/requests/authUser.request'
@@ -6,7 +7,7 @@ import postService from '~/services/userServices/post.services'
 import { ErrorWithStatus } from '~/utils/error'
 
 export const createPostController = async (req: Request, res: Response) => {
-  const file = req.files
+  const file = Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : []
   const { content, privacy } = req.body
   const user = req.decoded_authorization as TokenPayload
   if (file?.length === 0 && content === '') {
@@ -20,6 +21,24 @@ export const createPostController = async (req: Request, res: Response) => {
 
   return res.json({
     message: POST_MESSAGE.CREATE_POST_SUCCESS,
+    result
+  })
+}
+
+export const uploadPostImageController = async (req: Request, res: Response) => {
+  const file = req.file as Express.Multer.File | undefined
+  if (!file) {
+    throw new ErrorWithStatus({
+      message: POST_MESSAGE.NO_CONTENT_OR_IMAGE,
+      status: HTTP_STATUS.BAD_REQUEST
+    })
+  }
+
+  const category = (req.body?.category as string) || 'posts'
+  const result = await postService.uploadPostImageService(file, category)
+
+  return res.json({
+    message: POST_MESSAGE.UPLOAD_IMAGE_SUCCESS,
     result
   })
 }
@@ -199,6 +218,37 @@ export const createReportPostController = async (req: Request, res: Response) =>
 
   return res.json({
     message: POST_MESSAGE.REPORT_POST_SUCCESS,
+    result
+  })
+}
+
+export const shareMealPlanToPostController = async (req: Request, res: Response) => {
+  const { meal_plan_id, privacy, content } = req.body
+  const user = req.decoded_authorization as TokenPayload
+  const result = await postService.shareMealPlanToPostService({
+    user_id: user.user_id,
+    meal_plan_id,
+    privacy,
+    content
+  })
+
+  return res.json({
+    message: 'Chia sẻ thực đơn thành công',
+    result
+  })
+}
+
+export const getPostsWithMealPlanController = async (req: Request, res: Response) => {
+  const { page, limit } = req.query
+  const user = req.decoded_authorization as TokenPayload
+  const result = await postService.getPostsWithMealPlanService({
+    page: page as string,
+    limit: limit as string,
+    user_id: user?.user_id
+  })
+
+  return res.json({
+    message: 'Lấy danh sách posts có meal plan thành công',
     result
   })
 }

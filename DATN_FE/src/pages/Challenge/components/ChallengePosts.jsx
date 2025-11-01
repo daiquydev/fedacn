@@ -8,6 +8,7 @@ import { LiaComments } from 'react-icons/lia'
 import moment from 'moment'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import ModalUploadChallengePost from './ModalUploadChallengePost'
+import { getImageUrl } from '../../../utils/imageUrl'
 
 // Mock data
 const mockPosts = [
@@ -139,7 +140,7 @@ export default function ChallengePosts({ challengeId, userProgress, canPost }) {
                   {post.images.map((image, index) => (
                     <img
                       key={index}
-                      src={image}
+                      src={getImageUrl(image)}
                       alt={`Post image ${index + 1}`}
                       className="rounded-lg w-full h-48 object-cover"
                     />

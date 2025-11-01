@@ -7,7 +7,7 @@ import Loading from '../../components/GlobalComponents/Loading'
 import useQueryConfig from '../../hooks/useQueryConfig'
 import { omit } from 'lodash'
 import { useForm } from 'react-hook-form'
-import { getCategoryRecipes, getRecipesForChef } from '../../apis/recipeApi'
+import { getCategoryRecipes, getMyRecipes } from '../../apis/recipeApi'
 import RecipeItem from './components/RecipeItem'
 
 export default function RecipeList() {
@@ -24,9 +24,9 @@ export default function RecipeList() {
   })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['recipes-list-chef', queryConfig],
+    queryKey: ['my-recipes', queryConfig],
     queryFn: () => {
-      return getRecipesForChef(queryConfig)
+      return getMyRecipes(queryConfig)
     },
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 10

@@ -1,5 +1,6 @@
 import { FaClock, FaFireAlt, FaLeaf, FaFish, FaOilCan, FaUtensils, FaInfoCircle } from 'react-icons/fa'
 import { GiWheat } from 'react-icons/gi'
+import { getImageUrl } from '../../../../utils/imageUrl'
 
 export default function DayMealPlan({ day, onViewCooking }) {
   // Calculate total nutrition for the day
@@ -90,9 +91,12 @@ export default function DayMealPlan({ day, onViewCooking }) {
                 {meal.image && (
                   <div className="w-full md:w-1/3 h-48 rounded-lg overflow-hidden">
                     <img 
-                      src={meal.image} 
+                      src={getImageUrl(meal.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
                       alt={meal.content} 
                       className="w-full h-full object-cover transition-transform hover:scale-105"
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+                      }}
                     />
                   </div>
                 )}

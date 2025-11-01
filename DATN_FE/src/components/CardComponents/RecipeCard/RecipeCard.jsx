@@ -13,6 +13,7 @@ import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
 import ParticipantsList from '../../ParticipantsList'
 import useravatar from '../../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../../utils/imageUrl'
 
 // Sample dummy participants data with follow status
 const getDummyParticipants = (recipe) => {
@@ -153,7 +154,7 @@ export default function RecipeCard({ recipe }) {
       <div className='md:h-[18vh] xl:h-[22vh] rounded-t-xl scale-100 overflow-hidden'>
         <img
           loading='lazy'
-          src={recipe.image}
+          src={getImageUrl(recipe.image)}
           alt='thực đơn'
           className='md:h-full w-full object-cover hover:scale-125 transition duration-300 ease-in-out'
         />

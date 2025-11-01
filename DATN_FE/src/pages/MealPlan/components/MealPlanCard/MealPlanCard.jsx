@@ -1,145 +1,155 @@
-import { FaRegComment, FaRegHeart, FaHeart, FaRegClock, FaCheckCircle } from 'react-icons/fa'
 import { useState } from 'react'
-import ParticipantsList from '../../../../components/ParticipantsList'
-import useravatar from '../../../../assets/images/useravatar.jpg'
+import { FaHeart, FaRegHeart, FaBookmark, FaRegBookmark, FaComment, FaCalendarAlt, FaClock, FaUser } from 'react-icons/fa'
+import { MEAL_PLAN_CATEGORIES } from '../../../../constants/mealPlan'
+import { getImageUrl } from '../../../../utils/imageUrl'
 
-// Sample dummy participants data with follow status
-const getDummyParticipants = (plan) => {
-  // Ensure the number of participants matches the actual followers count
-  const followersCount = plan.followers || plan.followersCount || 5; // Default to 5 if not specified
-  
-  // Generate up to 8 participants maximum (for UI purposes)
-  const count = Math.min(followersCount, 8);
-  
-  // Hardcoded followed users (in a real app, this would come from user's follow list)
-  const followedIds = [1, 3, 5, 7];
-  
-  const participants = [];
-  const seed = parseInt(plan.id) || Math.floor(Math.random() * 100);
-  
-  for (let i = 0; i < count; i++) {
-    const id = ((seed + i) % followersCount) + 1;
-    participants.push({
-      id,
-      name: `Người dùng ${id}`,
-      avatar: "", // Empty for default avatar
-      isFollowed: followedIds.includes(id)
-    });
-  }
-  
-  return participants;
-};
+export default function MealPlanCard({ plan, onClick, onAction }) {
+  const [isLiked, setIsLiked] = useState(plan.is_liked || false)
+  const [isBookmarked, setIsBookmarked] = useState(plan.is_bookmarked || false)
+  const [likesCount, setLikesCount] = useState(plan.likes_count || 0)
 
-export default function MealPlanCard({ plan, onClick }) {
-  const [liked, setLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(plan.likes)
-
-  const handleLike = (e) => {
-    e.stopPropagation();
-    if (liked) {
-      setLikesCount(prev => prev - 1);
+  const handleLike = async (e) => {
+    e.stopPropagation()
+    
+    if (isLiked) {
+      await onAction('unlike', plan._id)
+      setIsLiked(false)
+      setLikesCount(prev => Math.max(prev - 1, 0))
     } else {
-      setLikesCount(prev => prev + 1);
+      await onAction('like', plan._id)
+      setIsLiked(true)
+      setLikesCount(prev => prev + 1)
     }
-    setLiked(!liked);
+  }
+
+  const handleBookmark = async (e) => {
+    e.stopPropagation()
+    
+    if (isBookmarked) {
+      await onAction('unbookmark', plan._id)
+      setIsBookmarked(false)
+    } else {
+      await onAction('bookmark', plan._id, { folder_name: '', notes: '' })
+      setIsBookmarked(true)
+    }
   }
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('vi-VN', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    }).format(date);
+    return new Date(dateString).toLocaleDateString('vi-VN')
+  }
+
+  const getCategoryName = (categoryId) => {
+    return MEAL_PLAN_CATEGORIES[categoryId] || 'Khác'
   }
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
       onClick={onClick}
     >
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
         <img 
-          src={plan.image} 
-          alt={plan.title} 
-          className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+          src={getImageUrl(plan.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
+          alt={plan.name || plan.title}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          onError={(e) => {
+            e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'
+          }}
         />
-        <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-medium px-2 py-1 rounded-full">
-          {plan.duration} ngày
+        
+        {/* Category badge */}
+        <div className="absolute top-3 left-3">
+          <span className="px-2 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
+            {getCategoryName(plan.category)}
+          </span>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent h-16 pointer-events-none" />
+        
+        {/* Duration badge */}
+        <div className="absolute top-3 right-3">
+          <span className="px-2 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full flex items-center">
+            <FaCalendarAlt className="mr-1" />
+            {plan.duration} ngày
+          </span>
+        </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        <div className="mb-2">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">{plan.title}</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 h-10">{plan.description}</p>
-        </div>
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+          {plan.title}
+        </h3>
+        
+        {/* Description */}
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+          {plan.description}
+        </p>
 
         {/* Author info */}
         <div className="flex items-center mb-3">
           <img 
-            src={plan.author.avatar} 
-            alt={plan.author.name} 
-            className="w-8 h-8 rounded-full mr-2 object-cover"
+            src={getImageUrl(plan.author_id?.avatar) || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+            alt={plan.author_id?.name}
+            className="w-6 h-6 rounded-full mr-2"
+            onError={(e) => {
+              e.target.src = 'https://randomuser.me/api/portraits/men/32.jpg'
+            }}
           />
-          <div>
-            <div className="flex items-center">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">{plan.author.name}</span>
-              {plan.author.isVerified && (
-                <FaCheckCircle className="ml-1 text-blue-500 w-3 h-3" />
-              )}
-            </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {formatDate(plan.createdAt)}
-            </span>
-          </div>
-        </div>
-        
-        {/* Participants */}
-        <div className="mb-3">
-          <ParticipantsList 
-            participants={getDummyParticipants(plan)}
-            initialLimit={3}
-            size="sm"
-            title={`${plan.followers || plan.followersCount || plan.likes || 0} người theo dõi`}
-            showCount={false}
-          />
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {plan.author_id?.name}
+          </span>
         </div>
 
-        {/* Category and interactions */}
-        <div className="flex justify-between items-center">
-          <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
-            {plan.category}
-          </span>
-          
-          <div className="flex items-center space-x-3">
+        {/* Stats */}
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <div className="flex items-center">
+            <FaClock className="mr-1" />
+            <span>{formatDate(plan.createdAt)}</span>
+          </div>
+          {plan.target_calories && (
+            <div className="flex items-center">
+              <span>{plan.target_calories} cal</span>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-4">
+            {/* Like button */}
             <button 
               onClick={handleLike}
-              className="flex items-center text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+              className={`flex items-center space-x-1 transition-colors ${
+                isLiked 
+                  ? 'text-red-500 hover:text-red-600' 
+                  : 'text-gray-500 hover:text-red-500 dark:text-gray-400'
+              }`}
             >
-              {liked ? (
-                <FaHeart className="text-red-500 dark:text-red-400 mr-1" />
-              ) : (
-                <FaRegHeart className="mr-1" />
-              )}
-              <span className="text-xs">{likesCount}</span>
+              {isLiked ? <FaHeart /> : <FaRegHeart />}
+              <span className="text-sm">{likesCount}</span>
             </button>
-            
-            <div className="flex items-center text-gray-500 dark:text-gray-400">
-              <FaRegComment className="mr-1" />
-              <span className="text-xs">{plan.comments}</span>
-            </div>
-            
-            <div className="flex items-center text-gray-500 dark:text-gray-400">
-              <FaRegClock className="mr-1" />
-              <span className="text-xs">{plan.duration}d</span>
+
+            {/* Comment count */}
+            <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
+              <FaComment />
+              <span className="text-sm">{plan.comments_count || 0}</span>
             </div>
           </div>
+
+          {/* Bookmark button */}
+          <button 
+            onClick={handleBookmark}
+            className={`transition-colors ${
+              isBookmarked 
+                ? 'text-yellow-500 hover:text-yellow-600' 
+                : 'text-gray-500 hover:text-yellow-500 dark:text-gray-400'
+            }`}
+          >
+            {isBookmarked ? <FaBookmark /> : <FaRegBookmark />}
+          </button>
         </div>
       </div>
     </div>
   )
-} 
+}

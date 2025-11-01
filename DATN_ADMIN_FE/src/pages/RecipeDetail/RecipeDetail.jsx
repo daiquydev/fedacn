@@ -7,6 +7,7 @@ import { MdHome, MdPerson } from 'react-icons/md'
 import { AiOutlineClockCircle } from 'react-icons/ai'
 import { BsFillLightningChargeFill } from 'react-icons/bs'
 import { getRecipeDetailForInspector } from '../../apis/inspectorApi'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function RecipeDetail() {
   const navigate = useNavigate()
@@ -42,7 +43,7 @@ export default function RecipeDetail() {
             <div className='bg-cover bg-center text-center overflow-hidden'>
               <img
                 className='object-cover relative lg:rounded-md max-h-[15rem] md:max-h-[26rem] w-[100%]'
-                src={data?.data.result[0].image}
+                src={getImageUrl(data?.data.result[0].image)}
                 alt='image'
               />
               <div className='bg-yellow-100 flex font-medium justify-center items-center text-gray-600 absolute p-1.5 text-sm rounded-full top-0 left-0 m-3'>

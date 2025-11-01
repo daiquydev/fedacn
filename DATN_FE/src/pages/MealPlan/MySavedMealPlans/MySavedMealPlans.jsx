@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaBookmark, FaCalendarAlt, FaSearch, FaFilter, FaTimes, FaListUl } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import MealPlanCard from './components/MealPlanCard';
+import { getBookmarkedMealPlans, unbookmarkMealPlan, applyMealPlan } from '../../../services/mealPlanService';
+import { getImageUrl } from '../../../utils/imageUrl';
 
 export default function MySavedMealPlans() {
   const navigate = useNavigate();
   const [savedMealPlans, setSavedMealPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedMealPlan, setSelectedMealPlan] = useState(null);
   const [startDate, setStartDate] = useState(getCurrentDate());
+  const [applying, setApplying] = useState(false);
 
   // Hàm lấy ngày hiện tại theo định dạng YYYY-MM-DD
   function getCurrentDate() {
@@ -22,63 +27,42 @@ export default function MySavedMealPlans() {
     return `${year}-${month}-${day}`;
   }
 
-  // Mô phỏng fetch dữ liệu
+  // Fetch bookmarked meal plans từ API
   useEffect(() => {
-    // Trong ứng dụng thực tế, đây sẽ là API call
-    setTimeout(() => {
-      const mockData = [
-        {
-          id: 1,
-          title: 'Thực đơn giảm cân 7 ngày',
-          image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-          description: 'Thực đơn giảm cân lành mạnh với đầy đủ dinh dưỡng cho 7 ngày',
-          duration: 7,
-          category: 'Giảm cân',
-          calories: 1500,
-          savedAt: '2024-01-15T10:30:00Z',
-          isApplied: false,
+    const fetchBookmarkedMealPlans = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getBookmarkedMealPlans();
+        
+        // Transform data để match với UI
+        const transformedPlans = response.data.result.meal_plans.map(plan => ({
+          id: plan._id,
+          title: plan.title,
+          image: plan.image ? getImageUrl(plan.image) : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+          description: plan.description,
+          duration: plan.duration,
+          category: plan.category,
+          calories: plan.nutrition_info?.total_calories || 0,
+          savedAt: plan.bookmarked_at || plan.created_at,
+          isApplied: false, // Sẽ được cập nhật từ applied meal plans
           author: {
-            name: 'Nguyễn Văn A',
-            avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
+            name: plan.author_id?.name || plan.author_id?.username || 'Unknown',
+            avatar: plan.author_id?.avatar ? getImageUrl(plan.author_id.avatar) : 'https://randomuser.me/api/portraits/men/32.jpg'
           }
-        },
-        {
-          id: 2,
-          title: 'Thực đơn tăng cơ 14 ngày',
-          image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
-          description: 'Thực đơn tăng cơ giàu protein, đầy đủ dinh dưỡng',
-          duration: 14,
-          category: 'Tăng cơ',
-          calories: 2500,
-          savedAt: '2024-01-20T14:15:00Z',
-          isApplied: true,
-          progress: 30, // % hoàn thành
-          startDate: '2024-01-25T00:00:00Z',
-          endDate: '2024-02-08T00:00:00Z',
-          author: {
-            name: 'Trần Văn B',
-            avatar: 'https://randomuser.me/api/portraits/men/44.jpg'
-          }
-        },
-        {
-          id: 3,
-          title: 'Thực đơn Eat Clean 30 ngày',
-          image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
-          description: 'Thực đơn Eat Clean với nguyên liệu tươi sạch, không chế biến',
-          duration: 30,
-          category: 'Eat Clean',
-          calories: 1800,
-          savedAt: '2024-01-10T09:45:00Z',
-          isApplied: false,
-          author: {
-            name: 'Lê Thị C',
-            avatar: 'https://randomuser.me/api/portraits/women/32.jpg'
-          }
-        }
-      ];
-      setSavedMealPlans(mockData);
-      setLoading(false);
-    }, 800);
+        }));
+        
+        setSavedMealPlans(transformedPlans);
+      } catch (error) {
+        console.error('Error fetching bookmarked meal plans:', error);
+        setError('Không thể tải danh sách thực đơn đã lưu. Vui lòng thử lại.');
+        toast.error('Không thể tải danh sách thực đơn đã lưu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookmarkedMealPlans();
   }, []);
 
   // Lọc danh sách thực đơn dựa trên filter và search
@@ -102,33 +86,76 @@ export default function MySavedMealPlans() {
   };
 
   // Xác nhận áp dụng thực đơn
-  const confirmApply = () => {
-    // API call để áp dụng thực đơn
-    console.log(`Áp dụng thực đơn ID ${selectedMealPlan.id} từ ngày ${startDate}`);
+  const confirmApply = async () => {
+    if (!selectedMealPlan) return;
     
-    // Cập nhật trạng thái trong state
-    setSavedMealPlans(prev => 
-      prev.map(plan => 
-        plan.id === selectedMealPlan.id 
-          ? {...plan, isApplied: true, startDate, progress: 0} 
-          : plan
-      )
-    );
-    
-    setShowApplyModal(false);
-    navigate('/schedule/eat-schedule');
+    try {
+      setApplying(true);
+      await applyMealPlan(
+        selectedMealPlan.id,
+        selectedMealPlan.title,
+        startDate
+      );
+      
+      // Cập nhật trạng thái trong state
+      setSavedMealPlans(prev => 
+        prev.map(plan => 
+          plan.id === selectedMealPlan.id 
+            ? {...plan, isApplied: true, startDate, progress: 0} 
+            : plan
+        )
+      );
+      
+      toast.success('Áp dụng thực đơn thành công!');
+      setShowApplyModal(false);
+      navigate('/schedule/eat-schedule');
+    } catch (error) {
+      console.error('Error applying meal plan:', error);
+      toast.error('Không thể áp dụng thực đơn. Vui lòng thử lại.');
+    } finally {
+      setApplying(false);
+    }
   };
 
   // Xử lý xóa thực đơn đã lưu
-  const handleRemoveSavedMealPlan = (id) => {
-    // API call để xóa thực đơn đã lưu
-    setSavedMealPlans(prev => prev.filter(plan => plan.id !== id));
+  const handleRemoveSavedMealPlan = async (id) => {
+    try {
+      await unbookmarkMealPlan(id);
+      setSavedMealPlans(prev => prev.filter(plan => plan.id !== id));
+      toast.success('Đã xóa thực đơn khỏi danh sách lưu');
+    } catch (error) {
+      console.error('Error removing saved meal plan:', error);
+      toast.error('Không thể xóa thực đơn. Vui lòng thử lại.');
+    }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Đang tải thực đơn đã lưu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaTimes className="text-red-600 dark:text-red-400 text-3xl" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Có lỗi xảy ra</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
       </div>
     );
   }
@@ -259,14 +286,25 @@ export default function MySavedMealPlans() {
             <div className="flex flex-col space-y-3">
               <button 
                 onClick={confirmApply}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
+                disabled={applying}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
               >
-                <FaCalendarAlt className="mr-2" />
-                Áp dụng thực đơn
+                {applying ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Đang áp dụng...
+                  </>
+                ) : (
+                  <>
+                    <FaCalendarAlt className="mr-2" />
+                    Áp dụng thực đơn
+                  </>
+                )}
               </button>
               <button 
                 onClick={() => setShowApplyModal(false)}
-                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                disabled={applying}
+                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
               >
                 Để sau
               </button>

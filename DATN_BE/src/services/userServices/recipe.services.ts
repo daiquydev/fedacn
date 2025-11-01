@@ -1306,6 +1306,150 @@ class RecipeService {
     ])
     return recipes
   }
+
+  // New service methods for user recipe management
+  async uploadImageService(file: Express.Multer.File): Promise<string> {
+    const processedImage = {
+      ...file,
+      originalname: file.originalname.split('.')[0] + new Date().getTime() + '.' + file.originalname.split('.')[1],
+      buffer: await sharp(file.buffer as Buffer)
+        .jpeg()
+        .toBuffer()
+    }
+    
+    const uploadResult = await uploadFileToS3({
+      filename: `recipe/${processedImage.originalname}`,
+      contentType: processedImage.mimetype,
+      body: processedImage.buffer
+    })
+    
+    // Return the URL string directly
+    return uploadResult.Location || ''
+  }
+
+  async uploadVideoService(file: Express.Multer.File): Promise<string> {
+    const processedVideo = {
+      ...file,
+      originalname: file.originalname.split('.')[0] + new Date().getTime() + '.' + file.originalname.split('.')[1]
+    }
+    
+    const uploadResult = await uploadFileToS3({
+      filename: `recipe/${processedVideo.originalname}`,
+      contentType: processedVideo.mimetype,
+      body: processedVideo.buffer
+    })
+    
+    // Return the URL string directly
+    return uploadResult.Location || ''
+  }
+
+  async createRecipeForUserService(recipeData: any) {
+    const recipe = new RecipeModel({
+      ...recipeData,
+      status: RecipeStatus.pending, // User recipes start as pending
+      created_at: new Date(),
+      updated_at: new Date()
+    })
+
+    const result = await recipe.save()
+    return result
+  }
+
+  async getMyRecipesService({ user_id, page, limit, status, search }: any) {
+    const query: any = { user_id: new ObjectId(user_id) }
+    
+    if (status && status !== 'all') {
+      query.status = Number(status)
+    }
+    
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ]
+    }
+
+    const total = await RecipeModel.countDocuments(query)
+    const recipes = await RecipeModel.find(query)
+      .populate('category_recipe_id', 'name')
+      .sort({ created_at: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec()
+
+    return {
+      recipes,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
+  }
+
+  async updateMyRecipeService({ user_id, recipe_id, updateData }: any) {
+    const recipe = await RecipeModel.findOne({
+      _id: new ObjectId(recipe_id),
+      user_id: new ObjectId(user_id)
+    })
+
+    if (!recipe) {
+      throw new ErrorWithStatus({
+        message: RECIPE_MESSAGE.RECIPE_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Delete old image if new one is uploaded
+    if (updateData.image && recipe.image) {
+      await deleteFileFromS3(recipe.image)
+    }
+
+    // Delete old video if new one is uploaded
+    if (updateData.video && recipe.video) {
+      await deleteFileFromS3(recipe.video)
+    }
+
+    const updatedRecipe = await RecipeModel.findByIdAndUpdate(
+      recipe_id,
+      {
+        ...updateData,
+        updated_at: new Date()
+      },
+      { new: true }
+    ).populate('category_recipe_id', 'name')
+
+    return updatedRecipe
+  }
+
+  async deleteMyRecipeService({ user_id, recipe_id }: any) {
+    const recipe = await RecipeModel.findOne({
+      _id: new ObjectId(recipe_id),
+      user_id: new ObjectId(user_id)
+    })
+
+    if (!recipe) {
+      throw new ErrorWithStatus({
+        message: RECIPE_MESSAGE.RECIPE_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Delete associated files
+    if (recipe.image) {
+      await deleteFileFromS3(recipe.image)
+    }
+    if (recipe.video) {
+      await deleteFileFromS3(recipe.video)
+    }
+
+    // Delete associated likes, bookmarks, and comments
+    await LikeRecipeModel.deleteMany({ recipe_id: new ObjectId(recipe_id) })
+    await BookmarkRecipeModel.deleteMany({ recipe_id: new ObjectId(recipe_id) })
+    await CommentRecipeModel.deleteMany({ recipe_id: new ObjectId(recipe_id) })
+
+    await RecipeModel.findByIdAndDelete(recipe_id)
+    return true
+  }
 }
 
 const recipeService = new RecipeService()

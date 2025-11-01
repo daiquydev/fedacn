@@ -11,9 +11,12 @@ import {
   getPostChildCommentsController,
   getPostCommentsController,
   getPostController,
+  getPostsWithMealPlanController,
   getUserPostController,
   likePostController,
   sharePostController,
+  shareMealPlanToPostController,
+  uploadPostImageController,
   unLikePostController
 } from '~/controllers/userControllers/post.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
@@ -23,6 +26,7 @@ import upload from '~/utils/multer'
 
 const postsRouter = Router()
 
+postsRouter.post('/upload', accessTokenValidator, upload.single('image'), wrapRequestHandler(uploadPostImageController))
 postsRouter.post('/', accessTokenValidator, upload.array('image', 5), wrapRequestHandler(createPostController))
 postsRouter.post('/actions/like', accessTokenValidator, wrapRequestHandler(likePostController))
 postsRouter.post('/actions/unlike', accessTokenValidator, wrapRequestHandler(unLikePostController))
@@ -55,6 +59,8 @@ postsRouter.post(
   wrapRequestHandler(deleteChildCommentPostController)
 )
 postsRouter.post('/actions/report', accessTokenValidator, wrapRequestHandler(createReportPostController))
+postsRouter.post('/actions/share-meal-plan', accessTokenValidator, wrapRequestHandler(shareMealPlanToPostController))
+postsRouter.get('/meal-plans/list', accessTokenValidator, limitAndPageValidator, wrapRequestHandler(getPostsWithMealPlanController))
 postsRouter.get(
   '/me/get-me-posts',
   accessTokenValidator,

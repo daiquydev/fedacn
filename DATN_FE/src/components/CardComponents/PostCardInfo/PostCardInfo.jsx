@@ -23,6 +23,7 @@ import { FaCheckCircle, FaUserFriends } from 'react-icons/fa'
 import { SocketContext } from '../../../contexts/socket.context'
 import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
+import { getImageUrl } from '../../../utils/imageUrl'
 
 export default function PostCardInfo({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -359,11 +360,11 @@ function CheckLengthOfImages({ images }) {
       >
         <div className='py-4'>
           <div className='flex'>
-            <Item original={images[0]} width='1024' height='768'>
+            <Item original={getImageUrl(images[0])} width='1024' height='768'>
               {({ ref, open }) => (
                 <img
                   className='max-w-full rounded-lg'
-                  src={images[0]}
+                  src={getImageUrl(images[0])}
                   alt=''
                   referrerPolicy='no-referrer'
                   ref={ref}
@@ -392,11 +393,11 @@ function CheckLengthOfImages({ images }) {
         <div className='py-4'>
           <div className='flex justify-between gap-1'>
             <div className='flex'>
-              <Item original={images[0]} width='1024' height='768'>
+              <Item original={getImageUrl(images[0])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full object-cover rounded-tl-lg'
-                    src={images[0]}
+                    src={getImageUrl(images[0])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -406,11 +407,11 @@ function CheckLengthOfImages({ images }) {
               </Item>
             </div>
             <div className='flex'>
-              <Item original={images[1]} width='1024' height='768'>
+              <Item original={getImageUrl(images[1])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full object-cover rounded-tr-lg'
-                    src={images[1]}
+                    src={getImageUrl(images[1])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -440,11 +441,11 @@ function CheckLengthOfImages({ images }) {
         <div className='py-4'>
           <div className='flex justify-between gap-1 mb-1'>
             <div className='flex'>
-              <Item original={images[0]} width='1024' height='768'>
+              <Item original={getImageUrl(images[0])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='lg:min-w-[10rem] max-w-full object-cover rounded-tl-lg rounded-bl-lg'
-                    src={images[0]}
+                    src={getImageUrl(images[0])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -452,14 +453,14 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover rounded-tl-lg' src={images[0]} /> */}
+              {/* <img className='max-w-full object-cover rounded-tl-lg' src={getImageUrl(images[0]} /> */}
             </div>
             <div className='flex'>
-              <Item original={images[1]} width='1024' height='768'>
+              <Item original={getImageUrl(images[1])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full lg:min-w-[10rem] object-cover'
-                    src={images[1]}
+                    src={getImageUrl(images[1])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -467,14 +468,14 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover' src={images[1]} /> */}
+              {/* <img className='max-w-full object-cover' src={getImageUrl(images[1]} /> */}
             </div>
             <div className='flex' href='#'>
-              <Item original={images[2]} width='1024' height='768'>
+              <Item original={getImageUrl(images[2])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full lg:min-w-[10rem] object-cover rounded-tr-lg rounded-br-lg'
-                    src={images[2]}
+                    src={getImageUrl(images[2])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -482,7 +483,7 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover rounded-tr-lg' src={images[2]} /> */}
+              {/* <img className='max-w-full object-cover rounded-tr-lg' src={getImageUrl(images[2]} /> */}
             </div>
           </div>
         </div>
@@ -505,11 +506,11 @@ function CheckLengthOfImages({ images }) {
         <div className='py-4'>
           <div className='flex justify-between gap-1'>
             <div className='flex'>
-              <Item original={images[0]} width='1024' height='768'>
+              <Item original={getImageUrl(images[0])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover rounded-tl-lg rounded-bl-lg'
-                    src={images[0]}
+                    src={getImageUrl(images[0])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -517,14 +518,14 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover rounded-tl-lg' src={images[0]} /> */}
+              {/* <img className='max-w-full object-cover rounded-tl-lg' src={getImageUrl(images[0]} /> */}
             </div>
             <div className='flex'>
-              <Item original={images[1]} width='1024' height='768'>
+              <Item original={getImageUrl(images[1])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover'
-                    src={images[1]}
+                    src={getImageUrl(images[1])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -532,14 +533,14 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover' src={images[1]} /> */}
+              {/* <img className='max-w-full object-cover' src={getImageUrl(images[1]} /> */}
             </div>
             <div className='flex'>
-              <Item original={images[2]} width='1024' height='768'>
+              <Item original={getImageUrl(images[2])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover '
-                    src={images[2]}
+                    src={getImageUrl(images[2])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -547,14 +548,14 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover  rounded-br-lg' src={images[3]} /> */}
+              {/* <img className='max-w-full object-cover  rounded-br-lg' src={getImageUrl(images[3]} /> */}
             </div>
             <div className='flex'>
-              <Item original={images[3]} width='1024' height='768'>
+              <Item original={getImageUrl(images[3])} width='1024' height='768'>
                 {({ ref, open }) => (
                   <img
                     className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover rounded-tr-lg rounded-br-lg'
-                    src={images[3]}
+                    src={getImageUrl(images[3])}
                     alt=''
                     referrerPolicy='no-referrer'
                     ref={ref}
@@ -562,7 +563,7 @@ function CheckLengthOfImages({ images }) {
                   />
                 )}
               </Item>
-              {/* <img className='max-w-full object-cover rounded-tr-lg ' src={images[3]} /> */}
+              {/* <img className='max-w-full object-cover rounded-tr-lg ' src={getImageUrl(images[3]} /> */}
             </div>
           </div>
           <div className='flex justify-between gap-1'></div>
@@ -585,11 +586,11 @@ function CheckLengthOfImages({ images }) {
       <div className='py-4'>
         <div className='flex justify-between gap-1 mb-1'>
           <div className='flex'>
-            <Item original={images[0]} width='1024' height='768'>
+            <Item original={getImageUrl(images[0])} width='1024' height='768'>
               {({ ref, open }) => (
                 <img
                   className='max-w-full lg:min-w-[10rem]  object-cover rounded-tl-lg'
-                  src={images[0]}
+                  src={getImageUrl(images[0])}
                   alt=''
                   referrerPolicy='no-referrer'
                   ref={ref}
@@ -597,14 +598,14 @@ function CheckLengthOfImages({ images }) {
                 />
               )}
             </Item>
-            {/* <img className='max-w-full object-cover rounded-tl-lg' src={images[0]} /> */}
+            {/* <img className='max-w-full object-cover rounded-tl-lg' src={getImageUrl(images[0]} /> */}
           </div>
           <div className='flex'>
-            <Item original={images[1]} width='1024' height='768'>
+            <Item original={getImageUrl(images[1])} width='1024' height='768'>
               {({ ref, open }) => (
                 <img
                   className='max-w-full lg:min-w-[10rem]  object-cover'
-                  src={images[1]}
+                  src={getImageUrl(images[1])}
                   alt=''
                   referrerPolicy='no-referrer'
                   ref={ref}
@@ -612,14 +613,14 @@ function CheckLengthOfImages({ images }) {
                 />
               )}
             </Item>
-            {/* <img className='max-w-full object-cover' src={images[1]} /> */}
+            {/* <img className='max-w-full object-cover' src={getImageUrl(images[1]} /> */}
           </div>
           <div className='flex'>
-            <Item original={images[2]} width='1024' height='768'>
+            <Item original={getImageUrl(images[2])} width='1024' height='768'>
               {({ ref, open }) => (
                 <img
                   className='max-w-full lg:min-w-[10rem]  object-cover rounded-tr-lg'
-                  src={images[2]}
+                  src={getImageUrl(images[2])}
                   alt=''
                   referrerPolicy='no-referrer'
                   ref={ref}
@@ -627,16 +628,16 @@ function CheckLengthOfImages({ images }) {
                 />
               )}
             </Item>
-            {/* <img className='max-w-full object-cover rounded-tr-lg' src={images[2]} /> */}
+            {/* <img className='max-w-full object-cover rounded-tr-lg' src={getImageUrl(images[2]} /> */}
           </div>
         </div>
         <div className='flex justify-between gap-1'>
           <div className='flex'>
-            <Item original={images[3]} width='1024' height='768'>
+            <Item original={getImageUrl(images[3])} width='1024' height='768'>
               {({ ref, open }) => (
                 <img
                   className='max-w-full lg:min-w-[10rem]  object-cover rounded-bl-lg'
-                  src={images[3]}
+                  src={getImageUrl(images[3])}
                   alt=''
                   referrerPolicy='no-referrer'
                   ref={ref}
@@ -644,14 +645,14 @@ function CheckLengthOfImages({ images }) {
                 />
               )}
             </Item>
-            {/* <img className='max-w-full object-cover rounded-bl-lg' src={images[3]} /> */}
+            {/* <img className='max-w-full object-cover rounded-bl-lg' src={getImageUrl(images[3]} /> */}
           </div>
           <div className='flex'>
-            <Item original={images[4]} width='1024' height='768'>
+            <Item original={getImageUrl(images[4])} width='1024' height='768'>
               {({ ref, open }) => (
                 <img
                   className='max-w-full lg:min-w-[10rem]  object-cover rounded-br-lg'
-                  src={images[4]}
+                  src={getImageUrl(images[4])}
                   alt=''
                   referrerPolicy='no-referrer'
                   ref={ref}
@@ -659,7 +660,7 @@ function CheckLengthOfImages({ images }) {
                 />
               )}
             </Item>
-            {/* <img className='max-w-full object-cover rounded-br-lg' src={images[4]} /> */}
+            {/* <img className='max-w-full object-cover rounded-br-lg' src={getImageUrl(images[4]} /> */}
           </div>
         </div>
       </div>

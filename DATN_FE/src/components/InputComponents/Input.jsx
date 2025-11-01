@@ -13,12 +13,16 @@ export default function Input({
   title,
   isSearch = false,
   defaultValue,
-  isTextarea = false
+  isTextarea = false,
+  isRequired = false
 }) {
   return (
     <div className='w-full flex flex-col'>
       {title && (
-        <label className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>{title}</label>
+        <label className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
+          {title}
+          {isRequired && <span className='text-red-500 ml-1'>*</span>}
+        </label>
       )}
       <div className='flex items-center  rounded-lg border border-gray-300 dark:border-gray-600 h-full'>
         {isSearch && (

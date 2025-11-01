@@ -1,6 +1,8 @@
+import type { Express } from 'express'
+
 export interface CreatePostBody {
   content: string
   privacy: string
-  file: any
+  file: Express.Multer.File[]
   user_id: string
 }

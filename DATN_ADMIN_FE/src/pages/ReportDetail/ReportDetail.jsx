@@ -5,6 +5,7 @@ import { getReportPostDetail } from '../../apis/inspectorApi'
 import { IoMdHome } from 'react-icons/io'
 import useravatar from '../../assets/images/useravatar.jpg'
 import Loading from '../../components/GlobalComponents/Loading'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function ReportDetail() {
   const navigate = useNavigate()
@@ -72,7 +73,7 @@ export default function ReportDetail() {
                       <div>Không có ảnh</div>
                     ) : (
                       data?.data.result[0].images.map((item, index) => (
-                        <img key={index} className='object-cover w-full h-40 rounded-lg' src={item} />
+                        <img key={index} className='object-cover w-full h-40 rounded-lg' src={getImageUrl(item)} />
                       ))
                     )}
                   </div>
@@ -93,7 +94,7 @@ export default function ReportDetail() {
                           <div>Không có ảnh</div>
                         ) : (
                           data?.data.result[0].parent_images.map((item, index) => (
-                            <img key={index} className='object-cover w-full h-40 rounded-lg' src={item} />
+                            <img key={index} className='object-cover w-full h-40 rounded-lg' src={getImageUrl(item)} />
                           ))
                         )}
                       </div>

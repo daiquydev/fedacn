@@ -1,6 +1,9 @@
 import moment from 'moment-timezone'
 import { ObjectId } from 'mongodb'
+import path from 'path'
 import sharp from 'sharp'
+import type { Express } from 'express'
+import { v4 as uuidv4 } from 'uuid'
 import { NotificationTypes, PostStatus, PostTypes } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { POST_MESSAGE } from '~/constants/messages'
@@ -12,10 +15,60 @@ import LikePostModel from '~/models/schemas/likePost.schema'
 import NotificationModel from '~/models/schemas/notification.schema'
 import PostModel from '~/models/schemas/post.schema'
 import UserModel from '~/models/schemas/user.schema'
+import MealPlanModel from '~/models/schemas/mealPlan.schema'
 import { ErrorWithStatus } from '~/utils/error'
 import { uploadFileToS3 } from '~/utils/s3'
 
 class PostService {
+  private sanitizeCategory(category?: string) {
+    const fallback = 'posts'
+    if (!category) return fallback
+    const normalized = category
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\/-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^[-/]+|[-/]+$/g, '')
+    return normalized || fallback
+  }
+
+  private buildImageKey(originalName: string, category: string) {
+    const parsed = path.parse(originalName || 'image')
+    const baseName = parsed.name.replace(/[^a-zA-Z0-9-_]+/g, '-').toLowerCase() || 'image'
+    const sanitizedCategory = this.sanitizeCategory(category)
+    return `${sanitizedCategory}/${baseName}-${uuidv4()}.webp`
+  }
+
+  private async processAndUploadImage(file: Express.Multer.File, category?: string) {
+    if (!file || !file.buffer) {
+      throw new Error(POST_MESSAGE.UPLOAD_IMAGE_FAILED)
+    }
+
+    const key = this.buildImageKey(file.originalname, this.sanitizeCategory(category))
+    const processedBuffer = await sharp(file.buffer)
+      .rotate()
+      .resize(1600, 1600, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .webp({ quality: 85 })
+      .toBuffer()
+
+    const uploadResult = (await uploadFileToS3({
+      filename: key,
+      contentType: 'image/webp',
+      body: processedBuffer
+    })) as { Location?: string }
+
+    const location = uploadResult?.Location || `http://localhost:9000/cookhealthy/${key}`
+
+    return {
+      location,
+      key
+    }
+  }
+
   async createPostService({ content = '', privacy, file = [], user_id }: CreatePostBody) {
     const newPost = await PostModel.create({
       content: content,
@@ -31,53 +84,42 @@ class PostService {
 
     //su dung sharp de resize mang hinh anh
     if (file?.length > 0) {
-      // giu nguyen cac thuoc tinh cua mang chi thay doi buffer
-      const newFile = await Promise.all(
-        file.map(async (f: any) => {
-          f = {
-            ...f,
-            originalname: f?.originalname.split('.')[0] + new Date().getTime() + '.' + f?.originalname.split('.')[1],
-            buffer: await sharp(f?.buffer as Buffer)
-              .jpeg()
-              .toBuffer()
-          }
-
-          const uploadRes = await uploadFileToS3({
-            filename: `post/${f?.originalname}` as string,
-            contentType: f?.mimetype as string,
-            body: f?.buffer as Buffer
+      try {
+        const uploadedFiles = await Promise.all(
+          file.map(async (item) => {
+            const { location } = await this.processAndUploadImage(item, 'posts')
+            return location
           })
+        )
 
-          if (uploadRes.Location) {
-            // Nếu uploadRes.Location tồn tại, thay thế địa chỉ
-            return uploadRes.Location.replace('http://localhost/', 'http://localhost:9000/');
-          } else {
-            // Nếu uploadRes.Location không tồn tại, có thể throw lỗi hoặc trả về một URL mặc định
-            throw new Error('Failed to get the file location after upload.');
-          }        })
-      )
-      const newImage = newFile.map((f) => {
-        return {
-          url: f,
+        const newImage = uploadedFiles.map((imageUrl) => ({
+          url: imageUrl,
           post_id: newPost._id
-        }
-      })
+        }))
 
-      // tạm thời để 1 ảnh mặc định
-      // const newImage = file.map((f: any) => {
-      //   return {
-      //     url: 'https://bepvang.org.vn/Userfiles/Upload/images/Download/2017/2/24/268f41e9fdcd49999f327632ed207db1.jpg',
-      //     post_id: newPost._id
-      //   }
-      // })
-      const images = await ImagePostModel.insertMany(newImage)
-      return {
-        post: newPost,
-        image: images
+        const images = await ImagePostModel.insertMany(newImage)
+        return {
+          post: newPost,
+          image: images
+        }
+      } catch (error) {
+        console.error('Error uploading files:', error)
+        throw new ErrorWithStatus({
+          message: POST_MESSAGE.UPLOAD_IMAGE_FAILED,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        })
       }
     }
     return {
       post: newPost
+    }
+  }
+
+  async uploadPostImageService(file: Express.Multer.File, category?: string) {
+    const { location, key } = await this.processAndUploadImage(file, category)
+    return {
+      image_url: location,
+      key
     }
   }
   async getPostService({ post_id, user_id }: { post_id: string; user_id: string }) {
@@ -1483,6 +1525,186 @@ class PostService {
 
     return newReport
   }
+
+  // Function để chia sẻ meal plan lên trang post
+  async shareMealPlanToPostService({
+    user_id,
+    meal_plan_id,
+    privacy,
+    content
+  }: {
+    user_id: string
+    meal_plan_id: string
+    privacy: string
+    content: string
+  }) {
+    // Kiểm tra meal plan có tồn tại không
+    const mealPlan = await MealPlanModel.findById(meal_plan_id)
+    if (!mealPlan) {
+      throw new ErrorWithStatus({
+        message: 'Meal plan not found',
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // Tạo post mới với meal_plan_id
+    const newPost = await PostModel.create({
+      content: content,
+      status: Number(privacy),
+      user_id: new ObjectId(user_id),
+      meal_plan_id: new ObjectId(meal_plan_id),
+      type: PostTypes.shareMealPlan
+    })
+
+    if (!newPost) {
+      throw new ErrorWithStatus({
+        message: POST_MESSAGE.NOT_CREATE_POST,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // Tăng applied_count cho meal plan
+    await MealPlanModel.findByIdAndUpdate(
+      meal_plan_id,
+      { $inc: { applied_count: 1 } }
+    )
+
+    // Tạo notification nếu không phải tác giả meal plan
+    if (mealPlan.author_id.toString() !== user_id) {
+      await NotificationModel.create({
+        sender_id: new ObjectId(user_id),
+        receiver_id: mealPlan.author_id,
+        content: 'đã chia sẻ thực đơn của bạn',
+        name_notification: mealPlan.title || 'Thực đơn không có tiêu đề',
+        link_id: newPost._id,
+        type: NotificationTypes.shareMealPlan
+      })
+    }
+
+    return newPost
+  }
+
+  // Function để lấy posts có meal plan
+  async getPostsWithMealPlanService({ page = '1', limit = '10', user_id }: { page?: string; limit?: string; user_id?: string }) {
+    const skip = (Number(page) - 1) * Number(limit)
+    
+    const aggregationPipeline = [
+      {
+        $match: {
+          meal_plan_id: { $exists: true, $ne: null },
+          is_banned: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $lookup: {
+          from: 'mealplans',
+          localField: 'meal_plan_id',
+          foreignField: '_id',
+          as: 'meal_plan'
+        }
+      },
+      {
+        $unwind: '$user'
+      },
+      {
+        $unwind: '$meal_plan'
+      },
+      {
+        $lookup: {
+          from: 'likeposts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'like_posts'
+        }
+      },
+      {
+        $lookup: {
+          from: 'commentposts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'comment_posts'
+        }
+      },
+      {
+        $addFields: {
+          like_count: { $size: '$like_posts' },
+          comment_count: { $size: '$comment_posts' },
+          is_liked: user_id ? {
+            $in: [new ObjectId(user_id), '$like_posts.user_id']
+          } : false
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          content: 1,
+          user_id: 1,
+          meal_plan_id: 1,
+          status: 1,
+          type: 1,
+          created_at: 1,
+          updated_at: 1,
+          like_count: 1,
+          comment_count: 1,
+          is_liked: 1,
+          user: {
+            _id: 1,
+            username: 1,
+            avatar: 1,
+            name: 1
+          },
+          meal_plan: {
+            _id: 1,
+            title: 1,
+            description: 1,
+            image: 1,
+            images: 1,
+            duration: 1,
+            category: 1,
+            target_calories: 1,
+            difficulty_level: 1,
+            rating: 1,
+            applied_count: 1
+          }
+        }
+      },
+      {
+        $sort: { created_at: -1 }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: Number(limit)
+      }
+    ]
+
+    const posts = await PostModel.aggregate(aggregationPipeline as any)
+    const total = await PostModel.countDocuments({
+      meal_plan_id: { $exists: true, $ne: null },
+      is_banned: false
+    })
+
+    return {
+      posts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.ceil(total / Number(limit))
+      }
+    }
+  }
+
+  // ...existing code...
 }
 
 const postService = new PostService()

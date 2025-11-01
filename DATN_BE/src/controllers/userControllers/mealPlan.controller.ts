@@ -184,8 +184,19 @@ export const getBookmarkedMealPlansController = async (req: Request, res: Respon
     folder_name: folder_name as string
   })
 
+  // Transform bookmarks to meal_plans for frontend compatibility
+  const transformedResult = {
+    meal_plans: result.bookmarks.map((bookmark: any) => ({
+      ...bookmark.meal_plan_id._doc,
+      bookmarked_at: bookmark.created_at,
+      bookmark_folder: bookmark.folder_name,
+      bookmark_notes: bookmark.notes
+    })),
+    pagination: result.pagination
+  }
+
   return res.json({
-    result,
+    result: transformedResult,
     message: MEAL_PLAN_MESSAGE.GET_BOOKMARKED_MEAL_PLANS_SUCCESS
   })
 }

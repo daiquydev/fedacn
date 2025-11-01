@@ -2,6 +2,7 @@ import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import parse from 'html-react-parser'
 import { IoMdHome } from 'react-icons/io'
+import { FaPlus, FaTrash } from 'react-icons/fa'
 import Input from '../../components/InputComponents/Input'
 import TextArea from '../../components/InputComponents/TextArea'
 import { useForm } from 'react-hook-form'
@@ -16,10 +17,14 @@ import { useState } from 'react'
 import CreateConfirmBox from '../../components/GlobalComponents/CreateConfirmBox'
 import { createRecipe, getCategoryRecipes } from '../../apis/recipeApi'
 import { formats, modules } from '../../constants/editorToolbar'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function CreateRecipe() {
   const navigate = useNavigate()
   const [openCreate, setOpenCreate] = useState(false)
+  const [ingredients, setIngredients] = useState([{ name: '', amount: '', unit: '' }])
+  const [instructions, setInstructions] = useState([''])
+  const [tags, setTags] = useState([''])
 
   const handleOpenCreate = () => {
     setOpenCreate(true)
@@ -46,50 +51,122 @@ export default function CreateRecipe() {
       time: '',
       difficult_level: 'DEFAULT',
       region: 'DEFAULT',
-      processing_food: 'DEFAULT'
+      processing_food: 'DEFAULT',
+      energy: '',
+      protein: '',
+      fat: '',
+      carbohydrate: ''
     }
   })
+
+  // Ingredient management
+  const addIngredient = () => {
+    setIngredients([...ingredients, { name: '', amount: '', unit: '' }])
+  }
+
+  const removeIngredient = (index) => {
+    if (ingredients.length > 1) {
+      setIngredients(ingredients.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateIngredient = (index, field, value) => {
+    const newIngredients = [...ingredients]
+    newIngredients[index][field] = value
+    setIngredients(newIngredients)
+  }
+
+  // Instruction management
+  const addInstruction = () => {
+    setInstructions([...instructions, ''])
+  }
+
+  const removeInstruction = (index) => {
+    if (instructions.length > 1) {
+      setInstructions(instructions.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateInstruction = (index, value) => {
+    const newInstructions = [...instructions]
+    newInstructions[index] = value
+    setInstructions(newInstructions)
+  }
+
+  // Tag management
+  const addTag = () => {
+    setTags([...tags, ''])
+  }
+
+  const removeTag = (index) => {
+    if (tags.length > 1) {
+      setTags(tags.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateTag = (index, value) => {
+    const newTags = [...tags]
+    newTags[index] = value
+    setTags(newTags)
+  }
 
   const createRecipeMutation = useMutation({
     mutationFn: (body) => createRecipe(body)
   })
+  
   const onSubmit = handleSubmit((data) => {
-    var formData = new FormData()
-    console.log(data)
-    const newData = {
-      title: data.title,
-      image: data.image[0],
-      description: data.description,
-      category_recipe_id: data.category_recipe_id,
-      content: data.content,
-      video: data.video,
-      time: Number(data.time),
-      difficult_level: Number(data.difficult_level),
-      region: Number(data.region),
-      processing_food: data.processing_food
-    }
+    const formData = new FormData()
+    
+    // Filter out empty ingredients, instructions, and tags
+    const validIngredients = ingredients.filter(ing => ing.name.trim() !== '')
+    const validInstructions = instructions.filter(inst => inst.trim() !== '')
+    const validTags = tags.filter(tag => tag.trim() !== '')
 
-    console.log(newData)
-    formData.append('title', newData.title)
-    formData.append('image', newData.image)
-    formData.append('description', newData.description)
-    formData.append('category_recipe_id', newData.category_recipe_id)
-    formData.append('content', newData.content)
-    formData.append('video', newData.video)
-    formData.append('time', newData.time)
-    formData.append('difficult_level', newData.difficult_level)
-    formData.append('region', newData.region)
-    formData.append('processing_food', newData.processing_food)
+    // Basic recipe data
+    formData.append('title', data.title)
+    formData.append('description', data.description)
+    formData.append('category_recipe_id', data.category_recipe_id)
+    formData.append('content', data.content)
+    formData.append('video', data.video)
+    formData.append('time', Number(data.time))
+    formData.append('difficult_level', Number(data.difficult_level))
+    formData.append('region', Number(data.region))
+    formData.append('processing_food', data.processing_food)
+
+    // Nutrition data
+    formData.append('energy', Number(data.energy) || 0)
+    formData.append('protein', Number(data.protein) || 0)
+    formData.append('fat', Number(data.fat) || 0)
+    formData.append('carbohydrate', Number(data.carbohydrate) || 0)
+
+    // Complex data as JSON strings
+    formData.append('ingredients', JSON.stringify(validIngredients))
+    formData.append('instructions', JSON.stringify(validInstructions))
+    formData.append('tags', JSON.stringify(validTags))
+
+    // Files
+    if (data.image && data.image[0]) {
+      formData.append('image', data.image[0])
+    }
+    
+    if (data.video_file && data.video_file[0]) {
+      formData.append('video', data.video_file[0])
+    }
 
     createRecipeMutation.mutate(formData, {
       onSuccess: (data) => {
         console.log(data)
         reset()
+        setIngredients([{ name: '', amount: '', unit: '' }])
+        setInstructions([''])
+        setTags([''])
         handleCloseCreate()
-        toast.success('Tạo bài viết thành công')
+        toast.success('Tạo công thức thành công')
+        navigate('/recipes/my-recipes')
       },
       onError: (error) => {
         console.log(error)
+        toast.error('Có lỗi xảy ra khi tạo công thức')
       }
     })
   })
@@ -173,6 +250,177 @@ export default function CreateRecipe() {
                 register={register}
                 errors={errors.video}
               />
+            </div>
+
+            <div className='sm:col-span-2 pb-2'>
+              <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
+                Hoặc tải lên video (MP4, MOV, AVI)
+              </div>
+              <input
+                className='file-input file-input-sm file-input-bordered file-input-ghost w-full max-w-xs'
+                type='file'
+                accept='video/*'
+                {...register('video_file')}
+              />
+            </div>
+
+            {/* Ingredients Section */}
+            <div className='sm:col-span-2'>
+              <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-2 dark:text-pink-300 text-left'>
+                Nguyên liệu
+              </div>
+              {ingredients.map((ingredient, index) => (
+                <div key={index} className='flex gap-2 mb-2 items-center'>
+                  <input
+                    type='text'
+                    placeholder='Tên nguyên liệu'
+                    value={ingredient.name}
+                    onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                    className='input input-sm input-bordered flex-1'
+                  />
+                  <input
+                    type='text'
+                    placeholder='Số lượng'
+                    value={ingredient.amount}
+                    onChange={(e) => updateIngredient(index, 'amount', e.target.value)}
+                    className='input input-sm input-bordered w-20'
+                  />
+                  <input
+                    type='text'
+                    placeholder='Đơn vị'
+                    value={ingredient.unit}
+                    onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
+                    className='input input-sm input-bordered w-20'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => removeIngredient(index)}
+                    className='btn btn-sm btn-error'
+                    disabled={ingredients.length === 1}
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              ))}
+              <button
+                type='button'
+                onClick={addIngredient}
+                className='btn btn-sm btn-primary'
+              >
+                <FaPlus /> Thêm nguyên liệu
+              </button>
+            </div>
+
+            {/* Instructions Section */}
+            <div className='sm:col-span-2'>
+              <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-2 dark:text-pink-300 text-left'>
+                Các bước thực hiện
+              </div>
+              {instructions.map((instruction, index) => (
+                <div key={index} className='flex gap-2 mb-2 items-center'>
+                  <span className='text-sm font-medium w-8'>{index + 1}.</span>
+                  <textarea
+                    placeholder='Mô tả bước thực hiện'
+                    value={instruction}
+                    onChange={(e) => updateInstruction(index, e.target.value)}
+                    className='textarea textarea-sm textarea-bordered flex-1'
+                    rows='2'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => removeInstruction(index)}
+                    className='btn btn-sm btn-error'
+                    disabled={instructions.length === 1}
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              ))}
+              <button
+                type='button'
+                onClick={addInstruction}
+                className='btn btn-sm btn-primary'
+              >
+                <FaPlus /> Thêm bước
+              </button>
+            </div>
+
+            {/* Tags Section */}
+            <div className='sm:col-span-2'>
+              <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-2 dark:text-pink-300 text-left'>
+                Thẻ tag (từ khóa)
+              </div>
+              {tags.map((tag, index) => (
+                <div key={index} className='flex gap-2 mb-2 items-center'>
+                  <input
+                    type='text'
+                    placeholder='Nhập từ khóa'
+                    value={tag}
+                    onChange={(e) => updateTag(index, e.target.value)}
+                    className='input input-sm input-bordered flex-1'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => removeTag(index)}
+                    className='btn btn-sm btn-error'
+                    disabled={tags.length === 1}
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              ))}
+              <button
+                type='button'
+                onClick={addTag}
+                className='btn btn-sm btn-primary'
+              >
+                <FaPlus /> Thêm tag
+              </button>
+            </div>
+
+            {/* Nutrition Section */}
+            <div className='sm:col-span-2'>
+              <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-2 dark:text-pink-300 text-left'>
+                Thông tin dinh dưỡng (trên 100g)
+              </div>
+              <div className='grid grid-cols-2 md:grid-cols-4 gap-2'>
+                <Input
+                  title='Năng lượng (kcal)'
+                  type='number'
+                  name='energy'
+                  id='energy'
+                  placeholder='0'
+                  register={register}
+                  errors={errors.energy}
+                />
+                <Input
+                  title='Protein (g)'
+                  type='number'
+                  name='protein'
+                  id='protein'
+                  placeholder='0'
+                  register={register}
+                  errors={errors.protein}
+                />
+                <Input
+                  title='Chất béo (g)'
+                  type='number'
+                  name='fat'
+                  id='fat'
+                  placeholder='0'
+                  register={register}
+                  errors={errors.fat}
+                />
+                <Input
+                  title='Carbohydrate (g)'
+                  type='number'
+                  name='carbohydrate'
+                  id='carbohydrate'
+                  placeholder='0'
+                  register={register}
+                  errors={errors.carbohydrate}
+                />
+              </div>
             </div>
             <div className='sm:col-span-2'>
               <Input

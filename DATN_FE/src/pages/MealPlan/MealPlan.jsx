@@ -1,177 +1,164 @@
 import { useState, useEffect, useRef } from 'react'
-import { FaPlus, FaUtensils, FaSortAmountDown, FaFilter, FaCalendarAlt, FaTimes } from 'react-icons/fa'
+import { FaPlus, FaUtensils, FaSortAmountDown, FaFilter, FaCalendarAlt, FaTimes, FaCookieBite } from 'react-icons/fa'
 import { IoMdTime } from 'react-icons/io'
 import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch } from 'react-icons/ai'
 import CreateMealPlanModal from './components/CreateMealPlanModal/CreateMealPlanModal'
+import CreateRecipeModal from './components/CreateRecipeModal/CreateRecipeModal'
 import MealPlanCard from './components/MealPlanCard/MealPlanCard'
+import { useMealPlans } from '../../hooks/useMealPlans'
+import { MEAL_PLAN_CATEGORIES } from '../../constants/mealPlan'
 
 export default function MealPlan() {
   const navigate = useNavigate()
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCreateRecipeModal, setShowCreateRecipeModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState({
-    sort: 'newest',
-    duration: 'all',
-    category: 'all'
+    sort_by: 'created_at',
+    sort_order: 'desc',
+    duration_filter: '',
+    category: '',
+    page: 1,
+    limit: 12
   })
   const createModalRef = useRef(null)
+  const createRecipeModalRef = useRef(null)
 
-  // Mock data for meal plans
-  const mealPlans = [
-    {
-      id: 1,
-      title: 'Thực đơn giảm cân 7 ngày',
-      description: 'Thực đơn giảm cân lành mạnh với đầy đủ dinh dưỡng cho 7 ngày',
-      author: {
-        name: 'Nguyễn Văn A',
-        avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-        isVerified: true
-      },
-      duration: 7,
-      category: 'Giảm cân',
-      likes: 120,
-      comments: 24,
-      createdAt: '2023-12-15T09:00:00Z',
-      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000'
-    },
-    {
-      id: 2,
-      title: 'Thực đơn ăn sạch 3 ngày',
-      description: 'Thực đơn ăn sạch không chất bảo quản, đường và chất béo xấu',
-      author: {
-        name: 'Trần Thị B',
-        avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-        isVerified: false
-      },
-      duration: 3,
-      category: 'Ăn sạch',
-      likes: 85,
-      comments: 12,
-      createdAt: '2023-12-19T14:30:00Z',
-      image: 'https://images.unsplash.com/photo-1493770348161-369560ae357d?q=80&w=1000'
-    },
-    {
-      id: 3,
-      title: 'Thực đơn thuần chay 5 ngày',
-      description: 'Thực đơn thuần chay giàu protein từ thực vật cho 5 ngày',
-      author: {
-        name: 'Lê Văn C',
-        avatar: 'https://randomuser.me/api/portraits/men/67.jpg',
-        isVerified: true
-      },
-      duration: 5,
-      category: 'Thuần chay',
-      likes: 210,
-      comments: 43,
-      createdAt: '2023-12-01T11:15:00Z',
-      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1000'
-    },
-    {
-      id: 4,
-      title: 'Thực đơn tăng cơ 14 ngày',
-      description: 'Thực đơn tăng cơ giàu protein và carbohydrate phức hợp',
-      author: {
-        name: 'Phạm Thị D',
-        avatar: 'https://randomuser.me/api/portraits/women/23.jpg',
-        isVerified: false
-      },
-      duration: 14,
-      category: 'Tăng cơ',
-      likes: 156,
-      comments: 31,
-      createdAt: '2023-12-10T08:45:00Z',
-      image: 'https://images.unsplash.com/photo-1566740933430-b5e70b20d1ad?q=80&w=1000'
-    },
-    {
-      id: 5,
-      title: 'Thực đơn gia đình 1 tuần',
-      description: 'Thực đơn đa dạng, phù hợp cho cả gia đình với các món truyền thống Việt Nam',
-      author: {
-        name: 'Hoàng Văn E',
-        avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
-        isVerified: true
-      },
-      duration: 7,
-      category: 'Gia đình',
-      likes: 180,
-      comments: 28,
-      createdAt: '2023-12-05T16:20:00Z',
-      image: 'https://images.unsplash.com/photo-1547592180-85f173990554?q=80&w=1000'
-    },
-    {
-      id: 6,
-      title: 'Thực đơn Keto 10 ngày',
-      description: 'Thực đơn keto giàu chất béo lành mạnh, ít carbohydrate',
-      author: {
-        name: 'Nguyễn Thị F',
-        avatar: 'https://randomuser.me/api/portraits/women/57.jpg',
-        isVerified: true
-      },
-      duration: 10,
-      category: 'Keto',
-      likes: 142,
-      comments: 19,
-      createdAt: '2023-12-20T10:30:00Z',
-      image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?q=80&w=1000'
+  // Sử dụng custom hook
+  const {
+    mealPlans,
+    loading,
+    error,
+    pagination,
+    fetchMealPlans,
+    createMealPlan,
+    likeMealPlan,
+    unlikeMealPlan,
+    bookmarkMealPlan,
+    unbookmarkMealPlan
+  } = useMealPlans()
+
+  // Fetch dữ liệu khi component mount và khi filter thay đổi
+  useEffect(() => {
+    const params = {
+      page: filter.page,
+      limit: filter.limit,
+      sort: filter.sort_by === 'created_at' && filter.sort_order === 'desc' ? 'newest' : 
+            filter.sort_by === 'created_at' && filter.sort_order === 'asc' ? 'oldest' :
+            filter.sort_by === 'likes_count' && filter.sort_order === 'desc' ? 'popular' : 'newest',
+      search: searchTerm || undefined,
+      category: filter.category || undefined,
+      duration: filter.duration_filter || undefined
     }
-  ]
 
-  // Filter meal plans based on search term and filters
-  const filteredMealPlans = mealPlans
-    .filter(plan => 
-      plan.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      plan.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plan.category.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter(plan => {
-      if (filter.duration === 'all') return true;
-      if (filter.duration === 'short') return plan.duration <= 3;
-      if (filter.duration === 'medium') return plan.duration > 3 && plan.duration <= 7;
-      if (filter.duration === 'long') return plan.duration > 7;
-      return true;
-    })
-    .filter(plan => {
-      if (filter.category === 'all') return true;
-      return plan.category.toLowerCase() === filter.category.toLowerCase();
-    })
-    .sort((a, b) => {
-      if (filter.sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-      if (filter.sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-      if (filter.sort === 'popular') return b.likes - a.likes;
-      return 0;
-    });
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      fetchMealPlans(params)
+    }, searchTerm ? 500 : 0)
+
+    return () => clearTimeout(timeoutId)
+  }, [filter, searchTerm, fetchMealPlans])
 
   // Xử lý click bên ngoài modal để đóng
   useEffect(() => {
     function handleClickOutside(event) {
       if (createModalRef.current && !createModalRef.current.contains(event.target)) {
-        setShowCreateModal(false);
+        setShowCreateModal(false)
+      }
+      if (createRecipeModalRef.current && !createRecipeModalRef.current.contains(event.target)) {
+        setShowCreateRecipeModal(false)
       }
     }
-    if (showCreateModal) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (showCreateModal || showCreateRecipeModal) {
+      document.addEventListener('mousedown', handleClickOutside)
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside)
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showCreateModal]);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCreateModal, showCreateRecipeModal])
 
   const handleOpenCreateModal = () => {
-    setShowCreateModal(true);
+    setShowCreateModal(true)
   }
 
   const handleCloseCreateModal = () => {
-    setShowCreateModal(false);
+    setShowCreateModal(false)
+  }
+
+  const handleOpenCreateRecipeModal = () => {
+    setShowCreateRecipeModal(true)
+  }
+
+  const handleCloseCreateRecipeModal = () => {
+    setShowCreateRecipeModal(false)
+  }
+
+  const handleRecipeCreated = (newRecipe) => {
+    console.log('Recipe created:', newRecipe)
+    // Optionally refresh meal plans or show success message
   }
 
   const handleFilterChange = (type, value) => {
-    setFilter(prev => ({
-      ...prev,
-      [type]: value
-    }));
+    let newFilter = { ...filter, page: 1 } // Reset về trang đầu khi filter
+
+    if (type === 'sort') {
+      if (value === 'newest') {
+        newFilter.sort_by = 'created_at'
+        newFilter.sort_order = 'desc'
+      } else if (value === 'oldest') {
+        newFilter.sort_by = 'created_at'
+        newFilter.sort_order = 'asc'
+      } else if (value === 'popular') {
+        newFilter.sort_by = 'likes_count'
+        newFilter.sort_order = 'desc'
+      }
+    } else if (type === 'duration') {
+      // Convert duration filter to specific values
+      if (value === 'short') {
+        newFilter.duration_filter = '1-3'
+      } else if (value === 'medium') {
+        newFilter.duration_filter = '4-7'
+      } else if (value === 'long') {
+        newFilter.duration_filter = '8+'
+      } else {
+        newFilter.duration_filter = ''
+      }
+    } else if (type === 'category') {
+      newFilter.category = value === 'all' ? '' : value
+    }
+
+    setFilter(newFilter)
+  }
+
+  const handleLoadMore = () => {
+    if (pagination.current_page < pagination.total_pages) {
+      setFilter(prev => ({
+        ...prev,
+        page: prev.page + 1
+      }))
+    }
+  }
+
+  const handleMealPlanAction = async (action, planId, data = {}) => {
+    switch (action) {
+      case 'like':
+        await likeMealPlan(planId)
+        break
+      case 'unlike':
+        await unlikeMealPlan(planId)
+        break
+      case 'bookmark':
+        await bookmarkMealPlan(planId, data.folder_name, data.notes)
+        break
+      case 'unbookmark':
+        await unbookmarkMealPlan(planId)
+        break
+      default:
+        break
+    }
   }
 
   return (
@@ -187,12 +174,20 @@ export default function MealPlan() {
             Khám phá và chia sẻ các thực đơn dinh dưỡng từ cộng đồng
           </p>
         </div>
-        <button 
-          onClick={handleOpenCreateModal}
-          className="mt-4 md:mt-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors"
-        >
-          <FaPlus className="mr-2" /> Tạo Thực Đơn Mới
-        </button>
+        <div className="flex gap-3 mt-4 md:mt-0">
+          <button 
+            onClick={handleOpenCreateRecipeModal}
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow flex items-center transition-colors"
+          >
+            <FaCookieBite className="mr-2" /> Tạo Món Ăn
+          </button>
+          <button 
+            onClick={handleOpenCreateModal}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors"
+          >
+            <FaPlus className="mr-2" /> Tạo Thực Đơn
+          </button>
+        </div>
       </div>
 
       {/* Search and filter section */}
@@ -218,7 +213,11 @@ export default function MealPlan() {
             <div className="relative w-full">
               <select
                 className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
-                value={filter.sort}
+                value={
+                  filter.sort_by === 'created_at' && filter.sort_order === 'desc' ? 'newest' :
+                  filter.sort_by === 'created_at' && filter.sort_order === 'asc' ? 'oldest' :
+                  filter.sort_by === 'likes_count' && filter.sort_order === 'desc' ? 'popular' : 'newest'
+                }
                 onChange={(e) => handleFilterChange('sort', e.target.value)}
               >
                 <option value="newest">Mới nhất</option>
@@ -235,13 +234,17 @@ export default function MealPlan() {
             <div className="relative w-full">
               <select
                 className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
-                value={filter.duration}
+                value={
+                  filter.duration_filter === '1-3' ? 'short' :
+                  filter.duration_filter === '4-7' ? 'medium' :
+                  filter.duration_filter === '8+' ? 'long' : 'all'
+                }
                 onChange={(e) => handleFilterChange('duration', e.target.value)}
               >
                 <option value="all">Tất cả thời gian</option>
                 <option value="short">Ngắn (≤ 3 ngày)</option>
                 <option value="medium">Trung bình (4-7 ngày)</option>
-                <option value="long">Dài ({'>'} 7 ngày)</option>
+                <option value="long">Dài (&gt; 7 ngày)</option>
               </select>
               <IoMdTime className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -257,12 +260,9 @@ export default function MealPlan() {
                 onChange={(e) => handleFilterChange('category', e.target.value)}
               >
                 <option value="all">Tất cả loại</option>
-                <option value="giảm cân">Giảm cân</option>
-                <option value="ăn sạch">Ăn sạch</option>
-                <option value="thuần chay">Thuần chay</option>
-                <option value="tăng cơ">Tăng cơ</option>
-                <option value="gia đình">Gia đình</option>
-                <option value="keto">Keto</option>
+                {Object.entries(MEAL_PLAN_CATEGORIES).map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
               </select>
               <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -273,39 +273,78 @@ export default function MealPlan() {
         </div>
       </div>
 
-      {/* Meal Plans Grid */}
-      {filteredMealPlans.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMealPlans.map(plan => (
-            <MealPlanCard key={plan.id} plan={plan} onClick={() => navigate(`/meal-plan/${plan.id}`)} />
-          ))}
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      ) : (
+      )}
+
+      {/* Error State */}
+      {error && (
         <div className="text-center py-20">
-          <FaCalendarAlt className="mx-auto text-5xl text-gray-400 dark:text-gray-600 mb-4" />
-          <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400">Không tìm thấy thực đơn nào</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Thử điều chỉnh bộ lọc hoặc tạo thực đơn mới</p>
+          <div className="text-red-500 mb-4">Đã xảy ra lỗi: {error}</div>
           <button 
-            onClick={handleOpenCreateModal}
-            className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
+            onClick={() => fetchMealPlans()}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
           >
-            <FaPlus className="mr-2" /> Tạo Thực Đơn Mới
+            Thử lại
           </button>
         </div>
       )}
 
-      {/* Load more button (simplified, would need pagination logic in a real implementation) */}
-      {filteredMealPlans.length >= 6 && (
-        <div className="flex justify-center mt-8">
-          <button className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            Xem thêm
-          </button>
-        </div>
+      {/* Meal Plans Grid */}
+      {!loading && !error && (
+        <>
+          {mealPlans.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mealPlans.map(plan => (
+                <MealPlanCard 
+                  key={plan._id} 
+                  plan={plan} 
+                  onClick={() => navigate(`/meal-plan/${plan._id}`)}
+                  onAction={handleMealPlanAction}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <FaCalendarAlt className="mx-auto text-5xl text-gray-400 dark:text-gray-600 mb-4" />
+              <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400">Không tìm thấy thực đơn nào</h3>
+              <p className="text-gray-500 dark:text-gray-400 mt-2">Thử điều chỉnh bộ lọc hoặc tạo thực đơn mới</p>
+              <button 
+                onClick={handleOpenCreateModal}
+                className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
+              >
+                <FaPlus className="mr-2" /> Tạo Thực Đơn
+              </button>
+              <button 
+                onClick={handleOpenCreateRecipeModal}
+                className="mt-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
+              >
+                <FaCookieBite className="mr-2" /> Tạo Món Ăn
+              </button>
+            </div>
+          )}
+
+          {/* Load more button */}
+          {pagination && pagination.current_page < pagination.total_pages && (
+            <div className="flex justify-center mt-8">
+              <button 
+                onClick={handleLoadMore}
+                disabled={loading}
+                className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Đang tải...' : 'Xem thêm'}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Meal Plan Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center transform translate-x-20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Overlay */}
           <div 
             className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
@@ -315,7 +354,7 @@ export default function MealPlan() {
           {/* Modal Content */}
           <div 
             ref={createModalRef} 
-            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-auto my-4 z-20 max-h-[90vh] overflow-y-auto"
+            className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-4 my-6 z-20 max-h-[92vh] overflow-y-auto"
           >
             {/* Modal Header */}
             <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -332,12 +371,52 @@ export default function MealPlan() {
             
             {/* Modal Body */}
             <div className="p-4 sm:p-6">
-              {/* Nội dung form tạo thực đơn */}
-              <CreateMealPlanModal onClose={handleCloseCreateModal} />
+              <CreateMealPlanModal 
+                onClose={handleCloseCreateModal} 
+                onCreate={createMealPlan}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Recipe Modal */}
+      {showCreateRecipeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
+            onClick={() => setShowCreateRecipeModal(false)}
+          ></div>
+          
+          {/* Modal Content */}
+          <div 
+            ref={createRecipeModalRef} 
+            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl mx-4 my-4 z-20 max-h-[90vh] overflow-y-auto"
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <FaCookieBite className="mr-2 text-orange-500" /> Tạo Món Ăn Mới
+              </h2>
+              <button 
+                onClick={() => setShowCreateRecipeModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6">
+              <CreateRecipeModal 
+                onClose={handleCloseCreateRecipeModal} 
+                onRecipeCreated={handleRecipeCreated}
+              />
             </div>
           </div>
         </div>
       )}
     </div>
   )
-} 
+}

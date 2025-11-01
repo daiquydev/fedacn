@@ -83,30 +83,55 @@ export const schemaCreateAlbum = yup.object({
   description: yup.string().required('Mô tả là bắt buộc').min(10, 'Độ dài từ 10 ký tự')
 })
 
-export const schemaCreateRecipe = yup.object({
-  title: yup.string().required('Tiêu đề là bắt buộc').min(10, 'Độ dài từ 10 ký tự').max(160, 'Độ dài tối đa 160 ký tự'),
-  // image là dạng file , bắt buộc và có định dạng jpg
-  image: yup
-    .mixed()
-    .required('Ảnh là bắt buộc')
-    .test('fileType', 'Ảnh phải có định dạng jpg', (value) => {
-      if (value) {
-        return value && value[0]?.type === 'image/jpeg'
-      }
-      return false
-    }),
-  description: yup.string().required('Mô tả là bắt buộc').min(10, 'Độ dài từ 10 ký tự'),
-  // nếu category_recipe_id = DEFAULT thì sẽ báo lỗi
-  category_recipe_id: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 thể loại món ăn'),
-  content: yup.string().required('Nội dung là bắt buộc').min(10, 'Độ dài từ 100 ký tự'),
-  time: yup.number().required('Thời gian là bắt buộc').min(1, 'Thời gian phải lớn hơn 0'),
-  difficult_level: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 mức độ khó'),
-  region: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 khu vực'),
-  processing_food: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 loại thực phẩm'),
-
-  // video là url không bắt buộc phải có định dạng
-  video: yup.string().url('Link video không đúng định dạng')
-})
+export const schemaCreateRecipe = yup
+  .object({
+    title: yup
+      .string()
+      .trim()
+      .required('Tiêu đề là bắt buộc')
+      .max(160, 'Độ dài tối đa 160 ký tự'),
+    image: yup
+      .mixed()
+      .test('fileType', 'Ảnh phải có định dạng jpg, jpeg, png, gif, webp', (value) => {
+        if (!value || !value[0]) return true
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        return allowedTypes.includes(value[0]?.type)
+      }),
+    imageUrl: yup
+      .string()
+      .trim()
+      .transform((value) => (value === '' ? null : value))
+      .nullable()
+      .url('Link ảnh không đúng định dạng'),
+    description: yup
+      .string()
+      .trim()
+      .required('Mô tả là bắt buộc'),
+    category_recipe_id: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 thể loại món ăn'),
+    content: yup
+      .string()
+      .trim()
+      .transform((value) => (value === '' ? null : value))
+      .nullable(),
+    time: yup.number().typeError('Thời gian là bắt buộc').required('Thời gian là bắt buộc').min(1, 'Thời gian phải lớn hơn 0'),
+    difficult_level: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 mức độ khó'),
+    region: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 khu vực'),
+    processing_food: yup.string().notOneOf(['DEFAULT'], 'Hãy chọn 1 phương thức chế biến'),
+    video: yup
+      .string()
+      .trim()
+      .transform((value) => (value === '' ? null : value))
+      .nullable()
+      .url('Link video không đúng định dạng')
+  })
+  .test('image-required', 'Hãy cung cấp hình ảnh món ăn', function (value) {
+    const hasFile = value?.image && value.image[0]
+    const hasUrl = Boolean(value?.imageUrl)
+    if (hasFile || hasUrl) {
+      return true
+    }
+    return this.createError({ path: 'image_combined', message: 'Hãy cung cấp hình ảnh món ăn' })
+  })
 
 export const schemaSearchImage = yup.object({
   image: yup

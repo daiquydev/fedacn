@@ -308,3 +308,201 @@ export const getListUserRecipesController = async (req: Request, res: Response) 
     message: RECIPE_MESSAGE.GET_LIST_RECIPE_FOR_USER_SUCCESS
   })
 }
+
+export const createRecipeController = async (req: Request, res: Response) => {
+  try {
+    const user = req.decoded_authorization as TokenPayload
+    const files = req.files as any
+
+    const {
+      title,
+      description,
+      content,
+      video,
+      time,
+      region,
+      difficult_level,
+      category_recipe_id,
+      processing_food,
+      ingredients,
+      instructions,
+      tags,
+      energy,
+      protein,
+      fat,
+      carbohydrate
+    } = req.body
+
+    // Parse JSON strings
+    const parsedIngredients = ingredients ? JSON.parse(ingredients) : []
+    const parsedInstructions = instructions ? JSON.parse(instructions) : []
+    const parsedTags = tags ? JSON.parse(tags) : []
+
+    const imageUrlFromBody = typeof req.body.imageUrl === 'string' ? req.body.imageUrl.trim() : ''
+
+    // Handle image upload
+    let imageUrl = ''
+    if (files && files.image && files.image[0]) {
+      imageUrl = await recipeService.uploadImageService(files.image[0])
+    } else if (imageUrlFromBody) {
+      imageUrl = imageUrlFromBody
+    } else {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: RECIPE_MESSAGE.IMAGE_REQUIRED
+      })
+    }
+
+    // Handle video upload - use URL instead of file upload
+    let videoUrl = video || ''
+
+    const recipeData = {
+      user_id: user.user_id,
+      title,
+      description,
+      content,
+      image: imageUrl,
+      video: videoUrl || video, // Use uploaded video or video URL
+      time: Number(time),
+      region: Number(region),
+      difficult_level: Number(difficult_level),
+      category_recipe_id,
+      processing_food,
+      ingredients: parsedIngredients,
+      instructions: parsedInstructions,
+      tags: parsedTags,
+      energy: Number(energy) || 0,
+      protein: Number(protein) || 0,
+      fat: Number(fat) || 0,
+      carbohydrate: Number(carbohydrate) || 0
+    }
+
+    const result = await recipeService.createRecipeForUserService(recipeData)
+
+    return res.json({
+      message: RECIPE_MESSAGE.CREATE_RECIPE_SUCCESS,
+      result
+    })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : RECIPE_MESSAGE.CREATE_RECIPE_FAILED
+    console.error('createRecipeController error:', error)
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      message: errorMessage
+    })
+  }
+}
+
+export const getMyRecipesController = async (req: Request, res: Response) => {
+  try {
+    const user = req.decoded_authorization as TokenPayload
+    const { page = 1, limit = 10, status, search } = req.query
+
+    const result = await recipeService.getMyRecipesService({
+      user_id: user.user_id,
+      page: Number(page),
+      limit: Number(limit),
+      status: status as string,
+      search: search as string
+    })
+
+    return res.json({
+      message: RECIPE_MESSAGE.GET_MY_RECIPES_SUCCESS,
+      result
+    })
+  } catch (error) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      message: error instanceof Error ? error.message : RECIPE_MESSAGE.GET_RECIPES_FAILED
+    })
+  }
+}
+
+export const updateMyRecipeController = async (req: Request, res: Response) => {
+  try {
+    const user = req.decoded_authorization as TokenPayload
+    const { recipe_id } = req.params
+    const files = req.files as any
+
+    const {
+      title,
+      description,
+      content,
+      video,
+      time,
+      region,
+      difficult_level,
+      category_recipe_id,
+      processing_food,
+      ingredients,
+      instructions,
+      tags,
+      energy,
+      protein,
+      fat,
+      carbohydrate
+    } = req.body
+
+    const updateData: any = {
+      title,
+      description,
+      content,
+      video,
+      time: Number(time),
+      region: Number(region),
+      difficult_level: Number(difficult_level),
+      category_recipe_id,
+      processing_food,
+      energy: Number(energy) || 0,
+      protein: Number(protein) || 0,
+      fat: Number(fat) || 0,
+      carbohydrate: Number(carbohydrate) || 0
+    }
+
+    if (ingredients) updateData.ingredients = JSON.parse(ingredients)
+    if (instructions) updateData.instructions = JSON.parse(instructions)
+    if (tags) updateData.tags = JSON.parse(tags)
+
+    // Handle image upload
+    if (files && files.image && files.image[0]) {
+      updateData.image = await recipeService.uploadImageService(files.image[0])
+    }
+
+    // Handle video upload
+    if (files && files.video && files.video[0]) {
+      updateData.video = await recipeService.uploadVideoService(files.video[0])
+    }
+
+    const result = await recipeService.updateMyRecipeService({
+      user_id: user.user_id,
+      recipe_id,
+      updateData
+    })
+
+    return res.json({
+      message: RECIPE_MESSAGE.UPDATE_RECIPE_SUCCESS,
+      result
+    })
+  } catch (error) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      message: error instanceof Error ? error.message : RECIPE_MESSAGE.UPDATE_RECIPE_FAILED
+    })
+  }
+}
+
+export const deleteMyRecipeController = async (req: Request, res: Response) => {
+  try {
+    const user = req.decoded_authorization as TokenPayload
+    const { recipe_id } = req.params
+
+    await recipeService.deleteMyRecipeService({
+      user_id: user.user_id,
+      recipe_id
+    })
+
+    return res.json({
+      message: RECIPE_MESSAGE.DELETE_RECIPE_SUCCESS
+    })
+  } catch (error) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      message: error instanceof Error ? error.message : RECIPE_MESSAGE.DELETE_RECIPE_FAILED
+    })
+  }
+}

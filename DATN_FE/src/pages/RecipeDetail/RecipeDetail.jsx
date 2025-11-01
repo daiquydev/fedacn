@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { FaArrowCircleRight, FaComment, FaEye } from 'react-icons/fa'
+import { FaArrowCircleRight, FaComment, FaEye, FaShare } from 'react-icons/fa'
 import moment from 'moment'
 import parse from 'html-react-parser'
 import { bookmarkRecipe, getRecipeForUser, likeRecipe, unbookmarkRecipe, unlikeRecipe } from '../../apis/recipeApi'
@@ -17,6 +17,12 @@ import useSound from 'use-sound'
 import like from '../../assets/sounds/like.mp3'
 import ParticipantsList from '../../components/ParticipantsList'
 import useravatar from '../../assets/images/useravatar.jpg'
+import ModernRecipeImageCard from '../../components/ModernRecipeImageCard/ModernRecipeImageCard'
+import ModernIngredientList from '../../components/ModernIngredientList/ModernIngredientList'
+import SimpleCookingInstructions from '../../components/SimpleCookingInstructions/SimpleCookingInstructions'
+import EnhancedIngredientList from '../../components/EnhancedIngredientList/EnhancedIngredientList'
+import EnhancedRecipeImageGallery from '../../components/EnhancedRecipeImageGallery/EnhancedRecipeImageGallery'
+import ModernCookingInstructions from '../../components/ModernCookingInstructions/ModernCookingInstructions'
 
 // Sample dummy participants data with follow status
 const getDummyParticipants = (recipe) => {
@@ -134,16 +140,14 @@ export default function RecipeDetail() {
           </div>
         ) : (
           <div className='relative'>
-            <div className='bg-cover bg-center text-center overflow-hidden'>
-              <img
-                className='object-cover relative lg:rounded-md max-h-[15rem] md:max-h-[26rem] w-[100%]'
-                src={data?.data.result.recipe[0].image}
-                alt='image'
+            {/* Enhanced Recipe Image Gallery */}
+            <div className='mb-8'>
+              <EnhancedRecipeImageGallery
+                mainImage={data?.data.result.recipe[0]?.image}
+                images={data?.data.result.recipe[0]?.images || []}
+                recipeName={data?.data.result.recipe[0]?.title}
+                className="w-full max-w-4xl mx-auto"
               />
-              <div className='bg-yellow-100 flex font-medium justify-center items-center text-gray-600 absolute p-1.5 text-sm rounded-full top-0 left-0 m-3'>
-                <AiOutlineClockCircle size={20} />
-                <span className='ml-1'>{data?.data.result.recipe[0].time} phút</span>
-              </div>
             </div>
             <div className='max-w-6xl mx-auto'>
               <div className=' bg-white dark:bg-color-primary rounded-b lg:rounded-b-none lg:rounded-r flex flex-col justify-between leading-normal'>
@@ -332,57 +336,57 @@ export default function RecipeDetail() {
                   {/* nếu có mảng ingredients thì hiển thị nếu ko có mảng hoặc mảng rỗng thì ẩn */}
                   {data?.data.result.recipe[0]?.ingredients?.length === 0 ||
                   data?.data.result.recipe[0]?.ingredients === undefined ? null : (
-                    <>
-                      <div className=' border-[2px] mb-2 mt-4 scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 dark:border-gray-500 shadow-sm max-h-[40 rem] xl:h-full overflow-y-auto overflow-x-auto'>
-                        <table className=' w-full shadow-md  divide-y divide-gray-200'>
-                          <thead className='bg-gray-50 dark:bg-slate-800 '>
-                            <tr>
-                              <th
-                                scope='col'
-                                className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider'
-                              >
-                                Tên nguyên liệu
-                              </th>
-                              <th
-                                scope='col'
-                                className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider'
-                              >
-                                Năng lượng
-                              </th>
-                              <th
-                                scope='col'
-                                className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider'
-                              >
-                                Protein
-                              </th>
-
-                              <th
-                                scope='col'
-                                className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider'
-                              >
-                                Chất béo
-                              </th>
-                              <th
-                                scope='col'
-                                className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider'
-                              >
-                                Carbohydrate
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className='bg-white dark:bg-color-primary dark:divide-gray-700 divide-y divide-gray-200'>
-                            {data?.data.result.recipe[0]?.ingredients.map((ingerdient) => {
-                              return <IngerdientItem key={ingerdient._id} ingredient={ingerdient} />
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                      <span className='w-full text-gray-400 mb-6 text-sm leading-4 font-medium flex items-center justify-center'>
-                        Bảng giá trị dinh dưỡng trên 100g nguyên liệu tạo nên món ăn
-                      </span>
-                    </>
+                    <div className="mb-8">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <span className="w-1 h-6 bg-orange-500 rounded-full"></span>
+                        Nguyên liệu cần thiết
+                      </h3>
+                      <EnhancedIngredientList
+                        ingredients={data?.data.result.recipe[0]?.ingredients?.map(ingredient => ({
+                          name: ingredient.name,
+                          amount: ingredient.quantity,
+                          unit: ingredient.unit || 'g',
+                          image: ingredient.image,
+                          category: ingredient.category,
+                          nutrition: {
+                            calories: ingredient.energy,
+                            protein: ingredient.protein,
+                            fat: ingredient.fat,
+                            carbohydrate: ingredient.carbohydrate
+                          }
+                        }))}
+                        servings={1}
+                        onServingsChange={(newServings) => {
+                          // Handle servings change if needed
+                          console.log('New servings:', newServings);
+                        }}
+                      />
+                    </div>
                   )}
-                  <div className='custorm-blog '>{parse(data?.data.result.recipe[0]?.content)}</div>
+                  <div className='custorm-blog'>
+                    {/* Modern Cooking Instructions */}
+                    {data?.data.result.recipe[0]?.content ? (
+                      <div className="mb-8">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <span className="w-1 h-6 bg-green-500 rounded-full"></span>
+                          Hướng dẫn nấu ăn
+                        </h3>
+                        <ModernCookingInstructions
+                          instructions={data?.data.result.recipe[0]?.content?.split('\n').filter(line => line.trim()) || []}
+                          cookingTime={data?.data.result.recipe[0]?.time || 0}
+                          prepTime={5} // Default prep time
+                          onStepComplete={(stepIndex, isCompleted) => {
+                            console.log(`Step ${stepIndex + 1} ${isCompleted ? 'completed' : 'uncompleted'}`)
+                          }}
+                          autoTimer={true}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        Chưa có hướng dẫn nấu ăn
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <Comments recipe={data?.data.result.recipe[0]} />
               </div>

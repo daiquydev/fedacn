@@ -27,6 +27,7 @@ import { AiOutlineSearch } from 'react-icons/ai'
 import { FaPlus } from 'react-icons/fa6'
 import IngerdientItem from './components/IngerdientItem'
 import { formats, modules } from '../../constants/editorToolbar'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function EditRecipe() {
   const [openEdit, setOpenEdit] = useState(false)
@@ -723,7 +724,7 @@ export default function EditRecipe() {
                       <div className='flex  flex-col items-center my-2 justify-center w-[100%]'>
                         <img
                           className='object-cover max-h-[15rem] md:max-h-[26rem] rounded-md w-[100%]'
-                          src={recipe.image}
+                          src={getImageUrl(recipe.image)}
                           alt=''
                         />
                       </div>

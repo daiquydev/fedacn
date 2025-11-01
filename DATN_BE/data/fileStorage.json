@@ -1,0 +1,630 @@
+{
+  "files": [],
+  "recipes": [
+    {
+      "name": "Phở Bò",
+      "description": "Món phở bò truyền thống Hà Nội với nước dầy đậm đà, thịt bò tái và bánh phở mềm",
+      "image": "/images/recipes/pho-bo.jpg",
+      "servings": 4,
+      "prepTime": 30,
+      "cookTime": 180,
+      "difficulty": "medium",
+      "cuisine": "vietnamese",
+      "category": "Món chính",
+      "tags": [
+        "phở",
+        "bò",
+        "truyền thống",
+        "hà nội"
+      ],
+      "ingredients": [
+        {
+          "ingredientId": "ingredient_beef",
+          "quantity": 500,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_rice_noodles",
+          "quantity": 400,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_beef_bones",
+          "quantity": 1,
+          "unit": "kg"
+        },
+        {
+          "ingredientId": "ingredient_onion",
+          "quantity": 2,
+          "unit": "củ"
+        },
+        {
+          "ingredientId": "ingredient_ginger",
+          "quantity": 50,
+          "unit": "g"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "instruction": "Làm sạch xương bò, chần sơ qua nước sôi",
+          "time": 15
+        },
+        {
+          "step": 2,
+          "instruction": "Nấu nước dùng với xương bò trong 3 tiếng",
+          "time": 180
+        },
+        {
+          "step": 3,
+          "instruction": "Thái thịt bò mỏng, chần bánh phở",
+          "time": 10
+        },
+        {
+          "step": 4,
+          "instruction": "Trình bày và chan nước dùng nóng",
+          "time": 5
+        }
+      ],
+      "nutrition": {
+        "calories": 450,
+        "protein": 25,
+        "carbs": 65,
+        "fat": 8,
+        "fiber": 2,
+        "sugar": 4,
+        "sodium": 800
+      },
+      "author": "admin",
+      "id": "recipe_1761476142786_aqz59hpum",
+      "createdAt": "2025-10-26T10:55:42.786Z",
+      "updatedAt": "2025-10-26T10:55:42.786Z"
+    },
+    {
+      "name": "Bún Bò Huế",
+      "description": "Bún bò Huế cay nồng đặc trưng xứ Huế với nước lèo đỏ thơm",
+      "image": "/images/recipes/bun-bo-hue.jpg",
+      "servings": 6,
+      "prepTime": 45,
+      "cookTime": 120,
+      "difficulty": "hard",
+      "cuisine": "vietnamese",
+      "category": "Món chính",
+      "tags": [
+        "bún",
+        "bò",
+        "huế",
+        "cay"
+      ],
+      "ingredients": [
+        {
+          "ingredientId": "ingredient_beef_shank",
+          "quantity": 400,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_pork_leg",
+          "quantity": 300,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_thick_noodles",
+          "quantity": 500,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_lemongrass",
+          "quantity": 3,
+          "unit": "cây"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "instruction": "Sơ chế thịt bò và heo, ướp gia vị",
+          "time": 30
+        },
+        {
+          "step": 2,
+          "instruction": "Nấu nước dùng với xương và thịt",
+          "time": 90
+        },
+        {
+          "step": 3,
+          "instruction": "Chế biến tôm chua và các loại rau",
+          "time": 20
+        },
+        {
+          "step": 4,
+          "instruction": "Trình bày bún và chan nước lèo",
+          "time": 10
+        }
+      ],
+      "nutrition": {
+        "calories": 520,
+        "protein": 28,
+        "carbs": 58,
+        "fat": 18,
+        "fiber": 3,
+        "sugar": 6,
+        "sodium": 950
+      },
+      "author": "admin",
+      "id": "recipe_1761476142786_xqomdbg60",
+      "createdAt": "2025-10-26T10:55:42.786Z",
+      "updatedAt": "2025-10-26T10:55:42.786Z"
+    },
+    {
+      "name": "Gỏi Cuốn Tôm Thịt",
+      "description": "Gỏi cuốn tươi mát với tôm, thịt heo và rau thơm, chấm nước mắm pha",
+      "image": "/images/recipes/goi-cuon.jpg",
+      "servings": 4,
+      "prepTime": 45,
+      "cookTime": 20,
+      "difficulty": "easy",
+      "cuisine": "vietnamese",
+      "category": "Khai vị",
+      "tags": [
+        "gỏi cuốn",
+        "tôm",
+        "tươi mát",
+        "healthy"
+      ],
+      "ingredients": [
+        {
+          "ingredientId": "ingredient_shrimp",
+          "quantity": 300,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_pork_belly",
+          "quantity": 200,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_rice_paper",
+          "quantity": 1,
+          "unit": "gói"
+        },
+        {
+          "ingredientId": "ingredient_lettuce",
+          "quantity": 1,
+          "unit": "bó"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "instruction": "Luộc tôm và thịt heo chín tái",
+          "time": 15
+        },
+        {
+          "step": 2,
+          "instruction": "Chuẩn bị rau sống và bánh tráng",
+          "time": 15
+        },
+        {
+          "step": 3,
+          "instruction": "Cuốn gỏi cuốn theo thứ tự nguyên liệu",
+          "time": 20
+        },
+        {
+          "step": 4,
+          "instruction": "Pha nước chấm và trình bày",
+          "time": 10
+        }
+      ],
+      "nutrition": {
+        "calories": 180,
+        "protein": 15,
+        "carbs": 20,
+        "fat": 4,
+        "fiber": 2,
+        "sugar": 3,
+        "sodium": 450
+      },
+      "author": "admin",
+      "id": "recipe_1761476142786_f4sm3jjir",
+      "createdAt": "2025-10-26T10:55:42.786Z",
+      "updatedAt": "2025-10-26T10:55:42.786Z"
+    },
+    {
+      "name": "Cơm Tấm Sườn Nướng",
+      "description": "Cơm tấm Sài Gòn với sườn nướng thơm lừng, chả trứng và nước mắm chấm",
+      "image": "/images/recipes/com-tam-suon-nuong.jpg",
+      "servings": 2,
+      "prepTime": 30,
+      "cookTime": 25,
+      "difficulty": "medium",
+      "cuisine": "vietnamese",
+      "category": "Món chính",
+      "tags": [
+        "cơm tấm",
+        "sườn nướng",
+        "sài gòn"
+      ],
+      "ingredients": [
+        {
+          "ingredientId": "ingredient_broken_rice",
+          "quantity": 300,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_pork_ribs",
+          "quantity": 400,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_egg_meatloaf",
+          "quantity": 200,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_fish_sauce",
+          "quantity": 3,
+          "unit": "tbsp"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "instruction": "Ướp sườn với nước mắm, đường, tỏi",
+          "time": 20
+        },
+        {
+          "step": 2,
+          "instruction": "Nướng sườn trên than hoa",
+          "time": 15
+        },
+        {
+          "step": 3,
+          "instruction": "Nấu cơm tấm và chả trứng",
+          "time": 20
+        },
+        {
+          "step": 4,
+          "instruction": "Trình bày và phục vụ kèm nước mắm chấm",
+          "time": 5
+        }
+      ],
+      "nutrition": {
+        "calories": 650,
+        "protein": 32,
+        "carbs": 75,
+        "fat": 22,
+        "fiber": 1,
+        "sugar": 8,
+        "sodium": 1200
+      },
+      "author": "admin",
+      "id": "recipe_1761476142786_o8ncemlk2",
+      "createdAt": "2025-10-26T10:55:42.786Z",
+      "updatedAt": "2025-10-26T10:55:42.786Z"
+    },
+    {
+      "name": "Canh Chua Cá",
+      "description": "Canh chua cá truyền thống miền Nam với cá, dứa, đậu bắp và rau thơm",
+      "image": "/images/recipes/canh-chua-ca.jpg",
+      "servings": 4,
+      "prepTime": 20,
+      "cookTime": 25,
+      "difficulty": "easy",
+      "cuisine": "vietnamese",
+      "category": "Canh",
+      "tags": [
+        "canh chua",
+        "cá",
+        "miền nam"
+      ],
+      "ingredients": [
+        {
+          "ingredientId": "ingredient_catfish",
+          "quantity": 500,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_pineapple",
+          "quantity": 200,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_okra",
+          "quantity": 150,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ingredient_tamarind",
+          "quantity": 2,
+          "unit": "tbsp"
+        }
+      ],
+      "instructions": [
+        {
+          "step": 1,
+          "instruction": "Làm sạch cá, cắt khúc vừa ăn",
+          "time": 10
+        },
+        {
+          "step": 2,
+          "instruction": "Nấu nước dùng với xương cá",
+          "time": 15
+        },
+        {
+          "step": 3,
+          "instruction": "Cho dứa, đậu bắp vào nấu",
+          "time": 8
+        },
+        {
+          "step": 4,
+          "instruction": "Nêm nếm và cho rau thơm",
+          "time": 5
+        }
+      ],
+      "nutrition": {
+        "calories": 180,
+        "protein": 22,
+        "carbs": 15,
+        "fat": 3,
+        "fiber": 4,
+        "sugar": 10,
+        "sodium": 600
+      },
+      "author": "admin",
+      "id": "recipe_1761476142786_pf2kvjmul",
+      "createdAt": "2025-10-26T10:55:42.786Z",
+      "updatedAt": "2025-10-26T10:55:42.786Z"
+    }
+  ],
+  "ingredients": [
+    {
+      "name": "Thịt heo ba chỉ",
+      "category": "Thịt",
+      "season": "all",
+      "price": 180000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 518,
+        "protein": 9.3,
+        "carbs": 0,
+        "fat": 53,
+        "fiber": 0,
+        "sugar": 0,
+        "sodium": 58,
+        "potassium": 230,
+        "vitaminC": 0,
+        "calcium": 8,
+        "iron": 1
+      },
+      "description": "Thịt heo ba chỉ tươi ngon, nhiều mỡ, thích hợp cho nhiều món ăn",
+      "image": "/images/ingredients/thit-heo-ba-chi.jpg",
+      "id": "ingredient_1761476142777_pgieziig1",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Thịt bò thăn",
+      "category": "Thịt",
+      "season": "all",
+      "price": 350000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 250,
+        "protein": 26,
+        "carbs": 0,
+        "fat": 15,
+        "fiber": 0,
+        "sugar": 0,
+        "sodium": 72,
+        "potassium": 318,
+        "vitaminC": 0,
+        "calcium": 18,
+        "iron": 2.6
+      },
+      "description": "Thịt bò thăn cao cấp, mềm ngon, giàu protein",
+      "image": "/images/ingredients/thit-bo-than.jpg",
+      "id": "ingredient_1761476142777_adj7qsa3f",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Cá diêu hồng",
+      "category": "Hải sản",
+      "season": "all",
+      "price": 120000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 128,
+        "protein": 26,
+        "carbs": 0,
+        "fat": 2.3,
+        "fiber": 0,
+        "sugar": 0,
+        "sodium": 81,
+        "potassium": 415,
+        "vitaminC": 0,
+        "calcium": 37,
+        "iron": 0.3
+      },
+      "description": "Cá diêu hồng tươi sống, thịt chắc ngọt",
+      "image": "/images/ingredients/ca-dieu-hong.jpg",
+      "id": "ingredient_1761476142777_8bwij73mn",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Tôm sú",
+      "category": "Hải sản",
+      "season": "all",
+      "price": 400000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 99,
+        "protein": 18,
+        "carbs": 0.2,
+        "fat": 1.4,
+        "fiber": 0,
+        "sugar": 0,
+        "sodium": 111,
+        "potassium": 259,
+        "vitaminC": 2.1,
+        "calcium": 54,
+        "iron": 2.4
+      },
+      "description": "Tôm sú tươi sống size lớn, thịt ngọt đậm đà",
+      "image": "/images/ingredients/tom-su.jpg",
+      "id": "ingredient_1761476142777_cn87gbj3p",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Rau muống",
+      "category": "Rau củ",
+      "season": "summer",
+      "price": 15000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 19,
+        "protein": 2.6,
+        "carbs": 3.1,
+        "fat": 0.2,
+        "fiber": 2.1,
+        "sugar": 1.8,
+        "sodium": 113,
+        "potassium": 312,
+        "vitaminC": 55,
+        "calcium": 99,
+        "iron": 2.5
+      },
+      "description": "Rau muống tươi xanh, giòn ngọt, giàu vitamin",
+      "image": "/images/ingredients/rau-muong.jpg",
+      "id": "ingredient_1761476142777_q7z90dhkg",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Cải thảo",
+      "category": "Rau củ",
+      "season": "winter",
+      "price": 12000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 13,
+        "protein": 1.5,
+        "carbs": 2.2,
+        "fat": 0.2,
+        "fiber": 1.2,
+        "sugar": 1.2,
+        "sodium": 9,
+        "potassium": 252,
+        "vitaminC": 45,
+        "calcium": 105,
+        "iron": 0.8
+      },
+      "description": "Cải thảo tươi ngọt, thích hợp nấu canh, xào",
+      "image": "/images/ingredients/cai-thao.jpg",
+      "id": "ingredient_1761476142777_r1s68er9m",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Gạo tẻ",
+      "category": "Ngũ cốc",
+      "season": "all",
+      "price": 25000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 365,
+        "protein": 7.1,
+        "carbs": 80,
+        "fat": 0.7,
+        "fiber": 1.3,
+        "sugar": 0.1,
+        "sodium": 5,
+        "potassium": 115,
+        "vitaminC": 0,
+        "calcium": 28,
+        "iron": 0.8
+      },
+      "description": "Gạo tẻ thơm ngon, hạt dài, nấu cơm rời mềm",
+      "image": "/images/ingredients/gao-te.jpg",
+      "id": "ingredient_1761476142777_ynwstev9u",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Nước mắm",
+      "category": "Gia vị",
+      "season": "all",
+      "price": 35000,
+      "unit": "chai",
+      "nutrition": {
+        "calories": 10,
+        "protein": 1.5,
+        "carbs": 0.9,
+        "fat": 0,
+        "fiber": 0,
+        "sugar": 0,
+        "sodium": 1368,
+        "potassium": 56,
+        "vitaminC": 0,
+        "calcium": 29,
+        "iron": 1
+      },
+      "description": "Nước mắm truyền thống Phú Quốc, đậm đà thơm ngon",
+      "image": "/images/ingredients/nuoc-mam.jpg",
+      "id": "ingredient_1761476142777_seq4y11ea",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Hành lá",
+      "category": "Rau thơm",
+      "season": "all",
+      "price": 8000,
+      "unit": "bó",
+      "nutrition": {
+        "calories": 32,
+        "protein": 1.8,
+        "carbs": 7.3,
+        "fat": 0.2,
+        "fiber": 2.6,
+        "sugar": 2.3,
+        "sodium": 16,
+        "potassium": 276,
+        "vitaminC": 18.8,
+        "calcium": 72,
+        "iron": 1.5
+      },
+      "description": "Hành lá tươi xanh, thơm nồng, trang trí và gia vị",
+      "image": "/images/ingredients/hanh-la.jpg",
+      "id": "ingredient_1761476142777_sjzzulm8n",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    },
+    {
+      "name": "Tỏi",
+      "category": "Rau thơm",
+      "season": "all",
+      "price": 45000,
+      "unit": "kg",
+      "nutrition": {
+        "calories": 149,
+        "protein": 6.4,
+        "carbs": 33,
+        "fat": 0.5,
+        "fiber": 2.1,
+        "sugar": 1,
+        "sodium": 17,
+        "potassium": 401,
+        "vitaminC": 31.2,
+        "calcium": 181,
+        "iron": 1.7
+      },
+      "description": "Tỏi tím Lý Sơn, cay nồng, khử mùi tanh",
+      "image": "/images/ingredients/toi.jpg",
+      "id": "ingredient_1761476142777_jlq7393o4",
+      "createdAt": "2025-10-26T10:55:42.777Z",
+      "updatedAt": "2025-10-26T10:55:42.777Z"
+    }
+  ]
+}

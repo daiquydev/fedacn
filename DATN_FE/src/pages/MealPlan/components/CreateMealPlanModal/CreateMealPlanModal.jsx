@@ -1,1241 +1,1745 @@
-import { useState, useRef, useEffect } from 'react'
-import { FaTimes, FaUpload, FaUtensils, FaCalendarAlt, FaTag, FaPlus, FaTrash, FaArrowLeft, FaArrowRight, FaGripLines, FaSearch, FaFilter, FaExclamationTriangle } from 'react-icons/fa'
-import { IoMdTime } from 'react-icons/io'
-import { MdClose, MdFastfood, MdError } from 'react-icons/md'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { toast } from 'react-toastify'
+import { FaPlus, FaTrash, FaImage, FaLink, FaUtensils, FaCalendarDay, FaCopy, FaMagic, FaCheck, FaSync } from 'react-icons/fa'
+import { MdFastfood } from 'react-icons/md'
+import { MEAL_PLAN_CATEGORIES } from '../../../../constants/mealPlan'
+import { getImageUrl } from '../../../../utils/imageUrl'
+import http from '../../../../utils/http'
 
-// Toast Component
-const Toast = ({ message, type = 'error', onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+const MEAL_TYPES = {
+  1: 'Sáng',
+  2: 'Trưa', 
+  3: 'Tối',
+  4: 'Xế chiều'
+}
 
-  return (
-    <div className="fixed top-4 right-4 z-50 animate-fade-in-down">
-      <div className={`${
-        type === 'error' ? 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100' : 
-        type === 'success' ? 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100' :
-        'bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100'
-      } px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2`}>
-        {type === 'error' && <MdError className="w-5 h-5" />}
-        <p>{message}</p>
-        <button 
-          onClick={onClose}
-          className="ml-auto p-1 hover:bg-black hover:bg-opacity-10 rounded-full"
-        >
-          <MdClose className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-};
+const DIFFICULTY_LEVELS = {
+  1: 'Dễ',
+  2: 'Trung bình',
+  3: 'Khó'
+}
 
-// Confirm Dialog Component
-const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-        <div className="flex items-center mb-4 text-amber-500">
-          <FaExclamationTriangle className="w-6 h-6 mr-3" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Xác nhận</h3>
-        </div>
-        <p className="text-gray-700 dark:text-gray-300 mb-6">{message}</p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Xác nhận
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+const PRICE_RANGES = {
+  'budget': 'Tiết kiệm',
+  'medium': 'Trung bình',
+  'premium': 'Cao cấp'
+}
 
-export default function CreateMealPlanModal({ onClose }) {
-  const fileInputRef = useRef(null)
+const DEFAULT_MEAL_SLOTS = [
+  { meal_type: 1, meal_order: 1, label: 'Bữa sáng' },
+  { meal_type: 2, meal_order: 2, label: 'Bữa trưa' },
+  { meal_type: 3, meal_order: 3, label: 'Bữa tối' }
+]
+
+export default function CreateMealPlanModal({ onClose, onCreate }) {
+  const [loading, setLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [imageInputType, setImageInputType] = useState('url') // 'url' or 'file'
+  const [selectedFile, setSelectedFile] = useState(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'Giảm cân',
-    image: null,
+    category: 1,
+    duration: 7,
+  target_calories: '',
+    difficulty_level: 1,
+    image: '',
+    is_public: true,
+    price_range: 'medium',
+    suitable_for: [],
+    tags: [],
+    days: []
   })
-  const [mealDays, setMealDays] = useState([
-    {
-      id: '1',
-      day: 1,
-      meals: [
-        { 
-          type: 'Sáng', 
-          foods: [],
-          description: ''
-        },
-        { 
-          type: 'Trưa', 
-          foods: [],
-          description: ''
-        },
-        { 
-          type: 'Tối', 
-          foods: [],
-          description: ''
-        },
-      ]
-    }
-  ])
   const [activeDay, setActiveDay] = useState(1)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [notes, setNotes] = useState('')
-  const [errors, setErrors] = useState({
-    title: false,
-    description: false,
-    image: false,
-    meals: {}
-  })
+  const [recipes, setRecipes] = useState([])
+  const [recipesLoading, setRecipesLoading] = useState(false)
+  const [recipeSearch, setRecipeSearch] = useState('')
+  const [bulkConfig, setBulkConfig] = useState({ startDay: 1, endDay: 7, mealType: 1, recipeId: '' })
+  const [copyConfig, setCopyConfig] = useState({ fromDay: 1, startDay: 2, endDay: 2 })
+  const [recipeFilters, setRecipeFilters] = useState({ category: 'all', difficulty: 'all' })
+  const [recipeSort, setRecipeSort] = useState('title')
+  const [validationErrors, setValidationErrors] = useState({ title: false, description: false })
+  const [highlightedDay, setHighlightedDay] = useState(null)
+  const [missingMealKey, setMissingMealKey] = useState(null)
+  const titleInputRef = useRef(null)
+  const descriptionInputRef = useRef(null)
+  const daySectionRef = useRef(null)
+  const highlightTimeoutRef = useRef(null)
 
-  // Thêm các state để quản lý việc chọn món ăn
-  const [showFoodModal, setShowFoodModal] = useState(false);
-  const [selectedMealIndex, setSelectedMealIndex] = useState(null);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [availableFoods, setAvailableFoods] = useState([]);
-  
-  // Thêm state cho dialog và toast
-  const [confirmDialog, setConfirmDialog] = useState({
-    show: false,
-    message: '',
-    action: null
-  });
-  
-  const [toast, setToast] = useState({
-    show: false,
-    message: '',
-    type: 'error'
-  });
-
-  const categories = [
-    'Giảm cân', 'Tăng cơ', 'Ăn sạch', 'Thuần chay', 
-    'Gia đình', 'Keto', 'Dinh dưỡng thể thao'
-  ]
-
-  // Khởi tạo mock data cho các món ăn
-  useEffect(() => {
-    const foodsData = [
-      {
-        id: 'f1',
-        name: 'Yến mạch sữa hạnh nhân',
-        category: 'Sáng',
-        calories: 320,
-        protein: 12,
-        carbs: 45,
-        fat: 10,
-        image: 'https://cdn.tgdd.vn//News/1507981//cach-lam-sua-hanh-nhan-yen-mach-845x564.jpg',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
-      },
-      {
-        id: 'f2',
-        name: 'Salad gà nướng',
-        category: 'Trưa',
-        calories: 450,
-        protein: 35,
-        carbs: 25,
-        fat: 20,
-        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'
-      },
-      {
-        id: 'f3',
-        name: 'Cá hồi nướng với măng tây',
-        category: 'Tối',
-        calories: 480,
-        protein: 30,
-        carbs: 40,
-        fat: 15,
-        image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'
-      },
-      {
-        id: 'f4',
-        name: 'Sữa chua Hy Lạp với quả mọng',
-        category: 'Snack',
-        calories: 180,
-        protein: 15,
-        carbs: 15,
-        fat: 5,
-        image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho 150g sữa chua Hy Lạp vào bát.</li><li>Thêm hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi).</li><li>Có thể thêm một ít hạt chia và mật ong (tùy chọn).</li></ol>'
-      },
-      {
-        id: 'f5',
-        name: 'Bánh mì nguyên cám với trứng',
-        category: 'Sáng',
-        calories: 350,
-        protein: 18,
-        carbs: 40,
-        fat: 12,
-        image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nướng bánh mì nguyên cám.</li><li>Chiên trứng với chút dầu olive.</li><li>Đặt trứng lên bánh mì, thêm rau xanh và gia vị.</li></ol>'
-      },
-      {
-        id: 'f6',
-        name: 'Cơm gạo lứt với đậu hũ',
-        category: 'Trưa',
-        calories: 420,
-        protein: 20,
-        carbs: 65,
-        fat: 8,
-        image: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với nước theo tỉ lệ 1:2.</li><li>Cắt đậu hũ thành khối vuông và ướp với xì dầu, tỏi.</li><li>Chiên hoặc nướng đậu hũ đến khi vàng.</li><li>Phục vụ với rau xanh và sốt.</li></ol>'
-      },
-      {
-        id: 'f7',
-        name: 'Sinh tố protein',
-        category: 'Snack',
-        calories: 280,
-        protein: 24,
-        carbs: 30,
-        fat: 8,
-        image: 'https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1 muỗng bột protein, 240ml sữa hạnh nhân, 1 muỗng bơ đậu phộng.</li><li>Xay đến khi mịn.</li></ol>'
-      },
-      {
-        id: 'f8',
-        name: 'Thịt gà nướng rau củ',
-        category: 'Tối',
-        calories: 450,
-        protein: 40,
-        carbs: 30,
-        fat: 15,
-        image: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt gà với gia vị, dầu olive trong 30 phút.</li><li>Cắt rau củ thành miếng vừa.</li><li>Xếp thịt gà và rau củ vào khay nướng.</li><li>Nướng ở 200°C trong khoảng 25-30 phút.</li></ol>'
-      },
-      {
-        id: 'f9',
-        name: 'Phở bò',
-        category: 'Sáng',
-        calories: 420,
-        protein: 25,
-        carbs: 60,
-        fat: 10,
-        image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ninh xương bò và các gia vị (hồi, quế, đinh hương, thảo quả) trong 6-8 giờ.</li><li>Thái mỏng thịt bò tươi.</li><li>Luộc bánh phở.</li><li>Xếp bánh phở vào tô, đặt thịt bò lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm hành, ngò, giá đỗ và ớt tươi.</li></ol>'
-      },
-      {
-        id: 'f10',
-        name: 'Bún chả',
-        category: 'Trưa',
-        calories: 550,
-        protein: 30,
-        carbs: 70,
-        fat: 18,
-        image: 'https://images.unsplash.com/photo-1576577445504-6af96477db52?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt với hành, tỏi, đường, nước mắm, tiêu.</li><li>Nướng thịt trên bếp than hoa.</li><li>Làm nước chấm với nước mắm, đường, tỏi, ớt, chanh.</li><li>Trụng bún.</li><li>Ăn kèm với rau sống, chả nướng và nước chấm.</li></ol>'
-      },
-      {
-        id: 'f11',
-        name: 'Cháo yến mạch bơ đậu phộng',
-        category: 'Sáng',
-        calories: 350,
-        protein: 14,
-        carbs: 42,
-        fat: 14,
-        image: 'https://cdn.tgdd.vn/2020/12/CookProductThumb/maxresdefault(6)-620x620-1.jpg',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 300ml nước hoặc sữa.</li><li>Thêm 1 muỗng canh bơ đậu phộng khi yến mạch đã mềm.</li><li>Thêm chút mật ong hoặc đường nâu và quế.</li><li>Trang trí với chuối thái lát và hạt chia.</li></ol>'
-      },
-      {
-        id: 'f12',
-        name: 'Bánh xèo',
-        category: 'Tối',
-        calories: 480,
-        protein: 18,
-        carbs: 50,
-        fat: 25,
-        image: 'https://daylambanh.edu.vn/wp-content/uploads/2019/03/banh-xeo-bang-bot-pha-san-600x400.jpg',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột gạo với nghệ, muối và nước cốt dừa.</li><li>Làm nóng chảo, thêm dầu và đổ bột vào.</li><li>Thêm thịt heo, tôm và giá đỗ.</li><li>Đậy nắp để bánh chín giòn.</li><li>Gấp đôi bánh lại và dùng với rau sống và nước mắm pha.</li></ol>'
-      },
-      {
-        id: 'f13',
-        name: 'Cơm tấm sườn nướng',
-        category: 'Trưa',
-        calories: 650,
-        protein: 35,
-        carbs: 85,
-        fat: 20,
-        image: 'https://images.unsplash.com/photo-1562967915-92ae0c320a01?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp sườn với sả, tỏi, đường, nước mắm, dầu hào.</li><li>Nướng sườn trên lửa than hoặc trong lò.</li><li>Nấu cơm tấm.</li><li>Làm nước mắm pha với đường, chanh, tỏi, ớt.</li><li>Phục vụ kèm đồ chua, dưa leo, cà chua.</li></ol>'
-      },
-      {
-        id: 'f14',
-        name: 'Khoai lang nướng',
-        category: 'Snack',
-        calories: 150,
-        protein: 2,
-        carbs: 35,
-        fat: 0,
-        image: 'https://afamilycdn.com/150157425591193600/2024/9/19/untitled-1-09020008-1726738169086-17267381692741128852785.jpg',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Rửa sạch khoai lang.</li><li>Dùng nĩa đâm vài lỗ trên khoai.</li><li>Nướng ở 200°C trong 45-60 phút hoặc đến khi mềm.</li><li>Có thể thêm chút bơ hoặc quế (tùy chọn).</li></ol>'
-      },
-      {
-        id: 'f15',
-        name: 'Canh rau củ',
-        category: 'Tối',
-        calories: 120,
-        protein: 5,
-        carbs: 20,
-        fat: 2,
-        image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Đun sôi nước với xương hoặc nước dùng.</li><li>Thêm hành tím, tỏi băm nhỏ.</li><li>Thêm các loại rau củ (cà rốt, khoai tây, bắp cải).</li><li>Nêm với muối, tiêu và hạt nêm.</li><li>Nấu cho đến khi rau củ mềm.</li></ol>'
-      },
-      {
-        id: 'f16',
-        name: 'Gỏi cuốn',
-        category: 'Trưa',
-        calories: 220,
-        protein: 15,
-        carbs: 30,
-        fat: 5,
-        image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRCsjxYbiyrPJtHVT-UR8G1C1DKaDwT3ssTtw&s',
-        cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc tôm và thịt heo.</li><li>Nhúng bánh tráng vào nước ấm.</li><li>Xếp rau xà lách, bún, rau thơm, thịt heo và tôm lên bánh tráng.</li><li>Cuộn chặt bánh tráng lại.</li><li>Làm nước sốt tương từ tương hột, đường, tỏi, ớt và nước cốt chanh.</li></ol>'
+  const focusField = (ref) => {
+    if (!ref?.current) return
+    ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (typeof ref.current.focus === 'function') {
+      try {
+        ref.current.focus({ preventScroll: true })
+      } catch (error) {
+        ref.current.focus()
       }
-    ];
-    
-    setAvailableFoods(foodsData);
-  }, []);
-
-  // Kiểm tra xem một ngày có đầy đủ thông tin hay không
-  const isDayComplete = (dayIndex) => {
-    const day = mealDays[dayIndex];
-    return day.meals.every(meal => 
-      meal.type.trim() !== '' && meal.foods.length > 0
-    );
-  };
-
-  // Kiểm tra và cảnh báo trước khi chuyển ngày
-  const validateBeforeDayChange = (targetDayIndex) => {
-    const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
-    
-    if (!isDayComplete(currentDayIndex)) {
-      setToast({
-        show: true,
-        message: 'Vui lòng hoàn thành tất cả các bữa ăn trong ngày hiện tại trước khi chuyển sang ngày khác.',
-        type: 'error'
-      });
-      return false;
     }
-    return true;
-  };
-
-  // Handle day change with validation
-  const handleDayChange = (newDay) => {
-    if (validateBeforeDayChange()) {
-      setActiveDay(newDay);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
   }
 
-  const handleImageChange = (e) => {
+  const highlightDaySection = (dayNumber) => {
+    setHighlightedDay(dayNumber)
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current)
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedDay(null)
+    }, 4000)
+
+    if (daySectionRef.current) {
+      setTimeout(() => {
+        daySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 120)
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const createBaseMeal = useCallback((mealType, mealOrder = 1) => ({
+    meal_type: mealType,
+    meal_order: mealOrder,
+    recipe_id: null,
+    servings: 1,
+    name: '',
+    calories: 0,
+    protein: 0,
+    fat: 0,
+    carbs: 0,
+    is_optional: false,
+    notes: ''
+  }), [])
+
+  const calculateDayTotals = useCallback((meals = []) => {
+    return meals.reduce(
+      (acc, meal) => {
+        const calories = Number(meal.calories) || 0
+        const protein = Number(meal.protein) || 0
+        const fat = Number(meal.fat) || 0
+        const carbs = Number(meal.carbs ?? meal.carbohydrate) || 0
+
+        return {
+          calories: acc.calories + calories,
+          protein: acc.protein + protein,
+          fat: acc.fat + fat,
+          carbs: acc.carbs + carbs
+        }
+      },
+      { calories: 0, protein: 0, fat: 0, carbs: 0 }
+    )
+  }, [])
+
+  const ensureDayStructure = useCallback((day) => {
+    if (!day) return null
+
+    const safeMeals = Array.isArray(day.meals)
+      ? day.meals.map((meal, index) => ({
+          ...createBaseMeal(meal.meal_type ?? DEFAULT_MEAL_SLOTS[Math.min(index, DEFAULT_MEAL_SLOTS.length - 1)].meal_type, meal.meal_order ?? index + 1),
+          ...meal,
+          servings: Number(meal.servings) > 0 ? Number(meal.servings) : 1,
+          calories: Number(meal.calories) || 0,
+          protein: Number(meal.protein) || 0,
+          fat: Number(meal.fat) || 0,
+          carbs: Number(meal.carbs ?? meal.carbohydrate) || 0
+        }))
+      : []
+
+    DEFAULT_MEAL_SLOTS.forEach((slot) => {
+      if (!safeMeals.some((meal) => meal.meal_type === slot.meal_type)) {
+        safeMeals.push(createBaseMeal(slot.meal_type, slot.meal_order))
+      }
+    })
+
+    const sortedMeals = safeMeals
+      .sort((a, b) => (a.meal_order ?? a.meal_type ?? 0) - (b.meal_order ?? b.meal_type ?? 0))
+      .map((meal, index) => ({ ...meal, meal_order: index + 1 }))
+
+    const totals = calculateDayTotals(sortedMeals)
+
+    return {
+      ...day,
+      title: day.title || `Ngày ${day.day_number}`,
+      description: day.description || '',
+      notes: day.notes || '',
+      meals: sortedMeals,
+      total_calories: totals.calories,
+      total_protein: totals.protein,
+      total_fat: totals.fat,
+      total_carbs: totals.carbs
+    }
+  }, [calculateDayTotals, createBaseMeal])
+
+  const recipesMap = useMemo(() => {
+    const map = {}
+    recipes.forEach((recipe) => {
+      if (recipe?._id) {
+        map[recipe._id] = recipe
+      }
+    })
+    return map
+  }, [recipes])
+
+  const recipeCategoryOptions = useMemo(() => {
+    const map = new Map()
+    recipes.forEach((recipe) => {
+      const id = recipe.category_recipe_id || recipe.category || recipe.category_id
+      if (!id) return
+      const label =
+        recipe.category_recipe_name ||
+        recipe.category_name ||
+        recipe.category?.name ||
+        recipe.category ||
+        id
+      if (!map.has(id)) {
+        map.set(id, label)
+      }
+    })
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
+  }, [recipes])
+
+  const recipeDifficultyOptions = useMemo(() => {
+    const set = new Set()
+    recipes.forEach((recipe) => {
+      if (recipe?.difficult_level !== undefined && recipe?.difficult_level !== null) {
+        set.add(Number(recipe.difficult_level))
+      }
+    })
+    return Array.from(set)
+      .sort((a, b) => a - b)
+      .map((value) => ({
+        value: String(value),
+        label: DIFFICULTY_LEVELS[value] || `Mức ${value}`
+      }))
+  }, [recipes])
+
+  const filteredRecipes = useMemo(() => {
+    const keyword = recipeSearch.trim().toLowerCase()
+
+    const containsKeyword = (value) => {
+      if (!keyword) return false
+      return typeof value === 'string' && value.toLowerCase().includes(keyword)
+    }
+
+    const filtered = recipes.filter((recipe) => {
+      const matchesCategory =
+        recipeFilters.category === 'all' ||
+        (recipe.category_recipe_id || recipe.category || recipe.category_id) === recipeFilters.category
+
+      const matchesDifficulty =
+        recipeFilters.difficulty === 'all' ||
+        String(recipe.difficult_level ?? '') === recipeFilters.difficulty
+
+      if (!matchesCategory || !matchesDifficulty) {
+        return false
+      }
+
+      if (!keyword) return true
+
+      const titleMatch = containsKeyword(recipe.title)
+      const descMatch = containsKeyword(recipe.description)
+      const tagMatch = Array.isArray(recipe.tags)
+        ? recipe.tags.some((tag) => containsKeyword(tag))
+        : false
+
+      return titleMatch || descMatch || tagMatch
+    })
+
+    const sorted = [...filtered]
+    if (recipeSort === 'calories-asc') {
+      sorted.sort((a, b) => (a.energy || 0) - (b.energy || 0))
+    } else if (recipeSort === 'calories-desc') {
+      sorted.sort((a, b) => (b.energy || 0) - (a.energy || 0))
+    } else {
+      const toComparable = (value) => (typeof value === 'string' ? value : String(value ?? ''))
+      sorted.sort((a, b) => toComparable(a.title).localeCompare(toComparable(b.title)))
+    }
+
+    return sorted
+  }, [recipeSearch, recipeFilters, recipeSort, recipes])
+
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      try {
+        setRecipesLoading(true)
+        const response = await http.get('/recipes/user/my-recipes', {
+          params: {
+            page: 1,
+            limit: 100
+          }
+        })
+        setRecipes(response.data?.result?.recipes || [])
+      } catch (error) {
+        console.error('Failed to fetch recipes:', error)
+        toast.error('Không thể tải danh sách công thức của bạn')
+      } finally {
+        setRecipesLoading(false)
+      }
+    }
+
+    fetchRecipes()
+  }, [])
+
+  // Initialize & normalize days when duration changes
+  useEffect(() => {
+    setFormData((prev) => {
+      const duration = prev.duration
+      const nextDays = []
+
+      for (let i = 1; i <= duration; i++) {
+        const existingDay = prev.days.find((day) => day.day_number === i)
+        const fallbackDay = {
+          day_number: i,
+          meals: DEFAULT_MEAL_SLOTS.map((slot) => createBaseMeal(slot.meal_type, slot.meal_order))
+        }
+        const normalizedDay = ensureDayStructure(existingDay || fallbackDay)
+        if (normalizedDay) {
+          nextDays.push(normalizedDay)
+        }
+      }
+
+      return {
+        ...prev,
+        days: nextDays
+      }
+    })
+  }, [formData.duration, createBaseMeal, ensureDayStructure])
+
+  // Ensure helper configs stay in range with duration updates
+  useEffect(() => {
+    setBulkConfig((prev) => {
+      const startDay = Math.min(Math.max(prev.startDay, 1), formData.duration)
+      const endDay = Math.min(Math.max(prev.endDay, startDay), formData.duration)
+      return {
+        ...prev,
+        startDay,
+        endDay
+      }
+    })
+
+    setCopyConfig((prev) => {
+      const fromDay = Math.min(Math.max(prev.fromDay, 1), formData.duration)
+      const startDay = Math.min(Math.max(prev.startDay, 1), formData.duration)
+      const endDay = Math.min(Math.max(prev.endDay, startDay), formData.duration)
+      return {
+        ...prev,
+        fromDay,
+        startDay,
+        endDay
+      }
+    })
+
+    setActiveDay((prev) => {
+      if (!formData.duration) return 1
+      return prev > formData.duration ? formData.duration : prev
+    })
+  }, [formData.duration])
+
+  const planTotals = useMemo(() => {
+    return formData.days.reduce(
+      (acc, day) => {
+        const totals = calculateDayTotals(day.meals)
+        return {
+          calories: acc.calories + totals.calories,
+          protein: acc.protein + totals.protein,
+          fat: acc.fat + totals.fat,
+          carbs: acc.carbs + totals.carbs
+        }
+      },
+      { calories: 0, protein: 0, fat: 0, carbs: 0 }
+    )
+  }, [formData.days, calculateDayTotals])
+
+  const targetCaloriesValue = useMemo(() => {
+    if (formData.target_calories === '' || formData.target_calories === null || typeof formData.target_calories === 'undefined') {
+      return null
+    }
+    const parsed = Number(formData.target_calories)
+    return Number.isFinite(parsed) ? parsed : null
+  }, [formData.target_calories])
+
+  const caloriesDelta = useMemo(() => {
+    if (targetCaloriesValue === null) {
+      return null
+    }
+    return planTotals.calories - targetCaloriesValue
+  }, [planTotals.calories, targetCaloriesValue])
+
+  const activeDayData = useMemo(() => {
+    return formData.days.find((day) => day.day_number === activeDay) || null
+  }, [formData.days, activeDay])
+
+  const updateDay = useCallback((dayNumber, updater) => {
+    setFormData((prev) => {
+      const days = prev.days.map((day) => {
+        if (day.day_number !== dayNumber) return day
+        const draftDay = {
+          ...day,
+          meals: day.meals.map((meal) => ({ ...meal }))
+        }
+        const updated = updater(draftDay) || draftDay
+        const totals = calculateDayTotals(updated.meals)
+        return {
+          ...updated,
+          total_calories: totals.calories,
+          total_protein: totals.protein,
+          total_fat: totals.fat,
+          total_carbs: totals.carbs
+        }
+      })
+      return {
+        ...prev,
+        days
+      }
+    })
+  }, [calculateDayTotals])
+
+  const updateDaysRange = useCallback((startDay, endDay, updater) => {
+    setFormData((prev) => {
+      const days = prev.days.map((day) => {
+        if (day.day_number < startDay || day.day_number > endDay) return day
+        const draftDay = {
+          ...day,
+          meals: day.meals.map((meal) => ({ ...meal }))
+        }
+        const updated = updater(draftDay) || draftDay
+        const totals = calculateDayTotals(updated.meals)
+        return {
+          ...updated,
+          total_calories: totals.calories,
+          total_protein: totals.protein,
+          total_fat: totals.fat,
+          total_carbs: totals.carbs
+        }
+      })
+      return {
+        ...prev,
+        days
+      }
+    })
+  }, [calculateDayTotals])
+
+  const assignRecipeToMeal = useCallback((dayNumber, mealType, recipeId, options = {}) => {
+    const recipe = recipesMap[recipeId]
+    if (!recipe) {
+      toast.error('Không tìm thấy công thức được chọn')
+      return
+    }
+
+    updateDay(dayNumber, (draft) => {
+      const explicitIndex = typeof options.mealIndex === 'number' && draft.meals[options.mealIndex]
+        ? options.mealIndex
+        : null
+      const targetIndex = explicitIndex !== null
+        ? explicitIndex
+        : draft.meals.findIndex((meal) => meal.meal_type === mealType)
+      const baseOrder = targetIndex > -1 ? draft.meals[targetIndex].meal_order : draft.meals.length + 1
+      const templateMeal = targetIndex > -1
+        ? draft.meals[targetIndex]
+        : createBaseMeal(mealType, baseOrder)
+      const servings = Number(options.servings ?? templateMeal?.servings ?? 1)
+      const safeServings = servings > 0 ? servings : 1
+      const calories = Math.round((recipe.energy || 0) * safeServings)
+      const protein = Number(((recipe.protein || 0) * safeServings).toFixed(2))
+      const fat = Number(((recipe.fat || 0) * safeServings).toFixed(2))
+      const carbs = Number(((recipe.carbohydrate || recipe.carbs || 0) * safeServings).toFixed(2))
+
+      const nextMeal = {
+        ...createBaseMeal(mealType, baseOrder),
+        ...templateMeal,
+        recipe_id: recipe._id,
+        name: recipe.title,
+        image: recipe.image,
+        servings: safeServings,
+        calories,
+        protein,
+        fat,
+        carbs,
+        difficult_level: recipe.difficult_level,
+        time: recipe.time,
+        is_optional: templateMeal?.is_optional || false
+      }
+
+      if (targetIndex > -1) {
+        draft.meals[targetIndex] = nextMeal
+      } else {
+        draft.meals.push(nextMeal)
+      }
+
+      return {
+        ...draft,
+        meals: draft.meals
+          .map((meal, index) => ({ ...meal, meal_order: index + 1 }))
+          .sort((a, b) => a.meal_order - b.meal_order)
+      }
+    })
+    setMissingMealKey(null)
+  }, [createBaseMeal, recipesMap, updateDay])
+
+  const clearMealSelection = useCallback((dayNumber, mealType, mealIndex) => {
+    updateDay(dayNumber, (draft) => {
+      if (typeof mealIndex === 'number') {
+        const target = draft.meals[mealIndex]
+        if (target) {
+          draft.meals[mealIndex] = createBaseMeal(target.meal_type, target.meal_order)
+        }
+      } else {
+        const targetIndex = draft.meals.findIndex((meal) => meal.meal_type === mealType)
+        if (targetIndex > -1) {
+          draft.meals[targetIndex] = createBaseMeal(mealType, draft.meals[targetIndex].meal_order)
+        }
+      }
+
+      return {
+        ...draft,
+        meals: draft.meals.map((meal, index) => ({ ...meal, meal_order: index + 1 }))
+      }
+    })
+    setMissingMealKey(null)
+  }, [createBaseMeal, updateDay])
+
+  const updateMealField = useCallback((dayNumber, mealIndex, field, value) => {
+    updateDay(dayNumber, (draft) => {
+      const meal = draft.meals[mealIndex]
+      if (!meal) return draft
+
+      if (field === 'meal_type') {
+        const newType = Number(value)
+        meal.meal_type = newType
+        meal.meal_order = mealIndex + 1
+        return draft
+      }
+
+      if (['calories', 'protein', 'fat', 'carbs'].includes(field)) {
+        meal[field] = Number(value) || 0
+        return draft
+      }
+
+      if (field === 'servings') {
+        const newServings = Number(value)
+        meal.servings = newServings > 0 ? newServings : 1
+        if (meal.recipe_id) {
+          const recipe = recipesMap[meal.recipe_id]
+          if (recipe) {
+            meal.calories = Math.round((recipe.energy || 0) * meal.servings)
+            meal.protein = Number(((recipe.protein || 0) * meal.servings).toFixed(2))
+            meal.fat = Number(((recipe.fat || 0) * meal.servings).toFixed(2))
+            meal.carbs = Number(((recipe.carbohydrate || recipe.carbs || 0) * meal.servings).toFixed(2))
+          }
+        }
+        return draft
+      }
+
+      if (field === 'is_optional') {
+        meal.is_optional = Boolean(value)
+        return draft
+      }
+
+      meal[field] = value
+      return draft
+    })
+    if (['name', 'recipe_id', 'meal_type', 'is_optional', 'calories', 'protein', 'fat', 'carbs'].includes(field)) {
+      setMissingMealKey(null)
+    }
+  }, [recipesMap, updateDay])
+
+  const addMealToDay = useCallback((dayNumber) => {
+    updateDay(dayNumber, (draft) => {
+      const nextOrder = draft.meals.length + 1
+      draft.meals.push(createBaseMeal(4, nextOrder))
+      return draft
+    })
+    setMissingMealKey(null)
+  }, [createBaseMeal, updateDay])
+
+  const removeMealFromDay = useCallback((dayNumber, mealIndex, options = {}) => {
+    updateDay(dayNumber, (draft) => {
+      if (mealIndex < 0 || mealIndex >= draft.meals.length) return draft
+
+      const isCoreMeal = mealIndex < DEFAULT_MEAL_SLOTS.length
+      if (isCoreMeal && !options?.allowCoreRemoval) {
+        const target = draft.meals[mealIndex]
+        draft.meals[mealIndex] = createBaseMeal(target.meal_type, target.meal_order)
+      } else {
+        draft.meals = draft.meals
+          .filter((_, index) => index !== mealIndex)
+          .map((meal, index) => ({ ...meal, meal_order: index + 1 }))
+      }
+      return draft
+    })
+    setMissingMealKey(null)
+  }, [createBaseMeal, updateDay])
+
+  const applyRecipeToRange = useCallback(() => {
+    if (!bulkConfig.recipeId) {
+      toast.error('Vui lòng chọn món ăn để áp dụng')
+      return
+    }
+    if (bulkConfig.startDay > bulkConfig.endDay) {
+      toast.error('Khoảng ngày không hợp lệ')
+      return
+    }
+
+    updateDaysRange(bulkConfig.startDay, bulkConfig.endDay, (draft) => {
+      const mealsClone = draft.meals.map((meal) => ({ ...meal }))
+      const targetIndex = mealsClone.findIndex((meal) => meal.meal_type === bulkConfig.mealType)
+      const baseOrder = targetIndex > -1 ? mealsClone[targetIndex].meal_order : mealsClone.length + 1
+      const templateMeal = targetIndex > -1 ? mealsClone[targetIndex] : createBaseMeal(bulkConfig.mealType, baseOrder)
+
+      const recipe = recipesMap[bulkConfig.recipeId]
+      if (!recipe) return draft
+
+      const servings = Number(templateMeal.servings || 1)
+      const calories = Math.round((recipe.energy || 0) * servings)
+      const protein = Number(((recipe.protein || 0) * servings).toFixed(2))
+      const fat = Number(((recipe.fat || 0) * servings).toFixed(2))
+      const carbs = Number(((recipe.carbohydrate || recipe.carbs || 0) * servings).toFixed(2))
+
+      const nextMeal = {
+        ...templateMeal,
+        recipe_id: recipe._id,
+        name: recipe.title,
+        image: recipe.image,
+        calories,
+        protein,
+        fat,
+        carbs
+      }
+
+      if (targetIndex > -1) {
+        mealsClone[targetIndex] = nextMeal
+      } else {
+        mealsClone.push(nextMeal)
+      }
+
+      return {
+        ...draft,
+        meals: mealsClone
+          .map((meal, index) => ({ ...meal, meal_order: index + 1 }))
+          .sort((a, b) => a.meal_order - b.meal_order)
+      }
+    })
+
+    toast.success(`Đã áp dụng công thức cho ngày ${bulkConfig.startDay} - ${bulkConfig.endDay}`)
+  }, [bulkConfig, createBaseMeal, recipesMap, updateDaysRange])
+
+  const copyDayToRange = useCallback(() => {
+    const sourceDay = formData.days.find((day) => day.day_number === copyConfig.fromDay)
+    if (!sourceDay) {
+      toast.error('Không tìm thấy ngày nguồn để sao chép')
+      return
+    }
+
+    if (copyConfig.startDay > copyConfig.endDay) {
+      toast.error('Khoảng ngày cần sao chép không hợp lệ')
+      return
+    }
+
+    const mealsTemplate = sourceDay.meals.map((meal, index) => ({
+      ...createBaseMeal(meal.meal_type, index + 1),
+      ...meal,
+      meal_order: index + 1
+    }))
+
+    updateDaysRange(copyConfig.startDay, copyConfig.endDay, (draft) => ({
+      ...draft,
+      meals: mealsTemplate.map((meal) => ({ ...meal }))
+    }))
+
+    toast.success(`Đã sao chép ngày ${copyConfig.fromDay} sang ngày ${copyConfig.startDay}-${copyConfig.endDay}`)
+  }, [copyConfig, createBaseMeal, formData.days, updateDaysRange])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    try {
+      setLoading(true)
+      
+      // Validate form
+      if (!formData.title.trim()) {
+        toast.error('Vui lòng nhập tên thực đơn')
+        setValidationErrors((prev) => ({ ...prev, title: true }))
+        focusField(titleInputRef)
+        return
+      }
+      
+      if (!formData.description.trim()) {
+        toast.error('Vui lòng nhập mô tả')
+        setValidationErrors((prev) => ({ ...prev, description: true }))
+        focusField(descriptionInputRef)
+        return
+      }
+
+      setMissingMealKey(null)
+
+      const missingRequiredMeal = (() => {
+        for (const day of formData.days) {
+          const sortedMeals = [...day.meals].sort((a, b) => (a.meal_order ?? a.meal_type ?? 0) - (b.meal_order ?? b.meal_type ?? 0))
+
+          for (let i = 0; i < DEFAULT_MEAL_SLOTS.length; i++) {
+            const slot = DEFAULT_MEAL_SLOTS[i]
+            const targetIndex = sortedMeals.findIndex((meal) => meal.meal_type === slot.meal_type)
+            const meal = targetIndex > -1 ? sortedMeals[targetIndex] : null
+
+            if (!meal) {
+              return { dayNumber: day.day_number, mealIndex: targetIndex, slot, needsInsert: true }
+            }
+
+            const hasContent = Boolean(meal.recipe_id || (meal.name && meal.name.trim()))
+            if (!hasContent && !meal.is_optional) {
+              return { dayNumber: day.day_number, mealIndex: targetIndex, slot, needsInsert: false }
+            }
+          }
+        }
+        return null
+      })()
+
+      if (missingRequiredMeal) {
+        const { dayNumber, mealIndex, slot, needsInsert } = missingRequiredMeal
+
+        if (needsInsert) {
+          updateDay(dayNumber, (draft) => {
+            const normalized = ensureDayStructure({
+              ...draft,
+              meals: [...draft.meals, createBaseMeal(slot.meal_type, draft.meals.length + 1)]
+            })
+            return normalized || draft
+          })
+        }
+
+        setCurrentStep(3)
+        setActiveDay(dayNumber)
+        highlightDaySection(dayNumber)
+        if (mealIndex > -1) {
+          setMissingMealKey(`${dayNumber}-${mealIndex}`)
+        }
+        toast.error(`Ngày ${dayNumber} còn thiếu ${slot.label.toLowerCase()}. Vui lòng bổ sung trước khi tạo.`)
+        return
+      }
+
+      const normalizedDays = formData.days.map((day) => {
+        const cleanedMeals = day.meals
+          .filter((meal) => {
+            if (meal.recipe_id) return true
+            return Boolean(meal.name && meal.name.trim())
+          })
+          .map((meal, index) => {
+            const fallbackName = meal.recipe_id ? recipesMap[meal.recipe_id]?.title || '' : ''
+            return {
+              meal_type: meal.meal_type,
+              meal_order: index + 1,
+              recipe_id: meal.recipe_id || null,
+              name: (meal.name && meal.name.trim()) || fallbackName,
+              image: meal.image || '',
+              calories: Number(meal.calories) || 0,
+              protein: Number(meal.protein) || 0,
+              fat: Number(meal.fat) || 0,
+              carbs: Number(meal.carbs) || 0,
+              time: meal.time || '',
+              servings: Number(meal.servings) || 1,
+              is_optional: Boolean(meal.is_optional),
+              difficult_level: meal.difficult_level || '',
+              notes: meal.notes || ''
+            }
+          })
+
+        const totals = calculateDayTotals(cleanedMeals)
+
+        return {
+          day_number: day.day_number,
+          title: day.title || `Ngày ${day.day_number}`,
+          description: day.description || '',
+          notes: day.notes || '',
+          meals: cleanedMeals,
+          total_calories: totals.calories,
+          total_protein: totals.protein,
+          total_fat: totals.fat,
+          total_carbs: totals.carbs
+        }
+      })
+
+      const firstEmptyDay = normalizedDays.find((day) => day.meals.length === 0)
+      if (firstEmptyDay) {
+        toast.error(`Ngày ${firstEmptyDay.day_number} chưa có món ăn. Vui lòng thêm ít nhất một món.`)
+        setCurrentStep(3)
+        setActiveDay(firstEmptyDay.day_number)
+        highlightDaySection(firstEmptyDay.day_number)
+        return
+      }
+
+      // Handle image upload if file selected
+      let imageUrl = formData.image
+      if (selectedFile) {
+        try {
+          // Upload image to server
+          const formDataForUpload = new FormData()
+          formDataForUpload.append('image', selectedFile)
+          formDataForUpload.append('category', 'meal-plans')
+          
+          const uploadResponse = await http.post('/posts/upload', formDataForUpload, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            validateStatus: () => true
+          })
+          if (uploadResponse.status >= 200 && uploadResponse.status < 300 && uploadResponse.data?.result?.image_url) {
+            imageUrl = uploadResponse.data.result.image_url
+          } else {
+            const warningMessage =
+              uploadResponse.status === 404
+                ? 'Máy chủ chưa hỗ trợ tải ảnh tại đường dẫn /posts/upload. Ảnh sẽ được gửi trực tiếp kèm biểu mẫu.'
+                : 'Không thể upload hình ảnh, sử dụng ảnh hiện tại trong biểu mẫu.'
+            toast.warning(warningMessage)
+            imageUrl = formData.image
+          }
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError)
+          toast.warning('Không thể upload hình ảnh, sử dụng ảnh hiện tại trong biểu mẫu.')
+          imageUrl = formData.image
+        }
+      }
+
+      const aggregateTotals = normalizedDays.reduce(
+        (acc, day) => ({
+          calories: acc.calories + day.total_calories,
+          protein: acc.protein + day.total_protein,
+          fat: acc.fat + day.total_fat,
+          carbs: acc.carbs + day.total_carbs
+        }),
+        { calories: 0, protein: 0, fat: 0, carbs: 0 }
+      )
+
+      const rawTargetCalories = formData.target_calories
+      const parsedTargetCalories =
+        rawTargetCalories === '' || rawTargetCalories === null || typeof rawTargetCalories === 'undefined'
+          ? null
+          : Number(rawTargetCalories)
+      const targetCalories = Number.isFinite(parsedTargetCalories) ? parsedTargetCalories : null
+
+      // Transform data to match API structure
+      const apiData = {
+        ...formData,
+        target_calories: targetCalories,
+        total_calories: aggregateTotals.calories,
+        total_protein: aggregateTotals.protein,
+        total_fat: aggregateTotals.fat,
+        total_carbs: aggregateTotals.carbs,
+        days: normalizedDays,
+        image: imageUrl
+      }
+
+      // Call API
+      await onCreate(apiData)
+      onClose()
+    } catch (error) {
+      // Error đã được handle trong useMealPlans hook
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    setValidationErrors((prev) => {
+      if (Object.prototype.hasOwnProperty.call(prev, field)) {
+        return {
+          ...prev,
+          [field]: false
+        }
+      }
+      return prev
+    })
+  }
+
+  const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setFormData(prev => ({
-        ...prev,
-        image: file
-      }))
-      
-      // Create a preview
+      setSelectedFile(file)
+      // Show preview
       const reader = new FileReader()
       reader.onload = (e) => {
-        setImagePreview(e.target.result)
+        setFormData(prev => ({
+          ...prev,
+          image: e.target.result
+        }))
       }
       reader.readAsDataURL(file)
     }
   }
 
-  // Hàm tính tổng dinh dưỡng cho một bữa ăn
-  const calculateMealNutrition = (foods) => {
-    return foods.reduce((total, food) => {
-      return {
-        calories: total.calories + (food.calories || 0),
-        protein: total.protein + (food.protein || 0),
-        carbs: total.carbs + (food.carbs || 0),
-        fat: total.fat + (food.fat || 0)
-      };
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-  };
-
-  // Mở modal chọn món ăn
-  const openFoodSelector = (dayIndex, mealIndex) => {
-    setSelectedDayIndex(dayIndex);
-    setSelectedMealIndex(mealIndex);
-    setSearchQuery('');
-    setCategoryFilter('all');
-    setShowFoodModal(true);
-  };
-
-  // Thêm món ăn vào bữa ăn
-  const addFoodToMeal = (food) => {
-    const updatedMealDays = [...mealDays];
-    const uniqueId = `${food.id}-${Date.now()}`;
-    
-    // Thêm món ăn với ID duy nhất để tránh trùng lặp
-    updatedMealDays[selectedDayIndex].meals[selectedMealIndex].foods.push({
-      ...food,
-      uniqueId
-    });
-    
-    setMealDays(updatedMealDays);
-  };
-
-  // Xóa món ăn khỏi bữa ăn
-  const removeFoodFromMeal = (dayIndex, mealIndex, foodUniqueId) => {
-    const updatedMealDays = [...mealDays];
-    updatedMealDays[dayIndex].meals[mealIndex].foods = 
-      updatedMealDays[dayIndex].meals[mealIndex].foods.filter(
-        food => food.uniqueId !== foodUniqueId
-      );
-    
-    setMealDays(updatedMealDays);
-  };
-
-  // Lọc danh sách món ăn theo từ khóa và danh mục
-  const getFilteredFoods = () => {
-    return availableFoods.filter(food => {
-      const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || food.category === categoryFilter;
-      return matchesSearch && matchesCategory;
-    });
-  };
-
-  const handleAddMeal = (dayIndex) => {
-    const updatedMealDays = [...mealDays]
-    updatedMealDays[dayIndex].meals.push({ 
-      type: 'Snack', 
-      foods: [],
-      description: ''
-    })
-    setMealDays(updatedMealDays)
+  const handleTagsChange = (e) => {
+    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
+    handleInputChange('tags', tags)
   }
 
-  // Cập nhật hàm xóa bữa ăn với xác nhận
-  const handleRemoveMeal = (dayIndex, mealIndex) => {
-    if (mealDays[dayIndex].meals.length <= 1) return // Keep at least one meal
-    
-    setConfirmDialog({
-      show: true,
-      message: `Bạn có chắc chắn muốn xóa bữa ${mealDays[dayIndex].meals[mealIndex].type} không?`,
-      action: () => {
-        const updatedMealDays = [...mealDays]
-        updatedMealDays[dayIndex].meals.splice(mealIndex, 1)
-        setMealDays(updatedMealDays)
-        
-        setConfirmDialog({ show: false, message: '', action: null })
-        setToast({
-          show: true,
-          message: 'Đã xóa bữa ăn thành công.',
-          type: 'success'
-        })
-      }
-    });
+  const handleSuitableForChange = (e) => {
+    const suitable = e.target.value.split(',').map(item => item.trim()).filter(item => item)
+    handleInputChange('suitable_for', suitable)
   }
 
-  // Hàm cập nhật tên bữa ăn
-  const handleMealTypeChange = (dayIndex, mealIndex, value) => {
-    const updatedMealDays = [...mealDays];
-    updatedMealDays[dayIndex].meals[mealIndex].type = value;
-    setMealDays(updatedMealDays);
-  };
-
-  // Cập nhật hàm thêm ngày mới để thêm vào sau ngày hiện tại
-  const handleAddDay = () => {
-    const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
-    const newDayIndex = currentDayIndex + 1;
-    
-    const newDay = {
-      id: `day-${Date.now()}`, // tạo id duy nhất
-      day: newDayIndex + 1, // Số thứ tự tạm thời
-      meals: [
-        { type: 'Sáng', foods: [], description: '' },
-        { type: 'Trưa', foods: [], description: '' },
-        { type: 'Tối', foods: [], description: '' },
-      ]
-    }
-    
-    // Tạo bản sao của mảng ngày
-    const updatedMealDays = [...mealDays];
-    
-    // Chèn ngày mới vào sau ngày hiện tại
-    updatedMealDays.splice(newDayIndex, 0, newDay);
-    
-    // Cập nhật lại số thứ tự ngày
-    const reindexedDays = updatedMealDays.map((day, index) => ({
-      ...day,
-      day: index + 1
-    }));
-    
-    setMealDays(reindexedDays);
-    setActiveDay(newDayIndex + 1); // Đặt active day là ngày mới
-    
-    setToast({
-      show: true,
-      message: 'Đã thêm ngày mới thành công.',
-      type: 'success'
-    });
-  }
-
-  // Cập nhật hàm xóa ngày với xác nhận
-  const handleRemoveDay = (dayIndex) => {
-    if (mealDays.length <= 1) return // Giữ ít nhất 1 ngày
-    
-    setConfirmDialog({
-      show: true,
-      message: `Bạn có chắc chắn muốn xóa Ngày ${mealDays[dayIndex].day} không?`,
-      action: () => {
-        const updatedMealDays = [...mealDays]
-        updatedMealDays.splice(dayIndex, 1)
-        
-        // Cập nhật lại số thứ tự ngày
-        const reindexedDays = updatedMealDays.map((day, index) => ({
-          ...day,
-          day: index + 1
-        }))
-        
-        setMealDays(reindexedDays)
-        
-        // Điều chỉnh active day nếu cần
-        if (activeDay > reindexedDays.length) {
-          setActiveDay(reindexedDays.length)
-        }
-        
-        setConfirmDialog({ show: false, message: '', action: null })
-        setToast({
-          show: true,
-          message: 'Đã xóa ngày thành công.',
-          type: 'success'
-        })
-      }
-    });
-  }
-
-  const validateForm = () => {
-    const newErrors = {
-      title: formData.title.trim() === '',
-      description: formData.description.trim() === '',
-      image: !formData.image,
-      meals: {}
-    }
-    
-    let isValid = !newErrors.title && !newErrors.description && !newErrors.image
-    
-    // Kiểm tra tất cả các bữa ăn trong tất cả các ngày
-    mealDays.forEach((day, dayIndex) => {
-      if (!newErrors.meals[dayIndex]) newErrors.meals[dayIndex] = {}
-      
-      day.meals.forEach((meal, mealIndex) => {
-        if (!newErrors.meals[dayIndex][mealIndex]) newErrors.meals[dayIndex][mealIndex] = {}
-        
-        // Kiểm tra loại bữa ăn
-        const typeEmpty = meal.type.trim() === ''
-        newErrors.meals[dayIndex][mealIndex].type = typeEmpty
-        
-        // Kiểm tra xem có món ăn nào không
-        const noFoods = meal.foods.length === 0
-        newErrors.meals[dayIndex][mealIndex].foods = noFoods
-        
-        if (typeEmpty || noFoods) {
-          isValid = false
-        }
-      })
-    })
-    
-    setErrors(newErrors)
-    return isValid
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    
-    if (validateForm()) {
-      // Form hợp lệ, tiến hành submit
-      console.log({ ...formData, mealDays, notes })
-      onClose()
-    } else {
-      // Hiển thị thông báo lỗi
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }
-
-  // Hàm cập nhật mô tả bữa ăn
-  const handleMealDescriptionChange = (dayIndex, mealIndex, value) => {
-    const updatedMealDays = [...mealDays];
-    updatedMealDays[dayIndex].meals[mealIndex].description = value;
-    setMealDays(updatedMealDays);
-  };
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3))
+  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1))
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-60 flex justify-center items-start pt-10 pb-20">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-auto border dark:border-gray-700">
-        {/* Header với gradient */}
-        <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-5 rounded-t-xl flex justify-between items-center">
-          <h2 className="text-xl font-bold flex items-center">
-            <FaUtensils className="mr-3 text-white/90" /> Tạo Thực Đơn Mới
-          </h2>
-          <button 
-            onClick={onClose}
-            className="text-white hover:text-gray-200 transition-colors p-1 hover:bg-white/10 rounded-full"
-          >
-            <FaTimes className="w-5 h-5" />
-          </button>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          {[1, 2, 3].map(step => (
+            <div key={step} className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= step 
+                  ? 'bg-green-600 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              }`}>
+                {step}
+              </div>
+              {step < 3 && (
+                <div className={`w-12 h-0.5 mx-2 ${
+                  currentStep > step ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700'
+                }`}></div>
+              )}
+            </div>
+          ))}
         </div>
-        
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          {/* Thêm thông báo lỗi ở đầu form nếu có */}
-          {(errors.title || errors.description || errors.image) && (
-            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400">
-              <p className="font-medium">Vui lòng điền đầy đủ thông tin:</p>
-              <ul className="mt-2 pl-5 list-disc">
-                {errors.title && <li>Tên thực đơn không được để trống</li>}
-                {errors.description && <li>Mô tả không được để trống</li>}
-                {errors.image && <li>Vui lòng tải lên ảnh đại diện</li>}
-              </ul>
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Left column - Basic info */}
-            <div className="md:col-span-1 space-y-5">
-              <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                  Ảnh đại diện <span className="text-red-500">*</span>
-                </label>
-                <div 
-                  onClick={() => fileInputRef.current.click()}
-                  className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-750
-                    ${imagePreview ? 'border-green-300 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 dark:border-gray-600'}`}
-                >
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="mx-auto max-h-44 rounded-lg shadow-sm object-cover"
-                      />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setImagePreview(null)
-                          setFormData(prev => ({ ...prev, image: null }))
-                        }}
-                      >
-                        <FaTimes className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                        <FaUpload className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Click để tải ảnh lên
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        Định dạng JPG, PNG hoặc WEBP
-                      </p>
-                    </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                    <FaUtensils className="inline mr-2 text-green-600 dark:text-green-500" /> Tên thực đơn <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Ví dụ: Thực đơn giảm cân 7 ngày"
-                  className={`w-full px-4 py-3 border ${errors.title ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm`}
-                />
-                {errors.title && <p className="mt-1 text-sm text-red-600 dark:text-red-400">Vui lòng nhập tên thực đơn</p>}
-              </div>
-              
-                <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                  Mô tả ngắn <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Mô tả ngắn gọn về thực đơn của bạn"
-                  rows="3"
-                  className={`w-full px-4 py-3 border ${errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm`}
-                />
-                {errors.description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">Vui lòng nhập mô tả thực đơn</p>}
-              </div>
-              
-                <div>
-                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                    <FaTag className="inline mr-2 text-green-600 dark:text-green-500" /> Phân loại <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm appearance-none bg-no-repeat"
-                    style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.75rem center", backgroundSize: "1.5em 1.5em"}}
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-                </div>
-                
-                <div>
-                <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                  Ghi chú chung
-                </label>
-                <div className="border dark:border-gray-600 rounded-lg overflow-hidden">
-                <ReactQuill 
-                  value={notes} 
-                  onChange={setNotes}
-                  placeholder="Thêm ghi chú, lời khuyên, hoặc hướng dẫn chung cho thực đơn..."
-                  modules={{
-                    toolbar: [
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['link'],
-                      ['clean']
-                    ]
-                  }}
-                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  theme="snow"
-                />
-                </div>
-              </div>
-            </div>
-            
-            {/* Right column - Meal planning */}
-            <div className="md:col-span-2 bg-gray-50 dark:bg-gray-750 rounded-xl p-5">
-              <div>
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                    <IoMdTime className="mr-2 text-green-600 dark:text-green-500" /> Lập thực đơn theo ngày
-                  </h3>
-                </div>
-                
-                {/* Day tabs - Cải tiến giao diện */}
-                <div className="mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Chọn ngày:</div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
-                          if (currentDayIndex > 0 && validateBeforeDayChange()) {
-                            setActiveDay(mealDays[currentDayIndex - 1].day);
-                          }
-                        }}
-                        disabled={activeDay === 1}
-                        className={`p-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
-                          activeDay === 1 
-                            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <FaArrowLeft className="w-4 h-4" />
-                      </button>
-                      
-                      <select
-                        value={activeDay}
-                        onChange={(e) => {
-                          const newDay = parseInt(e.target.value);
-                          if (validateBeforeDayChange()) {
-                            setActiveDay(newDay);
-                          }
-                        }}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white appearance-none min-w-[120px]"
-                        style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.5rem center", backgroundSize: "1.5em 1.5em", backgroundRepeat: "no-repeat"}}
-                      >
-                        {mealDays.map((day) => (
-                          <option key={day.id || day.day} value={day.day}>
-                            Ngày {day.day}
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentDayIndex = mealDays.findIndex(day => day.day === activeDay);
-                          if (currentDayIndex < mealDays.length - 1 && validateBeforeDayChange()) {
-                            setActiveDay(mealDays[currentDayIndex + 1].day);
-                          }
-                        }}
-                        disabled={activeDay === mealDays.length}
-                        className={`p-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
-                          activeDay === mealDays.length 
-                            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <FaArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Active day meal plan */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-                  {mealDays.map((day, dayIndex) => {
-                    if (day.day !== activeDay) return null;
-                    
-                    return (
-                      <div key={dayIndex}>
-                        <h4 className="text-lg font-medium text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">
-                          Chi tiết Ngày {day.day}
-                        </h4>
-                        
-                        {day.meals.map((meal, mealIndex) => {
-                          // Tính tổng dinh dưỡng cho bữa ăn
-                          const mealNutrition = calculateMealNutrition(meal.foods);
-                          
-                          return (
-                            <div key={mealIndex} className="mb-6 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md">
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center">
-                                  <div className="relative flex items-center">
-                                    <input
-                                      type="text"
-                                      value={meal.type}
-                                      onChange={(e) => handleMealTypeChange(dayIndex, mealIndex, e.target.value)}
-                                      className={`font-medium text-green-600 dark:text-green-400 border-none py-1 px-2 rounded focus:ring-2 focus:ring-green-500 bg-transparent text-lg ${errors.meals[dayIndex]?.[mealIndex]?.type ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
-                                      placeholder="Loại bữa ăn"
-                                    />
-                                    <span className="text-red-500 ml-1">*</span>
-                                  </div>
-                                  {errors.meals[dayIndex]?.[mealIndex]?.type && (
-                                    <span className="text-red-500 ml-2 text-sm">Bắt buộc</span>
-                                  )}
-                                </div>
-                                
-                                {day.meals.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveMeal(dayIndex, mealIndex)}
-                                    className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                  >
-                                    <FaTimes className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                              
-                              {/* Hiển thị thông tin dinh dưỡng tổng hợp */}
-                              <div className="grid grid-cols-4 gap-3 mb-4">
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Calo</label>
-                                  <div className="font-medium text-gray-800 dark:text-gray-200">
-                                    {mealNutrition.calories || 0} <span className="text-xs text-gray-500">Kcal</span>
-                                  </div>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Protein</label>
-                                  <div className="font-medium text-gray-800 dark:text-gray-200">
-                                    {mealNutrition.protein || 0} <span className="text-xs text-gray-500">g</span>
-                                  </div>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Carbs</label>
-                                  <div className="font-medium text-gray-800 dark:text-gray-200">
-                                    {mealNutrition.carbs || 0} <span className="text-xs text-gray-500">g</span>
-                                  </div>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                  <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Chất béo</label>
-                                  <div className="font-medium text-gray-800 dark:text-gray-200">
-                                    {mealNutrition.fat || 0} <span className="text-xs text-gray-500">g</span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Thêm phần mô tả bữa ăn */}
-                              <div className="mb-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Mô tả bữa ăn:</h5>
-                                </div>
-                                <textarea
-                                  value={meal.description || ''}
-                                  onChange={(e) => handleMealDescriptionChange(dayIndex, mealIndex, e.target.value)}
-                                  placeholder="Thêm mô tả, lưu ý hoặc ghi chú về bữa ăn này (tùy chọn)"
-                                  rows="2"
-                                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                              </div>
-                              
-                              {/* Hiển thị danh sách món ăn đã chọn */}
-                              <div className="mb-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Danh sách món ăn: <span className="text-red-500">*</span></h5>
-                                  <button
-                                    type="button"
-                                    onClick={() => openFoodSelector(dayIndex, mealIndex)}
-                                    className="text-sm flex items-center text-green-600 dark:text-green-500 hover:text-green-700 dark:hover:text-green-400"
-                                  >
-                                    <FaPlus className="mr-1" /> Thêm món ăn
-                                  </button>
-                                </div>
-                                
-                                {meal.foods.length === 0 ? (
-                                  <div className="py-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-750 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                                    <MdFastfood className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" />
-                                    <p className="text-sm">Chưa có món ăn nào được chọn</p>
-                                    <button
-                                      type="button"
-                                      onClick={() => openFoodSelector(dayIndex, mealIndex)}
-                                      className="mt-3 inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700"
-                                    >
-                                      <FaPlus className="mr-1.5 h-3 w-3" /> Chọn món ăn
-                                    </button>
-                                    {errors.meals[dayIndex]?.[mealIndex]?.foods && (
-                                      <p className="mt-2 text-sm text-red-600 dark:text-red-400">Vui lòng thêm ít nhất một món ăn</p>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    {meal.foods.map((food, foodIndex) => (
-                                      <div key={food.uniqueId} className="flex items-start p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        {food.image && (
-                                          <div className="flex-shrink-0 mr-3">
-                                            <img src={food.image} alt={food.name} className="h-16 w-16 object-cover rounded-md" />
-                                          </div>
-                                        )}
-                                        <div className="flex-grow min-w-0">
-                                          <div className="flex justify-between items-start">
-                                            <h6 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{food.name}</h6>
-                                            <button
-                                              type="button"
-                                              onClick={() => removeFoodFromMeal(dayIndex, mealIndex, food.uniqueId)}
-                                              className="ml-2 text-gray-400 hover:text-red-500"
-                                            >
-                                              <FaTimes />
-                                            </button>
-                                          </div>
-                                          <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-2">
-                                            <span>{food.calories} kcal</span>
-                                            <span>•</span>
-                                            <span>P: {food.protein}g</span>
-                                            <span>•</span> 
-                                            <span>C: {food.carbs}g</span>
-                                            <span>•</span>
-                                            <span>F: {food.fat}g</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        
-                        <div className="flex justify-between mt-6 space-x-3">
-                          <div className="flex space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Kiểm tra nếu có nhiều hơn 1 ngày
-                                if (mealDays.length > 1) {
-                                  const dayIndex = mealDays.findIndex(day => day.day === activeDay);
-                                  handleRemoveDay(dayIndex);
-                                }
-                              }}
-                              className="px-3 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center"
-                              disabled={mealDays.length <= 1}
-                            >
-                              <FaTrash className="mr-1.5" />
-                              Xóa ngày
-                            </button>
-                          </div>
-                          
-                          <button
-                            type="button"
-                            onClick={() => {
-                              // Kiểm tra dữ liệu của ngày hiện tại
-                              const dayIndex = mealDays.findIndex(day => day.day === activeDay);
-                              let hasErrors = false;
-                              
-                              // Kiểm tra từng bữa ăn trong ngày
-                              mealDays[dayIndex].meals.forEach((meal, mealIndex) => {
-                                if (!meal.type.trim() || meal.foods.length === 0) {
-                                  hasErrors = true;
-                                  // Cập nhật lỗi
-                                  const newErrors = {...errors};
-                                  if (!newErrors.meals[dayIndex]) newErrors.meals[dayIndex] = {};
-                                  if (!newErrors.meals[dayIndex][mealIndex]) newErrors.meals[dayIndex][mealIndex] = {};
-                                  
-                                  if (!meal.type.trim()) newErrors.meals[dayIndex][mealIndex].type = true;
-                                  if (meal.foods.length === 0) newErrors.meals[dayIndex][mealIndex].foods = true;
-                                  
-                                  setErrors(newErrors);
-                                }
-                              });
-                              
-                              if (!hasErrors) {
-                                // Nếu không có lỗi, thêm ngày mới và chuyển đến ngày đó
-                                handleAddDay();
-                              } else {
-                                // Hiển thị thông báo popup thay vì alert
-                                setToast({
-                                  show: true,
-                                  message: 'Vui lòng hoàn thành tất cả các bữa ăn trong ngày hiện tại trước khi thêm ngày mới.',
-                                  type: 'error'
-                                });
-                              }
-                            }}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center ml-auto"
-                          >
-                            Thêm ngày tiếp theo
-                            <FaArrowRight className="ml-1.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Form actions */}
-          <div className="mt-8 flex justify-end space-x-3 border-t dark:border-gray-700 pt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 font-medium border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2.5 font-medium bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-lg shadow transition-colors"
-            >
-              Lưu Thực Đơn
-            </button>
-          </div>
-        </form>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {currentStep === 1 && 'Thông tin cơ bản'}
+          {currentStep === 2 && 'Hình ảnh & chi tiết'}
+          {currentStep === 3 && 'Món ăn theo ngày'}
+        </div>
       </div>
 
-      {/* Modal chọn món ăn */}
-      {showFoodModal && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-60 flex justify-center items-center">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-auto border dark:border-gray-700 flex flex-col">
-            {/* Header modal */}
-            <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-4 rounded-t-xl flex justify-between items-center sticky top-0 z-10">
-              <h2 className="text-lg font-bold flex items-center">
-                <MdFastfood className="mr-2" /> Chọn món ăn
-              </h2>
-              <button 
-                onClick={() => setShowFoodModal(false)}
-                className="text-white hover:text-gray-200 transition-colors p-1 hover:bg-white/10 rounded-full"
+      {/* Step 1: Basic Information */}
+      {currentStep === 1 && (
+        <div className="space-y-4">
+          {/* Tên thực đơn */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tên thực đơn <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              ref={titleInputRef}
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 ${
+                validationErrors.title
+                  ? 'border border-red-500 dark:border-red-400 focus:ring-red-500'
+                  : 'border border-gray-300 dark:border-gray-600 focus:ring-green-500'
+              }`}
+              aria-invalid={validationErrors.title}
+              placeholder="Ví dụ: Thực đơn Keto 10 ngày"
+              required
+            />
+          </div>
+
+          {/* Mô tả */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Mô tả <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              rows={3}
+              ref={descriptionInputRef}
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 resize-none ${
+                validationErrors.description
+                  ? 'border border-red-500 dark:border-red-400 focus:ring-red-500'
+                  : 'border border-gray-300 dark:border-gray-600 focus:ring-green-500'
+              }`}
+              aria-invalid={validationErrors.description}
+              placeholder="Mô tả ngắn gọn về thực đơn..."
+              required
+            />
+          </div>
+
+          {/* Row 1: Category, Duration, Calories */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Loại thực đơn
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
               >
-                <MdClose className="w-5 h-5" />
+                {Object.entries(MEAL_PLAN_CATEGORIES).map(([id, name]) => (
+                  <option key={id} value={parseInt(id)}>{name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Số ngày
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                value={formData.duration}
+                onChange={(e) => handleInputChange('duration', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Calories mục tiêu
+              </label>
+              <input
+                type="number"
+                min="1000"
+                max="5000"
+                step="100"
+                value={formData.target_calories}
+                onChange={(e) => {
+                  const rawValue = e.target.value
+                  if (rawValue === '') {
+                    handleInputChange('target_calories', '')
+                    return
+                  }
+                  const parsed = parseInt(rawValue, 10)
+                  handleInputChange('target_calories', Number.isNaN(parsed) ? '' : parsed)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                placeholder="Nhập khi bạn có mục tiêu cụ thể"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Bỏ trống nếu bạn muốn hệ thống tự tính tổng calories dựa trên các bữa ăn.
+              </p>
+            </div>
+          </div>
+
+          {/* Row 2: Difficulty, Price Range */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Độ khó
+              </label>
+              <select
+                value={formData.difficulty_level}
+                onChange={(e) => handleInputChange('difficulty_level', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+              >
+                {Object.entries(DIFFICULTY_LEVELS).map(([id, name]) => (
+                  <option key={id} value={parseInt(id)}>{name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Mức giá
+              </label>
+              <select
+                value={formData.price_range}
+                onChange={(e) => handleInputChange('price_range', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+              >
+                {Object.entries(PRICE_RANGES).map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Public checkbox */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="is_public"
+              checked={formData.is_public}
+              onChange={(e) => handleInputChange('is_public', e.target.checked)}
+              className="mr-2 text-green-600 focus:ring-green-500"
+            />
+            <label htmlFor="is_public" className="text-sm text-gray-700 dark:text-gray-300">
+              Công khai thực đơn
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Image & Details */}
+      {currentStep === 2 && (
+        <div className="space-y-4">
+          {/* Image upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Hình ảnh thực đơn
+            </label>
+            
+            {/* Image input type selector */}
+            <div className="flex mb-3">
+              <button
+                type="button"
+                onClick={() => setImageInputType('url')}
+                className={`flex items-center px-3 py-2 rounded-l-lg border border-r-0 ${
+                  imageInputType === 'url' 
+                    ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300' 
+                    : 'bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <FaLink className="mr-2" /> URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageInputType('file')}
+                className={`flex items-center px-3 py-2 rounded-r-lg border border-l-0 ${
+                  imageInputType === 'file' 
+                    ? 'bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300' 
+                    : 'bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <FaImage className="mr-2" /> Tải lên
               </button>
             </div>
 
-            {/* Phần tìm kiếm và lọc - tối ưu layout và bỏ bớt icon */}
-            <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-750 sticky top-[60px] z-10">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaSearch className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm món ăn..."
-                    className="pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                <div className="w-full">
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none"
-                    // style={{backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.75rem center", backgroundSize: "1.5em 1.5em"}}
-                  >
-                    <option value="all">Tất cả loại món ăn</option>
-                    <option value="Sáng">Bữa sáng</option>
-                    <option value="Trưa">Bữa trưa</option>
-                    <option value="Tối">Bữa tối</option>
-                    <option value="Snack">Ăn nhẹ</option>
-                  </select>
-                </div>
-              </div>
-              {/* Hiển thị số món đã chọn */}
-              {selectedDayIndex !== null && selectedMealIndex !== null && (
-                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center">
-                  <div>
-                    Đã chọn: <span className="font-medium text-green-600 dark:text-green-500">
-                      {mealDays[selectedDayIndex].meals[selectedMealIndex].foods.length}
-                    </span> món ăn
-                  </div>
-                  {mealDays[selectedDayIndex].meals[selectedMealIndex].foods.length > 0 && (
-                    <button 
-                      className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
-                      onClick={() => {
-                        const updatedMealDays = [...mealDays];
-                        updatedMealDays[selectedDayIndex].meals[selectedMealIndex].foods = [];
-                        setMealDays(updatedMealDays);
-                      }}
-                    >
-                      Xóa tất cả
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            {imageInputType === 'url' ? (
+              <input
+                type="url"
+                value={formData.image}
+                onChange={(e) => handleInputChange('image', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                placeholder="https://example.com/image.jpg"
+              />
+            ) : (
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+              />
+            )}
 
-            {/* Danh sách món ăn */}
-            <div className="flex-grow overflow-auto p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {getFilteredFoods().length === 0 ? (
-                  <div className="col-span-full py-10 text-center text-gray-500 dark:text-gray-400">
-                    <MdFastfood className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" />
-                    <p>Không tìm thấy món ăn phù hợp</p>
-                  </div>
-                ) : (
-                  getFilteredFoods().map(food => {
-                    // Kiểm tra xem món ăn đã được chọn chưa
-                    const isSelected = selectedDayIndex !== null && 
-                      selectedMealIndex !== null && 
-                      mealDays[selectedDayIndex].meals[selectedMealIndex].foods.some(
-                        f => f.id === food.id
-                      );
-                      
-                    return (
-                      <div 
-                        key={food.id} 
-                        className={`flex bg-white dark:bg-gray-750 rounded-lg border ${isSelected 
-                          ? 'border-green-500 dark:border-green-500 shadow-md ring-2 ring-green-500 ring-opacity-50' 
-                          : 'border-gray-200 dark:border-gray-700'
-                        } overflow-hidden hover:shadow-md transition-all cursor-pointer relative`}
-                        onClick={() => addFoodToMeal(food)}
-                      >
-                        {/* Chỉ báo đã chọn */}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1.5 z-10 shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        )}
-                        
-                        {food.image && (
-                          <div className="w-24 h-24 flex-shrink-0">
-                            <img src={food.image} alt={food.name} className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        <div className="p-3 flex-grow min-w-0">
-                          <h5 className="font-medium text-gray-900 dark:text-gray-100 truncate mb-1">
-                            {food.name}
-                          </h5>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                            <span className="inline-block px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
-                              {food.category}
-                            </span>
-                          </div>
-                          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-1.5">
-                            <span>{food.calories} kcal</span>
-                            <span>•</span>
-                            <span>P: {food.protein}g</span>
-                            <span>•</span> 
-                            <span>C: {food.carbs}g</span>
-                            <span>•</span>
-                            <span>F: {food.fat}g</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+            {/* Image preview */}
+            {formData.image && (
+              <div className="mt-3">
+                <img
+                  src={selectedFile ? formData.image : getImageUrl(formData.image) || formData.image}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg"
+                  onError={(e) => {
+                    e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'
+                  }}
+                />
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Footer modal */}
-            <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-750 sticky bottom-0">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedDayIndex !== null && selectedMealIndex !== null && (
-                    <>Đã chọn {mealDays[selectedDayIndex].meals[selectedMealIndex].foods.length} món ăn</>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowFoodModal(false)}
-                  className="px-4 py-2 font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-colors"
-                >
-                  Hoàn tất
-                </button>
-              </div>
-            </div>
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Thẻ (phân cách bằng dấu phẩy)
+            </label>
+            <input
+              type="text"
+              value={formData.tags.join(', ')}
+              onChange={handleTagsChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+              placeholder="keto, low_carb, high_fat"
+            />
+          </div>
+
+          {/* Suitable for */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Phù hợp với (phân cách bằng dấu phẩy)
+            </label>
+            <input
+              type="text"
+              value={formData.suitable_for.join(', ')}
+              onChange={handleSuitableForChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+              placeholder="keto, low_carb"
+            />
           </div>
         </div>
       )}
-      
-      {/* Render toast message */}
-      {toast.show && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast({...toast, show: false})} 
-        />
+
+      {/* Step 3: Daily Meals */}
+      {currentStep === 3 && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <FaCalendarDay className="text-green-600" />
+                  Lập kế hoạch {formData.duration} ngày
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Chọn công thức có sẵn và điều chỉnh khẩu phần cho từng ngày.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
+                <span>
+                  Tổng calories: <span className="font-semibold text-green-600">{planTotals.calories.toLocaleString('vi-VN')}</span> kcal
+                </span>
+                {targetCaloriesValue !== null ? (
+                  <span>
+                    Mục tiêu: <span className="font-semibold">{targetCaloriesValue.toLocaleString('vi-VN')}</span> kcal
+                    {caloriesDelta !== null && (
+                      <span className={`ml-2 font-medium ${caloriesDelta > 0 ? 'text-orange-500' : caloriesDelta < 0 ? 'text-blue-500' : 'text-green-600'}`}>
+                        {`${caloriesDelta > 0 ? '+' : ''}${caloriesDelta.toLocaleString('vi-VN')} kcal`}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Chưa thiết lập calories mục tiêu</span>
+                )}
+                <span>
+                  Protein: <span className="font-semibold">{planTotals.protein.toFixed(1)}</span> g
+                </span>
+                <span>
+                  Chất béo: <span className="font-semibold">{planTotals.fat.toFixed(1)}</span> g
+                </span>
+                <span>
+                  Carb: <span className="font-semibold">{planTotals.carbs.toFixed(1)}</span> g
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-200 dark:border-gray-700">
+            {formData.days.map((day) => {
+              const hasMeal = day.meals.some((meal) => meal.recipe_id || (meal.name && meal.name.trim()))
+              const isActive = day.day_number === activeDay
+              const isHighlighted = highlightedDay === day.day_number
+              return (
+                <button
+                  key={day.day_number}
+                  type="button"
+                  onClick={() => setActiveDay(day.day_number)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'bg-green-600 border-green-600 text-white'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-green-400'
+                  } ${isHighlighted ? 'ring-2 ring-red-400 border-red-400' : ''}`}
+                >
+                  Ngày {day.day_number}
+                  {hasMeal && <FaCheck className="text-xs" />}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[2.2fr,1fr]">
+            <section className="space-y-4" ref={daySectionRef}>
+              {activeDayData ? (
+                <>
+                  <div
+                    className={`rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm ${
+                      highlightedDay === activeDayData.day_number ? 'border-red-400 ring-2 ring-red-300/70' : ''
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <MdFastfood className="text-green-600" />
+                          Ngày {activeDayData.day_number}
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Tổng {activeDayData.total_calories.toLocaleString('vi-VN')} kcal · Protein {activeDayData.total_protein.toFixed(1)} g · Fat {activeDayData.total_fat.toFixed(1)} g · Carb {activeDayData.total_carbs.toFixed(1)} g
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => addMealToDay(activeDayData.day_number)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm transition-colors"
+                        >
+                          <FaPlus /> Thêm bữa phụ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {activeDayData.meals.map((meal, mealIndex) => {
+                      const recipeDetail = meal.recipe_id ? recipesMap[meal.recipe_id] : null
+                      const imageSrc = meal.image || recipeDetail?.image || ''
+                      const isCoreMeal = mealIndex < DEFAULT_MEAL_SLOTS.length
+                      const macroFields = [
+                        { key: 'calories', label: 'Calories (kcal)', step: 10 },
+                        { key: 'protein', label: 'Protein (g)', step: 0.5 },
+                        { key: 'fat', label: 'Chất béo (g)', step: 0.5 },
+                        { key: 'carbs', label: 'Carb (g)', step: 0.5 }
+                      ]
+                      const mealKey = `${activeDayData.day_number}-${mealIndex}`
+                      const isMissing = missingMealKey === mealKey
+
+                      return (
+                        <div
+                          key={`${activeDayData.day_number}-${meal.meal_type}-${mealIndex}`}
+                          className={`rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm transition-shadow ${
+                            isMissing ? 'border-red-400 ring-2 ring-red-300/70' : ''
+                          }`}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-semibold">
+                                {MEAL_TYPES[meal.meal_type] || 'Bữa ăn'}
+                              </span>
+                              <select
+                                value={meal.meal_type}
+                                onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'meal_type', parseInt(e.target.value))}
+                                className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                              >
+                                {Object.entries(MEAL_TYPES).map(([id, label]) => (
+                                  <option key={id} value={parseInt(id)}>
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <label className="inline-flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                <input
+                                  type="checkbox"
+                                  checked={meal.is_optional}
+                                  onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'is_optional', e.target.checked)}
+                                  className="mt-0.5 text-green-600 focus:ring-green-500"
+                                />
+                                <span>
+                                  <span className="block leading-none font-semibold text-gray-700 dark:text-gray-200">Tùy chọn</span>
+                                  <span className="block text-[10px] text-gray-500 dark:text-gray-400">
+                                    Khi bật, bạn có thể để trống bữa này mà vẫn tạo được thực đơn.
+                                  </span>
+                                </span>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => clearMealSelection(activeDayData.day_number, meal.meal_type, mealIndex)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:border-green-500"
+                              >
+                                <FaSync className="text-xs" />
+                                Đặt lại
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isCoreMeal) {
+                                    const confirmed = window.confirm('Bữa ăn mặc định sẽ bị xóa khỏi ngày này. Bạn có chắc chắn?')
+                                    if (!confirmed) return
+                                  }
+                                  removeMealFromDay(activeDayData.day_number, mealIndex, { allowCoreRemoval: true })
+                                }}
+                                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                                  isCoreMeal
+                                    ? 'border-red-200 text-red-600 hover:bg-red-50'
+                                    : 'border-red-300 text-red-600 hover:bg-red-50'
+                                }`}
+                              >
+                                <FaTrash className="text-xs" /> Xóa bữa
+                              </button>
+                            </div>
+                          </div>
+
+                          {isMissing && (
+                            <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                              Bữa này đang để trống. Hãy chọn công thức hoặc nhập tên món trước khi tạo thực đơn.
+                            </p>
+                          )}
+
+                          <div className="mt-4 grid gap-4 md:grid-cols-[100px,1fr]">
+                            <div className="h-24 w-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                              {imageSrc ? (
+                                <img
+                                  src={getImageUrl(imageSrc) || imageSrc}
+                                  alt={recipeDetail?.title || meal.name || 'Meal thumbnail'}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    e.target.src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836'
+                                  }}
+                                />
+                              ) : (
+                                <FaUtensils className="text-gray-400 text-xl" />
+                              )}
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Tên món ăn</label>
+                                  <input
+                                    type="text"
+                                    value={meal.name}
+                                    placeholder={recipeDetail?.title || 'Nhập tên món'}
+                                    onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                                  />
+                                </div>
+                                {recipes.length > 0 && (
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Công thức tham chiếu</label>
+                                    <select
+                                      value={meal.recipe_id || ''}
+                                      onChange={(e) => {
+                                        const recipeId = e.target.value
+                                        if (!recipeId) {
+                                          clearMealSelection(activeDayData.day_number, meal.meal_type, mealIndex)
+                                          return
+                                        }
+                                        assignRecipeToMeal(activeDayData.day_number, meal.meal_type, recipeId, {
+                                          servings: meal.servings,
+                                          mealIndex
+                                        })
+                                      }}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                                      disabled={recipesLoading}
+                                    >
+                                      <option value="">Không dùng công thức</option>
+                                      {recipes.map((recipe) => (
+                                        <option key={recipe._id} value={recipe._id}>
+                                          {recipe.title}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {macroFields.map((field) => (
+                                  <div key={field.key}>
+                                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{field.label}</label>
+                                    <input
+                                      type="number"
+                                      step={field.step}
+                                      min="0"
+                                      value={meal[field.key] ?? 0}
+                                      onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, field.key, e.target.value)}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Khẩu phần</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={meal.servings}
+                                    onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'servings', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Thời gian gợi ý</label>
+                                  <input
+                                    type="text"
+                                    value={meal.time || ''}
+                                    onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'time', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                                    placeholder="Ví dụ: 07:30"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Ghi chú</label>
+                                  <input
+                                    type="text"
+                                    value={meal.notes || ''}
+                                    onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'notes', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                                    placeholder="Thêm ghi chú cho bữa ăn"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Chưa có dữ liệu cho ngày này. Thử giảm số ngày hoặc thêm ngày mới.
+                </div>
+              )}
+            </section>
+
+            <aside className="space-y-4">
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Thư viện công thức</h4>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{recipes.length} món</span>
+                </div>
+                <input
+                  type="text"
+                  value={recipeSearch}
+                  onChange={(e) => setRecipeSearch(e.target.value)}
+                  placeholder="Tìm theo tên, thẻ..."
+                  className="mt-3 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                />
+
+                <div className="mt-3 max-h-80 overflow-y-auto space-y-3 pr-1">
+                  {recipesLoading ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Đang tải danh sách công thức...</p>
+                  ) : filteredRecipes.length === 0 ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Không tìm thấy công thức phù hợp. Hãy tạo thêm món mới trong thư viện công thức.
+                    </p>
+                  ) : (
+                    filteredRecipes.map((recipe) => {
+                      const energy = Number(recipe.energy || 0)
+                      const protein = Number(recipe.protein || 0)
+                      const fat = Number(recipe.fat || 0)
+                      const carbs = Number(recipe.carbohydrate ?? recipe.carbs ?? 0)
+                      return (
+                        <div key={recipe._id} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-3">
+                          <div className="flex gap-3">
+                            <div className="h-16 w-16 rounded-lg overflow-hidden bg-white dark:bg-gray-800 flex-shrink-0">
+                              {recipe.image ? (
+                                <img
+                                  src={getImageUrl(recipe.image) || recipe.image}
+                                  alt={recipe.title}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                  <FaUtensils />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <h5 className="text-sm font-semibold text-gray-900 dark:text-white">{recipe.title}</h5>
+                                <span className="text-xs text-green-600 font-semibold">{Math.round(energy)} kcal</span>
+                              </div>
+                              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-gray-600 dark:text-gray-300">
+                                <span>P: {protein.toFixed(1)} g</span>
+                                <span>F: {fat.toFixed(1)} g</span>
+                                <span>C: {carbs.toFixed(1)} g</span>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {Object.entries(MEAL_TYPES).map(([id, label]) => (
+                                  <button
+                                    key={id}
+                                    type="button"
+                                    onClick={() => {
+                                      if (!activeDayData) {
+                                        toast.error('Vui lòng chọn ngày cần thêm món')
+                                        return
+                                      }
+                                      assignRecipeToMeal(activeDayData.day_number, parseInt(id), recipe._id)
+                                    }}
+                                    className="px-3 py-1 text-xs rounded-full border border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/40 transition-colors"
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                  <FaMagic className="text-green-600" />
+                  Áp dụng nhanh
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Chọn công thức và áp dụng cho nhiều ngày cùng một loại bữa.
+                </p>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Công thức</label>
+                    <select
+                      value={bulkConfig.recipeId}
+                      onChange={(e) => setBulkConfig((prev) => ({ ...prev, recipeId: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Chọn công thức</option>
+                      {recipes.map((recipe) => (
+                        <option key={recipe._id} value={recipe._id}>
+                          {recipe.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Loại bữa</label>
+                    <select
+                      value={bulkConfig.mealType}
+                      onChange={(e) => setBulkConfig((prev) => ({ ...prev, mealType: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                    >
+                      {Object.entries(MEAL_TYPES).map(([id, label]) => (
+                        <option key={id} value={parseInt(id)}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Từ ngày</label>
+                      <select
+                        value={bulkConfig.startDay}
+                        onChange={(e) => setBulkConfig((prev) => ({ ...prev, startDay: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                      >
+                        {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
+                          <option key={day} value={day}>
+                            Ngày {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Đến ngày</label>
+                      <select
+                        value={bulkConfig.endDay}
+                        onChange={(e) => setBulkConfig((prev) => ({ ...prev, endDay: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                      >
+                        {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
+                          <option key={day} value={day}>
+                            Ngày {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={applyRecipeToRange}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  disabled={!bulkConfig.recipeId}
+                >
+                  <FaMagic /> Áp dụng
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                  <FaCopy className="text-green-600" />
+                  Sao chép ngày
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Sao chép toàn bộ thực đơn của một ngày sang các ngày khác.
+                </p>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Ngày nguồn</label>
+                    <select
+                      value={copyConfig.fromDay}
+                      onChange={(e) => setCopyConfig((prev) => ({ ...prev, fromDay: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                    >
+                      {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
+                        <option key={day} value={day}>
+                          Ngày {day}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Từ ngày</label>
+                      <select
+                        value={copyConfig.startDay}
+                        onChange={(e) => setCopyConfig((prev) => ({ ...prev, startDay: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                      >
+                        {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
+                          <option key={day} value={day}>
+                            Ngày {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Đến ngày</label>
+                      <select
+                        value={copyConfig.endDay}
+                        onChange={(e) => setCopyConfig((prev) => ({ ...prev, endDay: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                      >
+                        {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
+                          <option key={day} value={day}>
+                            Ngày {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyDayToRange}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-gray-900 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  <FaCopy /> Sao chép
+                </button>
+              </div>
+            </aside>
+          </div>
+        </div>
       )}
-      
-      {/* Render confirm dialog */}
-      {confirmDialog.show && (
-        <ConfirmDialog
-          message={confirmDialog.message}
-          onConfirm={confirmDialog.action}
-          onCancel={() => setConfirmDialog({show: false, message: '', action: null})}
-        />
-      )}
-    </div>
+
+      {/* Navigation buttons */}
+      <div className="flex justify-between pt-4">
+        <div>
+          {currentStep > 1 && (
+            <button
+              type="button"
+              onClick={prevStep}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+            >
+              Quay lại
+            </button>
+          )}
+        </div>
+        
+        <div className="flex space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+          >
+            Hủy
+          </button>
+          
+          {currentStep < 3 ? (
+            <button
+              type="button"
+              onClick={nextStep}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            >
+              Tiếp tục
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Đang tạo...' : 'Tạo thực đơn'}
+            </button>
+          )}
+        </div>
+      </div>
+    </form>
   )
-} 
+}

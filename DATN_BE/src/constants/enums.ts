@@ -22,6 +22,7 @@ export enum NotificationTypes {
   bookmarkRecipe,
   commentBlog,
   bookmarkAlbum,
+  shareMealPlan,
   system
 }
 
@@ -45,7 +46,8 @@ export enum TokenType {
 
 export enum PostTypes {
   post,
-  sharePost
+  sharePost,
+  shareMealPlan
 }
 
 export enum PostStatus {

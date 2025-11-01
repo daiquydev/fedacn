@@ -5,6 +5,7 @@ import moment from 'moment'
 import parse from 'html-react-parser'
 import { MdHome, MdPerson } from 'react-icons/md'
 import { getBlogDetailForInspector } from '../../apis/inspectorApi'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function BlogDetail() {
   const navigate = useNavigate()
@@ -65,7 +66,7 @@ export default function BlogDetail() {
                   <div className='flex flex-col items-center my-6 justify-center w-[100%]'>
                     <img
                       className='object-cover rounded-md max-h-[28rem] w-[100%]'
-                      src={data?.data.result[0].image}
+                      src={getImageUrl(data?.data.result[0].image)}
                       alt='image'
                     />
                   </div>

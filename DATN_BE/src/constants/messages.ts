@@ -30,6 +30,8 @@ export const AUTH_USER_MESSAGE = {
 export const POST_MESSAGE = {
   NO_CONTENT_OR_IMAGE: 'Không có nội dung hoặc ảnh',
   CREATE_POST_SUCCESS: 'Tạo bài viết thành công',
+  UPLOAD_IMAGE_SUCCESS: 'Tải ảnh thành công',
+  UPLOAD_IMAGE_FAILED: 'Không thể tải ảnh',
   NOT_CREATE_POST: 'Không thể tạo bài viết',
   POST_NOT_FOUND: 'Không tìm thấy bài viết',
   DELETE_POST_SUCCESS: 'Xóa bài viết thành công',
@@ -197,7 +199,12 @@ export const RECIPE_MESSAGE = {
   CARBOHYDRATE_INVALID: 'Carbohydrate không hợp lệ',
   UNIT_INVALID: 'Đơn vị không hợp lệ',
   QUANTITY_INVALID: 'Số lượng không hợp lệ',
-  GET_THREE_TOP_RECIPES_SUCCESS: 'Lấy 3 công thức nổi bật thành công'
+  GET_THREE_TOP_RECIPES_SUCCESS: 'Lấy 3 công thức nổi bật thành công',
+  CREATE_RECIPE_FAILED: 'Tạo công thức thất bại',
+  GET_RECIPES_FAILED: 'Lấy danh sách công thức thất bại',
+  UPDATE_RECIPE_FAILED: 'Cập nhật công thức thất bại',
+  DELETE_RECIPE_FAILED: 'Xóa công thức thất bại',
+  GET_MY_RECIPES_SUCCESS: 'Lấy danh sách công thức của tôi thành công'
 }
 
 export const MEAL_PLAN_MESSAGE = {

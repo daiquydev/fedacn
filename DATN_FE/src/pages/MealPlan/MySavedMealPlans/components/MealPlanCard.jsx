@@ -1,5 +1,6 @@
 import { FaCalendarAlt, FaRegCalendarCheck, FaRegClock, FaEllipsisV, FaTrashAlt, FaEye } from 'react-icons/fa';
 import { useState } from 'react';
+import { getImageUrl } from '../../../../utils/imageUrl';
 
 export default function MealPlanCard({ mealPlan, onApply, onRemove, onView }) {
   const [showOptions, setShowOptions] = useState(false);
@@ -18,9 +19,12 @@ export default function MealPlanCard({ mealPlan, onApply, onRemove, onView }) {
       {/* Top section with image */}
       <div className="relative h-48">
         <img 
-          src={mealPlan.image} 
+          src={getImageUrl(mealPlan.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
           alt={mealPlan.title} 
           className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
         
@@ -118,9 +122,12 @@ export default function MealPlanCard({ mealPlan, onApply, onRemove, onView }) {
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center">
             <img 
-              src={mealPlan.author.avatar} 
+              src={getImageUrl(mealPlan.author.avatar) || 'https://randomuser.me/api/portraits/men/32.jpg'} 
               alt={mealPlan.author.name} 
               className="w-6 h-6 rounded-full mr-2"
+              onError={(e) => {
+                e.target.src = 'https://randomuser.me/api/portraits/men/32.jpg';
+              }}
             />
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {mealPlan.author.name}

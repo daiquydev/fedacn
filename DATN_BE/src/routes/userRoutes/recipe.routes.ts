@@ -3,8 +3,10 @@ import { UserRoles } from '~/constants/enums'
 import {
   bookmarkRecipeController,
   createCommentRecipeController,
+  createRecipeController,
   createRecipeForChefController,
   deleteCommentRecipeController,
+  deleteMyRecipeController,
   deleteRecipeForChefController,
   getAllRecipeCategoryController,
   getCommentRecipeController,
@@ -12,12 +14,14 @@ import {
   getListRecipesForChefController,
   getListRecipesForUserController,
   getListUserRecipesController,
+  getMyRecipesController,
   getRecicpeForChefController,
   getRecipeForUserController,
   getThreeTopRecipesController,
   likeRecipeController,
   unbookmarkRecipeController,
   unlikeRecipeController,
+  updateMyRecipeController,
   updateRecipeForChefController
 } from '~/controllers/userControllers/recipe.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
@@ -97,5 +101,30 @@ recipesRouter.get('/user/get-top-recipes', wrapRequestHandler(getThreeTopRecipes
 recipesRouter.get('/me/get-list-recipe', accessTokenValidator, wrapRequestHandler(getListMeRecipesController))
 
 recipesRouter.get('/user/get-list-recipe/:id', accessTokenValidator, wrapRequestHandler(getListUserRecipesController))
+
+// User recipe management endpoints
+recipesRouter.post(
+  '/user/create',
+  accessTokenValidator,
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
+  ]),
+  wrapRequestHandler(createRecipeController)
+)
+
+recipesRouter.get('/user/my-recipes', accessTokenValidator, wrapRequestHandler(getMyRecipesController))
+
+recipesRouter.put(
+  '/user/update/:recipe_id',
+  accessTokenValidator,
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
+  ]),
+  wrapRequestHandler(updateMyRecipeController)
+)
+
+recipesRouter.delete('/user/delete/:recipe_id', accessTokenValidator, wrapRequestHandler(deleteMyRecipeController))
 
 export default recipesRouter

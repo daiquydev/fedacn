@@ -29,6 +29,9 @@ import notificationsRouter from './routes/userRoutes/notification.routes'
 import mealPlansRouter from './routes/userRoutes/mealPlan.routes'
 import userMealSchedulesRouter from './routes/userRoutes/userMealSchedule.routes'
 import { trainRecipesRecommender } from './utils/recommend'
+import { initializeDatabase } from './config/initDatabase'
+import nutritionRouter from './routes/userRoutes/nutrition.routes'
+import lowdbRecipesRouter from './routes/userRoutes/lowdbRecipes.routes'
 
 const app: Express = express()
 const port = envConfig.port
@@ -59,9 +62,14 @@ app.use(
   })
 )
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'))
+
 // viết hàm chạy luôn khi server start
 
 trainRecipesRecommender()
+initializeDatabase() // Khởi tạo database và seed data
+
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello World!')
 })
@@ -81,6 +89,10 @@ app.use('/api/search', seachRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/meal-plans', mealPlansRouter)
 app.use('/api/user-meal-schedules', userMealSchedulesRouter)
+
+// New lowdb-based APIs
+app.use('/api/lowdb-recipes', lowdbRecipesRouter)
+app.use('/api/nutrition', nutritionRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)
 app.use('/api/admin', userAdminRouter)

@@ -6,12 +6,14 @@ export default function TextArea({
   errors,
   name,
   id,
-  rows = '4'
+  rows = '4',
+  isRequired = false
 }) {
   return (
     <div className='pb-2 flex flex-col justify-start'>
       <label className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
         {title}
+        {isRequired && <span className='text-red-500 ml-1'>*</span>}
       </label>
       <textarea
         id={id}

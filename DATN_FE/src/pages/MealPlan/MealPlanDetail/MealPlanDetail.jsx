@@ -3,8 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList, FaUtensils, FaFire, FaInfoCircle } from 'react-icons/fa'
 import { MdFastfood, MdClose, MdSchedule, MdDateRange } from 'react-icons/md'
 import { IoMdTime } from 'react-icons/io'
+import { toast } from 'react-toastify'
 import NutritionChart from './components/NutritionChart'
 import DayMealPlan from './components/DayMealPlan'
+import Comments from './components/Comments/Comments'
+import { getMealPlanDetail, likeMealPlan, unlikeMealPlan, bookmarkMealPlan, unbookmarkMealPlan, applyMealPlan } from '../../../services/mealPlanService'
+import { getImageUrl } from '../../../utils/imageUrl'
+import { MEAL_PLAN_CATEGORIES } from '../../../constants/mealPlan'
 
 export default function MealPlanDetail() {
   const { id } = useParams()
@@ -22,307 +27,124 @@ export default function MealPlanDetail() {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [startDate, setStartDate] = useState(getCurrentDate())
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [bookmarkData, setBookmarkData] = useState({
+    folder_name: '',
+    notes: ''
+  })
   
   // Thêm state để quản lý modal cách chế biến
   const [showCookingModal, setShowCookingModal] = useState(false)
   const [activeMeal, setActiveMeal] = useState(null)
-  
-  // Mock data - in a real app, this would be fetched from an API
+
+  // Fetch meal plan data from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
+    const fetchMealPlan = async () => {
       try {
-        // This is sample data - would come from an API in production
-        const mealPlanData = {
-          id: parseInt(id),
-          title: 'Thực đơn giảm cân 7 ngày',
-          description: 'Thực đơn giảm cân lành mạnh với đầy đủ dinh dưỡng cho 7 ngày, giúp bạn đạt được mục tiêu giảm cân một cách khoa học và bền vững.',
-          author: {
-            id: 1,
-            name: 'Nguyễn Văn A',
-            avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-            isVerified: true
-          },
-          duration: 7,
-          category: 'Giảm cân',
-          likes: 120,
-          comments: 24,
-          rating: 4.7,
-          ratingCount: 48,
-          createdAt: '2024-12-15T09:00:00Z',
-          image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000',
-          notes: '<p>Thực đơn này được thiết kế để cung cấp đủ dinh dưỡng trong khi giúp bạn tạo ra sự thiếu hụt calo để giảm cân. Uống ít nhất 2 lít nước mỗi ngày và kết hợp với tập thể dục 30 phút mỗi ngày để có kết quả tốt nhất.</p><p>Bạn có thể điều chỉnh khẩu phần ăn tùy theo nhu cầu calo cá nhân. Nếu bạn cảm thấy đói, hãy thêm protein và rau xanh thay vì carbs.</p>',
-          averageNutrition: {
-            calories: 1500,
-            protein: 90,
-            carbs: 150,
-            fat: 50
-          },
-          days: [
-            {
-              id: 1,
-              day: 1,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Yến mạch sữa hạnh nhân với trái cây',
-                  calories: 320,
-                  protein: 12,
-                  carbs: 45,
-                  fat: 10,
-                  image: 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Salad gà nướng với rau xanh',
-                  calories: 450,
-                  protein: 35,
-                  carbs: 25,
-                  fat: 20,
-                  image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Cá hồi nướng với măng tây',
-                  calories: 480,
-                  protein: 30,
-                  carbs: 40,
-                  fat: 15,
-                  image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'
-                }
-              ]
-            },
-            {
-              id: 2,
-              day: 2,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Bánh mì nguyên cám với trứng',
-                  calories: 350,
-                  protein: 18,
-                  carbs: 40,
-                  fat: 12,
-                  image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nướng bánh mì nguyên cám.</li><li>Chiên trứng với chút dầu olive.</li><li>Đặt trứng lên bánh mì, thêm rau xanh và gia vị.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Cơm gạo lứt với đậu hũ',
-                  calories: 420,
-                  protein: 20,
-                  carbs: 65,
-                  fat: 8,
-                  image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với nước theo tỉ lệ 1:2.</li><li>Cắt đậu hũ thành khối vuông và ướp với xì dầu, tỏi.</li><li>Chiên hoặc nướng đậu hũ đến khi vàng.</li><li>Phục vụ với rau xanh và sốt.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Thịt gà nướng rau củ',
-                  calories: 450,
-                  protein: 40,
-                  carbs: 30,
-                  fat: 15,
-                  image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt gà với gia vị, dầu olive trong 30 phút.</li><li>Cắt rau củ thành miếng vừa.</li><li>Xếp thịt gà và rau củ vào khay nướng.</li><li>Nướng ở 200°C trong khoảng 25-30 phút.</li></ol>'
-                }
-              ]
-            },
-            {
-              id: 3,
-              day: 3,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Sinh tố protein với trái cây',
-                  calories: 280,
-                  protein: 24,
-                  carbs: 30,
-                  fat: 8,
-                  image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1 muỗng bột protein, 240ml sữa hạnh nhân, 1 muỗng bơ đậu phộng.</li><li>Xay đến khi mịn.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Bún chả',
-                  calories: 550,
-                  protein: 30,
-                  carbs: 70,
-                  fat: 18,
-                  image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt với hành, tỏi, đường, nước mắm, tiêu.</li><li>Nướng thịt trên bếp than hoa.</li><li>Làm nước chấm với nước mắm, đường, tỏi, ớt, chanh.</li><li>Trụng bún.</li><li>Ăn kèm với rau sống, chả nướng và nước chấm.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Canh rau củ với một ít thịt heo nạc',
-                  calories: 320,
-                  protein: 25,
-                  carbs: 30,
-                  fat: 12,
-                  image: 'https://cdn.tgdd.vn/Files/2020/05/05/1253676/cach-nau-2-mon-canh-thit-xay-vien-rau-ru-va-canh-cai-thao-thit-xay-de-lam-day-du-dinh-duong-12.jpg',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Đun sôi nước với xương hoặc nước dùng.</li><li>Thêm hành tím, tỏi băm nhỏ.</li><li>Thêm các loại rau củ (cà rốt, khoai tây, bắp cải).</li><li>Thêm thịt heo nạc thái mỏng.</li><li>Nêm với muối, tiêu và hạt nêm.</li><li>Nấu cho đến khi rau củ mềm.</li></ol>'
-                }
-              ]
-            },
-            {
-              id: 4,
-              day: 4,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Phở gà',
-                  calories: 420,
-                  protein: 25,
-                  carbs: 60,
-                  fat: 10,
-                  image: 'https://images.unsplash.com/photo-1576577445504-6af96477db52?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ninh xương gà và các gia vị (hồi, quế, đinh hương) trong 4-6 giờ.</li><li>Luộc thịt gà và xé sợi.</li><li>Luộc bánh phở.</li><li>Xếp bánh phở vào tô, đặt thịt gà lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm hành, ngò, giá đỗ và ớt tươi.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Gỏi cuốn tôm thịt',
-                  calories: 220,
-                  protein: 15,
-                  carbs: 30,
-                  fat: 5,
-                  image: 'https://images.unsplash.com/photo-1562967914-01efa7e87832?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc tôm và thịt heo.</li><li>Nhúng bánh tráng vào nước ấm.</li><li>Xếp rau xà lách, bún, rau thơm, thịt heo và tôm lên bánh tráng.</li><li>Cuộn chặt bánh tráng lại.</li><li>Làm nước sốt tương từ tương hột, đường, tỏi, ớt và nước cốt chanh.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Cơm chiên dương châu',
-                  calories: 480,
-                  protein: 20,
-                  carbs: 65,
-                  fat: 15,
-                  image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu cơm trước và để nguội.</li><li>Cắt thịt xá xíu, lạp xưởng, thịt nguội thành hạt lựu.</li><li>Cắt nhỏ hành, tỏi, cà rốt, đậu Hà Lan.</li><li>Đánh trứng và làm trứng chén.</li><li>Xào tất cả nguyên liệu với cơm nguội.</li><li>Nêm gia vị vừa ăn.</li></ol>'
-                }
-              ]
-            },
-            {
-              id: 5,
-              day: 5,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Cháo yến mạch bơ đậu phộng',
-                  calories: 350,
-                  protein: 14,
-                  carbs: 42,
-                  fat: 14,
-                  image: 'https://preview.redd.it/i-made-peanut-butter-oatmeal-for-breakfast-this-morning-v0-o4g2gnencwvc1.jpg?width=640&crop=smart&auto=webp&s=e81787eb05fb12ab8da9da3d3f6c94e4c015f595',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 300ml nước hoặc sữa.</li><li>Thêm 1 muỗng canh bơ đậu phộng khi yến mạch đã mềm.</li><li>Thêm chút mật ong hoặc đường nâu và quế.</li><li>Trang trí với chuối thái lát và hạt chia.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Cơm tấm sườn nướng',
-                  calories: 650,
-                  protein: 35,
-                  carbs: 85,
-                  fat: 20,
-                  image: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp sườn với sả, tỏi, đường, nước mắm, dầu hào.</li><li>Nướng sườn trên lửa than hoặc trong lò.</li><li>Nấu cơm tấm.</li><li>Làm nước mắm pha với đường, chanh, tỏi, ớt.</li><li>Phục vụ kèm đồ chua, dưa leo, cà chua.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Bánh xèo',
-                  calories: 480,
-                  protein: 18,
-                  carbs: 50,
-                  fat: 25,
-                  image: 'https://bizweb.dktcdn.net/100/514/078/products/banh-xeo-3-mien-day-nghe-rosa-bien-hoa-dong-nai-2.jpg?v=1716438613080',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột gạo với nghệ, muối và nước cốt dừa.</li><li>Làm nóng chảo, thêm dầu và đổ bột vào.</li><li>Thêm thịt heo, tôm và giá đỗ.</li><li>Đậy nắp để bánh chín giòn.</li><li>Gấp đôi bánh lại và dùng với rau sống và nước mắm pha.</li></ol>'
-                }
-              ]
-            },
-            {
-              id: 6,
-              day: 6,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Bánh mì kẹp trứng cà chua',
-                  calories: 380,
-                  protein: 15,
-                  carbs: 45,
-                  fat: 18,
-                  image: 'https://images.unsplash.com/photo-1613769049987-b31b641f25b1?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Chiên trứng với muối và tiêu.</li><li>Thái mỏng cà chua.</li><li>Cắt đôi bánh mì và phết mayonnaise.</li><li>Đặt trứng, cà chua và một ít rau vào giữa bánh mì.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Bún bò Huế',
-                  calories: 520,
-                  protein: 30,
-                  carbs: 65,
-                  fat: 15,
-                  image: 'https://tourhue.vn/wp-content/uploads/2024/08/quan-bun-bo-hue-1.png',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu nước dùng từ xương bò, sả, gừng và các gia vị.</li><li>Thái thịt bò và giò heo thành lát mỏng.</li><li>Trụng bún rồi cho vào tô.</li><li>Xếp thịt bò và giò heo lên trên.</li><li>Chan nước dùng nóng vào.</li><li>Thêm rau sống, chanh và ớt.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Salad cá ngừ với trứng luộc',
-                  calories: 390,
-                  protein: 35,
-                  carbs: 20,
-                  fat: 18,
-                  image: 'https://monngonmoingay.com/wp-content/smush-webp/2017/08/salad-trung-ca-ngu-500.jpg.webp',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc trứng trong 8 phút, sau đó bóc vỏ và cắt làm tư.</li><li>Chuẩn bị rau xanh như xà lách, cải mầm, cà chua bi.</li><li>Mở hộp cá ngừ, để ráo nước.</li><li>Trộn tất cả nguyên liệu với dầu olive, chanh và gia vị.</li></ol>'
-                }
-              ]
-            },
-            {
-              id: 7,
-              day: 7,
-              meals: [
-                { 
-                  type: 'Sáng', 
-                  content: 'Pancake bột yến mạch với mật ong',
-                  calories: 400,
-                  protein: 12,
-                  carbs: 60,
-                  fat: 10,
-                  image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Trộn bột yến mạch, baking powder, một chút muối.</li><li>Thêm sữa, trứng và khuấy đều.</li><li>Đổ từng muỗng bột vào chảo nóng.</li><li>Chiên đến khi vàng hai mặt.</li><li>Phục vụ với mật ong và một ít quả mọng.</li></ol>'
-                },
-                { 
-                  type: 'Trưa', 
-                  content: 'Cơm gà Hải Nam',
-                  calories: 580,
-                  protein: 32,
-                  carbs: 75,
-                  fat: 15,
-                  image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Luộc gà nguyên con với gừng, hành lá.</li><li>Dùng nước luộc gà để nấu cơm.</li><li>Thái gà thành miếng vừa ăn.</li><li>Làm nước sốt từ gừng, tỏi, dầu mè.</li><li>Phục vụ cơm với gà và sốt, kèm dưa chuột.</li></ol>'
-                },
-                { 
-                  type: 'Tối', 
-                  content: 'Súp kem nấm với bánh mì nướng',
-                  calories: 360,
-                  protein: 10,
-                  carbs: 45,
-                  fat: 16,
-                  image: 'https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2022/2/21/1016491/Sup-Nam-Banh-My.jpg',
-                  cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Xào hành tây, tỏi với bơ.</li><li>Thêm nấm đã thái nhỏ và xào đến khi vàng.</li><li>Thêm bột mì, khuấy đều.</li><li>Từ từ thêm nước dùng gà và kem tươi.</li><li>Nấu nhỏ lửa đến khi súp sánh.</li><li>Nướng bánh mì với một ít bơ tỏi.</li><li>Phục vụ súp nóng với bánh mì.</li></ol>'
-                }
-              ]
-            }
-          ]
-        };
+        setLoading(true)
+        setError(null)
         
-        setMealPlan(mealPlanData);
-        setLikesCount(mealPlanData.likes);
-        setLoading(false);
+        const response = await getMealPlanDetail(id)
+        const mealPlanData = response.data.result
+        
+        // Transform API data to match component structure
+        const transformedData = {
+          id: mealPlanData._id,
+          title: mealPlanData.title,
+          description: mealPlanData.description,
+          author: {
+            id: mealPlanData.author_id._id,
+            name: mealPlanData.author_id.name,
+            avatar: getImageUrl(mealPlanData.author_id.avatar) || 'https://randomuser.me/api/portraits/men/32.jpg',
+            isVerified: false // You can add this logic based on your backend
+          },
+          duration: mealPlanData.duration,
+          category: MEAL_PLAN_CATEGORIES[mealPlanData.category] || 'Khác',
+          likes: mealPlanData.likes_count,
+          comments: mealPlanData.comments_count,
+          rating: mealPlanData.rating || 0,
+          ratingCount: mealPlanData.rating_count || 0,
+          createdAt: mealPlanData.createdAt,
+          image: getImageUrl(mealPlanData.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+          notes: mealPlanData.description, // Use description as notes for now
+          averageNutrition: {
+            calories: mealPlanData.target_calories || calculateAverageNutrition(mealPlanData.days).calories,
+            protein: mealPlanData.target_protein || calculateAverageNutrition(mealPlanData.days).protein,
+            carbs: mealPlanData.target_carbs || calculateAverageNutrition(mealPlanData.days).carbs,
+            fat: mealPlanData.target_fat || calculateAverageNutrition(mealPlanData.days).fat
+          },
+          days: mealPlanData.days.map(day => ({
+            id: day._id,
+            day: day.day_number,
+            meals: day.meals.map(meal => ({
+              type: getMealTypeName(meal.meal_type),
+              content: meal.name,
+              calories: meal.calories || 0,
+              protein: meal.protein || 0,
+              carbs: meal.carbs || 0,
+              fat: meal.fat || 0,
+              image: getImageUrl(meal.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+              cooking: meal.instructions || '<p>Hướng dẫn chế biến sẽ được cập nhật sớm.</p>'
+            }))
+          }))
+        }
+        
+        setMealPlan(transformedData)
+        setLikesCount(transformedData.likes)
+        setLiked(mealPlanData.is_liked || false)
+        setSaved(mealPlanData.is_bookmarked || false)
+        setLoading(false)
       } catch (err) {
-        setError('Không thể tải thông tin thực đơn. Vui lòng thử lại sau.');
-        setLoading(false);
+        setError('Không thể tải thông tin thực đơn. Vui lòng thử lại sau.')
+        setLoading(false)
+        toast.error('Không thể tải thông tin thực đơn')
       }
-    }, 500);
-  }, [id]);
+    }
+
+    if (id) {
+      fetchMealPlan()
+    }
+  }, [id])
+
+  // Helper function to calculate average nutrition from days
+  const calculateAverageNutrition = (days) => {
+    if (!days || days.length === 0) {
+      return { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    }
+
+    const totalNutrition = days.reduce((total, day) => {
+      const dayNutrition = day.meals.reduce((dayTotal, meal) => ({
+        calories: dayTotal.calories + (meal.calories || 0),
+        protein: dayTotal.protein + (meal.protein || 0),
+        carbs: dayTotal.carbs + (meal.carbs || 0),
+        fat: dayTotal.fat + (meal.fat || 0)
+      }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
+
+      return {
+        calories: total.calories + dayNutrition.calories,
+        protein: total.protein + dayNutrition.protein,
+        carbs: total.carbs + dayNutrition.carbs,
+        fat: total.fat + dayNutrition.fat
+      }
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0 })
+
+    return {
+      calories: Math.round(totalNutrition.calories / days.length),
+      protein: Math.round(totalNutrition.protein / days.length),
+      carbs: Math.round(totalNutrition.carbs / days.length),
+      fat: Math.round(totalNutrition.fat / days.length)
+    }
+  }
+
+  // Helper function to convert meal type number to name
+  const getMealTypeName = (mealType) => {
+    const mealTypeMap = {
+      1: 'Sáng',
+      2: 'Trưa', 
+      3: 'Tối',
+      4: 'Xế'
+    }
+    return mealTypeMap[mealType] || 'Khác'
+  }
 
   // Hàm lấy ngày hiện tại theo format YYYY-MM-DD
   function getCurrentDate() {
@@ -333,31 +155,56 @@ export default function MealPlanDetail() {
     return `${year}-${month}-${day}`;
   }
 
-  const handleLike = () => {
-    if (liked) {
-      setLikesCount(prev => prev - 1);
-    } else {
-      setLikesCount(prev => prev + 1);
+  const handleLike = async () => {
+    try {
+      if (liked) {
+        await mealPlanApi.unlikeMealPlan(id)
+        setLikesCount(prev => Math.max(prev - 1, 0))
+        setLiked(false)
+        toast.success('Đã bỏ thích thực đơn!')
+      } else {
+        await mealPlanApi.likeMealPlan(id)
+        setLikesCount(prev => prev + 1)
+        setLiked(true)
+        toast.success('Đã thích thực đơn!')
+      }
+    } catch (err) {
+      toast.error('Không thể thực hiện thao tác này')
     }
-    setLiked(!liked);
-  };
+  }
 
   // Cập nhật hàm handleSave để mở modal
   const handleSave = () => {
     if (!saved) {
-      setShowSaveModal(true);
+      setShowSaveModal(true)
     } else {
-      setSaved(false);
-      // Xử lý bỏ lưu thực đơn ở đây (gọi API)
+      handleUnsave()
     }
-  };
+  }
+
+  // Hàm bỏ lưu thực đơn
+  const handleUnsave = async () => {
+    try {
+      await mealPlanApi.unbookmarkMealPlan(id)
+      setSaved(false)
+      toast.success('Đã bỏ lưu thực đơn!')
+    } catch (err) {
+      toast.error('Không thể bỏ lưu thực đơn')
+    }
+  }
 
   // Xác nhận lưu thực đơn
-  const confirmSave = () => {
-    setSaved(true);
-    setShowSaveModal(false);
-    // Gọi API lưu thực đơn ở đây
-  };
+  const confirmSave = async () => {
+    try {
+      await mealPlanApi.bookmarkMealPlan(id, bookmarkData.folder_name, bookmarkData.notes)
+      setSaved(true)
+      setShowSaveModal(false)
+      setBookmarkData({ folder_name: '', notes: '' }) // Reset form
+      toast.success('Đã lưu thực đơn!')
+    } catch (err) {
+      toast.error('Không thể lưu thực đơn')
+    }
+  }
 
   // Mở modal áp dụng thực đơn
   const openApplyModal = () => {
@@ -366,11 +213,16 @@ export default function MealPlanDetail() {
   };
 
   // Xác nhận áp dụng thực đơn
-  const confirmApply = () => {
-    setShowApplyModal(false);
-    setShowSuccessModal(true);
-    // Gọi API áp dụng thực đơn ở đây với ngày bắt đầu là startDate
-  };
+  const confirmApply = async () => {
+    try {
+      await mealPlanApi.applyMealPlan(id, { start_date: startDate })
+      setShowApplyModal(false)
+      setShowSuccessModal(true)
+      toast.success('Đã áp dụng thực đơn thành công!')
+    } catch (err) {
+      toast.error('Không thể áp dụng thực đơn')
+    }
+  }
 
   // Chuyển hướng đến trang lịch thực đơn
   const goToMealSchedule = () => {
@@ -468,8 +320,11 @@ export default function MealPlanDetail() {
                     ))}
                     <span className="ml-1 text-sm">{mealPlan.rating} ({mealPlan.ratingCount})</span>
                   </div>
-                  <span className="flex items-center text-sm">
+                  <span className="flex items-center text-sm mr-4">
                     <IoMdTime className="mr-1" /> {mealPlan.duration} ngày
+                  </span>
+                  <span className="text-sm bg-green-600 px-2 py-1 rounded-full">
+                    {mealPlan.category}
                   </span>
                 </div>
                 <div className="flex items-center">
@@ -631,6 +486,14 @@ export default function MealPlanDetail() {
               )
             ))}
           </div>
+          
+          {/* Comments section */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <FaRegComment className="mr-2 text-green-600" /> Bình luận
+            </h2>
+            <Comments mealPlanId={id} />
+          </div>
         </div>
         
         {/* Sidebar - 1/3 width on desktop */}
@@ -725,12 +588,37 @@ export default function MealPlanDetail() {
               <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FaBookmark className="text-green-600 dark:text-green-400 text-3xl" />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 mb-2">
-                Bạn muốn lưu "{mealPlan.title}" vào danh sách thực đơn của mình?
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Lưu "{mealPlan.title}" vào danh sách thực đơn của bạn
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Thực đơn sẽ được lưu vào trang "Thực đơn của tôi" để dễ dàng truy cập sau này.
-              </p>
+              
+              {/* Form input */}
+              <div className="space-y-4 text-left">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Thư mục (không bắt buộc)
+                  </label>
+                  <input
+                    type="text"
+                    value={bookmarkData.folder_name}
+                    onChange={(e) => setBookmarkData(prev => ({ ...prev, folder_name: e.target.value }))}
+                    placeholder="VD: Thực đơn giảm cân"
+                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ghi chú (không bắt buộc)
+                  </label>
+                  <textarea
+                    value={bookmarkData.notes}
+                    onChange={(e) => setBookmarkData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="VD: Dành cho tháng 4"
+                    rows={3}
+                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  />
+                </div>
+              </div>
             </div>
             
             <div className="flex flex-col space-y-3">
@@ -947,4 +835,4 @@ export default function MealPlanDetail() {
       )}
     </div>
   )
-} 
+}

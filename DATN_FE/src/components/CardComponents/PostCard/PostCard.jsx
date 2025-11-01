@@ -23,6 +23,7 @@ import { AppContext } from '../../../contexts/app.context'
 import { SocketContext } from '../../../contexts/socket.context'
 import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
+import { getImageUrl } from '../../../utils/imageUrl'
 
 export default function PostCard({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -393,7 +394,7 @@ function CheckLengthOfImages({ images, navigate, data }) {
     return (
       <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full rounded-lg' src={images[0]} />
+          <img loading='lazy' className='max-w-full rounded-lg' src={getImageUrl(images[0])} />
         </div>
       </div>
     )
@@ -403,10 +404,10 @@ function CheckLengthOfImages({ images, navigate, data }) {
       <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
         <div className='flex justify-between gap-1'>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full object-cover rounded-tl-lg' src={images[0]} />
+            <img loading='lazy' className='max-w-full object-cover rounded-tl-lg' src={getImageUrl(images[0])} />
           </div>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full object-cover rounded-tr-lg' src={images[1]} />
+            <img loading='lazy' className='max-w-full object-cover rounded-tr-lg' src={getImageUrl(images[1])} />
           </div>
         </div>
       </div>
@@ -420,17 +421,17 @@ function CheckLengthOfImages({ images, navigate, data }) {
             <img
               loading='lazy'
               className='max-w-full lg:min-w-[10rem] object-cover rounded-tl-lg rounded-bl-lg'
-              src={images[0]}
+              src={getImageUrl(images[0])}
             />
           </div>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full lg:min-w-[10rem] object-cover' src={images[1]} />
+            <img loading='lazy' className='max-w-full lg:min-w-[10rem] object-cover' src={getImageUrl(images[1])} />
           </div>
           <div className='flex'>
             <img
               loading='lazy'
               className='max-w-full lg:min-w-[10rem] object-cover rounded-tr-lg rounded-br-lg'
-              src={images[2]}
+              src={getImageUrl(images[2])}
             />
           </div>
         </div>
@@ -445,20 +446,20 @@ function CheckLengthOfImages({ images, navigate, data }) {
             <img
               loading='lazy'
               className='max-w-full min-w-[5rem]  lg:min-w-[10rem] object-cover rounded-tl-lg rounded-bl-lg'
-              src={images[0]}
+              src={getImageUrl(images[0])}
             />
           </div>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover' src={images[1]} />
+            <img loading='lazy' className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover' src={getImageUrl(images[1])} />
           </div>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover ' src={images[2]} />
+            <img loading='lazy' className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover ' src={getImageUrl(images[2])} />
           </div>
           <div className='flex'>
             <img
               loading='lazy'
               className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover rounded-tr-lg rounded-br-lg'
-              src={images[3]}
+              src={getImageUrl(images[3])}
             />
           </div>
         </div>
@@ -470,21 +471,21 @@ function CheckLengthOfImages({ images, navigate, data }) {
     <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
       <div className='flex justify-between gap-1 mb-1'>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-tl-lg' src={images[0]} />
+          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-tl-lg' src={getImageUrl(images[0])} />
         </div>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover' src={images[1]} />
+          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover' src={getImageUrl(images[1])} />
         </div>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-tr-lg' src={images[2]} />
+          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-tr-lg' src={getImageUrl(images[2])} />
         </div>
       </div>
       <div className='flex justify-between gap-1'>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-bl-lg' src={images[3]} />
+          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-bl-lg' src={getImageUrl(images[3])} />
         </div>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-br-lg' src={images[4]} />
+          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-br-lg' src={getImageUrl(images[4])} />
         </div>
       </div>
     </div>
