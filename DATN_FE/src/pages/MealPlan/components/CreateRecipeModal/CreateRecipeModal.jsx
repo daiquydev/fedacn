@@ -16,6 +16,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
   const [imageSource, setImageSource] = useState('file')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showNutrition, setShowNutrition] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
 
   const {
     register,
@@ -44,6 +45,10 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
       carbohydrate: ''
     }
   })
+
+  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBDLJALtNjyoYOADn7kjaJmQvMsQsjTK9Q'
+  const GEMINI_MODEL = 'gemini-2.5-flash'
+  const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 
   // Ingredient management
   const addIngredient = () => {
@@ -161,6 +166,8 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
   const watchedRegion = watch('region')
   const watchedProcessing = watch('processing_food')
   const watchedCategory = watch('category_recipe_id')
+  const watchedTitle = watch('title')
+  const watchedDescription = watch('description')
 
   useEffect(() => {
     if (categoriesFromApi.length > 0 && watchedCategory === 'DEFAULT') {
@@ -178,6 +185,153 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
   ]
     .filter(Boolean)
     .join(' • ')
+
+  const mapDifficultyToValue = (difficulty = '') => {
+    const normalized = difficulty.toString().trim().toLowerCase()
+    if (normalized.includes('easy') || normalized.includes('dễ')) return '0'
+    if (normalized.includes('medium') || normalized.includes('trung')) return '1'
+    if (normalized.includes('hard') || normalized.includes('khó')) return '2'
+    return watchedDifficulty
+  }
+
+  const mapRegionToValue = (region = '') => {
+    const normalized = region.toString().trim().toLowerCase()
+    if (normalized.includes('bắc') || normalized.includes('north')) return '0'
+    if (normalized.includes('trung') || normalized.includes('central')) return '1'
+    if (normalized.includes('nam') || normalized.includes('south')) return '2'
+    if (normalized.includes('á') || normalized.includes('asia')) return '3'
+    if (normalized.includes('âu') || normalized.includes('euro')) return '4'
+    return watchedRegion
+  }
+
+  const mapProcessingToValue = (processing = '') => {
+    const normalized = processing.toString().trim().toLowerCase()
+    const option = processingOptions.find((item) => item.label.toLowerCase() === normalized || item.value.toLowerCase() === normalized)
+    return option?.value || watchedProcessing
+  }
+
+  const extractJsonFromText = (text = '') => {
+    if (!text) return null
+    const codeBlockMatch = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*([\s\S]*?)```/i)
+    const jsonString = codeBlockMatch ? codeBlockMatch[1] : text
+    try {
+      return JSON.parse(jsonString)
+    } catch (error) {
+      return null
+    }
+  }
+
+  const handleGenerateWithAI = async () => {
+    if (!watchedTitle.trim() || !watchedDescription.trim()) {
+      toast.error('Vui lòng nhập tên và mô tả món ăn trước khi dùng AI')
+      return
+    }
+
+    if (!GEMINI_API_KEY) {
+      toast.error('Chưa cấu hình Google Gemini API key')
+      return
+    }
+
+    const prompt = `Bạn là đầu bếp dinh dưỡng. Tạo công thức chi tiết dựa trên:\n- Tên món: ${watchedTitle}\n- Mô tả mong muốn: ${watchedDescription}\nTrả về JSON với các trường:\n{\n  "description": "...",\n  "category": "...",\n  "time_minutes": number,\n  "difficulty_level": "easy|medium|hard",\n  "region": "...",\n  "processing_method": "...",\n  "ingredients": [{ "name": "...", "amount": "...", "unit": "..." }],\n  "instructions": ["Bước 1 ...", "..."],\n  "tags": ["..."],\n  "nutrition_per_100g": {\n    "calories": number,\n    "protein": number,\n    "fat": number,\n    "carbs": number\n  },\n  "notes": "..."\n}\nKhông tạo ảnh, không đề cập đến yêu cầu. Nếu thiếu dữ liệu, ghi rõ lý do.`
+
+    setAiLoading(true)
+    try {
+      const response = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: prompt }]
+            }
+          ]
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Không thể kết nối tới Google Gemini')
+      }
+
+      const result = await response.json()
+      const textResponse = result?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('\n')
+      const parsed = extractJsonFromText(textResponse)
+
+      if (!parsed) {
+        throw new Error('AI không trả về dữ liệu hợp lệ, vui lòng thử lại')
+      }
+
+      setValue('description', parsed.description || watchedDescription, { shouldDirty: true })
+      setValue('content', parsed.description || watchedDescription, { shouldDirty: true })
+      if (parsed.category && categoriesFromApi.length > 0) {
+        const matchedCategory = categoriesFromApi.find((cat) => {
+          const label = (cat.category_recipe_name || cat.name || '').toString().toLowerCase()
+          return label.includes(parsed.category.toString().toLowerCase())
+        })
+        if (matchedCategory?._id) {
+          setValue('category_recipe_id', matchedCategory._id.toString(), { shouldDirty: true })
+        }
+      }
+
+      if (parsed.time_minutes) {
+        setValue('time', String(parsed.time_minutes), { shouldDirty: true })
+      }
+
+      if (parsed.difficulty_level) {
+        setValue('difficult_level', mapDifficultyToValue(parsed.difficulty_level), { shouldDirty: true })
+      }
+
+      if (parsed.region) {
+        setValue('region', mapRegionToValue(parsed.region), { shouldDirty: true })
+      }
+
+      if (parsed.processing_method) {
+        setValue('processing_food', mapProcessingToValue(parsed.processing_method), { shouldDirty: true })
+      }
+
+      if (Array.isArray(parsed.ingredients) && parsed.ingredients.length > 0) {
+        const mappedIngredients = parsed.ingredients.map((item) => ({
+          name: item.name || '',
+          amount: item.amount || '',
+          unit: item.unit || ''
+        }))
+        setIngredients(mappedIngredients)
+      }
+
+      if (Array.isArray(parsed.instructions) && parsed.instructions.length > 0) {
+        setInstructions(parsed.instructions.map((step) => step || ''))
+      }
+
+      if (Array.isArray(parsed.tags) && parsed.tags.length > 0) {
+        setTags(parsed.tags.map((tag) => tag || ''))
+      }
+
+      if (parsed.nutrition_per_100g) {
+        const nutrition = parsed.nutrition_per_100g
+        setValue('energy', nutrition.calories ?? '', { shouldDirty: true })
+        setValue('protein', nutrition.protein ?? '', { shouldDirty: true })
+        setValue('fat', nutrition.fat ?? '', { shouldDirty: true })
+        setValue('carbohydrate', nutrition.carbs ?? '', { shouldDirty: true })
+        setShowNutrition(true)
+      }
+
+      if (parsed.notes) {
+        setValue('content', `${parsed.description || watchedDescription}\n\nGhi chú: ${parsed.notes}`, {
+          shouldDirty: true
+        })
+      }
+
+      setShowAdvanced(true)
+      toast.success('Đã lấy gợi ý từ AI, bạn có thể điều chỉnh trước khi lưu')
+    } catch (error) {
+      console.error(error)
+      toast.error(error.message || 'Không thể tạo công thức bằng AI, vui lòng thử lại')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   // Ensure the correct field resets when switching source
   useEffect(() => {
@@ -298,6 +452,18 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
             rows={3}
             isRequired
           />
+
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>Nhập tên và mô tả trước, sau đó dùng AI để điền nhanh các trường còn lại.</p>
+            <button
+              type='button'
+              onClick={handleGenerateWithAI}
+              disabled={aiLoading}
+              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-60 disabled:cursor-not-allowed'
+            >
+              {aiLoading ? 'Đang lấy dữ liệu AI...' : 'Dùng AI điền thông tin'}
+            </button>
+          </div>
 
           {/* Image */}
           <div>

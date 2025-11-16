@@ -1563,11 +1563,10 @@ class PostService {
       })
     }
 
-    // Tăng applied_count cho meal plan
-    await MealPlanModel.findByIdAndUpdate(
-      meal_plan_id,
-      { $inc: { applied_count: 1 } }
-    )
+    // Tăng shared_count cho meal plan
+    await MealPlanModel.findByIdAndUpdate(meal_plan_id, {
+      $inc: { shared_count: 1 }
+    })
 
     // Tạo notification nếu không phải tác giả meal plan
     if (mealPlan.author_id.toString() !== user_id) {

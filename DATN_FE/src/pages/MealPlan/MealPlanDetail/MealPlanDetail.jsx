@@ -1,137 +1,327 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FaArrowLeft, FaRegHeart, FaHeart, FaRegComment, FaCheckCircle, FaRegClock, FaShare, FaStar, FaPrint, FaBookmark, FaRegBookmark, FaCalendarAlt, FaCheckSquare, FaBell, FaClipboardList, FaUtensils, FaFire, FaInfoCircle } from 'react-icons/fa'
+import {
+  FaArrowLeft,
+  FaRegHeart,
+  FaHeart,
+  FaRegComment,
+  FaCheckCircle,
+  FaShare,
+  FaStar,
+  FaPrint,
+  FaCalendarAlt,
+  FaCheckSquare,
+  FaBell,
+  FaClipboardList,
+  FaUtensils,
+  FaInfoCircle,
+  FaUserFriends,
+  FaEdit
+} from 'react-icons/fa'
 import { MdFastfood, MdClose, MdSchedule, MdDateRange } from 'react-icons/md'
 import { IoMdTime } from 'react-icons/io'
 import { toast } from 'react-toastify'
-import NutritionChart from './components/NutritionChart'
 import DayMealPlan from './components/DayMealPlan'
 import Comments from './components/Comments/Comments'
-import { getMealPlanDetail, likeMealPlan, unlikeMealPlan, bookmarkMealPlan, unbookmarkMealPlan, applyMealPlan } from '../../../services/mealPlanService'
+import {
+  getMealPlanDetail,
+  likeMealPlan as likeMealPlanApi,
+  unlikeMealPlan as unlikeMealPlanApi,
+  applyMealPlan as applyMealPlanApi,
+  createMealPlan as createMealPlanApi,
+  shareMealPlan as shareMealPlanApi
+} from '../../../services/mealPlanService'
 import { getImageUrl } from '../../../utils/imageUrl'
 import { MEAL_PLAN_CATEGORIES } from '../../../constants/mealPlan'
+import { getActiveMealSchedule } from '../../../services/userMealScheduleService'
+import { AppContext } from '../../../contexts/app.context'
 
 export default function MealPlanDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { profile } = useContext(AppContext)
   const [mealPlan, setMealPlan] = useState(null)
+  const [mealPlanRaw, setMealPlanRaw] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeDay, setActiveDay] = useState(1)
   const [liked, setLiked] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
-  
-  // Thêm các state mới
-  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [engagementStats, setEngagementStats] = useState({ saves: 0, shares: 0, applies: 0 })
+  const [showCloneModal, setShowCloneModal] = useState(false)
+  const [cloneForm, setCloneForm] = useState({ title: '', isPublic: false })
+  const [cloneLoading, setCloneLoading] = useState(false)
   const [showApplyModal, setShowApplyModal] = useState(false)
+  const [applyLoading, setApplyLoading] = useState(false)
   const [startDate, setStartDate] = useState(getCurrentDate())
+  const [applyMode, setApplyMode] = useState('schedule')
+  const [activeSchedule, setActiveSchedule] = useState(null)
+  const [checkingActiveSchedule, setCheckingActiveSchedule] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [bookmarkData, setBookmarkData] = useState({
-    folder_name: '',
-    notes: ''
-  })
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [shareForm, setShareForm] = useState({ content: '', privacy: '0' })
+  const [shareLoading, setShareLoading] = useState(false)
+  const commentsRef = useRef(null)
+  const [friendsApplying] = useState([])
+  const [reloadToken, setReloadToken] = useState(0)
   
   // Thêm state để quản lý modal cách chế biến
   const [showCookingModal, setShowCookingModal] = useState(false)
   const [activeMeal, setActiveMeal] = useState(null)
-
-  // Fetch meal plan data from API
-  useEffect(() => {
-    const fetchMealPlan = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const response = await getMealPlanDetail(id)
-        const mealPlanData = response.data.result
-        
-        // Transform API data to match component structure
-        const transformedData = {
-          id: mealPlanData._id,
-          title: mealPlanData.title,
-          description: mealPlanData.description,
-          author: {
-            id: mealPlanData.author_id._id,
-            name: mealPlanData.author_id.name,
-            avatar: getImageUrl(mealPlanData.author_id.avatar) || 'https://randomuser.me/api/portraits/men/32.jpg',
-            isVerified: false // You can add this logic based on your backend
-          },
-          duration: mealPlanData.duration,
-          category: MEAL_PLAN_CATEGORIES[mealPlanData.category] || 'Khác',
-          likes: mealPlanData.likes_count,
-          comments: mealPlanData.comments_count,
-          rating: mealPlanData.rating || 0,
-          ratingCount: mealPlanData.rating_count || 0,
-          createdAt: mealPlanData.createdAt,
-          image: getImageUrl(mealPlanData.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-          notes: mealPlanData.description, // Use description as notes for now
-          averageNutrition: {
-            calories: mealPlanData.target_calories || calculateAverageNutrition(mealPlanData.days).calories,
-            protein: mealPlanData.target_protein || calculateAverageNutrition(mealPlanData.days).protein,
-            carbs: mealPlanData.target_carbs || calculateAverageNutrition(mealPlanData.days).carbs,
-            fat: mealPlanData.target_fat || calculateAverageNutrition(mealPlanData.days).fat
-          },
-          days: mealPlanData.days.map(day => ({
-            id: day._id,
-            day: day.day_number,
-            meals: day.meals.map(meal => ({
-              type: getMealTypeName(meal.meal_type),
-              content: meal.name,
-              calories: meal.calories || 0,
-              protein: meal.protein || 0,
-              carbs: meal.carbs || 0,
-              fat: meal.fat || 0,
-              image: getImageUrl(meal.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-              cooking: meal.instructions || '<p>Hướng dẫn chế biến sẽ được cập nhật sớm.</p>'
-            }))
-          }))
-        }
-        
-        setMealPlan(transformedData)
-        setLikesCount(transformedData.likes)
-        setLiked(mealPlanData.is_liked || false)
-        setSaved(mealPlanData.is_bookmarked || false)
-        setLoading(false)
-      } catch (err) {
-        setError('Không thể tải thông tin thực đơn. Vui lòng thử lại sau.')
-        setLoading(false)
-        toast.error('Không thể tải thông tin thực đơn')
-      }
+  const sourceMeta = useMemo(() => {
+    const tags = mealPlanRaw?.tags
+    if (!Array.isArray(tags)) return null
+    const marker = tags.find((tag) => typeof tag === 'string' && tag.startsWith('source:'))
+    if (!marker) return null
+    const payload = marker.replace('source:', '')
+    const [planId, ownerName] = payload.split('|')
+    return {
+      planId,
+      ownerName: ownerName || 'Không xác định'
     }
+  }, [mealPlanRaw?.tags])
+  const isOwner = useMemo(() => {
+    if (!mealPlanRaw?.author_id?._id || !profile?._id) return false
+    return mealPlanRaw.author_id._id === profile._id
+  }, [mealPlanRaw?.author_id?._id, profile?._id])
+  const triggerReload = useCallback(() => setReloadToken((prev) => prev + 1), [])
 
-    if (id) {
-      fetchMealPlan()
+  const loadMealPlan = useCallback(async () => {
+    if (!id) return
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await getMealPlanDetail(id)
+      const mealPlanData = response.data.result
+
+      const nutritionSnapshot = calculateAverageNutrition(mealPlanData)
+
+      const transformedData = {
+        id: mealPlanData._id,
+        title: mealPlanData.title,
+        description: mealPlanData.description,
+        author: {
+          id: mealPlanData.author_id._id,
+          name: mealPlanData.author_id.name,
+          avatar: getImageUrl(mealPlanData.author_id.avatar) || 'https://randomuser.me/api/portraits/men/32.jpg',
+          isVerified: Boolean(mealPlanData.author_id.is_chef || mealPlanData.author_id.is_verified)
+        },
+        duration: mealPlanData.duration,
+        category: MEAL_PLAN_CATEGORIES[mealPlanData.category] || 'Khác',
+        likes: mealPlanData.likes_count,
+        comments: mealPlanData.comments_count,
+        rating: mealPlanData.rating || 0,
+        ratingCount: mealPlanData.rating_count || 0,
+        createdAt: mealPlanData.createdAt,
+        image: getImageUrl(mealPlanData.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+        notes: mealPlanData.description,
+        averageNutrition: nutritionSnapshot,
+        days: mealPlanData.days.map((day) => ({
+          id: day._id,
+          day: day.day_number,
+          meals: day.meals.map((meal) => {
+            const cookingPayload = buildCookingPayload(meal)
+            return {
+              type: getMealTypeName(meal.meal_type),
+              content: meal.recipe_id?.title || meal.name,
+              calories: meal.calories || meal.recipe_id?.energy || 0,
+              protein: meal.protein || meal.recipe_id?.protein || 0,
+              carbs: meal.carbs || meal.recipe_id?.carbohydrate || 0,
+              fat: meal.fat || meal.recipe_id?.fat || 0,
+              image:
+                getImageUrl(meal.image || meal.recipe_id?.image) ||
+                'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+              cooking: cookingPayload.html,
+              cookingSteps: cookingPayload.steps,
+              hasCooking: cookingPayload.hasCooking,
+              ingredients: normalizeMealIngredients(meal)
+            }
+          })
+        }))
+      }
+
+      setMealPlan(transformedData)
+      setMealPlanRaw(mealPlanData)
+      setLikesCount(transformedData.likes)
+      setLiked(mealPlanData.is_liked || false)
+      setEngagementStats({
+        saves: mealPlanData.bookmarks_count || 0,
+        shares: mealPlanData.shared_count || 0,
+        applies: mealPlanData.applied_count || 0
+      })
+      setShareForm((prev) => ({
+        ...prev,
+        content: prev.content?.trim() ? prev.content : ''
+      }))
+    } catch (err) {
+      setError('Không thể tải thông tin thực đơn. Vui lòng thử lại sau.')
+      toast.error('Không thể tải thông tin thực đơn')
+    } finally {
+      setLoading(false)
     }
   }, [id])
 
-  // Helper function to calculate average nutrition from days
-  const calculateAverageNutrition = (days) => {
-    if (!days || days.length === 0) {
-      return { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  useEffect(() => {
+    loadMealPlan()
+  }, [loadMealPlan, reloadToken])
+
+  // Helper function to calculate average nutrition from raw plan data
+  const calculateAverageNutrition = (planData) => {
+    const days = planData?.days || []
+    if (!days.length) {
+      return {
+        calories: planData?.target_calories || 0,
+        protein: planData?.target_protein || 0,
+        carbs: planData?.target_carbs || 0,
+        fat: planData?.target_fat || 0
+      }
     }
 
-    const totalNutrition = days.reduce((total, day) => {
-      const dayNutrition = day.meals.reduce((dayTotal, meal) => ({
-        calories: dayTotal.calories + (meal.calories || 0),
-        protein: dayTotal.protein + (meal.protein || 0),
-        carbs: dayTotal.carbs + (meal.carbs || 0),
-        fat: dayTotal.fat + (meal.fat || 0)
-      }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
+    const totals = days.reduce(
+      (acc, day) => {
+        const dayTotals = day.meals.reduce(
+          (mealAcc, meal) => ({
+            calories: mealAcc.calories + (meal.calories || meal.recipe_id?.energy || 0),
+            protein: mealAcc.protein + (meal.protein || meal.recipe_id?.protein || 0),
+            carbs: mealAcc.carbs + (meal.carbs || meal.recipe_id?.carbohydrate || 0),
+            fat: mealAcc.fat + (meal.fat || meal.recipe_id?.fat || 0)
+          }),
+          { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        )
 
-      return {
-        calories: total.calories + dayNutrition.calories,
-        protein: total.protein + dayNutrition.protein,
-        carbs: total.carbs + dayNutrition.carbs,
-        fat: total.fat + dayNutrition.fat
+        return {
+          calories: acc.calories + dayTotals.calories,
+          protein: acc.protein + dayTotals.protein,
+          carbs: acc.carbs + dayTotals.carbs,
+          fat: acc.fat + dayTotals.fat
+        }
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    )
+
+    const divisor = Math.max(days.length, 1)
+    return {
+      calories: Math.round(totals.calories / divisor),
+      protein: Math.round(totals.protein / divisor),
+      carbs: Math.round(totals.carbs / divisor),
+      fat: Math.round(totals.fat / divisor)
+    }
+  }
+
+  const normalizeMealIngredients = (meal) => {
+    const customIngredients = Array.isArray(meal.ingredients) ? meal.ingredients : []
+    const recipeIngredients = Array.isArray(meal.recipe_id?.ingredients) ? meal.recipe_id.ingredients : []
+    const source = customIngredients.length ? customIngredients : recipeIngredients
+
+    if (!source.length) return []
+
+    return source
+      .map((ingredient) => {
+        const amountValue =
+          ingredient.amount ?? ingredient.quantity ?? ingredient.qty ?? ingredient.value ?? ''
+        const parsedAmount =
+          amountValue === '' || amountValue === null || typeof amountValue === 'undefined'
+            ? ''
+            : String(amountValue)
+
+        return {
+          name: ingredient.name || ingredient.title || '',
+          amount: parsedAmount,
+          unit: ingredient.unit || ingredient.unit_name || ingredient.measure || ''
+        }
+      })
+      .filter((ingredient) => Boolean(ingredient.name))
+  }
+
+  const escapeHtml = (text = '') =>
+    text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+
+  const normalizeInstructionList = (source) => {
+    if (!source) return []
+
+    const coerceString = (value) => (typeof value === 'string' ? value.trim() : '')
+
+    if (Array.isArray(source)) {
+      return source
+        .map((entry) => {
+          if (typeof entry === 'string') return entry.trim()
+          if (entry && typeof entry === 'object') {
+            if (typeof entry.instruction === 'string') return entry.instruction.trim()
+            if (typeof entry.description === 'string') return entry.description.trim()
+            if (typeof entry.step === 'string') return entry.step.trim()
+          }
+          return ''
+        })
+        .filter(Boolean)
+    }
+
+    if (typeof source === 'string') {
+      const trimmed = source.trim()
+      if (!trimmed) return []
+
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed)
+          const normalized = normalizeInstructionList(parsed)
+          if (normalized.length) return normalized
+        } catch (_) {
+          // Ignore JSON parse errors and fall back to plain text handling
+        }
       }
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 })
+
+      return trimmed
+        .split(/\r?\n+/)
+        .map((line) => line.replace(/^[0-9]+[\.\)\-]\s*/, '').trim())
+        .filter(Boolean)
+    }
+
+    return []
+  }
+
+  const buildInstructionHtml = (steps) => {
+    if (!Array.isArray(steps) || steps.length === 0) return ''
+
+    const items = steps
+      .map((step, index) => {
+        const safeStep = escapeHtml(step)
+        return `<li class="leading-relaxed"><span class="font-semibold text-green-700 dark:text-green-300 mr-2">Bước ${
+          index + 1
+        }:</span>${safeStep}</li>`
+      })
+      .join('')
+
+    return `<ol class="list-decimal pl-5 space-y-2 text-gray-800 dark:text-gray-100">${items}</ol>`
+  }
+
+  const buildCookingPayload = (meal) => {
+    const recipeSteps = normalizeInstructionList(meal.recipe_id?.instructions)
+    const customSteps = normalizeInstructionList(meal.instructions)
+    const steps = recipeSteps.length ? recipeSteps : customSteps
+
+    if (steps.length) {
+      return {
+        html: buildInstructionHtml(steps),
+        steps,
+        hasCooking: true
+      }
+    }
+
+    const fallbackHtml = [meal.recipe_id?.content, typeof meal.instructions === 'string' ? meal.instructions : '', '']
+      .find((value) => typeof value === 'string' && value.trim())
+    const resolvedHtml = fallbackHtml && fallbackHtml.trim()
+      ? fallbackHtml
+      : '<p>Hướng dẫn chế biến sẽ được cập nhật sớm.</p>'
 
     return {
-      calories: Math.round(totalNutrition.calories / days.length),
-      protein: Math.round(totalNutrition.protein / days.length),
-      carbs: Math.round(totalNutrition.carbs / days.length),
-      fat: Math.round(totalNutrition.fat / days.length)
+      html: resolvedHtml,
+      steps: [],
+      hasCooking: Boolean(resolvedHtml)
     }
   }
 
@@ -155,15 +345,111 @@ export default function MealPlanDetail() {
     return `${year}-${month}-${day}`;
   }
 
+  const buildClonePayload = () => {
+    if (!mealPlanRaw) return null
+
+    const normalizeNumber = (value, fallback = 0) => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : fallback
+    }
+
+    const clonedDays = (mealPlanRaw.days || []).map((day) => {
+      const meals = (day.meals || []).map((meal, index) => ({
+        meal_type: meal.meal_type,
+        meal_order: meal.meal_order || index + 1,
+        recipe_id: meal.recipe_id?._id || meal.recipe_id || null,
+        name: meal.name || meal.recipe_id?.title || '',
+        image: meal.image || meal.recipe_id?.image || '',
+        calories: normalizeNumber(meal.calories),
+        protein: normalizeNumber(meal.protein),
+        fat: normalizeNumber(meal.fat),
+        carbs: normalizeNumber(meal.carbs),
+        time: meal.time || '',
+        servings: normalizeNumber(meal.servings, 1),
+        is_optional: Boolean(meal.is_optional),
+        difficult_level: meal.difficult_level || meal.recipe_id?.difficulty_level || '',
+        notes: meal.notes || ''
+      }))
+
+      const totals = meals.reduce(
+        (acc, meal) => ({
+          calories: acc.calories + meal.calories,
+          protein: acc.protein + meal.protein,
+          fat: acc.fat + meal.fat,
+          carbs: acc.carbs + meal.carbs
+        }),
+        { calories: 0, protein: 0, fat: 0, carbs: 0 }
+      )
+
+      return {
+        day_number: day.day_number,
+        title: day.title || `Ngày ${day.day_number}`,
+        description: day.description || '',
+        notes: day.notes || '',
+        meals,
+        total_calories: day.total_calories || totals.calories,
+        total_protein: day.total_protein || totals.protein,
+        total_fat: day.total_fat || totals.fat,
+        total_carbs: day.total_carbs || totals.carbs
+      }
+    })
+
+    const sourceTag = `source:${mealPlanRaw._id}|${mealPlan?.author?.name || mealPlanRaw.author_id?.name || 'unknown'}`
+    const unifiedTags = Array.from(new Set([...(mealPlanRaw.tags || []), sourceTag]))
+
+    return {
+      title: cloneForm.title.trim() || mealPlanRaw.title,
+      description: mealPlanRaw.description,
+      duration: mealPlanRaw.duration,
+      category: mealPlanRaw.category,
+      target_calories: mealPlanRaw.target_calories,
+      total_calories: mealPlanRaw.total_calories,
+      target_protein: mealPlanRaw.target_protein,
+      target_carbs: mealPlanRaw.target_carbs,
+      target_fat: mealPlanRaw.target_fat,
+      image: mealPlanRaw.image,
+      is_public: cloneForm.isPublic,
+      difficulty_level: mealPlanRaw.difficulty_level,
+      price_range: mealPlanRaw.price_range,
+      suitable_for: mealPlanRaw.suitable_for || [],
+      restrictions: mealPlanRaw.restrictions || [],
+      tags: unifiedTags,
+      days: clonedDays
+    }
+  }
+
+  const handleCloneMealPlan = async () => {
+    const payload = buildClonePayload()
+    if (!payload) {
+      toast.error('Không thể chuẩn bị dữ liệu để sao chép')
+      return
+    }
+
+    try {
+      setCloneLoading(true)
+      await createMealPlanApi(payload)
+      toast.success('Đã thêm bản sao vào "Thực đơn của tôi"')
+      triggerReload()
+      setShowCloneModal(false)
+      setEngagementStats((prev) => ({ ...prev, saves: prev.saves + 1 }))
+      navigate('/meal-plan/my')
+    } catch (error) {
+      console.error('Clone meal plan failed', error)
+      toast.error('Không thể sao chép thực đơn này')
+    } finally {
+      setCloneLoading(false)
+    }
+  }
+
   const handleLike = async () => {
     try {
       if (liked) {
-        await mealPlanApi.unlikeMealPlan(id)
+        await unlikeMealPlanApi(id)
         setLikesCount(prev => Math.max(prev - 1, 0))
         setLiked(false)
         toast.success('Đã bỏ thích thực đơn!')
       } else {
-        await mealPlanApi.likeMealPlan(id)
+        await likeMealPlanApi(id)
         setLikesCount(prev => prev + 1)
         setLiked(true)
         toast.success('Đã thích thực đơn!')
@@ -173,71 +459,102 @@ export default function MealPlanDetail() {
     }
   }
 
-  // Cập nhật hàm handleSave để mở modal
-  const handleSave = () => {
-    if (!saved) {
-      setShowSaveModal(true)
-    } else {
-      handleUnsave()
+  const openCloneModal = () => {
+    if (!mealPlanRaw) {
+      toast.error('Đang chuẩn bị dữ liệu thực đơn, vui lòng thử lại sau')
+      return
     }
+    setCloneForm({
+      title: `${mealPlanRaw.title || 'Thực đơn'} (bản sao)`
+        .replace(/\s+/g, ' ')
+        .trim(),
+      isPublic: false
+    })
+    setShowCloneModal(true)
   }
 
-  // Hàm bỏ lưu thực đơn
-  const handleUnsave = async () => {
+  const openApplyModal = async () => {
+    setShowApplyModal(true)
+    setCheckingActiveSchedule(true)
+    setStartDate(getCurrentDate())
     try {
-      await mealPlanApi.unbookmarkMealPlan(id)
-      setSaved(false)
-      toast.success('Đã bỏ lưu thực đơn!')
+      const schedule = await getActiveMealSchedule()
+      setActiveSchedule(schedule)
+      setApplyMode(schedule ? 'replace' : 'schedule')
     } catch (err) {
-      toast.error('Không thể bỏ lưu thực đơn')
+      console.error('Failed to fetch active schedule', err)
+      setActiveSchedule(null)
+      setApplyMode('schedule')
+    } finally {
+      setCheckingActiveSchedule(false)
     }
   }
-
-  // Xác nhận lưu thực đơn
-  const confirmSave = async () => {
-    try {
-      await mealPlanApi.bookmarkMealPlan(id, bookmarkData.folder_name, bookmarkData.notes)
-      setSaved(true)
-      setShowSaveModal(false)
-      setBookmarkData({ folder_name: '', notes: '' }) // Reset form
-      toast.success('Đã lưu thực đơn!')
-    } catch (err) {
-      toast.error('Không thể lưu thực đơn')
-    }
-  }
-
-  // Mở modal áp dụng thực đơn
-  const openApplyModal = () => {
-    setShowSaveModal(false);
-    setShowApplyModal(true);
-  };
 
   // Xác nhận áp dụng thực đơn
   const confirmApply = async () => {
+    if (!mealPlan) return
+    const selectedDate = applyMode === 'replace' ? getCurrentDate() : startDate
+
     try {
-      await mealPlanApi.applyMealPlan(id, { start_date: startDate })
+      setApplyLoading(true)
+      await applyMealPlanApi(id, mealPlan.title, selectedDate)
       setShowApplyModal(false)
       setShowSuccessModal(true)
+      triggerReload()
+      setEngagementStats((prev) => ({ ...prev, applies: prev.applies + 1 }))
       toast.success('Đã áp dụng thực đơn thành công!')
     } catch (err) {
+      console.error('Apply meal plan failed', err)
       toast.error('Không thể áp dụng thực đơn')
+    } finally {
+      setApplyLoading(false)
     }
   }
 
-  // Chuyển hướng đến trang lịch thực đơn
+  // Chuyển hướng đến trang thực đơn đang áp dụng
   const goToMealSchedule = () => {
-    setShowSuccessModal(false);
-    navigate('/schedule/my-eat-schedule');
-  };
+    setShowSuccessModal(false)
+    navigate('/meal-plan/active')
+  }
 
-  const handleShare = () => {
-    // Implement share functionality here
-    alert('Tính năng chia sẻ đang được phát triển');
-  };
+  const openShareModal = () => {
+    setShareModalOpen(true)
+  }
+
+  const handleShareMealPlan = async () => {
+    const caption = shareForm.content.trim()
+    if (!caption) {
+      toast.error('Vui lòng nhập nội dung chia sẻ')
+      return
+    }
+
+    try {
+      setShareLoading(true)
+      await shareMealPlanApi({
+        mealPlanId: id,
+        content: caption,
+        privacy: shareForm.privacy
+      })
+      toast.success('Đã chia sẻ thực đơn lên trang cá nhân')
+      triggerReload()
+      setShareModalOpen(false)
+      setShareForm((prev) => ({ ...prev, content: '' }))
+      setEngagementStats((prev) => ({ ...prev, shares: prev.shares + 1 }))
+    } catch (error) {
+      console.error('Share meal plan failed', error)
+      toast.error('Không thể chia sẻ thực đơn')
+    } finally {
+      setShareLoading(false)
+    }
+  }
 
   const handlePrint = () => {
     window.print();
   };
+
+  const scrollToComments = () => {
+    commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -353,64 +670,118 @@ export default function MealPlanDetail() {
               <p className="text-gray-700 dark:text-gray-300 mb-4">
                 {mealPlan.description}
               </p>
+              {sourceMeta && (
+                <div className="mb-4 p-3 rounded-lg bg-amber-50 text-amber-700 text-sm flex flex-wrap items-center gap-2">
+                  <FaInfoCircle className="text-amber-500" />
+                  <span>
+                    Bản sao từ <strong>{sourceMeta.ownerName}</strong>
+                  </span>
+                  {sourceMeta.planId && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/meal-plan/${sourceMeta.planId}`)}
+                      className="underline text-amber-600 hover:text-amber-700"
+                    >
+                      Xem thực đơn gốc
+                    </button>
+                  )}
+                </div>
+              )}
               
               {/* Action buttons */}
-              <div className="flex flex-wrap gap-2 print:hidden">
-                <button 
+              <div className="flex flex-wrap gap-3 print:hidden">
+                <button
+                  type="button"
                   onClick={handleLike}
+                  className={`flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 transition-colors ${
+                    liked
+                      ? 'bg-red-50 border-red-200 text-red-600'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {liked ? <FaHeart className="mr-1" /> : <FaRegHeart className="mr-1" />}
+                  <span>Thích ({likesCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={scrollToComments}
                   className="flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  {liked ? (
-                    <FaHeart className="mr-1 text-red-500" />
-                  ) : (
-                    <FaRegHeart className="mr-1" />
-                  )}
-                  <span>{likesCount}</span>
-                </button>
-                
-                <button className="flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                   <FaRegComment className="mr-1" />
-                  <span>{mealPlan.comments}</span>
+                  <span>Bình luận ({mealPlan.comments})</span>
                 </button>
-                
-                <button 
-                  onClick={handleSave}
-                  className="flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  {saved ? (
-                    <FaBookmark className="mr-1 text-green-500" />
-                  ) : (
-                    <FaRegBookmark className="mr-1" />
-                  )}
-                  <span>{saved ? "Đã lưu" : "Lưu"}</span>
-                </button>
-                
-                <button 
-                  onClick={handleShare}
+
+                <button
+                  type="button"
+                  onClick={openShareModal}
                   className="flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <FaShare className="mr-1" />
                   <span>Chia sẻ</span>
                 </button>
-                
-                <button 
+
+                <button
+                  type="button"
+                  onClick={openCloneModal}
+                  className="flex items-center px-3 py-1.5 rounded-full border border-green-300 text-green-700 bg-green-50 hover:bg-green-100"
+                >
+                  <FaClipboardList className="mr-1" />
+                  <span>Lưu vào Thực đơn của tôi</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openApplyModal}
+                  className="flex items-center px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <FaCalendarAlt className="mr-1" />
+                  <span>Áp dụng thực đơn</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handlePrint}
                   className="flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <FaPrint className="mr-1" />
                   <span>In</span>
                 </button>
-                
-                {/* Nút áp dụng thực đơn - chỉ hiển thị khi đã lưu */}
-                {saved && (
-                  <button 
-                    onClick={() => setShowApplyModal(true)}
-                    className="flex items-center px-3 py-1.5 rounded-full bg-green-600 hover:bg-green-700 text-white"
+
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/meal-plan/my?planId=${mealPlan?.id}`)}
+                    className="flex items-center px-3 py-1.5 rounded-full border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
                   >
-                    <FaCalendarAlt className="mr-1" />
-                    <span>Áp dụng thực đơn</span>
+                    <FaEdit className="mr-1" />
+                    <span>Chỉnh sửa thực đơn</span>
                   </button>
                 )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                  <FaClipboardList className="text-green-600" />
+                  <div>
+                    <p className="font-semibold">{engagementStats.saves}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Người đã lưu</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                  <FaShare className="text-blue-600" />
+                  <div>
+                    <p className="font-semibold">{engagementStats.shares}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Lượt chia sẻ</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                  <FaCalendarAlt className="text-emerald-600" />
+                  <div>
+                    <p className="font-semibold">{engagementStats.applies}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Đang áp dụng</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -488,7 +859,7 @@ export default function MealPlanDetail() {
           </div>
           
           {/* Comments section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <div ref={commentsRef} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
               <FaRegComment className="mr-2 text-green-600" /> Bình luận
             </h2>
@@ -529,116 +900,167 @@ export default function MealPlanDetail() {
               </div>
             </div>
             
-            {/* Macro distribution chart */}
-            <div className="h-64">
-              <NutritionChart 
-                protein={mealPlan.averageNutrition.protein} 
-                carbs={mealPlan.averageNutrition.carbs} 
-                fat={mealPlan.averageNutrition.fat} 
-              />
-            </div>
           </div>
           
-          {/* Tips card */}
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold text-green-800 dark:text-green-400 mb-3">
-              Mẹo thực hiện thực đơn
-            </h3>
-            <ul className="space-y-2">
-              <li className="flex items-start">
-                <span className="text-green-600 dark:text-green-400 mr-2">•</span>
-                <span className="text-green-800 dark:text-green-300 text-sm">Chuẩn bị thực phẩm trước cho 2-3 ngày để tiết kiệm thời gian</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-600 dark:text-green-400 mr-2">•</span>
-                <span className="text-green-800 dark:text-green-300 text-sm">Uống ít nhất 2 lít nước mỗi ngày</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-600 dark:text-green-400 mr-2">•</span>
-                <span className="text-green-800 dark:text-green-300 text-sm">Kết hợp với 30 phút tập thể dục mỗi ngày để tăng hiệu quả</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-600 dark:text-green-400 mr-2">•</span>
-                <span className="text-green-800 dark:text-green-300 text-sm">Điều chỉnh khẩu phần theo nhu cầu calo cá nhân</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-600 dark:text-green-400 mr-2">•</span>
-                <span className="text-green-800 dark:text-green-300 text-sm">Thay thế thực phẩm bằng các lựa chọn tương tự nếu cần</span>
-              </li>
-            </ul>
+          {/* Friends applying placeholder */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <FaUserFriends className="text-green-600" />
+                Bạn bè đang áp dụng
+              </h3>
+              <span className="text-xs text-gray-500">Sắp ra mắt</span>
+            </div>
+            {friendsApplying.length > 0 ? (
+              <ul className="space-y-3">
+                {friendsApplying.map((friend) => (
+                  <li key={friend.id} className="flex items-center gap-3">
+                    <img src={friend.avatar} alt={friend.name} className="w-10 h-10 rounded-full object-cover" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{friend.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Đang áp dụng đến ngày {friend.until}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                Kết nối bạn bè để xem ai đang áp dụng thực đơn này cùng bạn. Chúng tôi sẽ kích hoạt trung tâm bạn bè sau khi hoàn tất tính năng quản lý thực đơn.
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => toast.info('Tính năng kết bạn sẽ sớm được cập nhật')}
+              className="mt-4 w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30"
+            >
+              Mời bạn bè tham gia
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Modal Lưu thực đơn */}
-      {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Lưu thực đơn</h3>
-              <button 
-                onClick={() => setShowSaveModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      {/* Modal tạo bản sao */}
+      {showCloneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Lưu về "Thực đơn của tôi"</h3>
+              <button
+                type="button"
+                onClick={() => setShowCloneModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400"
               >
                 <MdClose size={24} />
               </button>
             </div>
-            
-            <div className="mb-6 text-center">
-              <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaBookmark className="text-green-600 dark:text-green-400 text-3xl" />
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Một bản sao đầy đủ của "{mealPlan?.title}" sẽ được thêm vào danh sách thực đơn cá nhân của bạn. Bạn có thể tùy chỉnh lại từng ngày sau khi lưu.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tên bản sao
+                </label>
+                <input
+                  type="text"
+                  value={cloneForm.title}
+                  onChange={(e) => setCloneForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Ví dụ: Thực đơn Keto (biến thể cá nhân)"
+                />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Lưu "{mealPlan.title}" vào danh sách thực đơn của bạn
-              </p>
-              
-              {/* Form input */}
-              <div className="space-y-4 text-left">
+              <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Thư mục (không bắt buộc)
-                  </label>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Chế độ công khai</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Bật để chia sẻ bản sao đến cộng đồng</p>
+                </div>
+                <label className="inline-flex items-center cursor-pointer">
                   <input
-                    type="text"
-                    value={bookmarkData.folder_name}
-                    onChange={(e) => setBookmarkData(prev => ({ ...prev, folder_name: e.target.value }))}
-                    placeholder="VD: Thực đơn giảm cân"
-                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    type="checkbox"
+                    className="sr-only"
+                    checked={cloneForm.isPublic}
+                    onChange={(e) => setCloneForm((prev) => ({ ...prev, isPublic: e.target.checked }))}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Ghi chú (không bắt buộc)
-                  </label>
-                  <textarea
-                    value={bookmarkData.notes}
-                    onChange={(e) => setBookmarkData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="VD: Dành cho tháng 4"
-                    rows={3}
-                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                  />
-                </div>
+                  <span className={`w-12 h-6 flex items-center rounded-full p-1 ${cloneForm.isPublic ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                    <span className={`bg-white w-4 h-4 rounded-full shadow transform transition ${cloneForm.isPublic ? 'translate-x-6' : ''}`}></span>
+                  </span>
+                </label>
               </div>
             </div>
-            
-            <div className="flex flex-col space-y-3">
-              <button 
-                onClick={confirmSave}
-                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleCloneMealPlan}
+                disabled={cloneLoading}
+                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-60"
               >
-                Lưu thực đơn
+                {cloneLoading ? 'Đang sao chép...' : 'Tạo bản sao ngay'}
               </button>
-              <button 
-                onClick={openApplyModal}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              <button
+                type="button"
+                onClick={() => setShowCloneModal(false)}
+                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium"
               >
-                Lưu và áp dụng ngay
+                Để sau
               </button>
-              <button 
-                onClick={() => setShowSaveModal(false)}
-                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chia sẻ */}
+      {shareModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Chia sẻ thực đơn</h3>
+              <button
+                type="button"
+                onClick={() => setShareModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400"
               >
-                Hủy
+                <MdClose size={24} />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Nội dung chia sẻ sẽ hiển thị trên trang cá nhân của bạn cùng liên kết đến thực đơn.
+            </p>
+            <textarea
+              rows={4}
+              value={shareForm.content}
+              onChange={(e) => setShareForm((prev) => ({ ...prev, content: e.target.value }))}
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Chia sẻ cảm nhận của bạn về thực đơn này..."
+            />
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quyền riêng tư</label>
+              <select
+                value={shareForm.privacy}
+                onChange={(e) => setShareForm((prev) => ({ ...prev, privacy: e.target.value }))}
+                className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="0">Công khai</option>
+                <option value="1">Bạn bè</option>
+                <option value="2">Chỉ mình tôi</option>
+              </select>
+            </div>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleShareMealPlan}
+                disabled={shareLoading}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-60"
+              >
+                {shareLoading ? 'Đang chia sẻ...' : 'Đăng lên trang cá nhân'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareModalOpen(false)}
+                className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium"
+              >
+                Đóng
               </button>
             </div>
           </div>
@@ -663,22 +1085,64 @@ export default function MealPlanDetail() {
               <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MdSchedule className="text-blue-600 dark:text-blue-400 text-3xl" />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 mb-4 text-center">
-                Chọn ngày bắt đầu áp dụng "{mealPlan.title}"
-              </p>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Ngày bắt đầu:
+              {checkingActiveSchedule ? (
+                <p className="text-center text-sm text-gray-500">Đang kiểm tra lịch hiện tại...</p>
+              ) : activeSchedule ? (
+                <div className="mb-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-sm text-orange-700 dark:text-orange-200">
+                  Bạn đang áp dụng "{activeSchedule.title}". Bạn muốn thay thế bằng thực đơn này chứ?
+                </div>
+              ) : (
+                <p className="text-gray-700 dark:text-gray-300 mb-4 text-center">
+                  Chọn ngày bắt đầu áp dụng "{mealPlan.title}"
+                </p>
+              )}
+
+              <div className="space-y-3 mb-4">
+                <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input
+                    type="radio"
+                    name="apply_mode"
+                    value="replace"
+                    checked={applyMode === 'replace'}
+                    onChange={() => setApplyMode('replace')}
+                    disabled={!activeSchedule}
+                    className="mt-1"
+                  />
+                  <span>
+                    Thay thế lịch hiện tại
+                    <span className="block text-xs text-gray-500">Chúng tôi sẽ tạo lịch mới và đánh dấu lịch cũ là đã hoàn thành.</span>
+                  </span>
                 </label>
-                <input 
-                  type="date" 
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  min={getCurrentDate()}
-                  className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+                <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input
+                    type="radio"
+                    name="apply_mode"
+                    value="schedule"
+                    checked={applyMode === 'schedule'}
+                    onChange={() => setApplyMode('schedule')}
+                    className="mt-1"
+                  />
+                  <span>
+                    Lên lịch bắt đầu mới
+                    <span className="block text-xs text-gray-500">Giữ lịch cũ và chọn ngày bắt đầu cho thực đơn này.</span>
+                  </span>
+                </label>
               </div>
+
+              {applyMode === 'schedule' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ngày bắt đầu:
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    min={getCurrentDate()}
+                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              )}
               
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg mb-4">
                 <div className="flex items-start">
@@ -693,10 +1157,11 @@ export default function MealPlanDetail() {
             <div className="flex flex-col space-y-3">
               <button 
                 onClick={confirmApply}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
+                disabled={applyLoading || (applyMode === 'schedule' && !startDate)}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center disabled:opacity-60"
               >
                 <FaCalendarAlt className="mr-2" />
-                Áp dụng thực đơn
+                {applyLoading ? 'Đang áp dụng...' : 'Áp dụng thực đơn'}
               </button>
               <button 
                 onClick={() => setShowApplyModal(false)}
@@ -755,7 +1220,7 @@ export default function MealPlanDetail() {
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
               >
                 <MdDateRange className="mr-2" />
-                Đi đến trang thực đơn của tôi
+                Xem thực đơn đang áp dụng
               </button>
               <button 
                 onClick={() => setShowSuccessModal(false)}
@@ -788,7 +1253,23 @@ export default function MealPlanDetail() {
             <div className="mb-4">
               <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Thành phần:</h4>
               <div className="bg-gray-50 dark:bg-gray-750 p-3 rounded-lg mb-4">
-                <p className="text-gray-700 dark:text-gray-300">{activeMeal.content}</p>
+                {Array.isArray(activeMeal.ingredients) && activeMeal.ingredients.length > 0 ? (
+                  <ul className="list-disc pl-5 space-y-1 text-gray-700 dark:text-gray-300 text-sm">
+                    {activeMeal.ingredients.map((ingredient, index) => (
+                      <li key={`${ingredient.name}-${index}`}>
+                        {ingredient.name}
+                        {(() => {
+                          const measurement = [ingredient.amount, ingredient.unit]
+                            .filter((value) => Boolean(value && String(value).trim()))
+                            .join(' ')
+                          return measurement ? ` - ${measurement}` : ''
+                        })()}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-700 dark:text-gray-300">{activeMeal.content}</p>
+                )}
               </div>
             </div>
             
@@ -816,10 +1297,21 @@ export default function MealPlanDetail() {
             
             <div>
               <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Hướng dẫn chi tiết:</h4>
-              <div 
-                className="prose prose-sm max-w-none dark:prose-invert bg-gray-50 dark:bg-gray-750 p-4 rounded-lg" 
-                dangerouslySetInnerHTML={{ __html: activeMeal.cooking }}
-              />
+              {Array.isArray(activeMeal.cookingSteps) && activeMeal.cookingSteps.length > 0 ? (
+                <ol className="list-decimal pl-5 space-y-3 text-gray-700 dark:text-gray-200 text-sm bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">
+                  {activeMeal.cookingSteps.map((step, index) => (
+                    <li key={`cooking-step-${index}`} className="leading-relaxed">
+                      <span className="font-semibold text-green-700 dark:text-green-300 mr-2">Bước {index + 1}:</span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert bg-gray-50 dark:bg-gray-750 p-4 rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: activeMeal.cooking }}
+                />
+              )}
             </div>
             
             <div className="mt-6 flex justify-end">

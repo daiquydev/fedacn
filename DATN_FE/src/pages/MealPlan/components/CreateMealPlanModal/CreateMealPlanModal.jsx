@@ -31,25 +31,137 @@ const DEFAULT_MEAL_SLOTS = [
   { meal_type: 3, meal_order: 3, label: 'Bữa tối' }
 ]
 
-export default function CreateMealPlanModal({ onClose, onCreate }) {
-  const [loading, setLoading] = useState(false)
-  const [currentStep, setCurrentStep] = useState(1)
-  const [imageInputType, setImageInputType] = useState('url') // 'url' or 'file'
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [formData, setFormData] = useState({
+const buildBaseMealTemplate = (mealType, mealOrder = 1) => ({
+  meal_type: mealType,
+  meal_order: mealOrder,
+  recipe_id: null,
+  servings: 1,
+  name: '',
+  calories: 0,
+  protein: 0,
+  fat: 0,
+  carbs: 0,
+  is_optional: false,
+  notes: ''
+})
+
+const toNumberSafe = (value, fallback = 0) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const sumMealsNutrition = (meals = []) => {
+  return meals.reduce(
+    (acc, meal) => ({
+      calories: acc.calories + (Number(meal.calories) || 0),
+      protein: acc.protein + (Number(meal.protein) || 0),
+      fat: acc.fat + (Number(meal.fat) || 0),
+      carbs: acc.carbs + (Number(meal.carbs ?? meal.carbohydrate) || 0)
+    }),
+    { calories: 0, protein: 0, fat: 0, carbs: 0 }
+  )
+}
+
+const normalizeMealsFromSource = (meals = []) => {
+  const seededMeals = Array.isArray(meals)
+    ? meals.map((meal, index) => ({
+        ...buildBaseMealTemplate(
+          meal?.meal_type ?? DEFAULT_MEAL_SLOTS[Math.min(index, DEFAULT_MEAL_SLOTS.length - 1)].meal_type,
+          meal?.meal_order ?? index + 1
+        ),
+        ...meal,
+        servings: toNumberSafe(meal?.servings, 1) > 0 ? toNumberSafe(meal?.servings, 1) : 1,
+        calories: toNumberSafe(meal?.calories),
+        protein: toNumberSafe(meal?.protein),
+        fat: toNumberSafe(meal?.fat),
+        carbs: toNumberSafe(meal?.carbs ?? meal?.carbohydrate)
+      }))
+    : []
+
+  DEFAULT_MEAL_SLOTS.forEach((slot) => {
+    if (!seededMeals.some((meal) => meal.meal_type === slot.meal_type)) {
+      seededMeals.push(buildBaseMealTemplate(slot.meal_type, slot.meal_order))
+    }
+  })
+
+  return seededMeals
+    .sort((a, b) => (a.meal_order ?? a.meal_type ?? 0) - (b.meal_order ?? b.meal_type ?? 0))
+    .map((meal, index) => ({ ...meal, meal_order: index + 1 }))
+}
+
+const normalizeDayFromSource = (dayData = {}, index = 0) => {
+  const meals = normalizeMealsFromSource(dayData.meals)
+  const totals = sumMealsNutrition(meals)
+  const dayNumber = dayData.day_number ?? index + 1
+
+  return {
+    ...dayData,
+    day_number: dayNumber,
+    title: dayData.title || `Ngày ${dayNumber}`,
+    description: dayData.description || '',
+    notes: dayData.notes || '',
+    meals,
+    total_calories: totals.calories,
+    total_protein: totals.protein,
+    total_fat: totals.fat,
+    total_carbs: totals.carbs
+  }
+}
+
+const buildDefaultDays = (duration = 7) => {
+  return Array.from({ length: duration }, (_, index) => normalizeDayFromSource({ day_number: index + 1 }, index))
+}
+
+const buildFormStateFromPlan = (plan) => {
+  const baseState = {
     title: '',
     description: '',
     category: 1,
     duration: 7,
-  target_calories: '',
+    target_calories: '',
     difficulty_level: 1,
     image: '',
     is_public: true,
     price_range: 'medium',
     suitable_for: [],
     tags: [],
-    days: []
-  })
+    days: buildDefaultDays(7)
+  }
+
+  if (!plan) {
+    return baseState
+  }
+
+  const normalizedDays = (Array.isArray(plan.days) && plan.days.length > 0 ? plan.days : buildDefaultDays(plan.duration || baseState.duration)).map(
+    (day, index) => normalizeDayFromSource(day, index)
+  )
+
+  return {
+    ...baseState,
+    title: plan.title || '',
+    description: plan.description || '',
+    category: plan.category ?? 1,
+    duration: plan.duration || normalizedDays.length,
+    target_calories:
+      typeof plan.target_calories === 'number' && Number.isFinite(plan.target_calories)
+        ? plan.target_calories
+        : '',
+    difficulty_level: plan.difficulty_level ?? 1,
+    image: plan.image || '',
+    is_public: typeof plan.is_public === 'boolean' ? plan.is_public : true,
+    price_range: plan.price_range || 'medium',
+    suitable_for: Array.isArray(plan.suitable_for) ? plan.suitable_for : [],
+    tags: Array.isArray(plan.tags) ? plan.tags : [],
+    days: normalizedDays
+  }
+}
+
+export default function CreateMealPlanModal({ onClose, onCreate, initialData = null, mode = 'create', defaultStep = 1 }) {
+  const [loading, setLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState(defaultStep)
+  const [imageInputType, setImageInputType] = useState('url') // 'url' or 'file'
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [formData, setFormData] = useState(() => buildFormStateFromPlan(initialData))
   const [activeDay, setActiveDay] = useState(1)
   const [recipes, setRecipes] = useState([])
   const [recipesLoading, setRecipesLoading] = useState(false)
@@ -102,78 +214,23 @@ export default function CreateMealPlanModal({ onClose, onCreate }) {
     }
   }, [])
 
-  const createBaseMeal = useCallback((mealType, mealOrder = 1) => ({
-    meal_type: mealType,
-    meal_order: mealOrder,
-    recipe_id: null,
-    servings: 1,
-    name: '',
-    calories: 0,
-    protein: 0,
-    fat: 0,
-    carbs: 0,
-    is_optional: false,
-    notes: ''
-  }), [])
+  useEffect(() => {
+    setFormData(buildFormStateFromPlan(initialData))
+    setActiveDay(1)
+    setCurrentStep(defaultStep)
+    setSelectedFile(null)
+  }, [initialData, defaultStep])
+
+  const createBaseMeal = useCallback((mealType, mealOrder = 1) => buildBaseMealTemplate(mealType, mealOrder), [])
 
   const calculateDayTotals = useCallback((meals = []) => {
-    return meals.reduce(
-      (acc, meal) => {
-        const calories = Number(meal.calories) || 0
-        const protein = Number(meal.protein) || 0
-        const fat = Number(meal.fat) || 0
-        const carbs = Number(meal.carbs ?? meal.carbohydrate) || 0
-
-        return {
-          calories: acc.calories + calories,
-          protein: acc.protein + protein,
-          fat: acc.fat + fat,
-          carbs: acc.carbs + carbs
-        }
-      },
-      { calories: 0, protein: 0, fat: 0, carbs: 0 }
-    )
+    return sumMealsNutrition(meals)
   }, [])
 
   const ensureDayStructure = useCallback((day) => {
     if (!day) return null
-
-    const safeMeals = Array.isArray(day.meals)
-      ? day.meals.map((meal, index) => ({
-          ...createBaseMeal(meal.meal_type ?? DEFAULT_MEAL_SLOTS[Math.min(index, DEFAULT_MEAL_SLOTS.length - 1)].meal_type, meal.meal_order ?? index + 1),
-          ...meal,
-          servings: Number(meal.servings) > 0 ? Number(meal.servings) : 1,
-          calories: Number(meal.calories) || 0,
-          protein: Number(meal.protein) || 0,
-          fat: Number(meal.fat) || 0,
-          carbs: Number(meal.carbs ?? meal.carbohydrate) || 0
-        }))
-      : []
-
-    DEFAULT_MEAL_SLOTS.forEach((slot) => {
-      if (!safeMeals.some((meal) => meal.meal_type === slot.meal_type)) {
-        safeMeals.push(createBaseMeal(slot.meal_type, slot.meal_order))
-      }
-    })
-
-    const sortedMeals = safeMeals
-      .sort((a, b) => (a.meal_order ?? a.meal_type ?? 0) - (b.meal_order ?? b.meal_type ?? 0))
-      .map((meal, index) => ({ ...meal, meal_order: index + 1 }))
-
-    const totals = calculateDayTotals(sortedMeals)
-
-    return {
-      ...day,
-      title: day.title || `Ngày ${day.day_number}`,
-      description: day.description || '',
-      notes: day.notes || '',
-      meals: sortedMeals,
-      total_calories: totals.calories,
-      total_protein: totals.protein,
-      total_fat: totals.fat,
-      total_carbs: totals.carbs
-    }
-  }, [calculateDayTotals, createBaseMeal])
+    return normalizeDayFromSource(day, (day?.day_number || 1) - 1)
+  }, [])
 
   const recipesMap = useMemo(() => {
     const map = {}
@@ -702,23 +759,19 @@ export default function CreateMealPlanModal({ onClose, onCreate }) {
       if (missingRequiredMeal) {
         const { dayNumber, mealIndex, slot, needsInsert } = missingRequiredMeal
 
-        if (needsInsert) {
-          updateDay(dayNumber, (draft) => {
-            const normalized = ensureDayStructure({
-              ...draft,
-              meals: [...draft.meals, createBaseMeal(slot.meal_type, draft.meals.length + 1)]
-            })
-            return normalized || draft
-          })
-        }
-
         setCurrentStep(3)
         setActiveDay(dayNumber)
         highlightDaySection(dayNumber)
-        if (mealIndex > -1) {
+
+        if (!needsInsert && mealIndex > -1) {
           setMissingMealKey(`${dayNumber}-${mealIndex}`)
+        } else {
+          setMissingMealKey(null)
         }
-        toast.error(`Ngày ${dayNumber} còn thiếu ${slot.label.toLowerCase()}. Vui lòng bổ sung trước khi tạo.`)
+
+        toast.error(
+          `Ngày ${dayNumber} còn thiếu ${slot.label.toLowerCase()}. Vui lòng bổ sung trước khi tạo.`
+        )
         return
       }
 
@@ -887,6 +940,13 @@ export default function CreateMealPlanModal({ onClose, onCreate }) {
 
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3))
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1))
+  const submitButtonLabel = loading
+    ? mode === 'edit'
+      ? 'Đang cập nhật...'
+      : 'Đang tạo...'
+    : mode === 'edit'
+      ? 'Cập nhật thực đơn'
+      : 'Tạo thực đơn'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -1735,7 +1795,7 @@ export default function CreateMealPlanModal({ onClose, onCreate }) {
               disabled={loading}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Đang tạo...' : 'Tạo thực đơn'}
+              {submitButtonLabel}
             </button>
           )}
         </div>

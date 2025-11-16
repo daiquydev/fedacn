@@ -80,6 +80,8 @@ const SportEventDetail = lazy(() => import('./pages/SportEventDetail'))
 const MealPlan = lazy(() => import('./pages/MealPlan/MealPlan'))
 const MealPlanDetail = lazy(() => import('./pages/MealPlan/MealPlanDetail/MealPlanDetail'))
 const MySavedMealPlans = lazy(() => import('./pages/MealPlan/MySavedMealPlans/MySavedMealPlans'))
+const MyMealPlans = lazy(() => import('./pages/MealPlan/MyMealPlans/MyMealPlans'))
+const ActiveMealPlan = lazy(() => import('./pages/MealPlan/ActiveMealPlan/ActiveMealPlan'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -480,6 +482,26 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <MySavedMealPlans />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/meal-plan/my',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MyMealPlans />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/meal-plan/active',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <ActiveMealPlan />
               </Suspense>
             </MainLayout>
           )

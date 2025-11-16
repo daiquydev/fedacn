@@ -148,7 +148,10 @@ class MealPlanService {
     const daysWithMeals = await Promise.all(
       days.map(async (day) => {
         const meals = await MealPlanMealModel.find({ meal_plan_day_id: day._id })
-          .populate('recipe_id', 'title image difficulty_level time')
+          .populate(
+            'recipe_id',
+            'title image difficulty_level time content ingredients energy protein fat carbohydrate instructions processing_food'
+          )
           .sort({ meal_type: 1 })
           .exec()
         

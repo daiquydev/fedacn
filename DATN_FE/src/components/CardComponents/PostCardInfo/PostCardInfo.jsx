@@ -24,6 +24,7 @@ import { SocketContext } from '../../../contexts/socket.context'
 import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
 import { getImageUrl } from '../../../utils/imageUrl'
+import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
 
 export default function PostCardInfo({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -115,6 +116,7 @@ export default function PostCardInfo({ data }) {
     <article className='mb-4 shadow break-inside md:px-6 pt-6 pb-4 md:rounded-md bg-white dark:dark:bg-color-primary flex flex-col bg-clip-border'>
       <CheckTypeOfPost
         data={data}
+        navigate={navigate}
         handleDeletePost={handleDeletePost}
         checkNavigateProfileUser={checkNavigateProfileUser}
         checkNavigateProfileParentUser={checkNavigateProfileParentUser}
@@ -187,7 +189,13 @@ export default function PostCardInfo({ data }) {
   )
 }
 
-function CheckTypeOfPost({ data, handleDeletePost, checkNavigateProfileParentUser, checkNavigateProfileUser }) {
+function CheckTypeOfPost({
+  data,
+  navigate,
+  handleDeletePost,
+  checkNavigateProfileParentUser,
+  checkNavigateProfileUser
+}) {
   if (data.type === 0) {
     return (
       <>
@@ -238,6 +246,63 @@ function CheckTypeOfPost({ data, handleDeletePost, checkNavigateProfileParentUse
           <p className=''>{data.content}</p>
         </ShowMoreContent>
         <CheckLengthOfImages images={data.images} />
+      </>
+    )
+  }
+  if (data.type === 2) {
+    return (
+      <>
+        <div className='flex justify-between items-start'>
+          <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>
+            <div className='flex items-center'>
+              <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
+                <img
+                  className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
+                  src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                />
+              </div>
+              <div className='flex flex-col'>
+                <div onClick={checkNavigateProfileUser} className='flex items-center'>
+                  <div className='flex items-center gap-2 hover:underline cursor-pointer  text-lg font-bold mr-2'>
+                    {data.user.name}
+                    {data.user.role === 1 && (
+                      <div className='text-blue-400 rounded-full flex justify-center items-center '>
+                        <FaCheckCircle size={15} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className='flex gap-2 items-center'>
+                  <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                  {data.status === 0 && (
+                    <div>
+                      <MdPublic />
+                    </div>
+                  )}
+                  {data.status === 1 && (
+                    <div>
+                      <FaUserFriends />
+                    </div>
+                  )}
+                  {data.status === 2 && (
+                    <div>
+                      <RiGitRepositoryPrivateFill />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <ThreeDotPost userID={data.user._id} handleDeletePost={handleDeletePost} post={data} />
+        </div>
+        <ShowMoreContent className='px-4  text-sm whitespace-pre-line pb-5 md:px-0'>
+          <p className=''>{data.content}</p>
+        </ShowMoreContent>
+        <MealPlanSharePreview
+          mealPlanId={data.meal_plan_id}
+          prefetchedMealPlan={data.meal_plan}
+          onNavigate={(planId) => navigate(`/meal-plan/${planId}`)}
+        />
       </>
     )
   }

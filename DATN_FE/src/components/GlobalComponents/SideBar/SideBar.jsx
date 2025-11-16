@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
 // * React icons
-import { FaCookieBite, FaShareAlt, FaRunning, FaTrophy, FaChartLine } from 'react-icons/fa'
+import {
+  FaCookieBite,
+  FaShareAlt,
+  FaRunning,
+  FaTrophy,
+  FaChartLine,
+  FaUtensils,
+  FaCalendarAlt,
+  FaClipboardList,
+  FaPlayCircle
+} from 'react-icons/fa'
 import { BsFillCalendarHeartFill, BsFillHeartFill, BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
 import { MdMenu, MdSportsSoccer } from 'react-icons/md'
@@ -17,9 +27,7 @@ import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { currentAccount, updateRequest } from '../../../apis/userApi'
 import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
-import { FaUtensils } from 'react-icons/fa'
 import { IoIosArrowForward } from 'react-icons/io'
-import { FaCalendarAlt } from 'react-icons/fa'
 
 export default function SideBar() {
   let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
@@ -230,9 +238,21 @@ export default function SideBar() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to={'/meal-plan/my'} className='link-custom '>
+                  <FaClipboardList size={25} className='min-w-max' />
+                  Thực đơn của tôi
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to={'/meal-plan/my-saved'} className='link-custom '>
                   <BsFillHeartFill size={25} className='min-w-max' />
                   Thực đơn đã lưu
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to={'/meal-plan/active'} className='link-custom '>
+                  <FaPlayCircle size={25} className='min-w-max' />
+                  Thực đơn đang áp dụng
                 </NavLink>
               </li>
               <li>

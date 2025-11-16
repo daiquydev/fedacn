@@ -134,6 +134,21 @@ export const applyMealPlan = async (mealPlanId, title, startDate, targetWeight, 
   }
 }
 
+// Chia sẻ thực đơn lên trang cá nhân
+export const shareMealPlan = async ({ mealPlanId, content, privacy = '0' }) => {
+  try {
+    const response = await http.post('/posts/actions/share-meal-plan', {
+      meal_plan_id: mealPlanId,
+      content,
+      privacy
+    })
+    return response
+  } catch (error) {
+    console.error('Error sharing meal plan:', error)
+    throw error
+  }
+}
+
 // Comment thực đơn
 export const commentMealPlan = async (mealPlanId, content, parentId) => {
   try {

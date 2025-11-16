@@ -1,4 +1,4 @@
-import { connect } from '~/config/database'
+import connectDB from '~/services/database.services'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import RecipeCategoryModel from '~/models/schemas/recipeCategory.schema'
 import UserModel from '~/models/schemas/user.schema'
@@ -32,7 +32,7 @@ const sampleRecipes = [
       'Bày bánh phở vào tô, xếp thịt bò lên trên'
     ],
     tags: ['phở', 'bò', 'truyền thống', 'Hà Nội', 'món chính'],
-    time: RecipeTime.over_120_minutes,
+    time: RecipeTime.moreThan120,
     difficult_level: 2,
     region: 0,
     processing_food: 'Hầm',
@@ -61,7 +61,7 @@ const sampleRecipes = [
       'Thêm nước sốt và ăn kèm'
     ],
     tags: ['bánh mì', 'thịt nướng', 'Sài Gòn', 'đường phố'],
-    time: RecipeTime.from_30_to_60_minutes,
+    time: RecipeTime.from30To60,
     difficult_level: 1,
     region: 1,
     processing_food: 'Nướng',
@@ -90,7 +90,7 @@ const sampleRecipes = [
       'Trình bày và chan nước dùng cay nồng'
     ],
     tags: ['bún', 'bò', 'Huế', 'cay', 'đặc sản'],
-    time: RecipeTime.from_90_to_120_minutes,
+    time: RecipeTime.from60To120,
     difficult_level: 3,
     region: 2,
     processing_food: 'Nấu',
@@ -119,7 +119,7 @@ const sampleRecipes = [
       'Ăn kèm với nước chấm'
     ],
     tags: ['gỏi cuốn', 'tôm', 'thịt', 'nhẹ nhàng', 'healthy'],
-    time: RecipeTime.from_30_to_60_minutes,
+    time: RecipeTime.from30To60,
     difficult_level: 1,
     region: 1,
     processing_food: 'Luộc',
@@ -148,7 +148,7 @@ const sampleRecipes = [
       'Xếp sườn, chả trứng lên trên'
     ],
     tags: ['cơm tấm', 'sườn nướng', 'Sài Gòn', 'bình dân'],
-    time: RecipeTime.from_60_to_90_minutes,
+    time: RecipeTime.from60To120,
     difficult_level: 2,
     region: 1,
     processing_food: 'Nướng',
@@ -164,7 +164,7 @@ async function seedRecipeData() {
     console.log('🌱 Starting recipe data seeding...')
     
     // Connect to database
-    await connect()
+    await connectDB()
     console.log('✅ Connected to database')
 
     // Find admin user or create one
@@ -210,7 +210,7 @@ async function seedRecipeData() {
         user_id: new ObjectId(adminUser._id),
         category_recipe_id: new ObjectId(category._id),
         ...recipeData,
-        status: RecipeStatus.approved,
+        status: RecipeStatus.accepted,
         created_at: new Date(),
         updated_at: new Date()
       })
@@ -232,7 +232,7 @@ async function seedRecipeData() {
 export async function clearRecipes() {
   try {
     console.log('🗑️  Clearing existing recipes...')
-    await connect()
+    await connectDB()
     
     const result = await RecipeModel.deleteMany({}).exec()
     console.log(`✅ Deleted ${result.deletedCount} recipes`)

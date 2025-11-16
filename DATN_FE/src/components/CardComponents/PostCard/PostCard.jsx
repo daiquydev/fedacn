@@ -24,6 +24,7 @@ import { SocketContext } from '../../../contexts/socket.context'
 import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
 import { getImageUrl } from '../../../utils/imageUrl'
+import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
 
 export default function PostCard({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -279,6 +280,76 @@ function CheckTypeOfPost({
       </>
     )
   }
+  if (data.type === 2) {
+    return (
+      <>
+        <div className='flex justify-between items-start'>
+          <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>
+            <div className='flex items-center'>
+              <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
+                <img
+                  className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
+                  src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                />
+              </div>
+              <div className='flex flex-col'>
+                <div onClick={checkNavigateProfileUser} className='flex items-center'>
+                  <div className='flex items-center gap-2 hover:underline cursor-pointer  text-lg font-bold mr-2'>
+                    {data.user.name}
+                    {data.user.role === 1 && (
+                      <div className='text-blue-400 rounded-full flex justify-center items-center '>
+                        <FaCheckCircle size={15} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className='flex gap-2 items-center'>
+                  <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                  {data.status === 0 && (
+                    <div>
+                      <MdPublic />
+                    </div>
+                  )}
+                  {data.status === 1 && (
+                    <div>
+                      <FaUserFriends />
+                    </div>
+                  )}
+                  {data.status === 2 && (
+                    <div>
+                      <RiGitRepositoryPrivateFill />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className='flex gap-1 items-center'>
+            <div
+              onClick={() => navigate(`/post/${data._id}`)}
+              className='text-xs md:text-sm font-medium transition-all hover:text-blue-400 cursor-pointer'
+            >
+              Xem thêm
+            </div>
+            <ThreeDotPost
+              isPending={isPending}
+              userID={data.user._id}
+              handleDeletePost={handleDeletePost}
+              post={data}
+            />
+          </div>
+        </div>
+        <ShowMoreContent className='px-4 text-sm whitespace-pre-line pb-5 md:px-0'>
+          <p className=''>{data.content}</p>
+        </ShowMoreContent>
+        <MealPlanSharePreview
+          mealPlanId={data.meal_plan_id}
+          prefetchedMealPlan={data.meal_plan}
+          onNavigate={(planId) => navigate(`/meal-plan/${planId}`)}
+        />
+      </>
+    )
+  }
   return (
     <>
       <div className='flex justify-between items-start'>
@@ -450,10 +521,18 @@ function CheckLengthOfImages({ images, navigate, data }) {
             />
           </div>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover' src={getImageUrl(images[1])} />
+            <img
+              loading='lazy'
+              className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover'
+              src={getImageUrl(images[1])}
+            />
           </div>
           <div className='flex'>
-            <img loading='lazy' className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover ' src={getImageUrl(images[2])} />
+            <img
+              loading='lazy'
+              className='max-w-full min-w-[5rem] lg:min-w-[10rem] object-cover '
+              src={getImageUrl(images[2])}
+            />
           </div>
           <div className='flex'>
             <img
@@ -471,21 +550,37 @@ function CheckLengthOfImages({ images, navigate, data }) {
     <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
       <div className='flex justify-between gap-1 mb-1'>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-tl-lg' src={getImageUrl(images[0])} />
+          <img
+            loading='lazy'
+            className='max-w-full lg:min-w-[10rem]  object-cover rounded-tl-lg'
+            src={getImageUrl(images[0])}
+          />
         </div>
         <div className='flex'>
           <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover' src={getImageUrl(images[1])} />
         </div>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-tr-lg' src={getImageUrl(images[2])} />
+          <img
+            loading='lazy'
+            className='max-w-full lg:min-w-[10rem]  object-cover rounded-tr-lg'
+            src={getImageUrl(images[2])}
+          />
         </div>
       </div>
       <div className='flex justify-between gap-1'>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-bl-lg' src={getImageUrl(images[3])} />
+          <img
+            loading='lazy'
+            className='max-w-full lg:min-w-[10rem]  object-cover rounded-bl-lg'
+            src={getImageUrl(images[3])}
+          />
         </div>
         <div className='flex'>
-          <img loading='lazy' className='max-w-full lg:min-w-[10rem]  object-cover rounded-br-lg' src={getImageUrl(images[4])} />
+          <img
+            loading='lazy'
+            className='max-w-full lg:min-w-[10rem]  object-cover rounded-br-lg'
+            src={getImageUrl(images[4])}
+          />
         </div>
       </div>
     </div>
