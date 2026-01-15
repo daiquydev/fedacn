@@ -7,7 +7,7 @@ import Loading from '../../components/GlobalComponents/Loading'
 import useQueryConfig from '../../hooks/useQueryConfig'
 import { omit } from 'lodash'
 import { useForm } from 'react-hook-form'
-import { getCategoryRecipes, getListRecipesForUser } from '../../apis/recipeApi'
+import { getCategoryRecipes, getRecipesForUser } from '../../apis/recipeApi'
 
 export default function Recipe() {
   const navigate = useNavigate()
@@ -23,7 +23,7 @@ export default function Recipe() {
   })
 
   const fetchRecipes = async ({ pageParam }) => {
-    return await getListRecipesForUser({ page: pageParam, ...queryConfig })
+    return await getRecipesForUser({ page: pageParam, ...queryConfig })
   }
 
   const { data, fetchNextPage, isFetchingNextPage, hasNextPage, isLoading } = useInfiniteQuery({
@@ -244,7 +244,7 @@ export default function Recipe() {
               <div className='flex flex-wrap gap-2 md:gap-3 xl:justify-end items-center'>
                 <select
                   onChange={handleChangeSort}
-                  defaultValue={queryConfig.sort}
+                  value={queryConfig.sort || 'desc'}
                   id='sort'
                   className='select  select-sm border bg-white dark:bg-slate-800 dark:border-none'
                 >
@@ -252,7 +252,7 @@ export default function Recipe() {
                   <option value='asc'>Lâu nhất</option>
                 </select>
                 <select
-                  defaultValue={queryConfig.processing_food || 'all'}
+                  value={queryConfig.processing_food || 'all'}
                   onChange={handleChangeProcessingFood}
                   id='status'
                   className='select select-sm border bg-white dark:bg-slate-800 dark:border-none'
@@ -274,7 +274,7 @@ export default function Recipe() {
                   <option value='Khác'>Khác</option>
                 </select>
                 <select
-                  defaultValue={queryConfig.region || 'all'}
+                  value={queryConfig.region || 'all'}
                   onChange={handleChangeRegion}
                   id='status'
                   className='select  select-sm border bg-white dark:bg-slate-800 dark:border-none'
@@ -287,7 +287,7 @@ export default function Recipe() {
                   <option value='4'>Món Âu</option>
                 </select>
                 <select
-                  defaultValue={queryConfig.interval_time || 'all'}
+                  value={queryConfig.interval_time || 'all'}
                   onChange={handleChangeIntervalTime}
                   id='status'
                   className='select  select-sm border bg-white dark:bg-slate-800 dark:border-none'
@@ -300,7 +300,7 @@ export default function Recipe() {
                   <option value='4'>Trên 120 phút</option>
                 </select>
                 <select
-                  defaultValue={queryConfig.difficult_level || 'all'}
+                  value={queryConfig.difficult_level || 'all'}
                   onChange={handleChangeDifficultLevel}
                   id='status'
                   className='select select-sm border bg-white dark:bg-slate-800 dark:border-none'
@@ -311,7 +311,7 @@ export default function Recipe() {
                   <option value='2'>Khó</option>
                 </select>
                 <select
-                  defaultValue={queryConfig.type || 'all'}
+                  value={queryConfig.type || 'all'}
                   onChange={handleChangeType}
                   id='status'
                   className='select my-2  select-sm border bg-white dark:bg-slate-800 dark:border-none'
@@ -325,7 +325,7 @@ export default function Recipe() {
                   <Loading className='flex ml-4' />
                 ) : (
                   <select
-                    defaultValue={queryConfig.category_recipe_id || 'all-category'}
+                    value={queryConfig.category_recipe_id || 'all-category'}
                     onChange={handleChangeCategory}
                     id='category'
                     className='select select-sm bg-white dark:bg-slate-800 dark:border-none'

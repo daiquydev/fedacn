@@ -24,10 +24,13 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     const token = getAccessTokenFromLS()
     if (isAuthenticated && token) {
-      const socket = io('http://localhost:4000', {
+      // Derive socket URL from env or current host; backend socket runs on same server/port 5000
+      const socketURL = import.meta.env.VITE_SOCKET_URL || `${window.location.protocol}//${window.location.hostname}:5000`
+      const socket = io(socketURL, {
         transports: ['websocket'],
         auth: {
-          token: token
+          // Server expects "Bearer <token>" then splits by space
+          token: `Bearer ${token}`
         }
       })
       setNewSocket(socket)

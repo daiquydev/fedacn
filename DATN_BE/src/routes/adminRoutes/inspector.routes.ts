@@ -17,7 +17,8 @@ import {
   getRecipeInAlbumForInspectorController,
   rejectAlbumController,
   rejectBlogController,
-  rejectRecipeController
+  rejectRecipeController,
+  getMealPlanReportsController
 } from '~/controllers/adminControllers/inspector.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { checkRole } from '~/middlewares/roles.middleware'
@@ -142,6 +143,13 @@ inspectorRouter.put(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
   wrapRequestHandler(rejectAlbumController)
+)
+
+inspectorRouter.get(
+  '/meal-plan-reports',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(getMealPlanReportsController)
 )
 
 export default inspectorRouter

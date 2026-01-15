@@ -13,16 +13,21 @@ export interface User {
   address?: string
   gender?: string
   weight?: number
+  target_weight?: number
   pre_weight?: {
     weight: number
     date: Date
   }[]
   height?: number
   age?: number
+  health_goal?: string
+  dietary_preferences?: string
+  allergies?: string
   hip?: number
   neck?: number
   waist?: number
   activity_level?: number
+  activity_level_text?: string
   BMI?: number
   BMR?: number
   TDEE?: number
@@ -70,6 +75,10 @@ const UserSchema = new mongoose.Schema<User>(
       type: Number,
       default: null
     },
+    target_weight: {
+      type: Number,
+      default: null
+    },
     pre_weight: [
       {
         weight: { type: Number, default: null },
@@ -83,6 +92,18 @@ const UserSchema = new mongoose.Schema<User>(
     age: {
       type: Number,
       default: null
+    },
+    health_goal: {
+      type: String,
+      default: ''
+    },
+    dietary_preferences: {
+      type: String,
+      default: ''
+    },
+    allergies: {
+      type: String,
+      default: ''
     },
     hip: {
       type: Number,
@@ -99,6 +120,10 @@ const UserSchema = new mongoose.Schema<User>(
     activity_level: {
       type: Number,
       default: null
+    },
+    activity_level_text: {
+      type: String,
+      default: ''
     },
     BMI: {
       type: Number,

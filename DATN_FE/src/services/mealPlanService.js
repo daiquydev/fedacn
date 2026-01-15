@@ -33,6 +33,17 @@ export const getMealPlanDetail = async (id) => {
   }
 }
 
+// Lấy hướng dẫn chế biến cho một món trong thực đơn
+export const getMealCookingInstructions = async (mealPlanId, mealId) => {
+  try {
+    const response = await http.get(`/meal-plans/${mealPlanId}/meals/${mealId}/cooking`)
+    return response
+  } catch (error) {
+    console.error('Error fetching meal cooking instructions:', error)
+    throw error
+  }
+}
+
 // Tạo thực đơn mới
 export const createMealPlan = async (data) => {
   try {
@@ -149,6 +160,30 @@ export const shareMealPlan = async ({ mealPlanId, content, privacy = '0' }) => {
   }
 }
 
+// Đánh giá thực đơn
+export const rateMealPlan = async (mealPlanId, rating) => {
+  try {
+    const payload = { meal_plan_id: mealPlanId, rating }
+    const response = await http.post('/meal-plans/actions/rate', payload)
+    return response
+  } catch (error) {
+    console.error('Error rating meal plan:', error)
+    throw error
+  }
+}
+
+// Báo cáo thực đơn
+export const reportMealPlan = async (mealPlanId, reason) => {
+  try {
+    const payload = { meal_plan_id: mealPlanId, reason }
+    const response = await http.post('/meal-plans/actions/report', payload)
+    return response
+  } catch (error) {
+    console.error('Error reporting meal plan:', error)
+    throw error
+  }
+}
+
 // Comment thực đơn
 export const commentMealPlan = async (mealPlanId, content, parentId) => {
   try {
@@ -206,6 +241,32 @@ export const getTrendingMealPlans = async (params = {}) => {
     return response
   } catch (error) {
     console.error('Error fetching trending meal plans:', error)
+    throw error
+  }
+}
+
+// Lấy thông tin bạn bè & lời mời của thực đơn
+export const getMealPlanSocialContext = async (mealPlanId) => {
+  try {
+    const response = await http.get(`/meal-plans/${mealPlanId}/social-context`)
+    return response
+  } catch (error) {
+    console.error('Error fetching meal plan social context:', error)
+    throw error
+  }
+}
+
+// Mời bạn bè tham gia thực đơn
+export const inviteFriendToMealPlan = async (mealPlanId, friendId, note) => {
+  try {
+    const payload = { friend_id: friendId }
+    if (note && note.trim()) {
+      payload.note = note.trim()
+    }
+    const response = await http.post(`/meal-plans/${mealPlanId}/invites`, payload)
+    return response
+  } catch (error) {
+    console.error('Error inviting friend to meal plan:', error)
     throw error
   }
 }

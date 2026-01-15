@@ -73,6 +73,23 @@ export const getMealPlanDetailController = async (req: Request, res: Response) =
   })
 }
 
+// Lấy hướng dẫn chế biến của món trong thực đơn
+export const getMealCookingInstructionsController = async (req: Request, res: Response) => {
+  const { meal_plan_id, meal_id } = req.params
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await mealPlanServices.getMealCookingInstructionsService({
+    meal_plan_id,
+    meal_id,
+    user_id: user?.user_id
+  })
+
+  return res.json({
+    result,
+    message: MEAL_PLAN_MESSAGE.GET_MEAL_COOKING_SUCCESS
+  })
+}
+
 // Cập nhật meal plan
 export const updateMealPlanController = async (req: Request, res: Response) => {
   const { id } = req.params
@@ -169,6 +186,40 @@ export const unbookmarkMealPlanController = async (req: Request, res: Response) 
   return res.json({
     result,
     message: MEAL_PLAN_MESSAGE.UNBOOKMARK_MEAL_PLAN_SUCCESS
+  })
+}
+
+// Rate meal plan
+export const rateMealPlanController = async (req: Request, res: Response) => {
+  const { meal_plan_id, rating } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await mealPlanServices.rateMealPlanService({
+    user_id: user.user_id,
+    meal_plan_id,
+    rating: Number(rating)
+  })
+
+  return res.json({
+    result,
+    message: MEAL_PLAN_MESSAGE.RATE_MEAL_PLAN_SUCCESS
+  })
+}
+
+// Report meal plan
+export const reportMealPlanController = async (req: Request, res: Response) => {
+  const { meal_plan_id, reason } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await mealPlanServices.reportMealPlanService({
+    user_id: user.user_id,
+    meal_plan_id,
+    reason
+  })
+
+  return res.json({
+    result,
+    message: MEAL_PLAN_MESSAGE.REPORT_MEAL_PLAN_SUCCESS
   })
 }
 
@@ -285,3 +336,38 @@ export const getTrendingMealPlansController = async (req: Request, res: Response
     message: MEAL_PLAN_MESSAGE.GET_TRENDING_MEAL_PLANS_SUCCESS
   })
 } 
+
+// Lấy thông tin bạn bè đang áp dụng + ứng viên mời
+export const getMealPlanSocialContextController = async (req: Request, res: Response) => {
+  const { meal_plan_id } = req.params
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await mealPlanServices.getMealPlanSocialContextService({
+    user_id: user.user_id,
+    meal_plan_id
+  })
+
+  return res.json({
+    result,
+    message: MEAL_PLAN_MESSAGE.GET_MEAL_PLAN_SOCIAL_SUCCESS
+  })
+}
+
+// Gửi lời mời áp dụng thực đơn cho bạn bè
+export const inviteFriendToMealPlanController = async (req: Request, res: Response) => {
+  const { meal_plan_id } = req.params
+  const { friend_id, note } = req.body
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await mealPlanServices.inviteFriendToMealPlanService({
+    user_id: user.user_id,
+    friend_id,
+    meal_plan_id,
+    note
+  })
+
+  return res.json({
+    result,
+    message: MEAL_PLAN_MESSAGE.INVITE_SENT_SUCCESS
+  })
+}

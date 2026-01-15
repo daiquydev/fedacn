@@ -25,6 +25,7 @@ const ReportDetail = lazy(() => import('./pages/ReportDetail'))
 const IngredientList = lazy(() => import('./pages/IngredientList'))
 const RecipeWritterList = lazy(() => import('./pages/RecipeWritterList'))
 const EditRecipe = lazy(() => import('./pages/EditRecipe'))
+const AdminCenter = lazy(() => import('./pages/AdminCenter'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -256,6 +257,16 @@ export default function useRouteElement() {
                 <MainLayout>
                   <Suspense>
                     <RequestUserList />
+                  </Suspense>
+                </MainLayout>
+              )
+            }
+            {
+              path: '/admin-center',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <AdminCenter />
                   </Suspense>
                 </MainLayout>
               )

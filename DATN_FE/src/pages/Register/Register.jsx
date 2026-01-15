@@ -10,6 +10,7 @@ import { omit } from 'lodash'
 import { isAxiosUnprocessableEntityError } from '../../utils/utils'
 import { toast } from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
+import { FcGoogle } from 'react-icons/fc'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -60,6 +61,25 @@ export default function Register() {
       }
     })
   })
+
+  const getGoogleAuthUrl = () => {
+    const { VITE_GOOGLE_CLIENT_ID, VITE_GOOGLE_REDIRECT_URI } = import.meta.env
+    const url = `https://accounts.google.com/o/oauth2/v2/auth`
+    const query = {
+      client_id: VITE_GOOGLE_CLIENT_ID,
+      redirect_uri: VITE_GOOGLE_REDIRECT_URI,
+      response_type: 'code',
+      scope: [
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email'
+      ].join(' '),
+      prompt: 'consent',
+      access_type: 'offline'
+    }
+    const queryString = new URLSearchParams(query).toString()
+    return `${url}?${queryString}`
+  }
+  const googleOAuthUrl = getGoogleAuthUrl()
   return (
     <form
       className='sm:w-2/3 w-full px-4 lg:px-5 lg:py-10 rounded-lg mx-auto lg:bg-white'
@@ -126,7 +146,23 @@ export default function Register() {
           </button>
         )}
 
-        <div className='text-gray-500 flex justify-center items-center mt-2 '>
+        {/* Divider */}
+        <div className='flex items-center my-4'>
+          <div className='flex-1 border-t border-gray-300'></div>
+          <span className='px-4 text-gray-500 text-sm'>hoặc</span>
+          <div className='flex-1 border-t border-gray-300'></div>
+        </div>
+
+        {/* Google Sign Up Button */}
+        <Link
+          to={googleOAuthUrl}
+          className='flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-gray-200 rounded-full hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 group'
+        >
+          <FcGoogle className='text-2xl' />
+          <span className='text-gray-600 font-medium group-hover:text-gray-800'>Đăng kí với Google</span>
+        </Link>
+
+        <div className='text-gray-500 flex justify-center items-center mt-4'>
           <span className='text-gray-400'>Bạn đã có tài khoản?</span>
           <Link className='ml-1 font-medium text-red-400 hover:underline hover:text-red-700' to='/login'>
             Đăng nhập

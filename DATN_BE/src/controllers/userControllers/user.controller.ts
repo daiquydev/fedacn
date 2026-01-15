@@ -104,6 +104,18 @@ export const updateUserController = async (req: Request, res: Response) => {
   })
 }
 
+export const updateHealthProfileUserController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+  const result = await usersService.updateHealthProfileService({
+    user_id: user.user_id,
+    ...req.body
+  })
+  return res.json({
+    message: USER_MESSAGE.UPDATE_USER_SUCCESS,
+    result: result
+  })
+}
+
 export const updatePasswordUserController = async (req: Request, res: Response) => {
   const user = req.decoded_authorization as TokenPayload
   const { old_password, new_password } = req.body

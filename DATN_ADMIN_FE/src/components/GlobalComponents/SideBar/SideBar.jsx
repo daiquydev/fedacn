@@ -115,6 +115,13 @@ export default function SideBar() {
                 </li>
 
                 <li>
+                  <NavLink to={'/admin-center'} className='link-custom '>
+                    <MdDashboardCustomize size={25} className='min-w-max' />
+                    Trung tâm admin
+                  </NavLink>
+                </li>
+
+                <li>
                   <NavLink to={'/request-list'} className='link-custom '>
                     <RiUserReceived2Fill size={25} className='min-w-max' />
                     Yêu cầu nâng cấp

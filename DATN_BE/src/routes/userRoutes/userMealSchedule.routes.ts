@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   getUserMealSchedulesController,
+  getActiveMealScheduleController,
   getUserMealScheduleDetailController,
   updateUserMealScheduleController,
   deleteUserMealScheduleController,
@@ -32,6 +33,14 @@ const userMealScheduleRouter = Router()
  * Query: { page?, limit?, status? }
  */
 userMealScheduleRouter.get('/', accessTokenValidator, wrapRequestHandler(getUserMealSchedulesController))
+
+/**
+ * Description: Get active meal schedule
+ * Path: /user-meal-schedules/active
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ */
+userMealScheduleRouter.get('/active', accessTokenValidator, wrapRequestHandler(getActiveMealScheduleController))
 
 /**
  * Description: Get user meal schedule detail

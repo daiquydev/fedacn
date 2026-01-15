@@ -88,6 +88,18 @@ const mealPlanApi = {
   // Lấy thực đơn đã thích
   getLikedMealPlans(params = {}) {
     return http.get('/meal-plans/liked', { params })
+  },
+
+  // Lấy thông tin bạn bè áp dụng & lời mời
+  getMealPlanSocialContext(id) {
+    return http.get(`/meal-plans/${id}/social-context`)
+  },
+
+  // Gửi lời mời tham gia thực đơn
+  inviteFriendToMealPlan(mealPlanId, friendId, note = '') {
+    const payload = { friend_id: friendId }
+    if (note?.trim()) payload.note = note.trim()
+    return http.post(`/meal-plans/${mealPlanId}/invites`, payload)
   }
 }
 

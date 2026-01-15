@@ -122,6 +122,145 @@ class PostService {
       key
     }
   }
+
+  // Get public post for unauthenticated users
+  async getPublicPostDetailService({ post_id }: { post_id: string }) {
+    const post = await PostModel.aggregate([
+      {
+        $match: {
+          _id: new ObjectId(post_id),
+          status: PostStatus.publish,
+          is_banned: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'image_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'images'
+        }
+      },
+      {
+        $addFields: {
+          images: {
+            $map: { input: '$images', as: 'image', in: '$$image.url' }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'like_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'likes'
+        }
+      },
+      {
+        $addFields: {
+          like_count: { $size: '$likes' },
+          is_like: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'comment_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'comments'
+        }
+      },
+      {
+        $addFields: {
+          comments: {
+            $filter: {
+              input: '$comments',
+              as: 'comment',
+              cond: { $eq: ['$$comment.is_banned', false] }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          comment_count: { $size: '$comments' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: 'parent_id',
+          foreignField: '_id',
+          as: 'parent_post'
+        }
+      },
+      { $unwind: { path: '$parent_post', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'image_posts',
+          localField: 'parent_post._id',
+          foreignField: 'post_id',
+          as: 'parent_images'
+        }
+      },
+      {
+        $addFields: {
+          parent_images: {
+            $map: { input: '$parent_images', as: 'image', in: '$$image.url' }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'parent_post.user_id',
+          foreignField: '_id',
+          as: 'parent_user'
+        }
+      },
+      { $unwind: { path: '$parent_user', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'parent_id',
+          as: 'share_posts'
+        }
+      },
+      {
+        $addFields: {
+          share_count: { $size: '$share_posts' }
+        }
+      },
+      {
+        $project: {
+          'user.password': 0,
+          'parent_user.password': 0,
+          likes: 0,
+          comments: 0,
+          share_posts: 0
+        }
+      }
+    ])
+
+    if (!post || post.length === 0) {
+      throw new ErrorWithStatus({
+        message: POST_MESSAGE.POST_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    return post
+  }
+
   async getPostService({ post_id, user_id }: { post_id: string; user_id: string }) {
     const post = await PostModel.aggregate([
       {
@@ -358,6 +497,193 @@ class PostService {
     }
     return post
   }
+  // Get public posts for unauthenticated users
+  async getPublicPostsService({ page, limit }: { page: number; limit: number }) {
+    if (!limit) limit = 10
+    if (!page) page = 1
+
+    const publicPosts = await PostModel.aggregate([
+      {
+        $match: {
+          status: PostStatus.publish,
+          is_banned: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'image_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'images'
+        }
+      },
+      {
+        $addFields: {
+          images: {
+            $map: {
+              input: '$images',
+              as: 'image',
+              in: '$$image.url'
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'like_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'likes'
+        }
+      },
+      {
+        $addFields: {
+          like_count: { $size: '$likes' },
+          is_like: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'comment_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'comments'
+        }
+      },
+      {
+        $addFields: {
+          comments: {
+            $filter: {
+              input: '$comments',
+              as: 'comment',
+              cond: { $eq: ['$$comment.is_banned', false] }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          comment_count: { $size: '$comments' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: 'parent_id',
+          foreignField: '_id',
+          as: 'parent_post'
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { 'parent_post.is_banned': false },
+            { parent_id: null, is_banned: false }
+          ]
+        }
+      },
+      {
+        $unwind: { path: '$parent_post', preserveNullAndEmptyArrays: true }
+      },
+      {
+        $lookup: {
+          from: 'image_posts',
+          localField: 'parent_post._id',
+          foreignField: 'post_id',
+          as: 'parent_images'
+        }
+      },
+      {
+        $addFields: {
+          parent_images: {
+            $map: {
+              input: '$parent_images',
+              as: 'image',
+              in: '$$image.url'
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'parent_post.user_id',
+          foreignField: '_id',
+          as: 'parent_user'
+        }
+      },
+      {
+        $unwind: { path: '$parent_user', preserveNullAndEmptyArrays: true }
+      },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'parent_id',
+          as: 'share_posts'
+        }
+      },
+      {
+        $addFields: {
+          share_posts: {
+            $filter: {
+              input: '$share_posts',
+              as: 'share_post',
+              cond: { $eq: ['$$share_post.is_banned', false] }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          share_count: { $size: '$share_posts' }
+        }
+      },
+      {
+        $project: {
+          'user.password': 0,
+          'parent_user.password': 0,
+          likes: 0,
+          comments: 0,
+          share_posts: 0
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $skip: (page - 1) * limit
+      },
+      {
+        $limit: limit
+      }
+    ])
+
+    const total = await PostModel.countDocuments({
+      status: PostStatus.publish,
+      is_banned: false
+    })
+
+    return {
+      posts: publicPosts,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit),
+      total
+    }
+  }
+
   async getNewFeedsService({ user_id, page, limit }: { user_id: string; page: number; limit: number }) {
     if (!limit) {
       limit = 5

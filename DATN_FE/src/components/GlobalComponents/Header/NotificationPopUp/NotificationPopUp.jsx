@@ -20,8 +20,25 @@ import { queryClient } from '../../../../main'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
+const NotificationTypes = {
+  follow: 0,
+  likePost: 1,
+  commentPost: 2,
+  commentChildPost: 3,
+  sharePost: 4,
+  likeRecipe: 5,
+  commentRecipe: 6,
+  bookmarkRecipe: 7,
+  commentBlog: 8,
+  bookmarkAlbum: 9,
+  shareMealPlan: 10,
+  mealPlanInvite: 11,
+  system: 12
+}
+
 export default function NotificationPopUp() {
   const [isMenu, setIsMenu] = useState(false)
+  const [invitePreview, setInvitePreview] = useState(null)
   const { notification, setNotification } = useContext(SocketContext)
   const ref = useRef()
   const handleClickOutside = (event) => {
@@ -72,6 +89,12 @@ export default function NotificationPopUp() {
     },
     enabled: isMenu
   })
+
+  const handleOpenInvite = (payload) => {
+    setInvitePreview(payload)
+  }
+
+  const handleCloseInvite = () => setInvitePreview(null)
 
   return (
     <div ref={ref}>
@@ -133,7 +156,7 @@ export default function NotificationPopUp() {
                         dataNotifications.data.result.notifications.map((notification) => {
                           return (
                             <div className='' key={notification._id}>
-                              <NotificationItem notification={notification} />
+                              <NotificationItem notification={notification} onOpenInvite={handleOpenInvite} />
                             </div>
                           )
                         })
@@ -159,6 +182,7 @@ export default function NotificationPopUp() {
           </motion.div>
         )}
       </AnimatePresence>
+      <InvitePreviewModal invite={invitePreview} onClose={handleCloseInvite} />
     </div>
   )
 }
@@ -177,26 +201,48 @@ export default function NotificationPopUp() {
 //   system
 // }
 
-const NotificationItem = ({ notification }) => {
+const NotificationItem = ({ notification, onOpenInvite }) => {
   const navigate = useNavigate()
 
+  const openInviteModal = () => {
+    if (!notification.metadata?.meal_plan_id && !notification.link_id) return
+    onOpenInvite?.({
+      senderName: notification.sender?.name || 'Người dùng',
+      avatar: notification.sender?.avatar,
+      mealPlanId: notification.metadata?.meal_plan_id || notification.link_id,
+      mealPlanTitle: notification.name_notification
+    })
+  }
+
   const checkNavigate = () => {
-    if (notification.type === 0) {
+    if (notification.type === NotificationTypes.follow) {
       return navigate(`/user/${notification.link_id}`)
     }
-    if (notification.type === 1 || notification.type === 2 || notification.type === 3 || notification.type === 4) {
+    if (
+      notification.type === NotificationTypes.likePost ||
+      notification.type === NotificationTypes.commentPost ||
+      notification.type === NotificationTypes.commentChildPost ||
+      notification.type === NotificationTypes.sharePost
+    ) {
       return navigate(`/post/${notification.link_id}`)
     }
-    if (notification.type === 5 || notification.type === 6 || notification.type === 7) {
+    if (
+      notification.type === NotificationTypes.likeRecipe ||
+      notification.type === NotificationTypes.commentRecipe ||
+      notification.type === NotificationTypes.bookmarkRecipe
+    ) {
       return navigate(`/cooking/recipe/${notification.link_id}`)
     }
-    if (notification.type === 8) {
+    if (notification.type === NotificationTypes.commentBlog) {
       return navigate(`/blog/${notification.link_id}`)
     }
-    if (notification.type === 9) {
+    if (notification.type === NotificationTypes.bookmarkAlbum) {
       return navigate(`/album/${notification.link_id}`)
     }
-    return
+    if (notification.type === NotificationTypes.mealPlanInvite) {
+      return openInviteModal()
+    }
+    return undefined
   }
 
   const readMutation = useMutation({
@@ -238,7 +284,7 @@ const NotificationItem = ({ notification }) => {
     })
   }
 
-  if (notification.type === 10) {
+  if (notification.type === NotificationTypes.shareMealPlan) {
     return (
       <div
         className={
@@ -302,7 +348,7 @@ const NotificationItem = ({ notification }) => {
       <div className='relative inline-block shrink-0'>
         <img
           className='w-12 h-12 object-cover rounded-full'
-          src={notification.sender.avatar ? notification.sender.avatar : useravatar}
+          src={notification.sender?.avatar ? notification.sender.avatar : useravatar}
           alt='image'
         />
         <span className='absolute bottom-0 right-0 inline-flex items-center justify-center w-6 h-6 bg-blue-600 rounded-full'>
@@ -325,10 +371,12 @@ const NotificationItem = ({ notification }) => {
         </span>
       </div>
       <div onClick={handleRead} className='ms-3 text-sm font-normal'>
-        <div className='text-sm font-semibold text-gray-900 dark:text-white'>{notification.sender.name}</div>
+        <div className='text-sm font-semibold text-gray-900 dark:text-white'>
+          {notification.sender?.name || 'Người dùng'}
+        </div>
         <div className='text-xs font-normal'>
           {notification.content}
-          {notification.type === 0 ? '' : ':'}{' '}
+          {notification.type === NotificationTypes.follow ? '' : ':'}{' '}
           <span className='font-medium'>{cutString(notification.name_notification, 40)}</span>
         </div>
         <span className='text-xs font-medium text-blue-600 dark:text-blue-300'>
@@ -336,5 +384,74 @@ const NotificationItem = ({ notification }) => {
         </span>
       </div>
     </div>
+  )
+}
+
+const InvitePreviewModal = ({ invite, onClose }) => {
+  const navigate = useNavigate()
+
+  if (!invite) return null
+
+  const handleView = () => {
+    if (!invite.mealPlanId) return
+    onClose?.()
+    navigate(`/meal-plan/${invite.mealPlanId}`)
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className='fixed inset-0 z-[1000] flex items-center justify-center px-4'
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <div className='absolute inset-0 bg-black/50' onClick={onClose} />
+        <motion.div
+          className='relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900'
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+        >
+          <div className='flex items-start justify-between gap-4'>
+            <div>
+              <p className='text-xs font-semibold uppercase tracking-[0.45em] text-emerald-500'>Meal plan</p>
+              <h3 className='mt-2 text-lg font-semibold text-gray-900 dark:text-white'>
+                {invite.senderName} đã mời bạn tham khảo thực đơn
+              </h3>
+            </div>
+            <button
+              type='button'
+              onClick={onClose}
+              className='text-gray-400 transition hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-200'
+            >
+              ×
+            </button>
+          </div>
+          <div className='mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'>
+            <p className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Tên thực đơn</p>
+            <p className='mt-1 text-base font-medium text-gray-900 dark:text-white'>
+              {invite.mealPlanTitle || 'Thực đơn đặc biệt'}
+            </p>
+          </div>
+          <div className='mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end'>
+            <button
+              type='button'
+              onClick={onClose}
+              className='rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800'
+            >
+              Để sau
+            </button>
+            <button
+              type='button'
+              onClick={handleView}
+              className='rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500'
+            >
+              Xem thực đơn
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }

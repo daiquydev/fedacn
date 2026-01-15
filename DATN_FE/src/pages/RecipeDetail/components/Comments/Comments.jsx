@@ -4,14 +4,14 @@ import { queryClient } from '../../../../main'
 import { useForm } from 'react-hook-form'
 
 import CommentItems from '../CommentItems'
-import { commentRecipe, getComments } from '../../../../apis/recipeApi'
+import { createCommentRecipe, getCommentRecipe } from '../../../../apis/recipeApi'
 
 export default function Comments({ recipe }) {
   const fetchComment = async ({ pageParam }) => {
-    return await getComments({ page: pageParam, recipe_id: recipe._id })
+    return await getCommentRecipe({ page: pageParam, recipe_id: recipe._id })
   }
   const commentMutation = useMutation({
-    mutationFn: (body) => commentRecipe(body)
+    mutationFn: (body) => createCommentRecipe(body)
   })
 
   const { register, handleSubmit, reset } = useForm({

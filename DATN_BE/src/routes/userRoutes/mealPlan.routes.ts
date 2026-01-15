@@ -15,9 +15,15 @@ import {
   getMealPlanCommentsController,
   applyMealPlanController,
   getFeaturedMealPlansController,
-  getTrendingMealPlansController
+  getTrendingMealPlansController,
+  getMealCookingInstructionsController,
+  getMealPlanSocialContextController,
+  inviteFriendToMealPlanController,
+  rateMealPlanController,
+  reportMealPlanController
 } from '~/controllers/userControllers/mealPlan.controller'
-import { accessTokenValidator } from '~/middlewares/authUser.middleware'
+import { accessTokenValidator, optionalAccessTokenValidator } from '~/middlewares/authUser.middleware'
+import { getMealPlanSocialContextValidator, inviteFriendToMealPlanValidator } from '~/middlewares/mealPlan.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
 
 const mealPlanRouter = Router()
@@ -65,6 +71,19 @@ mealPlanRouter.get('/featured', wrapRequestHandler(getFeaturedMealPlansControlle
 mealPlanRouter.get('/trending', wrapRequestHandler(getTrendingMealPlansController))
 
 /**
+ * Description: Get social context (friends applying / invite candidates)
+ * Path: /meal-plans/:meal_plan_id/social-context
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ */
+mealPlanRouter.get(
+  '/:meal_plan_id/social-context',
+  accessTokenValidator,
+  getMealPlanSocialContextValidator,
+  wrapRequestHandler(getMealPlanSocialContextController)
+)
+
+/**
  * Description: Get bookmarked meal plans
  * Path: /meal-plans/bookmarked
  * Method: GET
@@ -74,12 +93,24 @@ mealPlanRouter.get('/trending', wrapRequestHandler(getTrendingMealPlansControlle
 mealPlanRouter.get('/bookmarked', accessTokenValidator, wrapRequestHandler(getBookmarkedMealPlansController))
 
 /**
+ * Description: Get cooking instructions for a meal inside a meal plan
+ * Path: /meal-plans/:meal_plan_id/meals/:meal_id/cooking
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> } (optional)
+ */
+mealPlanRouter.get(
+  '/:meal_plan_id/meals/:meal_id/cooking',
+  optionalAccessTokenValidator,
+  wrapRequestHandler(getMealCookingInstructionsController)
+)
+
+/**
  * Description: Get meal plan detail
  * Path: /meal-plans/:id
  * Method: GET
  * Header: { Authorization: Bearer <access_token> } (optional)
  */
-mealPlanRouter.get('/:id', accessTokenValidator, wrapRequestHandler(getMealPlanDetailController))
+mealPlanRouter.get('/:id', optionalAccessTokenValidator, wrapRequestHandler(getMealPlanDetailController))
 
 /**
  * Description: Update meal plan
@@ -152,6 +183,24 @@ mealPlanRouter.post('/actions/unbookmark', accessTokenValidator, wrapRequestHand
 mealPlanRouter.post('/actions/comment', accessTokenValidator, wrapRequestHandler(commentMealPlanController))
 
 /**
+ * Description: Rate meal plan
+ * Path: /meal-plans/actions/rate
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { meal_plan_id: string, rating: number }
+ */
+mealPlanRouter.post('/actions/rate', accessTokenValidator, wrapRequestHandler(rateMealPlanController))
+
+/**
+ * Description: Report meal plan
+ * Path: /meal-plans/actions/report
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { meal_plan_id: string, reason: string }
+ */
+mealPlanRouter.post('/actions/report', accessTokenValidator, wrapRequestHandler(reportMealPlanController))
+
+/**
  * Description: Apply meal plan to personal schedule
  * Path: /meal-plans/actions/apply
  * Method: POST
@@ -159,5 +208,19 @@ mealPlanRouter.post('/actions/comment', accessTokenValidator, wrapRequestHandler
  * Body: { meal_plan_id: string, title: string, start_date: Date, target_weight?: number, notes?: string, reminders?: any[] }
  */
 mealPlanRouter.post('/actions/apply', accessTokenValidator, wrapRequestHandler(applyMealPlanController))
+
+/**
+ * Description: Invite a mutual friend to apply this meal plan
+ * Path: /meal-plans/:meal_plan_id/invites
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { friend_id: string, note?: string }
+ */
+mealPlanRouter.post(
+  '/:meal_plan_id/invites',
+  accessTokenValidator,
+  inviteFriendToMealPlanValidator,
+  wrapRequestHandler(inviteFriendToMealPlanController)
+)
 
 export default mealPlanRouter 

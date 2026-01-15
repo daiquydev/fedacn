@@ -12,6 +12,8 @@ import {
   getPostCommentsController,
   getPostController,
   getPostsWithMealPlanController,
+  getPublicPostsController,
+  getPublicPostDetailController,
   getUserPostController,
   likePostController,
   sharePostController,
@@ -25,6 +27,10 @@ import { wrapRequestHandler } from '~/utils/handler'
 import upload from '~/utils/multer'
 
 const postsRouter = Router()
+
+// Public routes (no authentication required)
+postsRouter.get('/public', limitAndPageValidator, wrapRequestHandler(getPublicPostsController))
+postsRouter.get('/public/:post_id', wrapRequestHandler(getPublicPostDetailController))
 
 postsRouter.post('/upload', accessTokenValidator, upload.single('image'), wrapRequestHandler(uploadPostImageController))
 postsRouter.post('/', accessTokenValidator, upload.array('image', 5), wrapRequestHandler(createPostController))

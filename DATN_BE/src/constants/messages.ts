@@ -172,6 +172,8 @@ export const RECIPE_MESSAGE = {
   CREATE_RECIPE_SUCCESS: 'Tạo công thức thành công',
   GET_RECIPE_SUCCESS: 'Lấy thông tin công thức thành công',
   IMAGE_REQUIRED: 'Ảnh không được để trống',
+  INSTRUCTIONS_REQUIRED: 'Hướng dẫn nấu không được để trống',
+  INSTRUCTIONS_INVALID: 'Hướng dẫn nấu không hợp lệ',
   REGION_INVALID: 'Khu vực không hợp lệ',
   TITLE_REQUIRED: 'Tiêu đề không được để trống',
   CONTENT_REQUIRED: 'Nội dung không được để trống',
@@ -212,19 +214,30 @@ export const MEAL_PLAN_MESSAGE = {
   GET_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn thành công',
   GET_MY_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn của tôi thành công',
   GET_MEAL_PLAN_DETAIL_SUCCESS: 'Lấy chi tiết thực đơn thành công',
+  GET_MEAL_COOKING_SUCCESS: 'Lấy hướng dẫn chế biến thành công',
   UPDATE_MEAL_PLAN_SUCCESS: 'Cập nhật thực đơn thành công',
   DELETE_MEAL_PLAN_SUCCESS: 'Xóa thực đơn thành công',
   LIKE_MEAL_PLAN_SUCCESS: 'Like thực đơn thành công',
   UNLIKE_MEAL_PLAN_SUCCESS: 'Unlike thực đơn thành công',
   BOOKMARK_MEAL_PLAN_SUCCESS: 'Bookmark thực đơn thành công',
   UNBOOKMARK_MEAL_PLAN_SUCCESS: 'Unbookmark thực đơn thành công',
+  RATE_MEAL_PLAN_SUCCESS: 'Đánh giá thực đơn thành công',
   GET_BOOKMARKED_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn đã bookmark thành công',
   COMMENT_MEAL_PLAN_SUCCESS: 'Bình luận thực đơn thành công',
   GET_MEAL_PLAN_COMMENTS_SUCCESS: 'Lấy bình luận thực đơn thành công',
   APPLY_MEAL_PLAN_SUCCESS: 'Áp dụng thực đơn thành công',
+  REPORT_MEAL_PLAN_SUCCESS: 'Báo cáo thực đơn thành công',
   GET_FEATURED_MEAL_PLANS_SUCCESS: 'Lấy thực đơn nổi bật thành công',
   GET_TRENDING_MEAL_PLANS_SUCCESS: 'Lấy thực đơn đang thịnh hành thành công',
+  GET_MEAL_PLAN_SOCIAL_SUCCESS: 'Lấy thông tin bạn bè đang áp dụng thành công',
+  INVITE_SENT_SUCCESS: 'Gửi lời mời tham gia thực đơn thành công',
+  INVITE_ALREADY_SENT: 'Bạn đã gửi lời mời cho người này trước đó',
+  INVITE_TARGET_NOT_FRIEND: 'Chỉ có thể mời những người theo dõi lẫn nhau',
+  INVITE_SELF_NOT_ALLOWED: 'Không thể tự mời chính mình',
+  FRIEND_ALREADY_APPLYING: 'Người này đã áp dụng thực đơn này',
   MEAL_PLAN_NOT_FOUND: 'Không tìm thấy thực đơn',
+  MEAL_PLAN_MEAL_NOT_FOUND: 'Không tìm thấy món ăn trong thực đơn',
+  MEAL_PLAN_MEAL_MISMATCH: 'Món ăn không thuộc thực đơn này',
   TITLE_REQUIRED: 'Tiêu đề không được để trống',
   DURATION_INVALID: 'Thời gian không hợp lệ',
   CATEGORY_INVALID: 'Danh mục không hợp lệ',
@@ -232,12 +245,16 @@ export const MEAL_PLAN_MESSAGE = {
   ALREADY_LIKED: 'Đã like thực đơn này rồi',
   ALREADY_BOOKMARKED: 'Đã bookmark thực đơn này rồi',
   NOT_LIKED: 'Chưa like thực đơn này',
-  NOT_BOOKMARKED: 'Chưa bookmark thực đơn này'
+  NOT_BOOKMARKED: 'Chưa bookmark thực đơn này',
+  RATING_INVALID: 'Đánh giá không hợp lệ',
+  ALREADY_REPORTED: 'Bạn đã báo cáo thực đơn này rồi',
+  REASON_REQUIRED: 'Vui lòng nhập lý do báo cáo'
 }
 
 export const USER_MEAL_SCHEDULE_MESSAGE = {
   GET_USER_MEAL_SCHEDULES_SUCCESS: 'Lấy danh sách lịch thực đơn thành công',
   GET_USER_MEAL_SCHEDULE_DETAIL_SUCCESS: 'Lấy chi tiết lịch thực đơn thành công',
+  GET_ACTIVE_MEAL_SCHEDULE_SUCCESS: 'Lấy thực đơn đang áp dụng thành công',
   UPDATE_USER_MEAL_SCHEDULE_SUCCESS: 'Cập nhật lịch thực đơn thành công',
   DELETE_USER_MEAL_SCHEDULE_SUCCESS: 'Xóa lịch thực đơn thành công',
   GET_DAY_MEAL_ITEMS_SUCCESS: 'Lấy món ăn trong ngày thành công',
@@ -324,7 +341,8 @@ export const INSPECTOR_MESSAGE = {
   GET_ALBUM_DETAIL_FOR_INSPECTOR_SUCCESS: 'Lấy thông tin album cho inspector thành công',
   GET_RECIPE_IN_ALBUM_FOR_INSPECTOR_SUCCESS: 'Lấy danh sách công thức trong album cho inspector thành công',
   ACCEPT_ALBUM_SUCCESS: 'Duyệt album thành công',
-  REJECT_ALBUM_SUCCESS: 'Từ chối album thành công'
+  REJECT_ALBUM_SUCCESS: 'Từ chối album thành công',
+  GET_MEAL_PLAN_REPORT_SUCCESS: 'Lấy danh sách thực đơn bị báo cáo thành công'
 }
 
 export const WRITTER_MESSAGE = {

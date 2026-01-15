@@ -14,6 +14,7 @@ import NotificationModel from '~/models/schemas/notification.schema'
 import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import UserModel from '~/models/schemas/user.schema'
+import MealPlanModel from '~/models/schemas/mealPlan.schema'
 import { trainRecipesRecommender } from '~/utils/recommend'
 
 class InspectorService {
@@ -91,6 +92,72 @@ class InspectorService {
     const total = await PostModel.find(condition).countDocuments()
     const totalPage = Math.ceil(total / limit)
     return { posts, totalPage, page, limit }
+  }
+
+  async getMealPlanReportsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const matchStage = {
+      $match: {
+        ...(search
+          ? {
+              $or: [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+              ]
+            }
+          : {}),
+        // ensure the report array exists before sizing it to avoid $size on missing field
+        $expr: { $gt: [{ $size: { $ifNull: ['$report_meal_plan', []] } }, 0] }
+      }
+    }
+
+    const mealPlans = await MealPlanModel.aggregate([
+      matchStage,
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author_id',
+          foreignField: '_id',
+          as: 'author'
+        }
+      },
+      { $unwind: '$author' },
+      {
+        $addFields: {
+          report_count: { $size: { $ifNull: ['$report_meal_plan', []] } },
+          latest_reports: {
+            $slice: [
+              {
+                $map: {
+                  input: { $ifNull: ['$report_meal_plan', []] },
+                  as: 'report',
+                  in: {
+                    user_id: '$$report.user_id',
+                    reason: '$$report.reason',
+                    created_at: '$$report.created_at'
+                  }
+                }
+              },
+              3
+            ]
+          }
+        }
+      },
+      { $sort: { report_count: -1, updatedAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ])
+
+    const totalAggregation = await MealPlanModel.aggregate([matchStage, { $count: 'total' }])
+    const total = totalAggregation[0]?.total || 0
+    return {
+      meal_plans: mealPlans,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_page: Math.ceil(total / limit)
+      }
+    }
   }
   async getPostReportDetailService({ post_id }: { post_id: string }) {
     const post = await PostModel.aggregate([

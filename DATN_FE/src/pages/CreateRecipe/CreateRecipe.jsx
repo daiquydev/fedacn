@@ -118,9 +118,16 @@ export default function CreateRecipe() {
     const formData = new FormData()
     
     // Filter out empty ingredients, instructions, and tags
-    const validIngredients = ingredients.filter(ing => ing.name.trim() !== '')
-    const validInstructions = instructions.filter(inst => inst.trim() !== '')
-    const validTags = tags.filter(tag => tag.trim() !== '')
+    const validIngredients = ingredients.filter((ing) => ing.name.trim() !== '')
+    const validInstructions = instructions
+      .map((inst) => inst.trim())
+      .filter((inst) => inst !== '')
+    const validTags = tags.map((tag) => tag.trim()).filter((tag) => tag !== '')
+
+    if (validInstructions.length === 0) {
+      toast.error('Vui lòng thêm ít nhất một bước hướng dẫn')
+      return
+    }
 
     // Basic recipe data
     formData.append('title', data.title)

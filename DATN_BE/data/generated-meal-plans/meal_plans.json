@@ -1,0 +1,852 @@
+[
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c0"
+    },
+    "title": "Giảm cân nhẹ nhàng #1",
+    "description": "Thực đơn giảm cân nhẹ nhàng với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "5"
+    },
+    "category": {
+      "$numberInt": "0"
+    },
+    "target_calories": {
+      "$numberInt": "1693"
+    },
+    "total_calories": {
+      "$numberInt": "4020"
+    },
+    "target_protein": {
+      "$numberInt": "116"
+    },
+    "target_carbs": {
+      "$numberInt": "166"
+    },
+    "target_fat": {
+      "$numberInt": "55"
+    },
+    "image": "https://images.unsplash.com/photo-1646829873498-e874cfa27933?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxHaSVFMSVCQSVBM20lMjBjJUMzJUEybiUyMG5oJUUxJUJBJUI5JTIwbmglQzMlQTBuZyUyMCUyMzF8ZW58MXwwfHx8MTc2NzgxODY4M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1646829873498-e874cfa27933?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxHaSVFMSVCQSVBM20lMjBjJUMzJUEybiUyMG5oJUUxJUJBJUI5JTIwbmglQzMlQTBuZyUyMCUyMzF8ZW58MXwwfHx8MTc2NzgxODY4M3ww&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "0"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "giảm cân",
+      "low-fat"
+    ],
+    "likes_count": {
+      "$numberInt": "13"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "45"
+    },
+    "rating": {
+      "$numberDouble": "4.3"
+    },
+    "rating_count": {
+      "$numberInt": "14"
+    },
+    "views_count": {
+      "$numberInt": "39"
+    },
+    "shared_count": {
+      "$numberInt": "16"
+    },
+    "featured": false,
+    "search_fields": "giảm cân nhẹ nhàng giảm cân low-fat",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40da"
+    },
+    "title": "Tăng cơ khoa học #2",
+    "description": "Thực đơn tăng cơ khoa học với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "4"
+    },
+    "category": {
+      "$numberInt": "2"
+    },
+    "target_calories": {
+      "$numberInt": "2132"
+    },
+    "total_calories": {
+      "$numberInt": "4020"
+    },
+    "target_protein": {
+      "$numberInt": "95"
+    },
+    "target_carbs": {
+      "$numberInt": "241"
+    },
+    "target_fat": {
+      "$numberInt": "52"
+    },
+    "image": "https://images.unsplash.com/photo-1648219247565-d769df5e2692?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxUJUM0JTgzbmclMjBjJUM2JUExJTIwa2hvYSUyMGglRTElQkIlOERjJTIwJTIzMnxlbnwxfDB8fHwxNzY3ODE4Njg0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1648219247565-d769df5e2692?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxUJUM0JTgzbmclMjBjJUM2JUExJTIwa2hvYSUyMGglRTElQkIlOERjJTIwJTIzMnxlbnwxfDB8fHwxNzY3ODE4Njg0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "1"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "tăng cơ",
+      "high-protein"
+    ],
+    "likes_count": {
+      "$numberInt": "64"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "72"
+    },
+    "rating": {
+      "$numberDouble": "4.3"
+    },
+    "rating_count": {
+      "$numberInt": "31"
+    },
+    "views_count": {
+      "$numberInt": "320"
+    },
+    "shared_count": {
+      "$numberInt": "18"
+    },
+    "featured": false,
+    "search_fields": "tăng cơ khoa học tăng cơ high-protein",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "title": "Eat Clean cân bằng #3",
+    "description": "Thực đơn eat clean cân bằng với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "6"
+    },
+    "category": {
+      "$numberInt": "3"
+    },
+    "target_calories": {
+      "$numberInt": "2265"
+    },
+    "total_calories": {
+      "$numberInt": "4960"
+    },
+    "target_protein": {
+      "$numberInt": "96"
+    },
+    "target_carbs": {
+      "$numberInt": "220"
+    },
+    "target_fat": {
+      "$numberInt": "81"
+    },
+    "image": "https://images.unsplash.com/photo-1527224538127-2104bb71c51b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxFYXQlMjBDbGVhbiUyMGMlQzMlQTJuJTIwYiVFMSVCQSVCMW5nJTIwJTIzM3xlbnwxfDB8fHwxNzY3ODE4Njg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1527224538127-2104bb71c51b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxFYXQlMjBDbGVhbiUyMGMlQzMlQTJuJTIwYiVFMSVCQSVCMW5nJTIwJTIzM3xlbnwxfDB8fHwxNzY3ODE4Njg1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "0"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "eat-clean",
+      "balanced"
+    ],
+    "likes_count": {
+      "$numberInt": "85"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "25"
+    },
+    "rating": {
+      "$numberInt": "4"
+    },
+    "rating_count": {
+      "$numberInt": "53"
+    },
+    "views_count": {
+      "$numberInt": "425"
+    },
+    "shared_count": {
+      "$numberInt": "18"
+    },
+    "featured": false,
+    "search_fields": "eat clean cân bằng eat-clean balanced",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "title": "Thực đơn chay #4",
+    "description": "Thực đơn thực đơn chay với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "7"
+    },
+    "category": {
+      "$numberInt": "4"
+    },
+    "target_calories": {
+      "$numberInt": "1896"
+    },
+    "total_calories": {
+      "$numberInt": "6500"
+    },
+    "target_protein": {
+      "$numberInt": "85"
+    },
+    "target_carbs": {
+      "$numberInt": "254"
+    },
+    "target_fat": {
+      "$numberInt": "61"
+    },
+    "image": "https://images.unsplash.com/photo-1715755991417-12bd09e46f48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2ZWdldGFyaWFuJTIwbWVhbCUyMGJvd2x8ZW58MXwwfHx8MTc2NzgxODc3OHww&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1715755991417-12bd09e46f48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2ZWdldGFyaWFuJTIwbWVhbCUyMGJvd2x8ZW58MXwwfHx8MTc2NzgxODc3OHww&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "1"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "vegetarian",
+      "plant-based"
+    ],
+    "likes_count": {
+      "$numberInt": "29"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "69"
+    },
+    "rating": {
+      "$numberDouble": "4.7"
+    },
+    "rating_count": {
+      "$numberInt": "22"
+    },
+    "views_count": {
+      "$numberInt": "145"
+    },
+    "shared_count": {
+      "$numberInt": "48"
+    },
+    "featured": false,
+    "search_fields": "thực đơn chay vegetarian plant-based",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "title": "Low Carb linh hoạt #5",
+    "description": "Thực đơn low carb linh hoạt với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "7"
+    },
+    "category": {
+      "$numberInt": "6"
+    },
+    "target_calories": {
+      "$numberInt": "2066"
+    },
+    "total_calories": {
+      "$numberInt": "6165"
+    },
+    "target_protein": {
+      "$numberInt": "80"
+    },
+    "target_carbs": {
+      "$numberInt": "217"
+    },
+    "target_fat": {
+      "$numberInt": "46"
+    },
+    "image": "https://images.unsplash.com/photo-1559058789-672da06263d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxsb3clMjBjYXJiJTIwbWVhbHxlbnwxfDB8fHwxNzY3ODE4Nzc5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1559058789-672da06263d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxsb3clMjBjYXJiJTIwbWVhbHxlbnwxfDB8fHwxNzY3ODE4Nzc5fDA&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "1"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "low-carb",
+      "keto-friendly"
+    ],
+    "likes_count": {
+      "$numberInt": "9"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "10"
+    },
+    "rating": {
+      "$numberDouble": "4.3"
+    },
+    "rating_count": {
+      "$numberInt": "45"
+    },
+    "views_count": {
+      "$numberInt": "63"
+    },
+    "shared_count": {
+      "$numberInt": "23"
+    },
+    "featured": false,
+    "search_fields": "low carb linh hoạt low-carb keto-friendly",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4156"
+    },
+    "title": "Keto gọn nhẹ #6",
+    "description": "Thực đơn keto gọn nhẹ với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "3"
+    },
+    "category": {
+      "$numberInt": "5"
+    },
+    "target_calories": {
+      "$numberInt": "2182"
+    },
+    "total_calories": {
+      "$numberInt": "2475"
+    },
+    "target_protein": {
+      "$numberInt": "93"
+    },
+    "target_carbs": {
+      "$numberInt": "196"
+    },
+    "target_fat": {
+      "$numberInt": "48"
+    },
+    "image": "https://images.unsplash.com/photo-1559058789-672da06263d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxrZXRvJTIwbWVhbHxlbnwxfDB8fHwxNzY3ODE4NzgwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1559058789-672da06263d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxrZXRvJTIwbWVhbHxlbnwxfDB8fHwxNzY3ODE4NzgwfDA&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "2"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "keto",
+      "fat-adapted"
+    ],
+    "likes_count": {
+      "$numberInt": "70"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "10"
+    },
+    "rating": {
+      "$numberDouble": "4.5"
+    },
+    "rating_count": {
+      "$numberInt": "48"
+    },
+    "views_count": {
+      "$numberInt": "560"
+    },
+    "shared_count": {
+      "$numberInt": "17"
+    },
+    "featured": false,
+    "search_fields": "keto gọn nhẹ keto fat-adapted",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "title": "Kiểm soát đường huyết #7",
+    "description": "Thực đơn kiểm soát đường huyết với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "7"
+    },
+    "category": {
+      "$numberInt": "8"
+    },
+    "target_calories": {
+      "$numberInt": "2289"
+    },
+    "total_calories": {
+      "$numberInt": "6300"
+    },
+    "target_protein": {
+      "$numberInt": "95"
+    },
+    "target_carbs": {
+      "$numberInt": "185"
+    },
+    "target_fat": {
+      "$numberInt": "77"
+    },
+    "image": "https://images.unsplash.com/photo-1722289957691-a4173d8efb7d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxkaWFiZXRlcyUyMGZyaWVuZGx5JTIwbWVhbHxlbnwxfDB8fHwxNzY3ODE4NzgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1722289957691-a4173d8efb7d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxkaWFiZXRlcyUyMGZyaWVuZGx5JTIwbWVhbHxlbnwxfDB8fHwxNzY3ODE4NzgxfDA&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "1"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "diabetes",
+      "low-glycemic"
+    ],
+    "likes_count": {
+      "$numberInt": "57"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "8"
+    },
+    "rating": {
+      "$numberDouble": "4.2"
+    },
+    "rating_count": {
+      "$numberInt": "30"
+    },
+    "views_count": {
+      "$numberInt": "285"
+    },
+    "shared_count": {
+      "$numberInt": "37"
+    },
+    "featured": false,
+    "search_fields": "kiểm soát đường huyết diabetes low-glycemic",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c418a"
+    },
+    "title": "Tốt cho tim mạch #8",
+    "description": "Thực đơn tốt cho tim mạch với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "4"
+    },
+    "category": {
+      "$numberInt": "9"
+    },
+    "target_calories": {
+      "$numberInt": "1871"
+    },
+    "total_calories": {
+      "$numberInt": "3660"
+    },
+    "target_protein": {
+      "$numberInt": "122"
+    },
+    "target_carbs": {
+      "$numberInt": "220"
+    },
+    "target_fat": {
+      "$numberInt": "62"
+    },
+    "image": "https://images.unsplash.com/photo-1715111965644-3d885beb3a44?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxUJUUxJUJCJTkxdCUyMGNobyUyMHRpbSUyMG0lRTElQkElQTFjaCUyMCUyMzh8ZW58MXwwfHx8MTc2NzgxODY5MHww&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1715111965644-3d885beb3a44?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxUJUUxJUJCJTkxdCUyMGNobyUyMHRpbSUyMG0lRTElQkElQTFjaCUyMCUyMzh8ZW58MXwwfHx8MTc2NzgxODY5MHww&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "0"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "heart-healthy",
+      "omega-3"
+    ],
+    "likes_count": {
+      "$numberInt": "17"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "10"
+    },
+    "rating": {
+      "$numberDouble": "4.1"
+    },
+    "rating_count": {
+      "$numberInt": "20"
+    },
+    "views_count": {
+      "$numberInt": "119"
+    },
+    "shared_count": {
+      "$numberInt": "27"
+    },
+    "featured": false,
+    "search_fields": "tốt cho tim mạch heart-healthy omega-3",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "title": "Tăng cân an toàn #9",
+    "description": "Thực đơn tăng cân an toàn với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "6"
+    },
+    "category": {
+      "$numberInt": "1"
+    },
+    "target_calories": {
+      "$numberInt": "2209"
+    },
+    "total_calories": {
+      "$numberInt": "5520"
+    },
+    "target_protein": {
+      "$numberInt": "138"
+    },
+    "target_carbs": {
+      "$numberInt": "215"
+    },
+    "target_fat": {
+      "$numberInt": "51"
+    },
+    "image": "https://images.unsplash.com/photo-1676300187020-1e7777f8b841?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxoaWdoJTIwY2Fsb3JpZSUyMGhlYWx0aHklMjBtZWFsfGVufDF8MHx8fDE3Njc4MTg3ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1676300187020-1e7777f8b841?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxoaWdoJTIwY2Fsb3JpZSUyMGhlYWx0aHklMjBtZWFsfGVufDF8MHx8fDE3Njc4MTg3ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "1"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "tăng cân",
+      "calorie-surplus"
+    ],
+    "likes_count": {
+      "$numberInt": "50"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "46"
+    },
+    "rating": {
+      "$numberDouble": "4.9"
+    },
+    "rating_count": {
+      "$numberInt": "10"
+    },
+    "views_count": {
+      "$numberInt": "200"
+    },
+    "shared_count": {
+      "$numberInt": "41"
+    },
+    "featured": false,
+    "search_fields": "tăng cân an toàn tăng cân calorie-surplus",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "title": "Protein cao #10",
+    "description": "Thực đơn protein cao với công thức đa dạng, cân bằng dưỡng chất.",
+    "author_id": {
+      "$oid": "68fdefb118a387f7308056ce"
+    },
+    "duration": {
+      "$numberInt": "6"
+    },
+    "category": {
+      "$numberInt": "7"
+    },
+    "target_calories": {
+      "$numberInt": "1806"
+    },
+    "total_calories": {
+      "$numberInt": "5140"
+    },
+    "target_protein": {
+      "$numberInt": "112"
+    },
+    "target_carbs": {
+      "$numberInt": "240"
+    },
+    "target_fat": {
+      "$numberInt": "84"
+    },
+    "image": "https://images.unsplash.com/photo-1742860866012-fc167d8366bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxQcm90ZWluJTIwY2FvJTIwJTIzMTB8ZW58MXwwfHx8MTc2NzgxODY5Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+    "images": [
+      "https://images.unsplash.com/photo-1742860866012-fc167d8366bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxQcm90ZWluJTIwY2FvJTIwJTIzMTB8ZW58MXwwfHx8MTc2NzgxODY5Mnww&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    "status": {
+      "$numberInt": "1"
+    },
+    "is_public": true,
+    "difficulty_level": {
+      "$numberInt": "0"
+    },
+    "price_range": "medium",
+    "suitable_for": [],
+    "restrictions": [],
+    "tags": [
+      "high-protein",
+      "fitness"
+    ],
+    "likes_count": {
+      "$numberInt": "100"
+    },
+    "comments_count": {
+      "$numberInt": "0"
+    },
+    "bookmarks_count": {
+      "$numberInt": "0"
+    },
+    "applied_count": {
+      "$numberInt": "28"
+    },
+    "rating": {
+      "$numberInt": "5"
+    },
+    "rating_count": {
+      "$numberInt": "7"
+    },
+    "views_count": {
+      "$numberInt": "400"
+    },
+    "shared_count": {
+      "$numberInt": "38"
+    },
+    "featured": false,
+    "search_fields": "protein cao high-protein fitness",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  }
+]

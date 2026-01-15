@@ -158,8 +158,8 @@ export default function MyMealPlans() {
       setPlanToApply(plan)
       setStartDate(getToday())
       setApplyModalOpen(true)
-      const schedule = await getActiveMealSchedule()
-      setActiveSchedule(schedule)
+      const schedulePayload = await getActiveMealSchedule()
+      setActiveSchedule(schedulePayload?.schedule || null)
     } catch (error) {
       console.error('Error fetching active schedule:', error)
       setActiveSchedule(null)

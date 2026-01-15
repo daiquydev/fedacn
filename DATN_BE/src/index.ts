@@ -33,6 +33,7 @@ import { trainRecipesRecommender } from './utils/recommend'
 import { initializeDatabase } from './config/initDatabase'
 import nutritionRouter from './routes/userRoutes/nutrition.routes'
 import lowdbRecipesRouter from './routes/userRoutes/lowdbRecipes.routes'
+import personalDashboardRouter from './routes/userRoutes/personalDashboard.routes'
 
 const app: Express = express()
 const port = envConfig.port
@@ -43,13 +44,24 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Limit each IP to 1000 requests per `window` (here, per 15 minutes)
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false // Disable the `X-RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting for public explore endpoints
+  skip: (req) => {
+    return req.path.includes('/public') || req.path.includes('/explore')
+  }
   // store: ... , // Use an external store for more precise rate limiting
+})
+
+// Higher rate limit for public/explore endpoints
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5000, // Allow more requests for public content
+  standardHeaders: true,
+  legacyHeaders: false
 })
 
 app.set('trust proxy', 1) // Trust first proxy
 
-connectDB()
 app.use(limiter)
 app.use(morgan('combined'))
 app.use(helmet())
@@ -66,11 +78,6 @@ app.use(
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'))
 
-// viết hàm chạy luôn khi server start
-
-trainRecipesRecommender()
-initializeDatabase() // Khởi tạo database và seed data
-
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello World!')
 })
@@ -78,6 +85,7 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/auth/users', authUserRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/blogs', blogsRouter)
+app.use('/api/posts/public', publicLimiter) // Apply higher limit to public posts
 app.use('/api/posts', postsRouter)
 app.use('/api/activities', activitiesRouter)
 app.use('/api/calculators', calculatorsRouter)
@@ -88,12 +96,14 @@ app.use('/api/albums', albumsRouter)
 app.use('/api/ingredients', ingredientsRouter)
 app.use('/api/search', seachRouter)
 app.use('/api/notifications', notificationsRouter)
+app.use('/api/meal-plans/public', publicLimiter) // Apply higher limit to public meal plans
 app.use('/api/meal-plans', mealPlansRouter)
 app.use('/api/user-meal-schedules', userMealSchedulesRouter)
 
 // New lowdb-based APIs
 app.use('/api/lowdb-recipes', lowdbRecipesRouter)
 app.use('/api/nutrition', nutritionRouter)
+app.use('/api/personal-dashboard', personalDashboardRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)
 app.use('/api/admin', userAdminRouter)
@@ -104,6 +114,26 @@ app.use(defaultErrorHandler)
 
 initSocket(httpServer)
 
-httpServer.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+// Start server only after database is connected
+async function startServer() {
+  try {
+    await connectDB()
+    
+    // Initialize database and seed data after connection
+    trainRecipesRecommender()
+    initializeDatabase()
+    
+    httpServer.listen(port, () => {
+      console.log(`Example app listening on port ${port}`)
+    })
+  } catch (error) {
+    console.error('Failed to start server:', error)
+    process.exit(1)
+  }
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer()
+}
+
+export { app, httpServer, startServer }

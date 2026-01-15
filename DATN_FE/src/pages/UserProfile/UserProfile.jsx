@@ -1,6 +1,6 @@
 import useravatar from '../../assets/images/useravatar.jpg'
 import avatarbg from '../../assets/images/avatarbg.jpg'
-import { useContext, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query'
 import TabsProfile from '../../components/GlobalComponents/TabsProfile'
 import UserPost from './components/UserPost'
@@ -35,7 +35,9 @@ export default function UserProfile() {
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5
   })
-  console.log(userData)
+  const profileOwner = useMemo(() => userData?.data?.result?.[0], [userData])
+  const isFollowing = Boolean(profileOwner?.is_following)
+  const isSelf = profile?.user_id === id
   const followMutation = useMutation({
     mutationFn: (body) => followUser(body)
   })
@@ -44,7 +46,7 @@ export default function UserProfile() {
     mutationFn: (body) => unfollowUser(body)
   })
   const handleFollow = () => {
-    if (userData?.data.result[0].is_following) {
+    if (profileOwner?.is_following) {
       unfollowMutation.mutate(
         { follow_id: id },
         {
@@ -98,43 +100,45 @@ export default function UserProfile() {
                   <div className='md:mt-16 flex-col flex justify-end'>
                     <div className='px-2'>
                       <div className='text-3xl flex items-center gap-2 whitespace-nowrap text-gray-800 dark:text-white font-semibold'>
-                        {userData?.data.result[0].name}
-                        {userData?.data.result[0].role === 1 && (
+                        {profileOwner?.name}
+                        {profileOwner?.role === 1 && (
                           <div className='text-blue-400 rounded-full flex justify-center items-center '>
                             <FaCheckCircle size={20} />
                           </div>
                         )}
                       </div>
                       <div className='text-lg whitespace-nowrap text-gray-600 dark:text-gray-400'>
-                        @{userData?.data.result[0].user_name}
+                        @{profileOwner?.user_name}
                       </div>
                     </div>
 
                     <div className='py-4 flex divide-x divide-gray-400 divide-solid'>
                       <span className='text-center px-2'>
-                        <span className='font-bold text-red-700'>{userData?.data.result[0].followers_count}</span>
+                        <span className='font-bold text-red-700'>{profileOwner?.followers_count}</span>
                         <span className='text-gray-600 dark:text-white'> Người theo dõi</span>
                       </span>
                       <span className='text-center px-2'>
-                        <span className='font-bold text-red-700'>{userData?.data.result[0].posts_count}</span>
+                        <span className='font-bold text-red-700'>{profileOwner?.posts_count}</span>
                         <span className='text-gray-600 dark:text-white'> Bài đăng</span>
                       </span>
                     </div>
                   </div>
                   <div className='flex justify-between items-center'>
-                    <div onClick={handleFollow}>
-                      {!userData?.data.result[0].is_following ? (
-                        <button className='block btn btn-xs  md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>
-                          <div className='flex text-xs justify-center gap-1 items-center'>+ Theo dõi</div>
-                        </button>
-                      ) : (
-                        <button className='block btn btn-xs  md:inline-block md:w-auto  bg-blue-400 hover:bg-blue-500 border-none text-white rounded-lg font-semibold text-sm  md:order-2'>
-                          <div className='flex text-xs justify-center gap-1 items-center'>
-                            <FaCheckCircle /> <div>Đã theo dõi</div>
-                          </div>
-                        </button>
-                      )}
-                    </div>
+                    {!isSelf && (
+                      <div onClick={handleFollow}>
+                        {!isFollowing ? (
+                          <button className='block btn btn-xs  md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>
+                            <div className='flex text-xs justify-center gap-1 items-center'>+ Theo dõi</div>
+                          </button>
+                        ) : (
+                          <button className='block btn btn-xs  md:inline-block md:w-auto  bg-blue-400 hover:bg-blue-500 border-none text-white rounded-lg font-semibold text-sm  md:order-2'>
+                            <div className='flex text-xs justify-center gap-1 items-center'>
+                              <FaCheckCircle /> <div>Đã theo dõi</div>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {/* <div className='px-3 text-2xl hover:text-red-600 cursor-pointer transition-all duration-300'>
                       <ThreeDots />
@@ -156,11 +160,11 @@ export default function UserProfile() {
         {/* {toggleState === 0 && <UserPost user_id={id} user={userData?.data.result[0]} />}
         {toggleState === 1 && <div>Tab 2</div>}
         {toggleState === 2 && <div>Tab 3</div>} */}
-        {userData?.data.result[0].role === 0 ? (
-          <>{toggleState === 0 && <UserPost user_id={id} user={userData?.data.result[0]} />}</>
+        {profileOwner?.role === 0 ? (
+          <>{toggleState === 0 && <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />}</>
         ) : (
           <>
-            {toggleState === 0 && <UserPost user_id={id} user={userData?.data.result[0]} />}
+            {toggleState === 0 && <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />}
             {toggleState === 1 && <UserRecipe user_id={id} />}
             {toggleState === 2 && <UserAlbum user_id={id} />}
             {toggleState === 3 && <UserBlog user_id={id} />}

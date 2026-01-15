@@ -21,6 +21,20 @@ export const getUserMealSchedulesController = async (req: Request, res: Response
   })
 }
 
+// Lấy lịch thực đơn đang hoạt động
+export const getActiveMealScheduleController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+
+  const result = await userMealScheduleServices.getActiveMealScheduleService({
+    user_id: user.user_id
+  })
+
+  return res.json({
+    result,
+    message: USER_MEAL_SCHEDULE_MESSAGE.GET_ACTIVE_MEAL_SCHEDULE_SUCCESS
+  })
+}
+
 // Lấy chi tiết lịch thực đơn
 export const getUserMealScheduleDetailController = async (req: Request, res: Response) => {
   const { id } = req.params
@@ -72,13 +86,14 @@ export const deleteUserMealScheduleController = async (req: Request, res: Respon
 
 // Lấy meal items theo ngày
 export const getDayMealItemsController = async (req: Request, res: Response) => {
-  const { schedule_id, date } = req.query
+  const { schedule_id, date, day_number } = req.query
   const user = req.decoded_authorization as TokenPayload
 
-  const result = await userMealScheduleServices.getMealItemsByDateService({
+  const result = await userMealScheduleServices.getMealItemsByDayService({
     schedule_id: schedule_id as string,
     user_id: user.user_id,
-    date: date as string
+    date: date as string,
+    day_number: day_number ? Number(day_number) : undefined
   })
 
   return res.json({

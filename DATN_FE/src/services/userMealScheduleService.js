@@ -22,9 +22,8 @@ export const getUserMealScheduleDetail = async (scheduleId) => {
 
 export const getActiveMealSchedule = async () => {
   try {
-    const { data } = await getUserMealSchedules({ status: 0, limit: 1, page: 1 })
-    const schedules = data?.result?.schedules || data?.result?.items || data?.result?.meal_schedules || []
-    return schedules.length > 0 ? schedules[0] : null
+    const response = await http.get('/user-meal-schedules/active')
+    return response?.data?.result || null
   } catch (error) {
     if (error.response?.status === 404) {
       return null
@@ -82,6 +81,25 @@ export const getScheduleProgressReport = async (scheduleId) => {
     return response
   } catch (error) {
     console.error('Error fetching schedule progress report:', error)
+    throw error
+  }
+}
+
+export const getScheduleMealsByDay = async ({ scheduleId, date, dayNumber }) => {
+  try {
+    if (!scheduleId) throw new Error('scheduleId is required')
+    const params = { schedule_id: scheduleId }
+    if (Number.isFinite(dayNumber)) {
+      params.day_number = dayNumber
+    } else if (date) {
+      params.date = date
+    } else {
+      throw new Error('Either date or dayNumber is required')
+    }
+    const response = await http.get('/user-meal-schedules/meal-items/day', { params })
+    return response?.data?.result || []
+  } catch (error) {
+    console.error('Error fetching meals by day:', error)
     throw error
   }
 }

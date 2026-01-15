@@ -87,6 +87,16 @@ export const getPostController = async (req: Request, res: Response) => {
   })
 }
 
+export const getPublicPostDetailController = async (req: Request, res: Response) => {
+  const { post_id } = req.params
+  const result = await postService.getPublicPostDetailService({ post_id })
+
+  return res.json({
+    message: POST_MESSAGE.GET_POST_SUCCESS,
+    result
+  })
+}
+
 export const getNewFeedsController = async (req: Request, res: Response) => {
   const user = req.decoded_authorization as TokenPayload
   const { limit, page } = req.query
@@ -94,6 +104,19 @@ export const getNewFeedsController = async (req: Request, res: Response) => {
     user_id: user.user_id,
     limit: Number(limit),
     page: Number(page)
+  })
+
+  return res.json({
+    message: POST_MESSAGE.GET_NEW_FEEDS_SUCCESS,
+    result
+  })
+}
+
+export const getPublicPostsController = async (req: Request, res: Response) => {
+  const { limit, page } = req.query
+  const result = await postService.getPublicPostsService({
+    limit: Number(limit) || 10,
+    page: Number(page) || 1
   })
 
   return res.json({

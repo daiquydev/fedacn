@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { FaCheck, FaPlus, FaMinus } from 'react-icons/fa'
 import { MdScale } from 'react-icons/md'
-import { getImageUrl } from '../../../utils/imageUrl'
+import { getImageUrl } from '../../utils/imageUrl'
 
 const ModernIngredientList = ({ ingredients, servings = 1, onServingsChange }) => {
   const [checkedIngredients, setCheckedIngredients] = useState(new Set())

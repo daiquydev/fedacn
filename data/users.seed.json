@@ -1,0 +1,212 @@
+[
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a01"
+    },
+    "name": "Nguyễn Minh An",
+    "user_name": "nguyenminhan",
+    "email": "minh.an@fit.vn",
+    "password": "DinhDuong@123",
+    "gender": "male",
+    "age": 27,
+    "height": 173,
+    "weight": 68,
+    "address": "Hà Nội, Việt Nam",
+    "health_goal": "Giảm mỡ, giữ cơ",
+    "dietary_preferences": "Ưa ăn nhiều rau xanh và cá biển",
+    "allergies": "Không",
+    "avatar_query": "Vietnamese portrait healthy lifestyle",
+    "cover_avatar_query": "healthy vietnamese breakfast table",
+    "avatar": "https://images.unsplash.com/photo-1677146334483-55d2a399b728?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxWaWV0bmFtZXNlJTIwcG9ydHJhaXQlMjBoZWFsdGh5JTIwbGlmZXN0eWxlfGVufDB8MXx8fDE3Njc4MjcwMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1710186012479-d79e9d2a7065?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwdmlldG5hbWVzZSUyMGJyZWFrZmFzdCUyMHRhYmxlfGVufDB8MHx8fDE3Njc4MjcwMDV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a02"
+    },
+    "name": "Trần Thu Hà",
+    "user_name": "tranthuha",
+    "email": "thu.ha@eatclean.vn",
+    "password": "DinhDuong@123",
+    "gender": "female",
+    "age": 25,
+    "height": 162,
+    "weight": 52,
+    "address": "TP. Hồ Chí Minh, Việt Nam",
+    "health_goal": "Ăn sạch giảm mỡ",
+    "dietary_preferences": "Ưa salad, ngũ cốc nguyên hạt",
+    "allergies": "Không",
+    "avatar_query": "vietnamese woman portrait natural light",
+    "cover_avatar_query": "colorful salad bowl vietnam",
+    "avatar": "https://images.unsplash.com/photo-1761635491338-f2767d72f997?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwd29tYW4lMjBwb3J0cmFpdCUyMG5hdHVyYWwlMjBsaWdodHxlbnwwfDF8fHwxNzY3ODI3MDA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1716376069510-b26b5824f524?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxjb2xvcmZ1bCUyMHNhbGFkJTIwYm93bCUyMHZpZXRuYW18ZW58MHwwfHx8MTc2NzgyNzAwN3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a03"
+    },
+    "name": "Lê Hoàng Long",
+    "user_name": "lehoanglong",
+    "email": "long.le@health.vn",
+    "password": "DinhDuong@123",
+    "gender": "male",
+    "age": 31,
+    "height": 178,
+    "weight": 75,
+    "address": "Đà Nẵng, Việt Nam",
+    "health_goal": "Ăn đủ đạm tăng cơ",
+    "dietary_preferences": "Ưa ức gà, đậu nành, rau luộc",
+    "allergies": "Không",
+    "avatar_query": "vietnamese man portrait fitness",
+    "cover_avatar_query": "lean protein meal prep vietnam",
+    "avatar": "https://images.unsplash.com/photo-1575992877113-6a7dda2d1592?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwbWFuJTIwcG9ydHJhaXQlMjBmaXRuZXNzfGVufDB8MXx8fDE3Njc4MjcwMDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1509072619873-adb3dc289b50?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxsZWFuJTIwcHJvdGVpbiUyMG1lYWwlMjBwcmVwJTIwdmlldG5hbXxlbnwwfDB8fHwxNzY3ODI3MDEwfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a04"
+    },
+    "name": "Phạm Khánh Linh",
+    "user_name": "phamkhanhlinh",
+    "email": "linh.pham@nutri.vn",
+    "password": "DinhDuong@123",
+    "gender": "female",
+    "age": 29,
+    "height": 165,
+    "weight": 55,
+    "address": "Cần Thơ, Việt Nam",
+    "health_goal": "Ăn cân bằng, ngủ đủ",
+    "dietary_preferences": "Ưa cá đồng, rau mùa, trái cây",
+    "allergies": "Dị ứng nhẹ với tôm",
+    "avatar_query": "vietnamese woman smiling portrait",
+    "cover_avatar_query": "vietnamese home cooked fish and vegetables",
+    "avatar": "https://images.unsplash.com/photo-1728226773012-19303e779077?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwd29tYW4lMjBzbWlsaW5nJTIwcG9ydHJhaXR8ZW58MHwxfHx8MTc2NzgyNzAxMXww&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1710186012479-d79e9d2a7065?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwaG9tZSUyMGNvb2tlZCUyMGZpc2glMjBhbmQlMjB2ZWdldGFibGVzfGVufDB8MHx8fDE3Njc4MjcwMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a05"
+    },
+    "name": "Đỗ Nhật Quang",
+    "user_name": "donhatquang",
+    "email": "quang.do@balance.vn",
+    "password": "DinhDuong@123",
+    "gender": "male",
+    "age": 24,
+    "height": 170,
+    "weight": 62,
+    "address": "Hải Phòng, Việt Nam",
+    "health_goal": "Ăn đủ chất, ngủ trước 11h",
+    "dietary_preferences": "Ưa cháo yến mạch, ức gà nướng",
+    "allergies": "Không",
+    "avatar_query": "vietnamese young man portrait",
+    "cover_avatar_query": "balanced meal bowl vietnam",
+    "avatar": "https://images.unsplash.com/photo-1642731065790-8ac3f70b1fba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIweW91bmclMjBtYW4lMjBwb3J0cmFpdHxlbnwwfDF8fHwxNzY3ODI3MDE0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1751809999364-4198daf71543?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxiYWxhbmNlZCUyMG1lYWwlMjBib3dsJTIwdmlldG5hbXxlbnwwfDB8fHwxNzY3ODI3MDE1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a06"
+    },
+    "name": "Võ Diệu Anh",
+    "user_name": "vodieuahn",
+    "email": "dieuanh.vo@greens.vn",
+    "password": "DinhDuong@123",
+    "gender": "female",
+    "age": 26,
+    "height": 160,
+    "weight": 50,
+    "address": "Huế, Việt Nam",
+    "health_goal": "Ăn chay linh hoạt",
+    "dietary_preferences": "Ưa rau củ, đậu hũ, ngũ cốc",
+    "allergies": "Không",
+    "avatar_query": "vietnamese woman portrait greenery",
+    "cover_avatar_query": "plant based vietnamese meal",
+    "avatar": "https://images.unsplash.com/photo-1760341682637-039301f14e3f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwd29tYW4lMjBwb3J0cmFpdCUyMGdyZWVuZXJ5fGVufDB8MXx8fDE3Njc4MjcwMTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1606315983891-469221f05c89?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxwbGFudCUyMGJhc2VkJTIwdmlldG5hbWVzZSUyMG1lYWx8ZW58MHwwfHx8MTc2NzgyNzAxN3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a07"
+    },
+    "name": "Mai Thanh Tùng",
+    "user_name": "maithanhtung",
+    "email": "tung.mai@protein.vn",
+    "password": "DinhDuong@123",
+    "gender": "male",
+    "age": 28,
+    "height": 175,
+    "weight": 72,
+    "address": "Biên Hòa, Việt Nam",
+    "health_goal": "Giữ form khi làm văn phòng",
+    "dietary_preferences": "Ưa meal-prep, sữa chua Hy Lạp",
+    "allergies": "Không",
+    "avatar_query": "vietnamese man portrait office",
+    "cover_avatar_query": "meal prep boxes high protein vietnam",
+    "avatar": "https://images.unsplash.com/photo-1564406585959-d2ef862e9765?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwbWFuJTIwcG9ydHJhaXQlMjBvZmZpY2V8ZW58MHwxfHx8MTc2NzgyNzAxOXww&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1751810000353-2c664492be53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxtZWFsJTIwcHJlcCUyMGJveGVzJTIwaGlnaCUyMHByb3RlaW4lMjB2aWV0bmFtfGVufDB8MHx8fDE3Njc4MjcwMjB8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a08"
+    },
+    "name": "Ngô Bích Ngọc",
+    "user_name": "ngobichngoc",
+    "email": "ngoc.ngo@eatwell.vn",
+    "password": "DinhDuong@123",
+    "gender": "female",
+    "age": 30,
+    "height": 158,
+    "weight": 51,
+    "address": "Nha Trang, Việt Nam",
+    "health_goal": "Ăn nhẹ buổi tối, giảm đường",
+    "dietary_preferences": "Ưa sữa hạt, cá hấp, salad",
+    "allergies": "Không",
+    "avatar_query": "vietnamese woman portrait beach city",
+    "cover_avatar_query": "light dinner vietnam healthy",
+    "avatar": "https://images.unsplash.com/photo-1552550286-8c53e2cb50ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwd29tYW4lMjBwb3J0cmFpdCUyMGJlYWNoJTIwY2l0eXxlbnwwfDF8fHwxNzY3ODI3MDIxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1586753281729-c8f15d4ed43f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxsaWdodCUyMGRpbm5lciUyMHZpZXRuYW0lMjBoZWFsdGh5fGVufDB8MHx8fDE3Njc4MjcwMjN8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a09"
+    },
+    "name": "Bùi Gia Khánh",
+    "user_name": "buigiakhanh",
+    "email": "khanh.bui@lean.vn",
+    "password": "DinhDuong@123",
+    "gender": "male",
+    "age": 22,
+    "height": 168,
+    "weight": 60,
+    "address": "Quy Nhơn, Việt Nam",
+    "health_goal": "Ăn sạch cho sinh viên",
+    "dietary_preferences": "Ưa cơm gạo lứt, trứng, rau luộc",
+    "allergies": "Không",
+    "avatar_query": "vietnamese student portrait",
+    "cover_avatar_query": "budget healthy meal vietnam",
+    "avatar": "https://images.unsplash.com/photo-1743327572772-eca3c63b029e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwc3R1ZGVudCUyMHBvcnRyYWl0fGVufDB8MXx8fDE3Njc4MjcwMjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1586753281729-c8f15d4ed43f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxidWRnZXQlMjBoZWFsdGh5JTIwbWVhbCUyMHZpZXRuYW18ZW58MHwwfHx8MTc2NzgyNzAyNXww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a0b"
+    },
+    "name": "Huỳnh Tố Uyên",
+    "user_name": "huynhtouyen",
+    "email": "uyen.huynh@wellness.vn",
+    "password": "DinhDuong@123",
+    "gender": "female",
+    "age": 27,
+    "height": 164,
+    "weight": 54,
+    "address": "Vũng Tàu, Việt Nam",
+    "health_goal": "Ăn ngon mà vẫn nhẹ bụng",
+    "dietary_preferences": "Ưa hải sản hấp, rau nướng",
+    "allergies": "Không",
+    "avatar_query": "vietnamese woman portrait sea breeze",
+    "cover_avatar_query": "fresh seafood with vegetables vietnam",
+    "avatar": "https://images.unsplash.com/photo-1634700604921-4d668ef72335?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwd29tYW4lMjBwb3J0cmFpdCUyMHNlYSUyMGJyZWV6ZXxlbnwwfDF8fHwxNzY3ODI3MDI2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "cover_avatar": "https://images.unsplash.com/photo-1746362723195-c42946f3633b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHNlYWZvb2QlMjB3aXRoJTIwdmVnZXRhYmxlcyUyMHZpZXRuYW18ZW58MHwwfHx8MTc2NzgyNzAyOHww&ixlib=rb-4.1.0&q=80&w=1080"
+  }
+]

@@ -4,6 +4,7 @@ import { MealType, MealItemStatus } from '~/constants/enums'
 export interface UserMealItem {
   user_meal_schedule_id: Types.ObjectId
   meal_plan_meal_id: Types.ObjectId
+  recipe_id?: Types.ObjectId
   scheduled_date: Date
   scheduled_time?: string
   meal_type: MealType
@@ -38,6 +39,11 @@ const UserMealItemSchema = new mongoose.Schema<UserMealItem>(
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'meal_plan_meals',
       required: true
+    },
+    recipe_id: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: 'recipes',
+      default: null
     },
     scheduled_date: {
       type: Date,

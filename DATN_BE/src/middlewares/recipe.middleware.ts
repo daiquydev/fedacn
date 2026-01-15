@@ -114,6 +114,11 @@ export const getListRecipeForChefValidator = validate(
         optional: true,
         isInt: true,
         toInt: true
+      },
+      include_all: {
+        optional: true,
+        isBoolean: true,
+        toBoolean: true
       }
     },
     ['query']

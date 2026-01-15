@@ -1,4 +1,4 @@
-const HTTP_STATUS = {
+const HTTP_STATUS = Object.freeze({
   OK: 200,
   CREATED: 201,
   ACCEPTED: 202,
@@ -13,6 +13,6 @@ const HTTP_STATUS = {
   GONE: 410,
   PRECONDITION_FAILED: 412,
   UNSUPPORTED_MEDIA_TYPE: 415
-} as const
+} as const)
 
 export default HTTP_STATUS

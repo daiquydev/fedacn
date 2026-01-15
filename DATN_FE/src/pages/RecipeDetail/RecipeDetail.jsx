@@ -1,9 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { FaArrowCircleRight, FaComment, FaEye, FaShare } from 'react-icons/fa'
+import { FaArrowCircleRight, FaComment, FaEye } from 'react-icons/fa'
 import moment from 'moment'
-import parse from 'html-react-parser'
 import { bookmarkRecipe, getRecipeForUser, likeRecipe, unbookmarkRecipe, unlikeRecipe } from '../../apis/recipeApi'
 import { MdPerson } from 'react-icons/md'
 import { AiFillHeart, AiOutlineClockCircle } from 'react-icons/ai'
@@ -12,14 +11,9 @@ import { FaCheckCircle } from 'react-icons/fa'
 import Comments from './components/Comments/Comments'
 import { queryClient } from '../../main'
 import toast from 'react-hot-toast'
-import IngerdientItem from './components/IngerdientItem/IngerdientItem'
 import useSound from 'use-sound'
 import like from '../../assets/sounds/like.mp3'
 import ParticipantsList from '../../components/ParticipantsList'
-import useravatar from '../../assets/images/useravatar.jpg'
-import ModernRecipeImageCard from '../../components/ModernRecipeImageCard/ModernRecipeImageCard'
-import ModernIngredientList from '../../components/ModernIngredientList/ModernIngredientList'
-import SimpleCookingInstructions from '../../components/SimpleCookingInstructions/SimpleCookingInstructions'
 import EnhancedIngredientList from '../../components/EnhancedIngredientList/EnhancedIngredientList'
 import EnhancedRecipeImageGallery from '../../components/EnhancedRecipeImageGallery/EnhancedRecipeImageGallery'
 import ModernCookingInstructions from '../../components/ModernCookingInstructions/ModernCookingInstructions'
@@ -52,11 +46,12 @@ const getDummyParticipants = (recipe) => {
 export default function RecipeDetail() {
   const { id } = useParams()
   const [play] = useSound(like)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ['recipe-info-user', id],
     queryFn: () => {
       return getRecipeForUser(id)
     },
+    enabled: Boolean(id),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 20
   })
@@ -76,26 +71,36 @@ export default function RecipeDetail() {
     mutationFn: (body) => unbookmarkRecipe(body)
   })
 
+  const recipeSource = data?.data?.result?.recipe
+  const recipe = Array.isArray(recipeSource) ? recipeSource[0] : recipeSource
+  const relatedRecipes = data?.data?.result?.arrayRecipes || []
+  const ingredients = recipe?.ingredients || []
+  const hasIngredients = ingredients.length > 0
+  const isRecipeLoading = isLoading || (isFetching && !recipe)
+  const errorMessage = error?.response?.data?.message || error?.message
+
   const handleLike = () => {
-    if (data?.data.result.recipe[0].is_liked) {
+    if (!recipe?._id) return
+
+    if (recipe.is_liked) {
       unlikeMutation.mutate(
-        { recipe_id: data?.data.result.recipe[0]._id },
+        { recipe_id: recipe._id },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({
-              queryKey: ['recipe-info-user']
+              queryKey: ['recipe-info-user', id]
             })
           }
         }
       )
     } else {
       likeMutation.mutate(
-        { recipe_id: data?.data.result.recipe[0]._id },
+        { recipe_id: recipe._id },
         {
           onSuccess: () => {
             play()
             queryClient.invalidateQueries({
-              queryKey: ['recipe-info-user']
+              queryKey: ['recipe-info-user', id]
             })
           }
         }
@@ -104,13 +109,15 @@ export default function RecipeDetail() {
   }
 
   const handleBookmark = () => {
-    if (data?.data.result.recipe[0].is_bookmarked) {
+    if (!recipe?._id) return
+
+    if (recipe.is_bookmarked) {
       unbookmarkMutation.mutate(
-        { recipe_id: data?.data.result.recipe[0]._id },
+        { recipe_id: recipe._id },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({
-              queryKey: ['recipe-info-user']
+              queryKey: ['recipe-info-user', id]
             })
             toast.success('Bỏ lưu thành công')
           }
@@ -118,11 +125,11 @@ export default function RecipeDetail() {
       )
     } else {
       bookmarkMutation.mutate(
-        { recipe_id: data?.data.result.recipe[0]._id },
+        { recipe_id: recipe._id },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({
-              queryKey: ['recipe-info-user']
+              queryKey: ['recipe-info-user', id]
             })
             toast.success('Lưu vào mục yêu thích thành công')
           }
@@ -134,18 +141,22 @@ export default function RecipeDetail() {
   return (
     <div className=''>
       <div className=''>
-        {isLoading ? (
+        {isRecipeLoading ? (
           <div className='mt-24'>
             <Loading />
           </div>
+        ) : isError ? (
+          <div className='mt-24 text-center text-red-500'>{errorMessage || 'Không thể tải công thức.'}</div>
+        ) : !recipe ? (
+          <div className='mt-24 text-center text-gray-500'>Không tìm thấy công thức.</div>
         ) : (
           <div className='relative'>
             {/* Enhanced Recipe Image Gallery */}
             <div className='mb-8'>
               <EnhancedRecipeImageGallery
-                mainImage={data?.data.result.recipe[0]?.image}
-                images={data?.data.result.recipe[0]?.images || []}
-                recipeName={data?.data.result.recipe[0]?.title}
+                mainImage={recipe?.image}
+                images={recipe?.images || []}
+                recipeName={recipe?.title}
                 className="w-full max-w-4xl mx-auto"
               />
             </div>
@@ -153,7 +164,7 @@ export default function RecipeDetail() {
               <div className=' bg-white dark:bg-color-primary rounded-b lg:rounded-b-none lg:rounded-r flex flex-col justify-between leading-normal'>
                 <div className='bg-white dark:bg-color-primary relative top-0 lg:-mt-32 py-5 px-3 md:p-5 sm:px-10'>
                   <span onClick={handleBookmark} className='absolute top-[-6px] right-0'>
-                    {data?.data.result.recipe[0].is_bookmarked ? (
+                    {recipe?.is_bookmarked ? (
                       <div className='hover:text-yellow-600 cursor-pointer transition-all text-yellow-500'>
                         <BsFillBookmarkFill className='' size={40} />
                       </div>
@@ -166,28 +177,28 @@ export default function RecipeDetail() {
                   <header className='not-format'>
                     <div>
                       <span className='font-medium flex items-center flex-wrap mb-3 md:gap-2 md:mb-0 text-gray-500'>
-                        <span className='mr-2'>{moment(data?.data.result.recipe[0].createdAt).format('LLLL')}</span>
+                        <span className='mr-2'>{recipe?.createdAt ? moment(recipe.createdAt).format('LLLL') : ''}</span>
 
                         <div className='flex text-sm text-blue-400 gap-2'>
                           <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
-                            {data?.data.result.recipe[0].category_recipe.name}
+                            {recipe?.category_recipe?.name}
                           </span>{' '}
                           <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
-                            {data?.data.result.recipe[0].processing_food}
+                            {recipe?.processing_food}
                           </span>{' '}
-                          {data?.data.result.recipe[0].region === 0 ? (
+                          {recipe?.region === 0 ? (
                             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
                               Miền bắc
                             </span>
-                          ) : data?.data.result.recipe[0].region === 1 ? (
+                          ) : recipe?.region === 1 ? (
                             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
                               Miền trung
                             </span>
-                          ) : data?.data.result.recipe[0].region === 2 ? (
+                          ) : recipe?.region === 2 ? (
                             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
                               Miền nam
                             </span>
-                          ) : data?.data.result.recipe[0].region === 3 ? (
+                          ) : recipe?.region === 3 ? (
                             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
                               Món Á
                             </span>
@@ -200,14 +211,14 @@ export default function RecipeDetail() {
                       </span>
 
                       <h1 className='mb-1 text-2xl xl:text-3xl font-extrabold dark:text-gray-300 leading-tight text-red-700 '>
-                        {data?.data.result.recipe[0].title}
+                        {recipe?.title}
                       </h1>
                       <div className='flex flex-wrap items-center pb-5  gap-2 justify-between'>
                         <div className='pt-3 text-sm flex gap-2 flex-wrap'>
                           <div className='flex font-medium pr-3 text-gray-500  border-r-2 flex-row items-center'>
                             <MdPerson className='text-lg text-green-500 mr-1' />
-                            {data?.data.result.recipe[0].type === 0 ? (
-                              <span className=''>{data?.data.result.recipe[0].user.name}</span>
+                            {recipe?.type === 0 ? (
+                              <span className=''>{recipe?.user?.name}</span>
                             ) : (
                               <span className=' block text-gray-500'>
                                 <span className='text-red-500'>Cook</span>Healthy
@@ -216,9 +227,9 @@ export default function RecipeDetail() {
                           </div>
                           <div className='flex flex-row items-center text-gray-500 font-medium pr-3 border-r-2  '>
                             <BsFillLightningChargeFill className=' text-yellow-500 mr-1' />
-                            {data?.data.result.recipe[0].difficult_level === 0 ? (
+                            {recipe?.difficult_level === 0 ? (
                               <span className=''>Dễ</span>
-                            ) : data?.data.result.recipe[0].difficult_level === 1 ? (
+                            ) : recipe?.difficult_level === 1 ? (
                               <span className=''>Trung bình</span>
                             ) : (
                               <span className=''>Khó</span>
@@ -226,25 +237,25 @@ export default function RecipeDetail() {
                           </div>
                           <div className='flex flex-row items-center text-gray-500 font-medium pr-3 border-r-2  '>
                             <FaEye className='text-blue-400 mr-1' />
-                            <span className=''> {data?.data.result.recipe[0].user_view} lượt xem</span>
+                            <span className=''> {recipe?.user_view || 0} lượt xem</span>
                           </div>
                           <div className='flex flex-row items-center text-gray-500 font-medium pr-3 border-r-2 '>
                             <BsFillBookmarkFill className='text-yellow-500 mr-1' />
-                            <span className=''> {data?.data.result.recipe[0].total_bookmarks} lượt lưu</span>
+                            <span className=''> {recipe?.total_bookmarks || 0} lượt lưu</span>
                           </div>
                           <div className='flex flex-row items-center text-gray-500 font-medium pr-3 border-r-2 '>
                             <FaComment className='mr-1 text-yellow-500' />
-                            <span className=''>{data?.data.result.recipe[0].total_comments} bình luận</span>
+                            <span className=''>{recipe?.total_comments || 0} bình luận</span>
                           </div>
                           <div onClick={handleLike} className='flex flex-row items-center text-gray-500 cursor-pointer font-medium  '>
-                            <AiFillHeart className={` text-lg ${data?.data.result.recipe[0].is_liked ? 'text-red-500' : 'text-green-400'}`} />
+                            <AiFillHeart className={` text-lg ${recipe?.is_liked ? 'text-red-500' : 'text-green-400'}`} />
                             <span className='ml-1'>
-                              {data?.data.result.recipe[0].total_likes} {''} lượt thích
+                              {recipe?.total_likes || 0} {''} lượt thích
                             </span>
                           </div>
                         </div>
                         <span onClick={handleLike}>
-                          {!data?.data.result.recipe[0].is_liked ? (
+                          {!recipe?.is_liked ? (
                             <button className='block btn btn-xs  md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>
                               <div className='flex text-xs justify-center gap-1 items-center'>
                                 <AiFillHeart /> <div>Thích</div>
@@ -264,8 +275,8 @@ export default function RecipeDetail() {
                   
                   {/* Users who have tried this recipe */}
                   <div className="mt-4 mb-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <ParticipantsList 
-                      participants={getDummyParticipants(data?.data.result.recipe[0])}
+                    <ParticipantsList
+                      participants={getDummyParticipants(recipe)}
                       initialLimit={5}
                       size="md"
                       title="Người đã thử công thức này"
@@ -276,54 +287,54 @@ export default function RecipeDetail() {
                   <div className='border-b-2 mb-6 dark:border-gray-700'>
                   </div>
 
-                  {data?.data.result.recipe[0].unit === '' ? null : (
+                  {recipe?.unit === '' ? null : (
                     <div className='flex gap-2 flex-wrap mb-10 items-center'>
                       <div className='bg-yellow-50 flex font-medium justify-center items-center text-gray-600  p-1.5 text-sm rounded-full'>
                         <span className='ml-1'>
-                          {data?.data.result.recipe[0].energy} calories trên {data?.data.result.recipe[0].quantity}{' '}
-                          {data?.data.result.recipe[0].unit}
+                          {recipe?.energy} calories trên {recipe?.quantity}{' '}
+                          {recipe?.unit}
                         </span>
                       </div>
                       <div className='bg-yellow-50 flex font-medium justify-center items-center text-gray-600  p-1.5 text-sm rounded-full'>
-                        <span className='ml-1'>{data?.data.result.recipe[0].protein} gram protein</span>
+                        <span className='ml-1'>{recipe?.protein} gram protein</span>
                       </div>
                       <div className='bg-yellow-50 flex font-medium justify-center items-center text-gray-600  p-1.5 text-sm rounded-full'>
-                        <span className='ml-1'>{data?.data.result.recipe[0].fat} gram chất béo</span>
+                        <span className='ml-1'>{recipe?.fat} gram chất béo</span>
                       </div>
                       <div className='bg-yellow-50 flex font-medium justify-center items-center text-gray-600  p-1.5 text-sm rounded-full'>
-                        <span className='ml-1'>{data?.data.result.recipe[0].carbohydrate} gram carbohydrate</span>
+                        <span className='ml-1'>{recipe?.carbohydrate} gram carbohydrate</span>
                       </div>
                     </div>
                   )}
 
-                  <p className='lead mb-3 whitespace-pre-line font-medium'>{data?.data.result.recipe[0].description}</p>
+                  <p className='lead mb-3 whitespace-pre-line font-medium'>{recipe?.description}</p>
                   <div className='border rounded-md w-full shadow-md mb-4 bg-[#fef8f8] dark:bg-gray-900 dark:border-none to-gray-300 p-3'>
                     <div className='font-medium'>Gợi ý dành cho bạn:</div>
                     <ul>
-                      {data?.data.result.arrayRecipes.map((recipe) => {
+                      {relatedRecipes.map((related) => {
                         return (
-                          <li key={recipe._id} className='flex text-blue-600 dark:text-sky-200 gap-3 m-2 items-center'>
+                          <li key={related._id} className='flex text-blue-600 dark:text-sky-200 gap-3 m-2 items-center'>
                             <div>
                               <FaArrowCircleRight size={18} className='text-xl' />
                             </div>
 
-                            <Link to={`/cooking/recipe/${recipe._id}`} className=' hover:underline'>
-                              {recipe.title}
+                            <Link to={`/cooking/recipe/${related._id}`} className=' hover:underline'>
+                              {related.title}
                             </Link>
                           </li>
                         )
                       })}
                     </ul>
                   </div>
-                  {data?.data.result.recipe[0].video === '' ? null : (
+                  {recipe?.video === '' ? null : (
                     <div className=''>
                       <div className='w-full mb-4 lg:h-[30rem]'>
                         <iframe
                           className='w-full h-[20rem]  rounded-md lg:h-[30rem] shadow-md border '
                           src={
-                            data?.data.result.recipe[0].video.includes('watch?v=')
-                              ? data?.data.result.recipe[0].video.replace('watch?v=', 'embed/')
-                              : data?.data.result.recipe[0].video
+                            recipe?.video?.includes('watch?v=')
+                              ? recipe.video.replace('watch?v=', 'embed/')
+                              : recipe?.video
                           }
                           title='YouTube video player'
                           frameBorder='0'
@@ -334,15 +345,14 @@ export default function RecipeDetail() {
                     </div>
                   )}
                   {/* nếu có mảng ingredients thì hiển thị nếu ko có mảng hoặc mảng rỗng thì ẩn */}
-                  {data?.data.result.recipe[0]?.ingredients?.length === 0 ||
-                  data?.data.result.recipe[0]?.ingredients === undefined ? null : (
+                  {!hasIngredients ? null : (
                     <div className="mb-8">
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <span className="w-1 h-6 bg-orange-500 rounded-full"></span>
                         Nguyên liệu cần thiết
                       </h3>
                       <EnhancedIngredientList
-                        ingredients={data?.data.result.recipe[0]?.ingredients?.map(ingredient => ({
+                        ingredients={ingredients.map((ingredient) => ({
                           name: ingredient.name,
                           amount: ingredient.quantity,
                           unit: ingredient.unit || 'g',
@@ -365,15 +375,15 @@ export default function RecipeDetail() {
                   )}
                   <div className='custorm-blog'>
                     {/* Modern Cooking Instructions */}
-                    {data?.data.result.recipe[0]?.content ? (
+                    {recipe?.content ? (
                       <div className="mb-8">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                           <span className="w-1 h-6 bg-green-500 rounded-full"></span>
                           Hướng dẫn nấu ăn
                         </h3>
                         <ModernCookingInstructions
-                          instructions={data?.data.result.recipe[0]?.content?.split('\n').filter(line => line.trim()) || []}
-                          cookingTime={data?.data.result.recipe[0]?.time || 0}
+                          instructions={recipe?.content?.split('\n').filter((line) => line.trim()) || []}
+                          cookingTime={recipe?.time || 0}
                           prepTime={5} // Default prep time
                           onStepComplete={(stepIndex, isCompleted) => {
                             console.log(`Step ${stepIndex + 1} ${isCompleted ? 'completed' : 'uncompleted'}`)
@@ -388,7 +398,7 @@ export default function RecipeDetail() {
                     )}
                   </div>
                 </div>
-                <Comments recipe={data?.data.result.recipe[0]} />
+                <Comments recipe={recipe} />
               </div>
             </div>
           </div>

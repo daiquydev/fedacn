@@ -9,6 +9,61 @@ import MealPlanDayModel from '~/models/schemas/mealPlanDay.schema'
 import MealPlanMealModel from '~/models/schemas/mealPlanMeal.schema'
 import { ErrorWithStatus } from '~/utils/error'
 
+const summarizeMeals = (meals: any[] = []) =>
+  meals.reduce(
+    (acc, item) => {
+      const recipe = item.recipe_id || {}
+      acc.calories += item.calories ?? recipe.calories ?? 0
+      acc.protein += item.protein ?? recipe.protein ?? 0
+      acc.carbs += item.carbs ?? recipe.carbs ?? recipe.carbohydrate ?? 0
+      acc.fat += item.fat ?? recipe.fat ?? 0
+      return acc
+    },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  )
+
+const calculateStreak = (mealsByDate: Record<string, any[]>, todayKey: string) => {
+  if (!mealsByDate) return 0
+  const candidates = Object.keys(mealsByDate)
+    .filter((date) => !todayKey || date <= todayKey)
+    .sort()
+  let streak = 0
+  for (let index = candidates.length - 1; index >= 0; index -= 1) {
+    const dayMeals = mealsByDate[candidates[index]] || []
+    if (!dayMeals.length) {
+      continue
+    }
+    const completedDay = dayMeals.every((meal) => {
+      const statusValue = typeof meal.status === 'string' ? meal.status : Number(meal.status)
+      return statusValue === MealItemStatus.completed || statusValue === 'completed' || statusValue === 1
+    })
+    if (completedDay) {
+      streak += 1
+    } else {
+      break
+    }
+  }
+  return streak
+}
+
+const getDayNumber = (startDate?: Date | string, dateValue?: string) => {
+  if (!startDate || !dateValue) return null
+  const start = new Date(startDate)
+  const target = new Date(dateValue)
+  const diff = target.getTime() - start.getTime()
+  if (!Number.isFinite(diff)) return null
+  return Math.max(1, Math.round(diff / (24 * 60 * 60 * 1000)) + 1)
+}
+
+const formatDateKey = (value?: Date | string) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().split('T')[0]
+}
+
+const resolveMealItemDate = (item: any) => item?.scheduled_date || item?.schedule_date || item?.date || null
+
 class UserMealScheduleService {
   // Lấy lịch thực đơn của user
   async getUserMealSchedulesService({ user_id, page, limit, status }: any) {
@@ -37,6 +92,77 @@ class UserMealScheduleService {
     }
   }
 
+  // Lấy lịch thực đơn đang hoạt động kèm tổng quan
+  async getActiveMealScheduleService({ user_id }: { user_id: string }) {
+    const schedule = await UserMealScheduleModel.findOne({
+      user_id: new ObjectId(user_id),
+      status: ScheduleStatus.active
+    })
+      .sort({ updated_at: -1, created_at: -1 })
+      .populate('meal_plan_id')
+      .exec()
+
+    if (!schedule) {
+      return null
+    }
+
+    const scheduleId = (schedule as any)._id?.toString()
+
+    if (!scheduleId) {
+      throw new ErrorWithStatus({
+        message: USER_MEAL_SCHEDULE_MESSAGE.SCHEDULE_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const detail = await this.getUserMealScheduleDetailService({
+      schedule_id: scheduleId,
+      user_id
+    })
+
+    const mealsByDate = detail.meals_by_date || {}
+    const timelineDates = Object.keys(mealsByDate).sort()
+    const scheduleStartKey = formatDateKey(
+      detail.start_date || (detail as any).startDate || (detail as any).applied_start_date
+    )
+    const todayKey = formatDateKey(new Date())
+    const todayDate = timelineDates.find((date) => date === todayKey) || scheduleStartKey || timelineDates[0] || ''
+    const todayIndex = todayDate ? timelineDates.indexOf(todayDate) : -1
+    const nextDateCandidate = timelineDates.find((date) => date > todayKey)
+    const nextDate =
+      nextDateCandidate ||
+      (todayIndex >= 0 ? timelineDates[todayIndex + 1] : timelineDates[1]) ||
+      ''
+    const todayMeals = todayDate ? mealsByDate[todayDate] || [] : []
+    const upcomingMeals = nextDate ? mealsByDate[nextDate] || [] : []
+
+    const overview = await this.getProgressStatsService({
+      schedule_id: scheduleId,
+      user_id
+    })
+
+    return {
+      schedule: detail,
+      overview,
+      timeline_dates: timelineDates,
+      today: {
+        date: todayDate,
+        meals: todayMeals,
+        nutrition: summarizeMeals(todayMeals)
+      },
+      upcoming: {
+        date: nextDate,
+        meals: upcomingMeals,
+        nutrition: summarizeMeals(upcomingMeals)
+      },
+      meta: {
+        streak_days: calculateStreak(mealsByDate, todayKey),
+        total_days: timelineDates.length,
+        today_index: getDayNumber(detail.start_date || timelineDates[0], todayDate) || 1
+      }
+    }
+  }
+
   // Lấy chi tiết lịch thực đơn
   async getUserMealScheduleDetailService({ schedule_id, user_id }: any) {
     const schedule = await UserMealScheduleModel.findOne({
@@ -55,15 +181,40 @@ class UserMealScheduleService {
 
     // Lấy các meal items của schedule
     const mealItems = await UserMealItemModel.find({
-      schedule_id: new ObjectId(schedule_id)
+      user_meal_schedule_id: new ObjectId(schedule_id)
     })
-      .populate('recipe_id', 'title image calories difficulty_level time')
-      .sort({ schedule_date: 1, meal_type: 1 })
+      .populate(
+        'recipe_id',
+        [
+          'title',
+          'image',
+          'ingredients',
+          'hero_image',
+          'thumbnail',
+          'calories',
+          'protein',
+          'carbohydrate',
+          'carbs',
+          'fat',
+          'difficulty_level',
+          'time',
+          'instructions',
+          'content',
+          'description',
+          'summary',
+          'steps'
+        ].join(' ')
+      )
+      .sort({ scheduled_date: 1, meal_type: 1 })
+      .lean({ virtuals: true })
       .exec()
 
     // Group meal items by date
-    const mealsByDate = mealItems.reduce((acc: any, item: any) => {
-      const dateKey = item.schedule_date.toISOString().split('T')[0]
+    const mealsByDate = mealItems.reduce((acc: Record<string, any[]>, item: any) => {
+      const dateKey = formatDateKey(resolveMealItemDate(item))
+      if (!dateKey) {
+        return acc
+      }
       if (!acc[dateKey]) {
         acc[dateKey] = []
       }
@@ -116,13 +267,13 @@ class UserMealScheduleService {
 
     // Xóa schedule và các meal items liên quan
     await UserMealScheduleModel.findByIdAndDelete(schedule_id)
-    await UserMealItemModel.deleteMany({ schedule_id: new ObjectId(schedule_id) })
+    await UserMealItemModel.deleteMany({ user_meal_schedule_id: new ObjectId(schedule_id) })
 
     return { message: USER_MEAL_SCHEDULE_MESSAGE.DELETE_USER_MEAL_SCHEDULE_SUCCESS }
   }
 
   // Lấy meal items theo ngày
-  async getMealItemsByDateService({ schedule_id, user_id, date }: any) {
+  async getMealItemsByDayService({ schedule_id, user_id, date, day_number }: any) {
     const schedule = await UserMealScheduleModel.findOne({
       _id: new ObjectId(schedule_id),
       user_id: new ObjectId(user_id)
@@ -135,15 +286,65 @@ class UserMealScheduleService {
       })
     }
 
+    if (!date && !Number.isFinite(day_number)) {
+      throw new ErrorWithStatus({
+        message: 'Vui lòng cung cấp ngày hoặc số thứ tự của ngày trong thực đơn',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    let targetDate = date ? new Date(date) : null
+
+    if (!targetDate || Number.isNaN(targetDate.getTime())) {
+      if (Number.isFinite(day_number)) {
+        const baseStartDate =
+          (schedule as any).start_date || (schedule as any).startDate || (schedule as any).applied_start_date
+        if (!baseStartDate) {
+          throw new ErrorWithStatus({
+            message: 'Không xác định được ngày bắt đầu của lịch',
+            status: HTTP_STATUS.UNPROCESSABLE_ENTITY
+          })
+        }
+        targetDate = new Date(baseStartDate)
+        targetDate.setHours(0, 0, 0, 0)
+        targetDate.setDate(targetDate.getDate() + (Math.max(1, Number(day_number)) - 1))
+      }
+    }
+
+    if (!targetDate || Number.isNaN(targetDate.getTime())) {
+      throw new ErrorWithStatus({
+        message: 'Ngày yêu cầu không hợp lệ',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const startOfDay = new Date(targetDate)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(startOfDay)
+    endOfDay.setDate(endOfDay.getDate() + 1)
+
+    // Nếu chưa có meal items (lịch cũ), tạo từ meal plan rồi lấy lại
+    const existingCount = await UserMealItemModel.countDocuments({
+      user_meal_schedule_id: new ObjectId(schedule_id)
+    })
+    if (existingCount === 0 && schedule.meal_plan_id && schedule.start_date) {
+      await new UserMealScheduleService().createMealItemsFromPlanService({
+        schedule_id,
+        meal_plan_id: schedule.meal_plan_id,
+        start_date: schedule.start_date
+      })
+    }
+
     const mealItems = await UserMealItemModel.find({
-      schedule_id: new ObjectId(schedule_id),
-      schedule_date: {
-        $gte: new Date(date),
-        $lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000)
+      user_meal_schedule_id: new ObjectId(schedule_id),
+      scheduled_date: {
+        $gte: startOfDay,
+        $lt: endOfDay
       }
     })
-      .populate('recipe_id', 'title image calories difficulty_level time instructions')
-      .sort({ meal_type: 1 })
+      .populate('recipe_id', 'title image calories difficulty_level time instructions ingredients')
+      .sort({ scheduled_date: 1, meal_type: 1 })
+      .lean({ virtuals: true })
       .exec()
 
     return mealItems
@@ -162,7 +363,7 @@ class UserMealScheduleService {
 
     // Kiểm tra quyền truy cập thông qua schedule với type casting
     const schedule = await UserMealScheduleModel.findOne({
-      _id: (mealItem as any).schedule_id,
+      _id: (mealItem as any).user_meal_schedule_id,
       user_id: new ObjectId(user_id)
     })
 
@@ -196,7 +397,7 @@ class UserMealScheduleService {
 
     // Kiểm tra quyền truy cập thông qua schedule với type casting
     const schedule = await UserMealScheduleModel.findOne({
-      _id: (mealItem as any).schedule_id,
+      _id: (mealItem as any).user_meal_schedule_id,
       user_id: new ObjectId(user_id)
     })
 
@@ -236,7 +437,7 @@ class UserMealScheduleService {
 
     // Kiểm tra quyền truy cập thông qua schedule với type casting
     const schedule = await UserMealScheduleModel.findOne({
-      _id: (mealItem as any).schedule_id,
+      _id: (mealItem as any).user_meal_schedule_id,
       user_id: new ObjectId(user_id)
     })
 
@@ -316,8 +517,8 @@ class UserMealScheduleService {
     }
 
     const mealItems = await UserMealItemModel.find({
-      schedule_id: new ObjectId(schedule_id),
-      schedule_date: {
+      user_meal_schedule_id: new ObjectId(schedule_id),
+      scheduled_date: {
         $gte: new Date(date),
         $lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000)
       },
@@ -354,16 +555,16 @@ class UserMealScheduleService {
     }
 
     const totalMeals = await UserMealItemModel.countDocuments({
-      schedule_id: new ObjectId(schedule_id)
+      user_meal_schedule_id: new ObjectId(schedule_id)
     })
 
     const completedMeals = await UserMealItemModel.countDocuments({
-      schedule_id: new ObjectId(schedule_id),
+      user_meal_schedule_id: new ObjectId(schedule_id),
       status: MealItemStatus.completed
     })
 
     const skippedMeals = await UserMealItemModel.countDocuments({
-      schedule_id: new ObjectId(schedule_id),
+      user_meal_schedule_id: new ObjectId(schedule_id),
       status: MealItemStatus.skipped
     })
 
@@ -404,19 +605,29 @@ class UserMealScheduleService {
       // Lấy các bữa ăn trong ngày
       const meals = await MealPlanMealModel.find({ meal_plan_day_id: day._id })
         .sort({ meal_type: 1 })
+        .populate({
+          path: 'recipe_id',
+          select: 'title image calories protein carbohydrate fat',
+          strictPopulate: false // cho phép populate dù schema strict
+        })
         .exec()
 
       for (const meal of meals) {
+        const recipe = (meal as any).recipe_id || {}
+        const mealName = meal.name || recipe.title || 'Món ăn'
+
         const mealItem = await UserMealItemModel.create({
-          schedule_id: new ObjectId(schedule_id),
-          recipe_id: meal.recipe_id,
+          user_meal_schedule_id: new ObjectId(schedule_id),
+          meal_plan_meal_id: new ObjectId(meal._id),
+          // lưu kèm recipe_id nếu schema cho phép (schema hiện strict sẽ bỏ qua nếu không khai báo)
+          recipe_id: recipe?._id ? new ObjectId(recipe._id) : undefined,
+          name: mealName,
           meal_type: meal.meal_type,
-          schedule_date: scheduleDate,
-          portion_size: 1, // Default portion size
-          calories: meal.calories,
-          protein: meal.protein,
-          carbs: meal.carbs,
-          fat: meal.fat,
+          scheduled_date: scheduleDate,
+          calories: meal.calories ?? recipe.calories ?? 0,
+          protein: meal.protein ?? recipe.protein ?? 0,
+          carbs: meal.carbs ?? recipe.carbohydrate ?? 0,
+          fat: meal.fat ?? recipe.fat ?? 0,
           status: MealItemStatus.pending
         })
 
@@ -440,7 +651,7 @@ class UserMealScheduleService {
     }).select('_id')
     
     const scheduleIds = userSchedules.map(s => s._id)
-    query.schedule_id = { $in: scheduleIds }
+    query.user_meal_schedule_id = { $in: scheduleIds }
 
     if (date_from && date_to) {
       query.completed_at = {
@@ -454,7 +665,7 @@ class UserMealScheduleService {
       .skip(skip)
       .limit(limit)
       .populate('recipe_id', 'title image calories')
-      .populate('schedule_id', 'title')
+      .populate('user_meal_schedule_id', 'title')
       .exec()
 
     const total = await UserMealItemModel.countDocuments(query)
@@ -506,7 +717,7 @@ class UserMealScheduleService {
 
     // Kiểm tra quyền truy cập thông qua schedule với type casting
     const schedule = await UserMealScheduleModel.findOne({
-      _id: (mealItem as any).schedule_id,
+      _id: (mealItem as any).user_meal_schedule_id,
       user_id: new ObjectId(user_id)
     })
 
@@ -519,7 +730,7 @@ class UserMealScheduleService {
 
     const updateData: any = {}
     if (new_date) {
-      updateData.schedule_date = new Date(new_date)
+      updateData.scheduled_date = new Date(new_date)
     }
     if (new_time) {
       updateData.scheduled_time = new_time
@@ -553,11 +764,11 @@ class UserMealScheduleService {
     // Kiểm tra quyền truy cập
     const [schedule1, schedule2] = await Promise.all([
       UserMealScheduleModel.findOne({
-        _id: (mealItem1 as any).schedule_id,
+        _id: (mealItem1 as any).user_meal_schedule_id,
         user_id: new ObjectId(user_id)
       }),
       UserMealScheduleModel.findOne({
-        _id: (mealItem2 as any).schedule_id,
+        _id: (mealItem2 as any).user_meal_schedule_id,
         user_id: new ObjectId(user_id)
       })
     ])
@@ -570,17 +781,17 @@ class UserMealScheduleService {
     }
 
     // Hoán đổi ngày và thời gian
-    const temp_date = (mealItem1 as any).schedule_date
+    const temp_date = (mealItem1 as any).scheduled_date || (mealItem1 as any).schedule_date
     const temp_time = (mealItem1 as any).scheduled_time
 
     await Promise.all([
       UserMealItemModel.findByIdAndUpdate(meal_item_id_1, {
-        schedule_date: (mealItem2 as any).schedule_date,
+        scheduled_date: (mealItem2 as any).scheduled_date || (mealItem2 as any).schedule_date,
         scheduled_time: (mealItem2 as any).scheduled_time,
         swapped_at: new Date()
       }),
       UserMealItemModel.findByIdAndUpdate(meal_item_id_2, {
-        schedule_date: temp_date,
+        scheduled_date: temp_date,
         scheduled_time: temp_time,
         swapped_at: new Date()
       })
@@ -612,11 +823,11 @@ class UserMealScheduleService {
     }
 
     const newMealItem = await UserMealItemModel.create({
-      schedule_id: new ObjectId(schedule_id),
+      user_meal_schedule_id: new ObjectId(schedule_id),
       recipe_id: meal_data.recipe_id ? new ObjectId(meal_data.recipe_id) : null,
       name: meal_data.name || 'Món ăn tùy chỉnh',
       meal_type: meal_data.meal_type,
-      schedule_date: new Date(meal_data.schedule_date),
+      scheduled_date: new Date(meal_data.schedule_date),
       scheduled_time: meal_data.scheduled_time,
       calories: meal_data.calories || 0,
       protein: meal_data.protein || 0,
@@ -641,7 +852,7 @@ class UserMealScheduleService {
 
     // Kiểm tra quyền truy cập
     const schedule = await UserMealScheduleModel.findOne({
-      _id: (mealItem as any).schedule_id,
+      _id: (mealItem as any).user_meal_schedule_id,
       user_id: new ObjectId(user_id)
     })
 

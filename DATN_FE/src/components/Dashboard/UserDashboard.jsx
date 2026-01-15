@@ -1,598 +1,519 @@
-import { useState, useEffect, useRef, createRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaTrophy, FaRegCalendarAlt, FaUtensils, FaArrowRight, FaRegClock, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
-import { MdUpdate, MdDashboard } from 'react-icons/md';
-import moment from 'moment';
-import 'moment/locale/vi';
-import { useQuery } from '@tanstack/react-query';
-import { getProfile } from '../../apis/userApi';
-// Thêm các import khác nếu cần
-// import { getChallenges } from 'src/apis/challengeApi'; 
-// import { getEvents } from 'src/apis/eventApi';
-// import { getDiets } from 'src/apis/dietApi';
+import { useMemo, useRef, useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import moment from 'moment'
+import 'moment/locale/vi'
+import { FaUtensils, FaRegCalendarAlt, FaClock, FaFireAlt, FaArrowRight, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
+import { MdDashboard } from 'react-icons/md'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend
+} from 'recharts'
+import { getActiveMealSchedule } from '../../services/userMealScheduleService'
+import { getPublicMealPlans } from '../../services/mealPlanService'
+import Loading from '../GlobalComponents/Loading'
+import { getImageUrl } from '../../utils/imageUrl'
 
-const UserDashboard = () => {
-  const navigate = useNavigate();
-  
-  // Truy vấn dữ liệu người dùng
-  const { data: profileData, isLoading: profileLoading } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: () => getProfile(),
-    retry: 1,
-    onError: (error) => {
-      console.error("Lỗi khi tải thông tin người dùng:", error);
-    }
-  });
-  
-  // TODO: Thay thế mock data bằng API calls thực tế
-  // Ví dụ: 
-  // const { data: challengesData } = useQuery({
-  //   queryKey: ['userChallenges'],
-  //   queryFn: () => getChallenges({ joined: true, limit: 5 })
-  // });
-  
-  // Mock data cho demo - đã mở rộng để có nhiều mục hơn
-  const mockChallenges = [
-    {
-      _id: '1',
-      title: 'Chạy 100km trong 30 ngày',
-      progress: 65,
-      endDate: moment().add(10, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8'
-    },
-    {
-      _id: '2',
-      title: 'Tập luyện 20 phút mỗi ngày',
-      progress: 45,
-      endDate: moment().add(15, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'
-    },
-    {
-      _id: '3',
-      title: 'Đạp xe 200km trong tháng',
-      progress: 80,
-      endDate: moment().add(5, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1541625602330-2277a4c46182'
-    },
-    {
-      _id: '4',
-      title: 'Uống đủ 2L nước mỗi ngày',
-      progress: 30,
-      endDate: moment().add(20, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1544148103-0773bf10d330'
-    }
-  ];
+const formatDate = (value, fallback = '—') => {
+  if (!value) return fallback
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return fallback
+  return new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit'
+  }).format(date)
+}
 
-  const mockEvents = [
-    {
-      _id: '1',
-      title: 'Marathon Hồ Gươm',
-      eventDate: moment().add(5, 'days').toISOString(),
-      image: 'https://images2.thanhnien.vn/thumb_w/686/528068263637045248/2024/8/25/tbm7637-17245883933481176972446-0-646-1600-1846-crop-1724588660716339719111.jpg'
-    },
-    {
-      _id: '2',
-      title: 'Giải chạy VnExpress Marathon',
-      eventDate: moment().add(12, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1530549387789-4c1017266635'
-    },
-    {
-      _id: '3',
-      title: 'Giải đạp xe Đà Lạt',
-      eventDate: moment().add(20, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b'
-    },
-    {
-      _id: '4',
-      title: 'Giải bơi lội Phú Quốc',
-      eventDate: moment().add(15, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1530549387789-4c1017266635'
-    },
-    {
-      _id: '5',
-      title: 'Fitness Challenge Hà Nội',
-      eventDate: moment().add(8, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1434596922112-19c563067271'
-    }
-  ];
+const formatRelativeTime = (value) => {
+  if (!value) return 'Chưa có lịch'
+  return moment(value).locale('vi').fromNow()
+}
 
-  const mockDiets = [
-    {
-      _id: '1',
-      title: 'Chế độ ăn Clean Eating',
-      startDate: moment().subtract(3, 'days').toISOString(),
-      endDate: moment().add(18, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2'
-    },
-    {
-      _id: '2',
-      title: 'Chế độ Low Carb cho người tập luyện',
-      startDate: moment().subtract(5, 'days').toISOString(),
-      endDate: moment().add(25, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
-    },
-    {
-      _id: '3',
-      title: 'Thực đơn giàu protein',
-      startDate: moment().subtract(1, 'days').toISOString(),
-      endDate: moment().add(30, 'days').toISOString(),
-      image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435'
-    }
-  ];
+const clampProgress = (value) => {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
 
-  // Kiểm tra xem có dữ liệu nào để hiển thị không
-  const hasActiveData = mockChallenges.length > 0 || mockEvents.length > 0 || mockDiets.length > 0;
-
-  return (
-    <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-800 py-4 px-5">
-        <h3 className="text-lg font-semibold text-white flex items-center">
-          <MdDashboard className="mr-2 text-xl" /> 
-          Hoạt động của bạn
-        </h3>
-      </div>
-
-      <div className="p-5">
-        {hasActiveData ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* Thử thách đang tham gia */}
-            <DashboardCardSlider 
-              title="Thử thách đang tham gia"
-              icon={<FaTrophy className="text-yellow-500" />}
-              footerLink="/challenge/my-challenges"
-              footerText="Xem tất cả thử thách"
-              gradientFrom="from-yellow-50"
-              gradientTo="to-orange-50"
-              darkGradientFrom="dark:from-gray-800"
-              darkGradientTo="dark:to-gray-900"
-              borderColor="border-yellow-200"
-              darkBorderColor="dark:border-yellow-900"
-              hoverColor="group-hover:text-yellow-600"
-              footerColor="text-yellow-600"
-              footerHoverColor="hover:text-yellow-700"
-              darkFooterColor="dark:text-yellow-400"
-              darkHoverFooterColor="dark:hover:text-yellow-300"
-              items={mockChallenges}
-              renderItem={(challenge, isActive) => (
-                <div key={challenge._id} className="relative overflow-hidden rounded-lg">
-                  {/* Background image with overlay */}
-                  <div 
-                    className="absolute inset-0 z-0 bg-cover bg-center opacity-85 dark:opacity-15"
-                    style={{backgroundImage: `url(${challenge.image})`}}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-yellow-50/90 to-yellow-50/60 dark:from-gray-800/90 dark:to-gray-800/60"></div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10 p-4">
-                    <div className="mb-1">
-                      <h5 className="font-semibold text-gray-800 dark:text-white text-base line-clamp-1 group-hover:text-yellow-600 transition-colors duration-200">
-                        {challenge.title}
-                      </h5>
-                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 mt-1">
-                        <FaRegClock className="mr-1.5" />
-                        <span>Kết thúc {moment(challenge.endDate).locale('vi').fromNow()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4 mt-3">
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-gray-700 dark:text-gray-200 font-medium">Tiến độ</span>
-                        <span className="font-bold text-yellow-600 dark:text-yellow-400">{challenge.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200/70 rounded-full h-2.5 dark:bg-gray-700/70 backdrop-blur-sm">
-                        <div 
-                          className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2.5 rounded-full shadow-sm" 
-                          style={{ width: `${challenge.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mt-3">
-                      <button 
-                        onClick={() => navigate(`/challenge/${challenge._id}`)}
-                        className="text-xs text-gray-600 hover:text-yellow-600 dark:text-gray-300 dark:hover:text-yellow-400 flex items-center transition-colors font-medium"
-                      >
-                        Xem chi tiết <FaChevronRight className="ml-1 w-2.5 h-2.5" />
-                      </button>
-                      <button 
-                        onClick={() => navigate(`/challenge/${challenge._id}?action=update`)}
-                        className="text-xs bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors shadow-sm"
-                      >
-                        <MdUpdate className="mr-1" /> Cập nhật
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            />
-
-            {/* Sự kiện sắp tới */}
-            <DashboardCardSlider 
-              title="Sự kiện sắp tới"
-              icon={<FaRegCalendarAlt className="text-red-500" />}
-              footerLink="/sport-event/my-events"
-              footerText="Xem tất cả sự kiện"
-              gradientFrom="from-red-50"
-              gradientTo="to-pink-50"
-              darkGradientFrom="dark:from-gray-800"
-              darkGradientTo="dark:to-gray-900"
-              borderColor="border-red-200"
-              darkBorderColor="dark:border-red-900"
-              hoverColor="group-hover:text-red-600"
-              footerColor="text-red-600"
-              footerHoverColor="hover:text-red-700"
-              darkFooterColor="dark:text-red-400"
-              darkHoverFooterColor="dark:hover:text-red-300"
-              items={mockEvents}
-              renderItem={(event, isActive) => (
-                <div key={event._id} className="relative overflow-hidden rounded-lg">
-                  {/* Background image with overlay */}
-                  <div 
-                    className="absolute inset-0 z-0 bg-cover bg-center opacity-85 dark:opacity-15"
-                    style={{backgroundImage: `url(${event.image})`}}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-red-50/90 to-red-50/60 dark:from-gray-800/90 dark:to-gray-800/60"></div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10 p-4 flex flex-col h-full">
-                    <div className="mb-1">
-                      <h5 className="font-semibold text-gray-800 dark:text-white text-base line-clamp-1 group-hover:text-red-600 transition-colors duration-200">
-                        {event.title}
-                      </h5>
-                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 mt-1">
-                        <FaRegCalendarAlt className="mr-1.5" />
-                        <span>Diễn ra vào {moment(event.eventDate).locale('vi').format('DD/MM/YYYY')}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-grow mt-4 mb-4">
-                      <div className="inline-flex px-3 py-1.5 bg-red-100/70 dark:bg-red-900/30 backdrop-blur-sm rounded text-xs font-medium text-red-600 dark:text-red-400 shadow-sm">
-                        <span className="font-bold mr-1">Còn lại:</span> {moment(event.eventDate).diff(moment(), 'days')} ngày nữa
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={() => navigate(`/sport-event/${event._id}`)}
-                        className="text-xs bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors shadow-sm"
-                      >
-                        Xem chi tiết
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            />
-
-            {/* Thực đơn đang áp dụng */}
-            <DashboardCardSlider 
-              title="Thực đơn đang áp dụng"
-              icon={<FaUtensils className="text-green-500" />}
-              footerLink="/schedule/my-eat-schedule"
-              footerText="Xem tất cả thực đơn"
-              gradientFrom="from-green-50"
-              gradientTo="to-emerald-50"
-              darkGradientFrom="dark:from-gray-800"
-              darkGradientTo="dark:to-gray-900"
-              borderColor="border-green-200"
-              darkBorderColor="dark:border-green-900"
-              hoverColor="group-hover:text-green-600"
-              footerColor="text-green-600"
-              footerHoverColor="hover:text-green-700"
-              darkFooterColor="dark:text-green-400"
-              darkHoverFooterColor="dark:hover:text-green-300"
-              items={mockDiets}
-              renderItem={(diet, isActive) => (
-                <div key={diet._id} className="relative overflow-hidden rounded-lg">
-                  {/* Background image with overlay */}
-                  <div 
-                    className="absolute inset-0 z-0 bg-cover bg-center opacity-85 dark:opacity-15"
-                    style={{backgroundImage: `url(${diet.image})`}}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-green-50/90 to-green-50/60 dark:from-gray-800/90 dark:to-gray-800/60"></div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10 p-4 flex flex-col h-full">
-                    <div className="mb-1">
-                      <h5 className="font-semibold text-gray-800 dark:text-white text-base line-clamp-1 group-hover:text-green-600 transition-colors duration-200">
-                        {diet.title}
-                      </h5>
-                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 mt-1">
-                        <FaRegCalendarAlt className="mr-1.5" />
-                        <span>Từ {moment(diet.startDate).locale('vi').format('DD/MM')} đến {moment(diet.endDate).locale('vi').format('DD/MM/YYYY')}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-grow mt-4 mb-4">
-                      <div className="inline-flex px-3 py-1.5 bg-green-100/70 dark:bg-green-900/30 backdrop-blur-sm rounded text-xs font-medium text-green-600 dark:text-green-400 shadow-sm">
-                        <span className="font-bold mr-1">Còn lại:</span> {moment(diet.endDate).diff(moment(), 'days')} ngày
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={() => navigate(`/meal-plan/${diet._id}`)}
-                        className="text-xs bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors shadow-sm"
-                      >
-                        Xem chi tiết
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            />
-          </div>
-        ) : (
-          // Trạng thái khi chưa có dữ liệu
-          <div className="py-8">
-            <div className="text-center max-w-2xl mx-auto">
-              <div className="inline-flex p-4 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-4">
-                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h4 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">
-                Bắt đầu hành trình của bạn!
-              </h4>
-              <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 max-w-md mx-auto">
-                Tham gia các thử thách, sự kiện hoặc áp dụng thực đơn mới để theo dõi tiến trình của bạn tại đây.
-              </p>
-              
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Link 
-                  to="/challenge"
-                  className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
-                >
-                  <FaTrophy className="w-4 h-4" />
-                  <span>Khám phá thử thách</span>
-                </Link>
-                <Link 
-                  to="/schedule/my-eat-schedule"
-                  className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-all shadow-md hover:shadow-lg"
-                >
-                  <FaUtensils className="w-4 h-4" />
-                  <span>Xem thực đơn</span>
-                </Link>
-                <Link 
-                  to="/sport-event"
-                  className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
-                >
-                  <FaRegCalendarAlt className="w-4 h-4" />
-                  <span>Tham gia sự kiện</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+const DayPreview = ({ title, dateLabel, meals = [], nutrition }) => (
+  <div className='rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 p-3 flex flex-col gap-3'>
+    <div>
+      <p className='text-[11px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400'>{title}</p>
+      <p className='text-base font-semibold text-gray-900 dark:text-white'>{dateLabel}</p>
+      <p className='text-xs text-gray-500 dark:text-gray-400'>
+        {meals.length ? `${meals.length} bữa · ${Math.round(nutrition?.calories || 0)} kcal` : 'Chưa có bữa ăn nào'}
+      </p>
     </div>
-  );
-};
+    <div className='space-y-1.5'>
+      {meals.slice(0, 2).map((meal) => (
+        <div key={meal._id || meal.meal_item_id || meal.custom_name} className='flex items-center gap-3'>
+          <div className='w-8 h-8 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-emerald-600 text-sm'>
+            <FaUtensils />
+          </div>
+          <div>
+            <p className='text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight'>
+              {meal.custom_name || meal.meal_name || meal.recipe_id?.title || 'Bữa ăn'}
+            </p>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>{meal.schedule_time || 'Chưa đặt giờ'}</p>
+          </div>
+        </div>
+      ))}
+      {!meals.length && <p className='text-xs text-gray-500'>Hệ thống sẽ gợi ý khi có bữa ăn mới.</p>}
+    </div>
+  </div>
+)
 
-// Tạo component con cho mỗi card có tính năng slide tự động
-const DashboardCardSlider = ({ 
-  title, 
-  icon, 
-  items = [], 
-  renderItem,
-  footerLink, 
-  footerText,
-  gradientFrom = "from-gray-50",
-  gradientTo = "to-white",
-  darkGradientFrom = "dark:from-gray-800",
-  darkGradientTo = "dark:to-gray-900",
-  borderColor = "border-gray-100",
-  darkBorderColor = "dark:border-gray-700",
-  hoverColor = "group-hover:text-blue-600",
-  footerColor = "text-blue-600",
-  footerHoverColor = "hover:text-blue-800",
-  darkFooterColor = "dark:text-blue-400", 
-  darkHoverFooterColor = "dark:hover:text-blue-300",
-  slideDuration = 5000, // Thời gian mỗi slide (mặc định 5 giây)
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [cardHeight, setCardHeight] = useState('auto');
-  const itemRefs = useRef([]);
-  const autoPlayRef = useRef(null);
-  const slideContainerRef = useRef(null);
+const mockCaloriesData = {
+  week: [
+    { label: 'T2', intake: 1850, burned: 1680 },
+    { label: 'T3', intake: 1975, burned: 1750 },
+    { label: 'T4', intake: 2100, burned: 1820 },
+    { label: 'T5', intake: 2050, burned: 1900 },
+    { label: 'T6', intake: 2150, burned: 2000 },
+    { label: 'T7', intake: 2250, burned: 2100 },
+    { label: 'CN', intake: 2000, burned: 1720 }
+  ],
+  month: [
+    { label: 'Tuần 1', intake: 14200, burned: 13150 },
+    { label: 'Tuần 2', intake: 14850, burned: 13600 },
+    { label: 'Tuần 3', intake: 15000, burned: 13850 },
+    { label: 'Tuần 4', intake: 14650, burned: 14050 }
+  ]
+}
 
-  // Khởi tạo mảng refs cho mỗi item
-  useEffect(() => {
-    itemRefs.current = Array(items.length).fill().map((_, i) => itemRefs.current[i] || createRef());
-  }, [items.length]);
+const CaloriesTrendCard = ({ data = mockCaloriesData }) => {
+  const [range, setRange] = useState('month')
+  const chartData = data?.[range] || []
 
-  // Tính toán chiều cao tối đa của các items để card có kích thước cố định
-  useEffect(() => {
-    if (items.length === 0) return;
-
-    const calculateMaxHeight = () => {
-      // Kiểm tra refs trước khi sử dụng
-      if (!itemRefs.current || itemRefs.current.length === 0) return 0;
-
-      // Đặt tất cả các items về visible để đo - kiểm tra null trước khi truy cập
-      itemRefs.current.forEach((ref, index) => {
-        if (ref && ref.current) {
-          ref.current.style.opacity = "1";
-          ref.current.style.position = "relative";
-        }
-      });
-      
-      // Đo chiều cao
-      let maxHeight = 0;
-      itemRefs.current.forEach(ref => {
-        if (ref && ref.current) {
-          const height = ref.current.offsetHeight;
-          maxHeight = Math.max(maxHeight, height);
-        }
-      });
-
-      // Đặt lại các items không phải current về ẩn
-      itemRefs.current.forEach((ref, index) => {
-        if (ref && ref.current && index !== currentIndex) {
-          ref.current.style.opacity = "0";
-          ref.current.style.position = "absolute";
-        }
-      });
-
-      // Thêm padding để tránh chặt cụt nội dung
-      return maxHeight > 0 ? maxHeight + 4 : 200; // Giá trị mặc định nếu không thể tính
-    };
-
-    // Cần timeout để đảm bảo DOM đã render
-    const timer = setTimeout(() => {
-      const maxItemHeight = calculateMaxHeight();
-      if (maxItemHeight > 0) {
-        setCardHeight(`${maxItemHeight}px`);
-      }
-    }, 100);
-
-    // Tính lại kích thước khi cửa sổ thay đổi kích thước
-    const handleResize = () => {
-      const newMaxHeight = calculateMaxHeight();
-      if (newMaxHeight > 0) {
-        setCardHeight(`${newMaxHeight}px`);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timer);
-    };
-  }, [items.length, currentIndex]);
-
-  // Xử lý tự động chuyển slide
-  useEffect(() => {
-    if (items.length <= 1) return;
-    
-    if (isAutoPlaying) {
-      autoPlayRef.current = setTimeout(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length);
-      }, slideDuration);
-    }
-    
-    return () => {
-      if (autoPlayRef.current) {
-        clearTimeout(autoPlayRef.current);
-      }
-    };
-  }, [currentIndex, isAutoPlaying, items.length, slideDuration]);
-
-  // Pause auto-play when hover
-  const handleMouseEnter = () => {
-    setIsAutoPlaying(false);
-  };
-
-  const handleMouseLeave = () => {
-    setIsAutoPlaying(true);
-  };
-
-  // Navigation handlers
-  const goToPrevious = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + items.length) % items.length);
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % items.length);
-  };
-
-  const goToSlide = (index) => {
-    setCurrentIndex(index);
-  };
+  const totals = chartData.reduce(
+    (acc, cur) => {
+      acc.intake += cur.intake || 0
+      acc.burned += cur.burned || 0
+      return acc
+    },
+    { intake: 0, burned: 0 }
+  )
+  const net = totals.intake - totals.burned
+  const netColor = net >= 0 ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-300'
 
   return (
-    <div 
-      className={`bg-gradient-to-br ${gradientFrom} ${gradientTo} ${darkGradientFrom} ${darkGradientTo} p-4 rounded-xl border ${borderColor} ${darkBorderColor} hover:shadow-lg transition-all duration-300 group h-full flex flex-col`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-2">
-          <div className="text-lg">{icon}</div>
-          <h4 className="font-semibold text-gray-800 dark:text-gray-100">{title}</h4>
+    <div className='rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-color-primary p-4 flex flex-col gap-4 h-full'>
+      <div className='flex items-center justify-between gap-2 flex-wrap'>
+        <div>
+          <p className='text-[11px] uppercase tracking-[0.35em] text-emerald-600 dark:text-emerald-400'>Năng lượng</p>
+          <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Cân bằng calories</h3>
         </div>
-        {items.length > 1 && (
-          <div className="flex gap-1">
-            <button 
-              onClick={goToPrevious}
-              className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
-            >
-              <FaChevronLeft className="w-3 h-3" />
-            </button>
-            <button 
-              onClick={goToNext}
-              className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
-            >
-              <FaChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
-      
-      <div 
-        ref={slideContainerRef} 
-        className="flex-grow mb-3 relative" 
-        style={{ height: cardHeight, minHeight: '150px' }}
-      >
-        {items.length > 0 ? (
-          items.map((item, index) => {
-            const isActive = index === currentIndex;
-            // Kiểm tra itemRefs trước khi truy cập
-            const ref = itemRefs.current && index < itemRefs.current.length ? itemRefs.current[index] : null;
-            
-            return (
-              <div 
-                key={index} 
-                ref={ref} 
-                className={`w-full transition-all duration-300 ${
-                  isActive 
-                    ? 'opacity-100 relative z-10' 
-                    : 'opacity-0 absolute top-0 left-0 right-0 z-0'
-                }`}
-              >
-                {renderItem(item, isActive)}
-              </div>
-            );
-          })
-        ) : (
-          <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-            Chưa có {title.toLowerCase()}
-          </div>
-        )}
-      </div>
-      
-      {/* Slide indicators */}
-      {items.length > 1 && (
-        <div className="flex justify-center gap-1.5 my-2">
-          {items.map((_, index) => (
-            <button 
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentIndex 
-                  ? 'bg-gray-600 dark:bg-gray-300 w-3' 
-                  : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+        <div className='flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 p-1'>
+          {['week', 'month'].map((key) => (
+            <button
+              key={key}
+              type='button'
+              onClick={() => setRange(key)}
+              className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+                range === key
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-emerald-600'
               }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
+            >
+              {key === 'week' ? 'Tuần' : 'Tháng'}
+            </button>
           ))}
         </div>
-      )}
-      
-      <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-auto">
-        <Link 
-          to={footerLink}
-          className={`text-sm ${footerColor} ${footerHoverColor} ${darkFooterColor} ${darkHoverFooterColor} font-medium flex items-center justify-center transition-colors`}
-        >
-          {footerText} <FaArrowRight className="ml-1 w-3 h-3" />
-        </Link>
+      </div>
+
+      <div className='grid grid-cols-3 gap-2 text-xs md:text-sm'>
+        <div className='rounded-xl border border-gray-100 dark:border-gray-700 bg-emerald-50/80 dark:bg-emerald-900/30 p-3'>
+          <p className='text-gray-600 dark:text-gray-300 uppercase text-[11px]'>Nạp vào</p>
+          <p className='text-lg font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1'>
+            <FaUtensils /> {totals.intake.toLocaleString('vi-VN')} kcal
+          </p>
+        </div>
+        <div className='rounded-xl border border-gray-100 dark:border-gray-700 bg-orange-50/70 dark:bg-orange-900/20 p-3'>
+          <p className='text-gray-600 dark:text-gray-300 uppercase text-[11px]'>Tiêu thụ</p>
+          <p className='text-lg font-semibold text-orange-600 dark:text-orange-300 flex items-center gap-1'>
+            <FaFireAlt /> {totals.burned.toLocaleString('vi-VN')} kcal
+          </p>
+        </div>
+        <div className='rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3'>
+          <p className='text-gray-600 dark:text-gray-300 uppercase text-[11px]'>Chênh lệch</p>
+          <p className={`text-lg font-semibold flex items-center gap-1 ${netColor}`}>
+            {net >= 0 ? '+' : ''}
+            {net.toLocaleString('vi-VN')} kcal
+          </p>
+        </div>
+      </div>
+
+      <div className='h-60 -mx-2'>
+        <ResponsiveContainer width='100%' height='100%'>
+          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' vertical={false} />
+            <XAxis dataKey='label' tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+            <YAxis tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(v) => `${v / 1000}k`} />
+            <Tooltip
+              formatter={(value) => `${value.toLocaleString('vi-VN')} kcal`}
+              contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}
+            />
+            <Legend verticalAlign='top' height={32} iconType='circle' wrapperStyle={{ paddingBottom: 10 }} />
+            <Line
+              type='monotone'
+              dataKey='intake'
+              name='Nạp vào'
+              stroke='#10b981'
+              strokeWidth={3}
+              dot={{ r: 4, strokeWidth: 2, fill: '#ecfdf3', stroke: '#10b981' }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }}
+            />
+            <Line
+              type='monotone'
+              dataKey='burned'
+              name='Tiêu thụ'
+              stroke='#f97316'
+              strokeWidth={3}
+              dot={{ r: 4, strokeWidth: 2, fill: '#fff7ed', stroke: '#f97316' }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: '#f97316' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default UserDashboard; 
+const PlanChip = ({ icon, label, value }) => (
+  <div className='border border-gray-100 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-900/40'>
+    <p className='text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center gap-1'>
+      {icon}
+      {label}
+    </p>
+    <p className='text-base font-semibold text-gray-900 dark:text-white mt-1'>{value}</p>
+  </div>
+)
+
+const ActivePlanCard = ({ loading, summary, onViewDetail }) => {
+  if (loading) {
+    return (
+      <div className='rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-color-primary p-5 flex items-center justify-center min-h-[220px]'>
+        <Loading />
+      </div>
+    )
+  }
+
+  if (!summary) {
+    return (
+      <div className='rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-color-primary p-6 text-center space-y-3'>
+        <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Bạn chưa áp dụng thực đơn nào</h3>
+        <p className='text-sm text-gray-500 dark:text-gray-400 leading-relaxed'>
+          Khám phá kho thực đơn để bắt đầu một hành trình ăn uống lành mạnh hơn.
+        </p>
+        <Link
+          to='/meal-plan'
+          className='inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg'
+        >
+          <FaUtensils /> Khám phá thực đơn
+        </Link>
+      </div>
+    )
+  }
+
+  const { detail, linkedPlan, overview, meta, today, upcoming } = summary
+  const completionRate = clampProgress((overview.completed_meals / Math.max(overview.total_meals || 1, 1)) * 100)
+  const todayMeals = Array.isArray(today?.meals) ? today.meals : []
+  const upcomingMeals = Array.isArray(upcoming?.meals) ? upcoming.meals : []
+  const planImage = getImageUrl(
+    detail.cover_image || detail.image || linkedPlan?.cover_image || linkedPlan?.banner || linkedPlan?.image
+  )
+
+  return (
+    <div className='rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-color-primary overflow-hidden flex flex-col h-full relative'>
+      {planImage && (
+        <div
+          className='absolute inset-0 opacity-20 pointer-events-none'
+          style={{ backgroundImage: `url(${planImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        />
+      )}
+      <div className='p-4 md:p-5 space-y-3 flex-1 flex flex-col relative z-10 backdrop-blur-[1px] bg-white/80 dark:bg-color-primary/85'>
+        <div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5'>
+          <div>
+            <p className='text-[11px] uppercase tracking-[0.35em] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5'>
+              <MdDashboard /> Hoạt động dinh dưỡng
+            </p>
+            <h3 className='text-xl font-semibold text-gray-900 dark:text-white mt-1'>
+              {detail.title || linkedPlan?.title || 'Thực đơn cá nhân'}
+            </h3>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>
+              Cập nhật lần cuối {formatRelativeTime(detail.updated_at || detail.created_at || Date.now())}
+            </p>
+          </div>
+          <button
+            type='button'
+            onClick={onViewDetail}
+            className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-sm dark:border-emerald-700 dark:text-emerald-300'
+          >
+            Xem chi tiết <FaArrowRight />
+          </button>
+        </div>
+
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+          <PlanChip label='Bắt đầu' value={formatDate(detail.start_date || detail.applied_start_date)} icon={<FaRegCalendarAlt />} />
+          <PlanChip label='Kết thúc' value={formatDate(detail.end_date)} icon={<FaClock />} />
+          <PlanChip label='Chuỗi kỷ luật' value={`${meta?.streak_days || 0} ngày`} icon={<FaFireAlt />} />
+        </div>
+
+        <div className='rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 p-3.5 space-y-2.5'>
+          <div className='flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300'>
+            <span>Tiến độ hoàn thành</span>
+            <span className='font-semibold text-emerald-600 dark:text-emerald-400'>{completionRate}%</span>
+          </div>
+          <div className='h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden'>
+            <div
+              className='h-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500 rounded-full'
+              style={{ width: `${completionRate}%` }}
+            />
+          </div>
+          <div className='grid grid-cols-3 gap-2 text-center'>
+            <div>
+              <p className='text-[11px] uppercase text-gray-500'>Hoàn thành</p>
+              <p className='text-base font-semibold text-gray-900 dark:text-white'>{overview.completed_meals || 0}</p>
+            </div>
+            <div>
+              <p className='text-[11px] uppercase text-gray-500'>Đang chờ</p>
+              <p className='text-base font-semibold text-gray-900 dark:text-white'>{overview.pending_meals || 0}</p>
+            </div>
+            <div>
+              <p className='text-[11px] uppercase text-gray-500'>Bỏ qua</p>
+              <p className='text-base font-semibold text-gray-900 dark:text-white'>{overview.skipped_meals || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1'>
+          <DayPreview
+            title='Ngày hôm nay'
+            dateLabel={today?.date ? formatDate(today.date) : 'Chưa lên lịch'}
+            meals={todayMeals}
+            nutrition={today?.nutrition}
+          />
+          <DayPreview
+            title='Ngày tiếp theo'
+            dateLabel={upcoming?.date ? formatDate(upcoming.date) : 'Đang chờ cập nhật'}
+            meals={upcomingMeals}
+            nutrition={upcoming?.nutrition}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const RecommendationCard = ({ loading, items }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isHovering, setIsHovering] = useState(false)
+  const autoPlayRef = useRef(null)
+  const visibleItems = items.slice(0, 6)
+
+  useEffect(() => {
+    if (visibleItems.length <= 1 || isHovering) return
+    autoPlayRef.current = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % visibleItems.length)
+    }, 4000)
+    return () => {
+      if (autoPlayRef.current) clearTimeout(autoPlayRef.current)
+    }
+  }, [visibleItems.length, currentIndex, isHovering])
+
+  if (loading) {
+    return (
+      <div className='rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-color-primary p-5 flex items-center justify-center min-h-[220px]'>
+        <Loading />
+      </div>
+    )
+  }
+
+  if (!items.length) {
+    return (
+      <div className='rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-color-primary p-6 text-center space-y-3'>
+        <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Chúng tôi sẽ gợi ý thêm thực đơn phù hợp</h3>
+        <p className='text-sm text-gray-500 dark:text-gray-400'>Theo dõi các chuyên gia để nhận nhiều đề xuất hơn.</p>
+        <Link
+          to='/meal-plan'
+          className='inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+        >
+          Xem tất cả thực đơn
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className='rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-color-primary p-4 flex flex-col gap-4 h-full'
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      <div className='flex items-center justify-between flex-wrap gap-2'>
+        <div>
+          <p className='text-[11px] uppercase tracking-[0.35em] text-emerald-600 dark:text-emerald-400'>Gợi ý thay thế</p>
+          <h3 className='text-xl font-semibold text-gray-900 dark:text-white'>Thực đơn bạn có thể thích</h3>
+        </div>
+        <Link to='/meal-plan' className='text-sm text-emerald-600 hover:text-emerald-500 flex items-center gap-1'>
+          Xem thêm <FaArrowRight className='w-3 h-3' />
+        </Link>
+      </div>
+      <div className='relative flex-1 flex flex-col'>
+        {visibleItems.length > 1 && (
+          <>
+            <button
+              type='button'
+              aria-label='Trước'
+              onClick={() => setCurrentIndex((prev) => (prev - 1 + visibleItems.length) % visibleItems.length)}
+              className='absolute -left-3 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-gray-900/70 border border-gray-200 dark:border-gray-700 rounded-full p-1 text-gray-600 dark:text-gray-300 shadow'
+            >
+              <FaChevronLeft />
+            </button>
+            <button
+              type='button'
+              aria-label='Sau'
+              onClick={() => setCurrentIndex((prev) => (prev + 1) % visibleItems.length)}
+              className='absolute -right-3 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-gray-900/70 border border-gray-200 dark:border-gray-700 rounded-full p-1 text-gray-600 dark:text-gray-300 shadow'
+            >
+              <FaChevronRight />
+            </button>
+          </>
+        )}
+        <div className='overflow-hidden rounded-xl flex-1'>
+          <div
+            className='flex transition-transform duration-500'
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          >
+            {visibleItems.map((plan) => {
+              const image = getImageUrl(plan.cover_image || plan.image)
+              return (
+                <Link
+                  to={`/meal-plan/${plan._id}`}
+                  key={plan._id}
+                  className='border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors group min-w-full'
+                >
+                  <div
+                    className='h-28 bg-cover bg-center'
+                    style={{ backgroundImage: image ? `url(${image})` : 'linear-gradient(120deg,#ecfccb,#d1fae5)' }}
+                  />
+                  <div className='p-3 space-y-2.5'>
+                    <div className='flex items-center justify-between text-xs text-gray-500 dark:text-gray-400'>
+                      <span>{plan.duration || plan.days?.length || 0} ngày</span>
+                      <span>{plan.likes_count || 0} lượt thích</span>
+                    </div>
+                    <h4 className='text-base font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-emerald-600 leading-snug'>
+                      {plan.title}
+                    </h4>
+                    {Array.isArray(plan.tags) && plan.tags.length > 0 && (
+                      <div className='flex flex-wrap gap-2 text-xs'>
+                        {plan.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className='px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'>
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <p className='text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed'>
+                      {plan.description || 'Thực đơn cân bằng giúp bạn duy trì năng lượng mỗi ngày.'}
+                    </p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+        {visibleItems.length > 1 && (
+          <div className='flex justify-center gap-1 mt-3'>
+            {visibleItems.map((_, idx) => (
+              <button
+                type='button'
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={`w-2 h-2 rounded-full transition-colors ${idx === currentIndex ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const UserDashboard = () => {
+  const navigate = useNavigate()
+
+  const {
+    data: activeSchedule,
+    isLoading: loadingActive
+  } = useQuery({
+    queryKey: ['dashboard-active-meal-plan'],
+    queryFn: getActiveMealSchedule,
+    staleTime: 1000 * 60
+  })
+
+  const {
+    data: publicPlansResponse,
+    isLoading: loadingRecommendations
+  } = useQuery({
+    queryKey: ['dashboard-public-meal-plans'],
+    queryFn: () => getPublicMealPlans({ limit: 6, sort: 'popular' }),
+    staleTime: 1000 * 60 * 5
+  })
+
+  const scheduleSummary = useMemo(() => {
+    if (!activeSchedule?.schedule) return null
+    const detail = activeSchedule.schedule
+    return {
+      detail,
+      linkedPlan: detail.meal_plan_id || null,
+      overview: activeSchedule.overview || {},
+      meta: activeSchedule.meta || {},
+      today: activeSchedule.today || {},
+      upcoming: activeSchedule.upcoming || {}
+    }
+  }, [activeSchedule])
+
+  const recommendedPlans = useMemo(() => {
+    const list = publicPlansResponse?.data?.result?.meal_plans || []
+    const activePlanId = scheduleSummary?.linkedPlan?._id
+    return list.filter((plan) => plan._id !== activePlanId).slice(0, 4)
+  }, [publicPlansResponse, scheduleSummary])
+
+  return (
+    <div className='w-full shadow bg-white rounded-3xl dark:bg-color-primary dark:border dark:border-gray-800 overflow-hidden'>
+      <div className='bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-700 dark:via-indigo-700 dark:to-purple-700 py-4 px-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
+        <div>
+          <h3 className='text-base md:text-lg font-semibold text-white flex items-center gap-2'>
+            <MdDashboard className='text-xl' /> Bảng điều khiển dinh dưỡng
+          </h3>
+          <p className='text-[11px] md:text-xs text-white/80'>Theo dõi thực đơn hiện tại và gợi ý thay thế phù hợp theo thời gian thực.</p>
+        </div>
+        {scheduleSummary?.detail && (
+          <div className='text-xs text-white/80 md:text-sm'>
+            Cập nhật {formatRelativeTime(scheduleSummary.detail.updated_at || scheduleSummary.detail.created_at)}
+          </div>
+        )}
+      </div>
+      <div className='p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-3 gap-3 items-stretch'>
+        <div className='flex w-full'>
+          <ActivePlanCard loading={loadingActive} summary={scheduleSummary} onViewDetail={() => navigate('/meal-plan/active')} />
+        </div>
+        <div className='flex w-full'>
+          <CaloriesTrendCard />
+        </div>
+        <div className='flex w-full'>
+          <RecommendationCard loading={loadingRecommendations} items={recommendedPlans} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default UserDashboard

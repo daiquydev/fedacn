@@ -31,6 +31,7 @@ export interface MealPlan {
   shared_count: number
   featured: boolean
   search_fields?: string
+  report_meal_plan?: { user_id: Types.ObjectId; reason: string; created_at: Date }[]
 }
 
 const MealPlanSchema = new mongoose.Schema<MealPlan>(
@@ -67,7 +68,18 @@ const MealPlanSchema = new mongoose.Schema<MealPlan>(
     views_count: { type: Number, default: 0 },
     shared_count: { type: Number, default: 0 },
     featured: { type: Boolean, default: false },
-    search_fields: { type: String, default: '' }
+    search_fields: { type: String, default: '' },
+    report_meal_plan: [
+      {
+        user_id: {
+          type: mongoose.SchemaTypes.ObjectId,
+          ref: 'users',
+          default: null
+        },
+        reason: { type: String, default: '' },
+        created_at: { type: Date, default: Date.now }
+      }
+    ]
   },
   {
     timestamps: true,
@@ -92,6 +104,9 @@ MealPlanSchema.index({ author_id: 1, status: 1 })
 MealPlanSchema.index({ category: 1, status: 1, is_public: 1 })
 MealPlanSchema.index({ featured: 1, status: 1 })
 MealPlanSchema.index({ rating: -1, rating_count: 1 })
+// Critical indexes for public meal plans query performance
+MealPlanSchema.index({ status: 1, is_public: 1, createdAt: -1 })
+MealPlanSchema.index({ status: 1, is_public: 1, likes_count: -1 })
 
 const MealPlanModel = mongoose.model('meal_plans', MealPlanSchema)
 

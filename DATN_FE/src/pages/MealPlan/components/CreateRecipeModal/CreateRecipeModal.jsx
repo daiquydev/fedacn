@@ -46,7 +46,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
     }
   })
 
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBDLJALtNjyoYOADn7kjaJmQvMsQsjTK9Q'
+  const GEMINI_API_KEY = import.meta.env.GEMINI_API_KEY
   const GEMINI_MODEL = 'gemini-2.5-flash'
   const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 
@@ -170,8 +170,12 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
   const watchedDescription = watch('description')
 
   useEffect(() => {
-    if (categoriesFromApi.length > 0 && watchedCategory === 'DEFAULT') {
+    if (watchedCategory !== 'DEFAULT') return
+
+    if (categoriesFromApi.length > 0) {
       setValue('category_recipe_id', categoriesFromApi[0]._id, { shouldValidate: true })
+    } else if (defaultCategories.length > 0) {
+      setValue('category_recipe_id', defaultCategories[0]._id, { shouldValidate: true })
     }
   }, [categoriesFromApi, watchedCategory, setValue])
 
@@ -232,7 +236,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
       return
     }
 
-    const prompt = `Bạn là đầu bếp dinh dưỡng. Tạo công thức chi tiết dựa trên:\n- Tên món: ${watchedTitle}\n- Mô tả mong muốn: ${watchedDescription}\nTrả về JSON với các trường:\n{\n  "description": "...",\n  "category": "...",\n  "time_minutes": number,\n  "difficulty_level": "easy|medium|hard",\n  "region": "...",\n  "processing_method": "...",\n  "ingredients": [{ "name": "...", "amount": "...", "unit": "..." }],\n  "instructions": ["Bước 1 ...", "..."],\n  "tags": ["..."],\n  "nutrition_per_100g": {\n    "calories": number,\n    "protein": number,\n    "fat": number,\n    "carbs": number\n  },\n  "notes": "..."\n}\nKhông tạo ảnh, không đề cập đến yêu cầu. Nếu thiếu dữ liệu, ghi rõ lý do.`
+    const prompt = `Bạn là đầu bếp dinh dưỡng. Tạo công thức chi tiết dựa trên:\n- Tên món: ${watchedTitle}\n- Mô tả mong muốn: ${watchedDescription}\n- Khẩu phần cho một người nếu người dùng không đề cập- Nguyên liệu: chỉ liệt kê nguyên liệu chính; bỏ qua gia vị cơ bản (muối, đường, tiêu, nước mắm, nước tương, bột nêm, dầu ăn, mắm/muối nếu không phải hương vị đặc trưng). Chỉ giữ gia vị đặc trưng làm nên bản sắc món.\nTrả về JSON với các trường:\n{\n  "description": "...",\n  "category": "...",\n  "time_minutes": number,\n  "difficulty_level": "easy|medium|hard",\n  "region": "...",\n  "processing_method": "...",\n  "ingredients": [{ "name": "...", "amount": "...", "unit": "..." }],\n  "instructions": ["Bước 1 ...", "..."],\n  "tags": ["..."],\n  "nutrition_per_100g": {\n    "calories": number,\n    "protein": number,\n    "fat": number,\n    "carbs": number\n  },\n  "notes": "..."\n}\nKhông tạo ảnh, không đề cập đến yêu cầu. Nếu thiếu dữ liệu, ghi rõ lý do.`
 
     setAiLoading(true)
     try {
@@ -256,6 +260,16 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
       }
 
       const result = await response.json()
+      
+      // Kiểm tra lỗi từ Gemini API
+      if (result.error) {
+        const errorMsg = result.error.message || 'Lỗi từ Gemini API'
+        if (result.error.code === 503 || result.error.status === 'UNAVAILABLE') {
+          throw new Error('Gemini AI đang quá tải. Vui lòng thử lại sau vài phút.')
+        }
+        throw new Error(errorMsg)
+      }
+      
       const textResponse = result?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('\n')
       const parsed = extractJsonFromText(textResponse)
 
@@ -351,9 +365,11 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
     const formData = new FormData()
     
     // Filter out empty ingredients, instructions, and tags
-    const validIngredients = ingredients.filter(ing => ing.name.trim() !== '')
-    const validInstructions = instructions.filter(inst => inst.trim() !== '')
-    const validTags = tags.filter(tag => tag.trim() !== '')
+    const validIngredients = ingredients.filter((ing) => ing.name.trim() !== '')
+    const validInstructions = instructions
+      .map((inst) => inst.trim())
+      .filter((inst) => inst !== '')
+    const validTags = tags.map((tag) => tag.trim()).filter((tag) => tag !== '')
 
     // Validate required fields
     if (validIngredients.length === 0) {
@@ -538,13 +554,10 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
               </option>
               {availableCategories?.map((cat) => {
                 const categoryLabel = cat.category_recipe_name || cat.name || 'Không xác định'
-                const optionValue = categoriesFromApi.length > 0 ? cat._id : 'DEFAULT'
-                const optionKey = cat._id || cat.name || categoryLabel
+                const optionValue = cat._id || cat.value || cat.name || categoryLabel
+                const optionKey = optionValue
                 return (
-                <option
-                    key={optionKey}
-                    value={optionValue}
-                  >
+                  <option key={optionKey} value={optionValue}>
                     {categoryLabel}
                   </option>
                 )

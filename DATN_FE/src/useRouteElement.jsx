@@ -82,6 +82,11 @@ const MealPlanDetail = lazy(() => import('./pages/MealPlan/MealPlanDetail/MealPl
 const MySavedMealPlans = lazy(() => import('./pages/MealPlan/MySavedMealPlans/MySavedMealPlans'))
 const MyMealPlans = lazy(() => import('./pages/MealPlan/MyMealPlans/MyMealPlans'))
 const ActiveMealPlan = lazy(() => import('./pages/MealPlan/ActiveMealPlan/ActiveMealPlan'))
+const FriendManagement = lazy(() => import('./pages/Friends/FriendManagement'))
+const Explore = lazy(() => import('./pages/Explore'))
+const PublicMealPlanDetail = lazy(() => import('./pages/Explore/PublicMealPlanDetail'))
+const PersonalDashboard = lazy(() => import('./pages/PersonalDashboard/PersonalDashboard'))
+const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -96,9 +101,15 @@ export default function useRouteElement() {
 
   function RoleProtectedRouterChef() {
     const { profile } = useContext(AppContext)
-    const check = Boolean(profile.role === 1)
+    const check = Number(profile?.role) === 1
     //  console.log(check)
     return check ? <Outlet /> : <Navigate to='/home' />
+  }
+
+  function RoleProtectedRouterAdmin() {
+    const { profile } = useContext(AppContext)
+    const isAdmin = Number(profile?.role) === 2
+    return isAdmin ? <Outlet /> : <Navigate to='/home' />
   }
 
   const routeElement = useRoutes([
@@ -172,6 +183,26 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <Me />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/friends',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <FriendManagement />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/personal-dashboard',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <PersonalDashboard />
               </Suspense>
             </MainLayout>
           )
@@ -666,6 +697,22 @@ export default function useRouteElement() {
       children: [
         {
           path: '',
+          element: <RoleProtectedRouterAdmin />,
+          children: [
+            {
+              path: '/admin',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <AdminPanel />
+                  </Suspense>
+                </MainLayout>
+              )
+            }
+          ]
+        },
+        {
+          path: '',
           element: <RoleProtectedRouterChef />,
           children: [
             {
@@ -788,6 +835,31 @@ export default function useRouteElement() {
           element: <ChangeSuccess />
         }
       ]
+    },
+    // Public explore routes (no authentication required)
+    {
+      path: '/explore',
+      element: (
+        <Suspense>
+          <Explore />
+        </Suspense>
+      )
+    },
+    {
+      path: '/explore/meal-plan/:id',
+      element: (
+        <Suspense>
+          <PublicMealPlanDetail />
+        </Suspense>
+      )
+    },
+    {
+      path: '/explore/meal-plans',
+      element: (
+        <Suspense>
+          <Explore />
+        </Suspense>
+      )
     },
     {
       path: '*',

@@ -1,0 +1,162 @@
+[
+  {
+    "content": "Bữa sáng 5 phút: sữa chua Hy Lạp + granola + chuối, ~25g protein, no đường thêm.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a07"
+    },
+    "image_query": "greek yogurt granola banana breakfast",
+    "image_url": "https://images.unsplash.com/photo-1763686483398-730a9555b3f5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxncmVlayUyMHlvZ3VydCUyMGdyYW5vbGElMjBiYW5hbmElMjBicmVha2Zhc3R8ZW58MHwwfHx8MTc2NzgyNzAyOXww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Salad gà nướng dầu ô liu, thêm hạt bí để đủ chất béo tốt cho tim mạch.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a02"
+    },
+    "image_query": "grilled chicken salad pumpkin seeds",
+    "image_url": "https://images.unsplash.com/photo-1598371624230-a7bdd72e0d22?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxncmlsbGVkJTIwY2hpY2tlbiUyMHNhbGFkJTIwcHVtcGtpbiUyMHNlZWRzfGVufDB8MHx8fDE3Njc4MjcwMzF8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Meal-prep 3 ngày: cơm gạo lứt, ức gà áp chảo, bông cải hấp, sốt chanh mật ong ít đường.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a07"
+    },
+    "image_query": "meal prep chicken brown rice broccoli",
+    "image_url": "https://images.unsplash.com/photo-1587995631109-2a8588e991da?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxtZWFsJTIwcHJlcCUyMGNoaWNrZW4lMjBicm93biUyMHJpY2UlMjBicm9jY29saXxlbnwwfDB8fHwxNzY3ODI3MDMyfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Smoothie rau xanh: cải bó xôi + táo + dứa + hạt chia, giúp no lâu nhưng nhẹ bụng.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a06"
+    },
+    "image_query": "green smoothie spinach pineapple chia",
+    "image_url": "https://images.unsplash.com/photo-1579846928146-630aeae0eb83?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxncmVlbiUyMHNtb290aGllJTIwc3BpbmFjaCUyMHBpbmVhcHBsZSUyMGNoaWF8ZW58MHwwfHx8MTc2NzgyNzAzM3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Cá hồi áp chảo, ăn kèm khoai lang nướng và măng tây, cân bằng đạm - tinh bột tốt - chất xơ.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a03"
+    },
+    "image_query": "salmon sweet potato asparagus",
+    "image_url": "https://images.unsplash.com/photo-1759271082074-6cde09f86550?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxzYWxtb24lMjBzd2VldCUyMHBvdGF0byUyMGFzcGFyYWd1c3xlbnwwfDB8fHwxNzY3ODI3MDM1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Bữa trưa văn phòng: cơm hộp đậu hũ sốt teriyaki tự làm, giảm muối, đủ đạm cho người ăn chay linh hoạt.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a06"
+    },
+    "image_query": "tofu teriyaki bento",
+    "image_url": "https://images.unsplash.com/photo-1762305194201-077e7e23ccf2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx0b2Z1JTIwdGVyaXlha2klMjBiZW50b3xlbnwwfDB8fHwxNzY3ODI3MDM2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Snack 200 kcal: táo + bơ đậu phộng tự nhiên, combo carb chậm và chất béo tốt.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a01"
+    },
+    "image_query": "apple peanut butter healthy snack",
+    "image_url": "https://images.unsplash.com/photo-1686204040685-f7a2bc30d1fd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxhcHBsZSUyMHBlYW51dCUyMGJ1dHRlciUyMGhlYWx0aHklMjBzbmFja3xlbnwwfDB8fHwxNzY3ODI3MDM3fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Nước ép cam cà rốt gừng, bổ sung vitamin A và C, uống sau bữa chính để tránh tụt đường huyết.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a08"
+    },
+    "image_query": "orange carrot ginger juice",
+    "image_url": "https://images.unsplash.com/photo-1607522154179-da1c051ed109?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxvcmFuZ2UlMjBjYXJyb3QlMjBnaW5nZXIlMjBqdWljZXxlbnwwfDB8fHwxNzY3ODI3MDM4fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Phở gạo lứt nước dùng trong, topping ức gà xé, giữ hương vị Việt nhưng nhẹ hơn.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a09"
+    },
+    "image_query": "brown rice noodle chicken pho",
+    "image_url": "https://images.unsplash.com/photo-1600446380437-ec82c6ff72b6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxicm93biUyMHJpY2UlMjBub29kbGUlMjBjaGlja2VuJTIwcGhvfGVufDB8MHx8fDE3Njc4MjcwNDB8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Cơm tấm phiên bản healthy: sườn nướng ít mỡ, cơm gạo lứt, thêm dưa leo và cà chua.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a05"
+    },
+    "image_query": "healthy vietnamese broken rice grilled pork",
+    "image_url": "https://images.unsplash.com/photo-1680084581642-17cf51ad7760?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwdmlldG5hbWVzZSUyMGJyb2tlbiUyMHJpY2UlMjBncmlsbGVkJTIwcG9ya3xlbnwwfDB8fHwxNzY3ODI3MDQxfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Trứng ốp la + bánh mì đen + salad rau rocket, đủ 3 nhóm chất cho buổi sáng tập nặng.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a04"
+    },
+    "image_query": "fried eggs whole grain bread arugula",
+    "image_url": "https://images.unsplash.com/photo-1729223921099-7a8a72955baa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxmcmllZCUyMGVnZ3MlMjB3aG9sZSUyMGdyYWluJTIwYnJlYWQlMjBhcnVndWxhfGVufDB8MHx8fDE3Njc4MjcwNDN8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Yến mạch qua đêm với sữa hạnh nhân, topping việt quất và hạt óc chó, chuẩn bị trước 5 phút tối.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a08"
+    },
+    "image_query": "overnight oats almond milk blueberry walnut",
+    "image_url": "https://images.unsplash.com/photo-1621926037410-5c727521e695?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxvdmVybmlnaHQlMjBvYXRzJTIwYWxtb25kJTIwbWlsayUyMGJsdWViZXJyeSUyMHdhbG51dHxlbnwwfDB8fHwxNzY3ODI3MDQ0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Bún cá lóc ít dầu, thêm rau thơm và giá đỗ, giúp giảm calo nhưng vẫn đủ đạm.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a03"
+    },
+    "image_query": "vietnamese fish noodle soup healthy",
+    "image_url": "https://images.unsplash.com/photo-1588566565463-180a5b2090d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwZmlzaCUyMG5vb2RsZSUyMHNvdXAlMjBoZWFsdGh5fGVufDB8MHx8fDE3Njc4MjcwNDV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Tô poke cá ngừ: gạo lứt, edamame, rong biển, gừng hồng, nước sốt giảm muối.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a02"
+    },
+    "image_query": "tuna poke bowl brown rice",
+    "image_url": "https://images.unsplash.com/photo-1679279726937-122c49626802?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx0dW5hJTIwcG9rZSUyMGJvd2wlMjBicm93biUyMHJpY2V8ZW58MHwwfHx8MTc2NzgyNzA0N3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Sữa hạt điều tự làm, không đường, dùng kèm cà phê đen buổi sáng giảm cảm giác thèm ngọt.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a06"
+    },
+    "image_query": "homemade cashew milk",
+    "image_url": "https://images.unsplash.com/photo-1621658536568-0e7bef759f14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxob21lbWFkZSUyMGNhc2hldyUyMG1pbGt8ZW58MHwwfHx8MTc2NzgyNzA0OHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Gỏi cuốn tôm thịt cuộn nhiều rau, chấm sốt đậu phộng ít đường, ăn nhẹ chiều.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a01"
+    },
+    "image_query": "vietnamese fresh spring rolls peanut sauce",
+    "image_url": "https://images.unsplash.com/photo-1692958211324-147c95a9878b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwZnJlc2glMjBzcHJpbmclMjByb2xscyUyMHBlYW51dCUyMHNhdWNlfGVufDB8MHx8fDE3Njc4MjcwNDl8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Bánh mì kẹp ức gà nướng, rau xà lách, sốt sữa chua thay mayonnaise, giảm 100 kcal/bữa.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a05"
+    },
+    "image_query": "grilled chicken sandwich yogurt sauce",
+    "image_url": "https://images.unsplash.com/photo-1704007573697-6a516da421ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxncmlsbGVkJTIwY2hpY2tlbiUyMHNhbmR3aWNoJTIweW9ndXJ0JTIwc2F1Y2V8ZW58MHwwfHx8MTc2NzgyNzA1MXww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Canh rong biển đậu hũ, nêm nhạt, ấm bụng buổi tối mà không lo tăng cân.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a04"
+    },
+    "image_query": "tofu seaweed soup",
+    "image_url": "https://images.unsplash.com/photo-1763470260582-894ae15f43bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx0b2Z1JTIwc2Vhd2VlZCUyMHNvdXB8ZW58MHwwfHx8MTc2NzgyNzA1Mnww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Kho quẹt phiên bản fit: ít nước mắm, thay đường bằng mật mía, chấm rau củ hấp rất đưa cơm.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a09"
+    },
+    "image_query": "vietnamese kho quet with vegetables",
+    "image_url": "https://images.unsplash.com/photo-1606315983891-469221f05c89?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwa2hvJTIwcXVldCUyMHdpdGglMjB2ZWdldGFibGVzfGVufDB8MHx8fDE3Njc4MjcwNTN8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "content": "Trà gạo lứt rang ấm, uống giữa buổi để tránh thèm đồ ngọt và giữ ấm cơ thể.",
+    "user_id": {
+      "$oid": "66f25b1a0a0a0a0a0a0a0a0b"
+    },
+    "image_query": "brown rice tea warm cup",
+    "image_url": "https://images.unsplash.com/photo-1633107939685-2e7105a8f01d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHxicm93biUyMHJpY2UlMjB0ZWElMjB3YXJtJTIwY3VwfGVufDB8MHx8fDE3Njc4MjcwNTV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  }
+]

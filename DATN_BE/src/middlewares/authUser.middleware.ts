@@ -187,6 +187,30 @@ export const accessTokenValidator = validate(
   )
 )
 
+// Optional access token validator - allows unauthenticated access but parses token if present
+export const optionalAccessTokenValidator = async (req: Request, res: any, next: any) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next()
+    }
+    const access_token = authHeader.split(' ')[1]
+    if (!access_token) {
+      return next()
+    }
+    const decoded_authorization = await verifyToken({
+      token: access_token,
+      secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
+    })
+    if (decoded_authorization.status !== UserStatus.banned) {
+      req.decoded_authorization = decoded_authorization
+    }
+  } catch (error) {
+    // Silently ignore invalid tokens for public access
+  }
+  return next()
+}
+
 export const refreshTokenValidator = validate(
   checkSchema(
     {

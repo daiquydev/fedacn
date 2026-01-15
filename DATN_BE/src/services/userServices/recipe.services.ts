@@ -681,10 +681,15 @@ class RecipeService {
     processing_food,
     region,
     interval_time,
-    type
+    type,
+    include_all
   }: GetListRecipeForUserQuery) {
-    const condition: any = {
-      status: RecipeStatus.accepted
+    const condition: any = {}
+
+    const includeAllStatus = Boolean(include_all)
+
+    if (!includeAllStatus) {
+      condition.status = RecipeStatus.accepted
     }
 
     console.log(sort)

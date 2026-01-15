@@ -23,6 +23,7 @@ export enum NotificationTypes {
   commentBlog,
   bookmarkAlbum,
   shareMealPlan,
+  mealPlanInvite,
   system
 }
 
@@ -188,6 +189,12 @@ export enum MealPlanStatus {
   draft,
   published,
   archived
+}
+
+export enum MealPlanInviteStatus {
+  pending,
+  accepted,
+  declined
 }
 
 // Schedule Status

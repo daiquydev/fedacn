@@ -92,16 +92,16 @@ export default function Home() {
     )
   }
   return (
-    <div className="space-y-6">
+    <div className='space-y-8 w-full'>
       {/* Dashboard section - Đặt ở trên cùng, toàn màn hình */}
-      <div className="w-full">
+      <div className='w-full'>
         <UserDashboard />
       </div>
 
       {/* Main content grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className='grid gap-6 lg:grid-cols-[minmax(0,2.4fr),minmax(280px,1fr)]'>
         {/* Main column - tăng kích thước lên */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-3 space-y-5">
+        <div className='space-y-5'>
           {/* Create Post Card */}
           <div className="bg-white py-4 px-6 shadow-md rounded-xl dark:bg-color-primary mb-6">
             <div>{checkTime(profile)}</div>
@@ -151,7 +151,7 @@ export default function Home() {
         </div>
 
         {/* Sidebar Content - không bao gồm Dashboard nữa */}
-        <div className="col-span-1 space-y-6">
+        <div className='space-y-6'>
           {/* People You May Know - TỐI ƯU */}
           {userData?.data?.result.length === 0 ? null : (
             <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">

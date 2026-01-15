@@ -6,7 +6,7 @@ import PostCard from '../../../../components/CardComponents/PostCard'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
 
-export default function UserPost({ user_id, user }) {
+export default function UserPost({ user_id, user, isFollowing = false }) {
   const { ref, inView } = useInView()
   const fetchUserPost = async ({ pageParam }) => {
     return await getUserPosts(user_id, { page: pageParam })
@@ -51,6 +51,11 @@ export default function UserPost({ user_id, user }) {
     <>
       <div className=' grid xl:mx-8 pt-2 xl:gap-6 xl:grid-cols-5'>
         <div className='xl:col-span-3'>
+          {!isFollowing && (
+            <div className='mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-100'>
+              Bạn chỉ đang xem các bài đăng công khai. Theo dõi để xem thêm nội dung dành riêng cho bạn bè.
+            </div>
+          )}
           <div className='my-3'>
             {content}
             {/* <div ref={ref}>{isFetchingNextPage && <Loading />}</div> */}

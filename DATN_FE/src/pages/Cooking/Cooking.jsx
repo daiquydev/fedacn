@@ -5,7 +5,7 @@ import useravatar from '../../assets/images/useravatar.jpg'
 import BlogCard from '../../components/CardComponents/BlogCard'
 import { getBlogsForUser } from '../../apis/blogApi'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { getListRecipesForUser } from '../../apis/recipeApi'
+import { getRecipesForUser } from '../../apis/recipeApi'
 import { getListAlbumForUser } from '../../apis/albumApi'
 import FoodBanner from './components/FoodBanner'
 import { followUser, recommendUser } from '../../apis/userApi'
@@ -26,7 +26,7 @@ export default function Cooking() {
   const { data: recipesData, isLoading: isLoadingRecipe } = useQuery({
     queryKey: ['recipes-list-user', { limit: 6 }],
     queryFn: () => {
-      return getListRecipesForUser({ limit: 6 })
+      return getRecipesForUser({ limit: 6 })
     },
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 10

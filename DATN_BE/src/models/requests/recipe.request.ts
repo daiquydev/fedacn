@@ -53,4 +53,5 @@ export interface GetListRecipeForUserQuery {
   region?: number
   interval_time?: number
   type?: number
+  include_all?: boolean
 }

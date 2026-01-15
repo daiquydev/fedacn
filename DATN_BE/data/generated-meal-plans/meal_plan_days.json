@@ -1,0 +1,1982 @@
+[
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c1"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c0"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c6"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c0"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1025"
+    },
+    "total_protein": {
+      "$numberInt": "250"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "147"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40cb"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c0"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "735"
+    },
+    "total_protein": {
+      "$numberInt": "50"
+    },
+    "total_carbs": {
+      "$numberInt": "59"
+    },
+    "total_fat": {
+      "$numberInt": "35"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40d0"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c0"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1140"
+    },
+    "total_protein": {
+      "$numberInt": "72"
+    },
+    "total_carbs": {
+      "$numberInt": "124"
+    },
+    "total_fat": {
+      "$numberInt": "39"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40d5"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40c0"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "600"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "68"
+    },
+    "total_fat": {
+      "$numberInt": "21"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40db"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40da"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "940"
+    },
+    "total_protein": {
+      "$numberInt": "248"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "134"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40e0"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40da"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "980"
+    },
+    "total_protein": {
+      "$numberInt": "69"
+    },
+    "total_carbs": {
+      "$numberInt": "62"
+    },
+    "total_fat": {
+      "$numberInt": "53"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40e5"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40da"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "700"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "85"
+    },
+    "total_fat": {
+      "$numberInt": "27"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ea"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40da"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1400"
+    },
+    "total_protein": {
+      "$numberInt": "83"
+    },
+    "total_carbs": {
+      "$numberInt": "152"
+    },
+    "total_fat": {
+      "$numberInt": "50"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40f0"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40f5"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1025"
+    },
+    "total_protein": {
+      "$numberInt": "250"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "147"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40fa"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "735"
+    },
+    "total_protein": {
+      "$numberInt": "50"
+    },
+    "total_carbs": {
+      "$numberInt": "59"
+    },
+    "total_fat": {
+      "$numberInt": "35"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ff"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1140"
+    },
+    "total_protein": {
+      "$numberInt": "72"
+    },
+    "total_carbs": {
+      "$numberInt": "124"
+    },
+    "total_fat": {
+      "$numberInt": "39"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4104"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "600"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "68"
+    },
+    "total_fat": {
+      "$numberInt": "21"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4109"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c40ef"
+    },
+    "day_number": {
+      "$numberInt": "6"
+    },
+    "title": "Ngày 6",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "940"
+    },
+    "total_protein": {
+      "$numberInt": "248"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "134"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c410f"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "980"
+    },
+    "total_protein": {
+      "$numberInt": "69"
+    },
+    "total_carbs": {
+      "$numberInt": "62"
+    },
+    "total_fat": {
+      "$numberInt": "53"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4114"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "700"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "85"
+    },
+    "total_fat": {
+      "$numberInt": "27"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4119"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1400"
+    },
+    "total_protein": {
+      "$numberInt": "83"
+    },
+    "total_carbs": {
+      "$numberInt": "152"
+    },
+    "total_fat": {
+      "$numberInt": "50"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c411e"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4123"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1025"
+    },
+    "total_protein": {
+      "$numberInt": "250"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "147"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4128"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "6"
+    },
+    "title": "Ngày 6",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "735"
+    },
+    "total_protein": {
+      "$numberInt": "50"
+    },
+    "total_carbs": {
+      "$numberInt": "59"
+    },
+    "total_fat": {
+      "$numberInt": "35"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c412d"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c410e"
+    },
+    "day_number": {
+      "$numberInt": "7"
+    },
+    "title": "Ngày 7",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1140"
+    },
+    "total_protein": {
+      "$numberInt": "72"
+    },
+    "total_carbs": {
+      "$numberInt": "124"
+    },
+    "total_fat": {
+      "$numberInt": "39"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4133"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "600"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "68"
+    },
+    "total_fat": {
+      "$numberInt": "21"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4138"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "940"
+    },
+    "total_protein": {
+      "$numberInt": "248"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "134"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c413d"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "980"
+    },
+    "total_protein": {
+      "$numberInt": "69"
+    },
+    "total_carbs": {
+      "$numberInt": "62"
+    },
+    "total_fat": {
+      "$numberInt": "53"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4142"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "700"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "85"
+    },
+    "total_fat": {
+      "$numberInt": "27"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4147"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1400"
+    },
+    "total_protein": {
+      "$numberInt": "83"
+    },
+    "total_carbs": {
+      "$numberInt": "152"
+    },
+    "total_fat": {
+      "$numberInt": "50"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c414c"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "6"
+    },
+    "title": "Ngày 6",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4151"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4132"
+    },
+    "day_number": {
+      "$numberInt": "7"
+    },
+    "title": "Ngày 7",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1025"
+    },
+    "total_protein": {
+      "$numberInt": "250"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "147"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4157"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4156"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "735"
+    },
+    "total_protein": {
+      "$numberInt": "50"
+    },
+    "total_carbs": {
+      "$numberInt": "59"
+    },
+    "total_fat": {
+      "$numberInt": "35"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c415c"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4156"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1140"
+    },
+    "total_protein": {
+      "$numberInt": "72"
+    },
+    "total_carbs": {
+      "$numberInt": "124"
+    },
+    "total_fat": {
+      "$numberInt": "39"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4161"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4156"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "600"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "68"
+    },
+    "total_fat": {
+      "$numberInt": "21"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4167"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "940"
+    },
+    "total_protein": {
+      "$numberInt": "248"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "134"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c416c"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "980"
+    },
+    "total_protein": {
+      "$numberInt": "69"
+    },
+    "total_carbs": {
+      "$numberInt": "62"
+    },
+    "total_fat": {
+      "$numberInt": "53"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4171"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "700"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "85"
+    },
+    "total_fat": {
+      "$numberInt": "27"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4176"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1400"
+    },
+    "total_protein": {
+      "$numberInt": "83"
+    },
+    "total_carbs": {
+      "$numberInt": "152"
+    },
+    "total_fat": {
+      "$numberInt": "50"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c417b"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4180"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "6"
+    },
+    "title": "Ngày 6",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1025"
+    },
+    "total_protein": {
+      "$numberInt": "250"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "147"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4185"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c4166"
+    },
+    "day_number": {
+      "$numberInt": "7"
+    },
+    "title": "Ngày 7",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "735"
+    },
+    "total_protein": {
+      "$numberInt": "50"
+    },
+    "total_carbs": {
+      "$numberInt": "59"
+    },
+    "total_fat": {
+      "$numberInt": "35"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c418b"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c418a"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1140"
+    },
+    "total_protein": {
+      "$numberInt": "72"
+    },
+    "total_carbs": {
+      "$numberInt": "124"
+    },
+    "total_fat": {
+      "$numberInt": "39"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4190"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c418a"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "600"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "68"
+    },
+    "total_fat": {
+      "$numberInt": "21"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c4195"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c418a"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "940"
+    },
+    "total_protein": {
+      "$numberInt": "248"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "134"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c419a"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c418a"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "980"
+    },
+    "total_protein": {
+      "$numberInt": "69"
+    },
+    "total_carbs": {
+      "$numberInt": "62"
+    },
+    "total_fat": {
+      "$numberInt": "53"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41a0"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "700"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "85"
+    },
+    "total_fat": {
+      "$numberInt": "27"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41a5"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1400"
+    },
+    "total_protein": {
+      "$numberInt": "83"
+    },
+    "total_carbs": {
+      "$numberInt": "152"
+    },
+    "total_fat": {
+      "$numberInt": "50"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41aa"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41af"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1025"
+    },
+    "total_protein": {
+      "$numberInt": "250"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "147"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41b4"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "735"
+    },
+    "total_protein": {
+      "$numberInt": "50"
+    },
+    "total_carbs": {
+      "$numberInt": "59"
+    },
+    "total_fat": {
+      "$numberInt": "35"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41b9"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c419f"
+    },
+    "day_number": {
+      "$numberInt": "6"
+    },
+    "title": "Ngày 6",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1140"
+    },
+    "total_protein": {
+      "$numberInt": "72"
+    },
+    "total_carbs": {
+      "$numberInt": "124"
+    },
+    "total_fat": {
+      "$numberInt": "39"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41bf"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "day_number": {
+      "$numberInt": "1"
+    },
+    "title": "Ngày 1",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "600"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "68"
+    },
+    "total_fat": {
+      "$numberInt": "21"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41c4"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "day_number": {
+      "$numberInt": "2"
+    },
+    "title": "Ngày 2",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "940"
+    },
+    "total_protein": {
+      "$numberInt": "248"
+    },
+    "total_carbs": {
+      "$numberInt": "156"
+    },
+    "total_fat": {
+      "$numberInt": "134"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41c9"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "day_number": {
+      "$numberInt": "3"
+    },
+    "title": "Ngày 3",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "980"
+    },
+    "total_protein": {
+      "$numberInt": "69"
+    },
+    "total_carbs": {
+      "$numberInt": "62"
+    },
+    "total_fat": {
+      "$numberInt": "53"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41ce"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "day_number": {
+      "$numberInt": "4"
+    },
+    "title": "Ngày 4",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "700"
+    },
+    "total_protein": {
+      "$numberInt": "35"
+    },
+    "total_carbs": {
+      "$numberInt": "85"
+    },
+    "total_fat": {
+      "$numberInt": "27"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41d3"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "day_number": {
+      "$numberInt": "5"
+    },
+    "title": "Ngày 5",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "1400"
+    },
+    "total_protein": {
+      "$numberInt": "83"
+    },
+    "total_carbs": {
+      "$numberInt": "152"
+    },
+    "total_fat": {
+      "$numberInt": "50"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "695ebce4d7952c9dfe1c41d8"
+    },
+    "meal_plan_id": {
+      "$oid": "695ebce4d7952c9dfe1c41be"
+    },
+    "day_number": {
+      "$numberInt": "6"
+    },
+    "title": "Ngày 6",
+    "description": "Kết hợp đủ 3 bữa chính và snack nhẹ.",
+    "total_calories": {
+      "$numberInt": "520"
+    },
+    "total_protein": {
+      "$numberInt": "28"
+    },
+    "total_carbs": {
+      "$numberInt": "48"
+    },
+    "total_fat": {
+      "$numberInt": "22"
+    },
+    "notes": "",
+    "createdAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    },
+    "updatedAt": {
+      "$date": {
+        "$numberLong": "1767816420433"
+      }
+    }
+  }
+]

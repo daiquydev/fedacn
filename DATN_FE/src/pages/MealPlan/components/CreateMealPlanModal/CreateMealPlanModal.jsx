@@ -166,13 +166,15 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
   const [recipes, setRecipes] = useState([])
   const [recipesLoading, setRecipesLoading] = useState(false)
   const [recipeSearch, setRecipeSearch] = useState('')
-  const [bulkConfig, setBulkConfig] = useState({ startDay: 1, endDay: 7, mealType: 1, recipeId: '' })
+  const [bulkConfig, setBulkConfig] = useState({ selectedDays: [1], mealType: 1, recipeId: '' })
   const [copyConfig, setCopyConfig] = useState({ fromDay: 1, startDay: 2, endDay: 2 })
   const [recipeFilters, setRecipeFilters] = useState({ category: 'all', difficulty: 'all' })
   const [recipeSort, setRecipeSort] = useState('title')
   const [validationErrors, setValidationErrors] = useState({ title: false, description: false })
   const [highlightedDay, setHighlightedDay] = useState(null)
   const [missingMealKey, setMissingMealKey] = useState(null)
+  const [missingMealSummary, setMissingMealSummary] = useState(null)
+  const [showMissingMealSummary, setShowMissingMealSummary] = useState(false)
   const titleInputRef = useRef(null)
   const descriptionInputRef = useRef(null)
   const daySectionRef = useRef(null)
@@ -190,7 +192,13 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
     }
   }
 
-  const highlightDaySection = (dayNumber) => {
+  const resetMissingMealIndicators = useCallback(() => {
+    setMissingMealKey(null)
+    setMissingMealSummary(null)
+    setShowMissingMealSummary(false)
+  }, [])
+
+  const highlightDaySection = useCallback((dayNumber) => {
     setHighlightedDay(dayNumber)
     if (highlightTimeoutRef.current) {
       clearTimeout(highlightTimeoutRef.current)
@@ -204,7 +212,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
         daySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 120)
     }
-  }
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -219,7 +227,8 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
     setActiveDay(1)
     setCurrentStep(defaultStep)
     setSelectedFile(null)
-  }, [initialData, defaultStep])
+    resetMissingMealIndicators()
+  }, [initialData, defaultStep, resetMissingMealIndicators])
 
   const createBaseMeal = useCallback((mealType, mealOrder = 1) => buildBaseMealTemplate(mealType, mealOrder), [])
 
@@ -324,16 +333,18 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
     const fetchRecipes = async () => {
       try {
         setRecipesLoading(true)
-        const response = await http.get('/recipes/user/my-recipes', {
+        // Lấy toàn bộ công thức chung hệ thống (không chỉ của user hiện tại)
+        const response = await http.get('/recipes/user/get-recipes', {
           params: {
             page: 1,
-            limit: 100
+            limit: 500,
+            include_all: true
           }
         })
         setRecipes(response.data?.result?.recipes || [])
       } catch (error) {
         console.error('Failed to fetch recipes:', error)
-        toast.error('Không thể tải danh sách công thức của bạn')
+        toast.error('Không thể tải danh sách công thức')
       } finally {
         setRecipesLoading(false)
       }
@@ -370,12 +381,12 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
   // Ensure helper configs stay in range with duration updates
   useEffect(() => {
     setBulkConfig((prev) => {
-      const startDay = Math.min(Math.max(prev.startDay, 1), formData.duration)
-      const endDay = Math.min(Math.max(prev.endDay, startDay), formData.duration)
+      const validDays = Array.from({ length: formData.duration || 1 }, (_, index) => index + 1)
+      const filtered = (prev.selectedDays || []).filter((day) => validDays.includes(day))
+      const nextSelected = filtered.length > 0 ? filtered : [validDays[0]]
       return {
         ...prev,
-        startDay,
-        endDay
+        selectedDays: nextSelected
       }
     })
 
@@ -481,6 +492,32 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
     })
   }, [calculateDayTotals])
 
+  const updateDaysList = useCallback((dayNumbers = [], updater) => {
+    const daySet = new Set(dayNumbers)
+    setFormData((prev) => {
+      const days = prev.days.map((day) => {
+        if (!daySet.has(day.day_number)) return day
+        const draftDay = {
+          ...day,
+          meals: day.meals.map((meal) => ({ ...meal }))
+        }
+        const updated = updater(draftDay) || draftDay
+        const totals = calculateDayTotals(updated.meals)
+        return {
+          ...updated,
+          total_calories: totals.calories,
+          total_protein: totals.protein,
+          total_fat: totals.fat,
+          total_carbs: totals.carbs
+        }
+      })
+      return {
+        ...prev,
+        days
+      }
+    })
+  }, [calculateDayTotals])
+
   const assignRecipeToMeal = useCallback((dayNumber, mealType, recipeId, options = {}) => {
     const recipe = recipesMap[recipeId]
     if (!recipe) {
@@ -535,8 +572,8 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
           .sort((a, b) => a.meal_order - b.meal_order)
       }
     })
-    setMissingMealKey(null)
-  }, [createBaseMeal, recipesMap, updateDay])
+    resetMissingMealIndicators()
+  }, [createBaseMeal, recipesMap, updateDay, resetMissingMealIndicators])
 
   const clearMealSelection = useCallback((dayNumber, mealType, mealIndex) => {
     updateDay(dayNumber, (draft) => {
@@ -557,8 +594,8 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
         meals: draft.meals.map((meal, index) => ({ ...meal, meal_order: index + 1 }))
       }
     })
-    setMissingMealKey(null)
-  }, [createBaseMeal, updateDay])
+    resetMissingMealIndicators()
+  }, [createBaseMeal, updateDay, resetMissingMealIndicators])
 
   const updateMealField = useCallback((dayNumber, mealIndex, field, value) => {
     updateDay(dayNumber, (draft) => {
@@ -601,9 +638,9 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
       return draft
     })
     if (['name', 'recipe_id', 'meal_type', 'is_optional', 'calories', 'protein', 'fat', 'carbs'].includes(field)) {
-      setMissingMealKey(null)
+      resetMissingMealIndicators()
     }
-  }, [recipesMap, updateDay])
+  }, [recipesMap, updateDay, resetMissingMealIndicators])
 
   const addMealToDay = useCallback((dayNumber) => {
     updateDay(dayNumber, (draft) => {
@@ -611,8 +648,8 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
       draft.meals.push(createBaseMeal(4, nextOrder))
       return draft
     })
-    setMissingMealKey(null)
-  }, [createBaseMeal, updateDay])
+    resetMissingMealIndicators()
+  }, [createBaseMeal, updateDay, resetMissingMealIndicators])
 
   const removeMealFromDay = useCallback((dayNumber, mealIndex, options = {}) => {
     updateDay(dayNumber, (draft) => {
@@ -629,20 +666,117 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
       }
       return draft
     })
-    setMissingMealKey(null)
-  }, [createBaseMeal, updateDay])
+    resetMissingMealIndicators()
+  }, [createBaseMeal, updateDay, resetMissingMealIndicators])
+
+  const findMissingRequiredMeals = useCallback(() => {
+    const issues = []
+
+    formData.days.forEach((day) => {
+      day.meals.forEach((meal, index) => {
+        const slot = {
+          meal_type: meal.meal_type,
+          label: MEAL_TYPES[meal.meal_type] || 'Bữa ăn'
+        }
+
+        const isOptional = Boolean(meal.is_optional)
+        if (isOptional) return
+
+        const hasContent = Boolean(meal.recipe_id || (meal.name && meal.name.trim()))
+        if (!hasContent) {
+          issues.push({
+            dayNumber: day.day_number,
+            mealIndex: index,
+            slot,
+            needsInsert: false
+          })
+        }
+      })
+    })
+
+    return issues
+  }, [formData.days])
+
+  const formatMissingMealsSummary = useCallback((missingMeals, limit = 3) => {
+    if (!Array.isArray(missingMeals) || missingMeals.length === 0) return ''
+    const preview = missingMeals.slice(0, limit).map((item) => {
+      const label = (item?.slot?.label || 'bữa ăn').toLowerCase()
+      return `Ngày ${item.dayNumber}: ${label}`
+    })
+    const remainder = missingMeals.length - preview.length
+    return `${preview.join('; ')}${remainder > 0 ? `; +${remainder} bữa khác` : ''}`
+  }, [])
+
+  const revealMissingMeals = useCallback((missingMeals, options = {}) => {
+    const { showSummary = true } = options
+    if (!missingMeals?.length) {
+      setMissingMealSummary(null)
+      setShowMissingMealSummary(false)
+      return false
+    }
+
+    if (showSummary) {
+      setMissingMealSummary(missingMeals)
+      setShowMissingMealSummary(true)
+    } else {
+      setMissingMealSummary(null)
+      setShowMissingMealSummary(false)
+    }
+
+    const [firstIssue] = missingMeals
+    if (firstIssue) {
+      setCurrentStep(3)
+      setActiveDay(firstIssue.dayNumber)
+      highlightDaySection(firstIssue.dayNumber)
+
+      if (!firstIssue.needsInsert && typeof firstIssue.mealIndex === 'number' && firstIssue.mealIndex > -1) {
+        setMissingMealKey(`${firstIssue.dayNumber}-${firstIssue.mealIndex}`)
+      } else {
+        setMissingMealKey(null)
+      }
+    }
+
+    if (options.toastType) {
+      const summaryText = formatMissingMealsSummary(missingMeals)
+      const prefix = options.messagePrefix || 'Thiếu bữa bắt buộc:'
+      const finalMessage = summaryText ? `${prefix} ${summaryText}.` : `${prefix}`
+      const toastFn = typeof toast[options.toastType] === 'function' ? toast[options.toastType] : toast.error
+      toastFn(finalMessage)
+    }
+
+    return true
+  }, [formatMissingMealsSummary, highlightDaySection])
+
+  const handleManualPrecheck = useCallback(() => {
+    const missingMeals = findMissingRequiredMeals()
+    if (missingMeals.length === 0) {
+      resetMissingMealIndicators()
+      toast.success('Không còn bữa bắt buộc nào bị bỏ trống.')
+      return
+    }
+
+    revealMissingMeals(missingMeals, {
+      toastType: 'error',
+      messagePrefix: 'Phát hiện bữa chưa có món:'
+    })
+  }, [findMissingRequiredMeals, resetMissingMealIndicators, revealMissingMeals])
 
   const applyRecipeToRange = useCallback(() => {
     if (!bulkConfig.recipeId) {
       toast.error('Vui lòng chọn món ăn để áp dụng')
       return
     }
-    if (bulkConfig.startDay > bulkConfig.endDay) {
-      toast.error('Khoảng ngày không hợp lệ')
+    const availableDays = Array.from({ length: formData.duration || 1 }, (_, index) => index + 1)
+    const uniqueDays = Array.from(
+      new Set((bulkConfig.selectedDays || []).map((day) => Number(day)).filter((day) => availableDays.includes(day)))
+    )
+
+    if (uniqueDays.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một ngày để áp dụng')
       return
     }
 
-    updateDaysRange(bulkConfig.startDay, bulkConfig.endDay, (draft) => {
+    updateDaysList(uniqueDays, (draft) => {
       const mealsClone = draft.meals.map((meal) => ({ ...meal }))
       const targetIndex = mealsClone.findIndex((meal) => meal.meal_type === bulkConfig.mealType)
       const baseOrder = targetIndex > -1 ? mealsClone[targetIndex].meal_order : mealsClone.length + 1
@@ -682,8 +816,9 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
       }
     })
 
-    toast.success(`Đã áp dụng công thức cho ngày ${bulkConfig.startDay} - ${bulkConfig.endDay}`)
-  }, [bulkConfig, createBaseMeal, recipesMap, updateDaysRange])
+    resetMissingMealIndicators()
+    toast.success(`Đã áp dụng công thức cho ngày ${uniqueDays.join(', ')}`)
+  }, [bulkConfig, createBaseMeal, formData.duration, recipesMap, resetMissingMealIndicators, updateDaysList])
 
   const copyDayToRange = useCallback(() => {
     const sourceDay = formData.days.find((day) => day.day_number === copyConfig.fromDay)
@@ -708,8 +843,9 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
       meals: mealsTemplate.map((meal) => ({ ...meal }))
     }))
 
+    resetMissingMealIndicators()
     toast.success(`Đã sao chép ngày ${copyConfig.fromDay} sang ngày ${copyConfig.startDay}-${copyConfig.endDay}`)
-  }, [copyConfig, createBaseMeal, formData.days, updateDaysRange])
+  }, [copyConfig, createBaseMeal, formData.days, resetMissingMealIndicators, updateDaysRange])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -732,46 +868,15 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
         return
       }
 
-      setMissingMealKey(null)
+      resetMissingMealIndicators()
 
-      const missingRequiredMeal = (() => {
-        for (const day of formData.days) {
-          const sortedMeals = [...day.meals].sort((a, b) => (a.meal_order ?? a.meal_type ?? 0) - (b.meal_order ?? b.meal_type ?? 0))
-
-          for (let i = 0; i < DEFAULT_MEAL_SLOTS.length; i++) {
-            const slot = DEFAULT_MEAL_SLOTS[i]
-            const targetIndex = sortedMeals.findIndex((meal) => meal.meal_type === slot.meal_type)
-            const meal = targetIndex > -1 ? sortedMeals[targetIndex] : null
-
-            if (!meal) {
-              return { dayNumber: day.day_number, mealIndex: targetIndex, slot, needsInsert: true }
-            }
-
-            const hasContent = Boolean(meal.recipe_id || (meal.name && meal.name.trim()))
-            if (!hasContent && !meal.is_optional) {
-              return { dayNumber: day.day_number, mealIndex: targetIndex, slot, needsInsert: false }
-            }
-          }
-        }
-        return null
-      })()
-
-      if (missingRequiredMeal) {
-        const { dayNumber, mealIndex, slot, needsInsert } = missingRequiredMeal
-
-        setCurrentStep(3)
-        setActiveDay(dayNumber)
-        highlightDaySection(dayNumber)
-
-        if (!needsInsert && mealIndex > -1) {
-          setMissingMealKey(`${dayNumber}-${mealIndex}`)
-        } else {
-          setMissingMealKey(null)
-        }
-
-        toast.error(
-          `Ngày ${dayNumber} còn thiếu ${slot.label.toLowerCase()}. Vui lòng bổ sung trước khi tạo.`
-        )
+      const missingMeals = findMissingRequiredMeals()
+      if (missingMeals.length > 0) {
+        revealMissingMeals(missingMeals, {
+          toastType: 'error',
+          messagePrefix: 'Chưa thể tạo vì còn thiếu:',
+          showSummary: false
+        })
         return
       }
 
@@ -1059,9 +1164,8 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
               </label>
               <input
                 type="number"
-                min="1000"
-                max="5000"
-                step="100"
+                min="0"
+                step="1"
                 value={formData.target_calories}
                 onChange={(e) => {
                   const rawValue = e.target.value
@@ -1069,14 +1173,24 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                     handleInputChange('target_calories', '')
                     return
                   }
-                  const parsed = parseInt(rawValue, 10)
+                  const normalized = rawValue.replace(/[^0-9]/g, '')
+                  if (normalized === '') {
+                    handleInputChange('target_calories', '')
+                    return
+                  }
+                  const parsed = parseInt(normalized, 10)
                   handleInputChange('target_calories', Number.isNaN(parsed) ? '' : parsed)
+                }}
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                    e.preventDefault()
+                  }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
                 placeholder="Nhập khi bạn có mục tiêu cụ thể"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Bỏ trống nếu bạn muốn hệ thống tự tính tổng calories dựa trên các bữa ăn.
+                Nhập số nguyên bất kỳ; bỏ trống nếu muốn hệ thống tự tính tổng calories dựa trên thực đơn.
               </p>
             </div>
           </div>
@@ -1266,9 +1380,35 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                 <span>
                   Carb: <span className="font-semibold">{planTotals.carbs.toFixed(1)}</span> g
                 </span>
+                <button
+                  type="button"
+                  onClick={handleManualPrecheck}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-green-600 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-300 dark:hover:bg-green-900/40 text-xs font-semibold"
+                >
+                  <FaCheck className="text-xs" /> Kiểm tra thiếu món
+                </button>
               </div>
             </div>
           </div>
+
+          {showMissingMealSummary && Array.isArray(missingMealSummary) && missingMealSummary.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-4 text-sm text-red-700 dark:text-red-200">
+              <p className="font-semibold">Còn {missingMealSummary.length} bữa bắt buộc cần bổ sung.</p>
+              <ul className="mt-2 space-y-1 list-disc pl-5 text-xs sm:text-sm">
+                {missingMealSummary.slice(0, 5).map((item, index) => (
+                  <li key={`${item.dayNumber}-${item.slot.meal_type}-${index}`}>
+                    Ngày {item.dayNumber}: {item.slot.label.toLowerCase()} {item.needsInsert ? 'chưa được thêm vào danh sách.' : 'đang để trống.'}
+                  </li>
+                ))}
+                {missingMealSummary.length > 5 && (
+                  <li>+{missingMealSummary.length - 5} bữa khác...</li>
+                )}
+              </ul>
+              <p className="mt-2 text-xs text-red-600 dark:text-red-200/90">
+                Thêm món hoặc nhập tên món cho các bữa trên, sau đó nhấn "Kiểm tra thiếu món" để xác nhận.
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-200 dark:border-gray-700">
             {formData.days.map((day) => {
@@ -1330,7 +1470,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                       const imageSrc = meal.image || recipeDetail?.image || ''
                       const isCoreMeal = mealIndex < DEFAULT_MEAL_SLOTS.length
                       const macroFields = [
-                        { key: 'calories', label: 'Calories (kcal)', step: 10 },
+                        { key: 'calories', label: 'Calories (kcal)', step: 1 },
                         { key: 'protein', label: 'Protein (g)', step: 0.5 },
                         { key: 'fat', label: 'Chất béo (g)', step: 0.5 },
                         { key: 'carbs', label: 'Carb (g)', step: 0.5 }
@@ -1650,34 +1790,62 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                       ))}
                     </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Từ ngày</label>
-                      <select
-                        value={bulkConfig.startDay}
-                        onChange={(e) => setBulkConfig((prev) => ({ ...prev, startDay: Number(e.target.value) }))}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-                      >
-                        {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
-                          <option key={day} value={day}>
-                            Ngày {day}
-                          </option>
-                        ))}
-                      </select>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Ngày áp dụng</label>
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() =>
+                            setBulkConfig((prev) => ({
+                              ...prev,
+                              selectedDays: Array.from({ length: formData.duration }, (_, index) => index + 1)
+                            }))
+                          }
+                        >
+                          Chọn tất cả
+                        </button>
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded border border-transparent text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                          onClick={() => setBulkConfig((prev) => ({ ...prev, selectedDays: [] }))}
+                        >
+                          Bỏ chọn
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Đến ngày</label>
-                      <select
-                        value={bulkConfig.endDay}
-                        onChange={(e) => setBulkConfig((prev) => ({ ...prev, endDay: Number(e.target.value) }))}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-                      >
-                        {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => (
-                          <option key={day} value={day}>
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.from({ length: formData.duration }, (_, index) => index + 1).map((day) => {
+                        const isChecked = (bulkConfig.selectedDays || []).includes(day)
+                        return (
+                          <label
+                            key={day}
+                            className={`flex items-center gap-2 px-2 py-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+                              isChecked
+                                ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-200'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setBulkConfig((prev) => {
+                                  const current = prev.selectedDays || []
+                                  const next = checked
+                                    ? Array.from(new Set([...current, day])).sort((a, b) => a - b)
+                                    : current.filter((d) => d !== day)
+                                  return { ...prev, selectedDays: next }
+                                })
+                              }}
+                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                            />
                             Ngày {day}
-                          </option>
-                        ))}
-                      </select>
+                          </label>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1685,7 +1853,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                   type="button"
                   onClick={applyRecipeToRange}
                   className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                  disabled={!bulkConfig.recipeId}
+                  disabled={!bulkConfig.recipeId || !(bulkConfig.selectedDays?.length)}
                 >
                   <FaMagic /> Áp dụng
                 </button>

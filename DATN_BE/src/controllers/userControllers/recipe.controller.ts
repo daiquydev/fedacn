@@ -6,6 +6,77 @@ import { TokenPayload } from '~/models/requests/authUser.request'
 import recipeService from '~/services/userServices/recipe.services'
 import { ErrorWithStatus } from '~/utils/error'
 
+const safeParseArrayPayload = (value: unknown): unknown[] => {
+  if (!value) return []
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return []
+    try {
+      const parsed = JSON.parse(trimmed)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+const normalizeInstructionPayload = (value: unknown): string[] => {
+  if (!value) return []
+
+  let rawEntries: unknown[] = []
+
+  if (Array.isArray(value)) {
+    rawEntries = value
+  } else if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return []
+
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        rawEntries = Array.isArray(parsed) ? parsed : []
+      } catch {
+        throw new ErrorWithStatus({
+          message: RECIPE_MESSAGE.INSTRUCTIONS_INVALID,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+    } else {
+      rawEntries = trimmed
+        .split(/\r?\n+/)
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+    }
+  }
+
+  if (!Array.isArray(rawEntries)) {
+    return []
+  }
+
+  const possibleKeys = ['instruction', 'description', 'content', 'step', 'value', 'text']
+
+  return rawEntries
+    .map((entry) => {
+      if (typeof entry === 'string') {
+        return entry.trim()
+      }
+
+      if (entry && typeof entry === 'object') {
+        for (const key of possibleKeys) {
+          const candidate = (entry as Record<string, unknown>)[key]
+          if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim()
+          }
+        }
+      }
+
+      return ''
+    })
+    .filter((value) => Boolean(value))
+}
+
 export const getAllRecipeCategoryController = async (req: Request, res: Response) => {
   const result = await recipeService.getAllRecipeCategoryService()
   return res.json({
@@ -118,8 +189,11 @@ export const getListRecipesForUserController = async (req: Request, res: Respons
     processing_food,
     region,
     interval_time,
-    type
+    type,
+    include_all
   } = req.query
+
+  const includeAllFlag = typeof include_all === 'string' ? include_all === 'true' || include_all === '1' : Boolean(include_all)
 
   const result = await recipeService.getListRecipesForUserService({
     user_id: user.user_id,
@@ -132,7 +206,8 @@ export const getListRecipesForUserController = async (req: Request, res: Respons
     processing_food: processing_food as string,
     region: Number(region),
     interval_time: Number(interval_time),
-    type: Number(type)
+    type: Number(type),
+    include_all: includeAllFlag
   })
   return res.json({
     result,
@@ -334,9 +409,18 @@ export const createRecipeController = async (req: Request, res: Response) => {
     } = req.body
 
     // Parse JSON strings
-    const parsedIngredients = ingredients ? JSON.parse(ingredients) : []
-    const parsedInstructions = instructions ? JSON.parse(instructions) : []
-    const parsedTags = tags ? JSON.parse(tags) : []
+    const parsedIngredients = safeParseArrayPayload(ingredients)
+    const parsedTags = safeParseArrayPayload(tags)
+    const normalizedInstructions = normalizeInstructionPayload(instructions)
+
+    console.log('🔍 DEBUG - Instructions received:', instructions)
+    console.log('🔍 DEBUG - Normalized instructions:', normalizedInstructions)
+
+    if (normalizedInstructions.length === 0) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: RECIPE_MESSAGE.INSTRUCTIONS_REQUIRED
+      })
+    }
 
     const imageUrlFromBody = typeof req.body.imageUrl === 'string' ? req.body.imageUrl.trim() : ''
 
@@ -368,13 +452,15 @@ export const createRecipeController = async (req: Request, res: Response) => {
       category_recipe_id,
       processing_food,
       ingredients: parsedIngredients,
-      instructions: parsedInstructions,
+      instructions: normalizedInstructions,
       tags: parsedTags,
       energy: Number(energy) || 0,
       protein: Number(protein) || 0,
       fat: Number(fat) || 0,
       carbohydrate: Number(carbohydrate) || 0
     }
+
+    console.log('🔍 DEBUG - Recipe data being saved:', JSON.stringify(recipeData, null, 2))
 
     const result = await recipeService.createRecipeForUserService(recipeData)
 

@@ -8,6 +8,7 @@ export interface Notification {
   content: string
   name_notification?: string
   link_id?: string
+  metadata?: Record<string, unknown>
   is_read: boolean
   type: NotificationTypes
 }
@@ -27,6 +28,7 @@ const NotificationSchema = new mongoose.Schema<Notification>(
     content: { type: String, required: true },
     name_notification: { type: String, default: '' },
     link_id: { type: String, default: '' },
+    metadata: { type: mongoose.SchemaTypes.Mixed, default: null },
     is_read: { type: Boolean, default: false },
     type: { type: Number, required: true }
   },

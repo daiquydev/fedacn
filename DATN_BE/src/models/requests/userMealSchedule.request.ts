@@ -15,7 +15,8 @@ export interface UpdateUserMealScheduleBody {
 
 export interface GetDayMealItemsQuery {
   schedule_id: string
-  date: string
+  date?: string
+  day_number?: number
 }
 
 export interface CompleteMealItemBody {

@@ -170,6 +170,20 @@ export const getRecipeInAlbumForInspectorController = async (req: Request, res: 
   })
 }
 
+export const getMealPlanReportsController = async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query
+  const result = await inspectorService.getMealPlanReportsService({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    search: search as string
+  })
+
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.GET_MEAL_PLAN_REPORT_SUCCESS
+  })
+}
+
 export const acceptAlbumController = async (req: Request, res: Response) => {
   const { id } = req.params
   const result = await inspectorService.acceptAlbumService({ album_id: id })

@@ -25,6 +25,7 @@ export const deleteMyRecipe = (id) => http.delete(`/recipes/user/delete/${id}`)
 export const getRecipesForUser = (params) => http.get('/recipes/user/get-recipes', { params })
 export const getRecipeForUser = (id) => http.get(`/recipes/user/get-recipe/${id}`)
 export const getTopRecipes = () => http.get('/recipes/user/get-top-recipes')
+export const getUserRecipe = (userId, params) => http.get(`/recipes/user/get-list-recipe/${userId}`, { params })
 
 // Chef endpoints (keeping these for compatibility)
 export const getRecipesForChef = (params) => http.get('/recipes/chef/get-recipes', { params })

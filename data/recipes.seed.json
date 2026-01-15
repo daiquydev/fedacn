@@ -1,0 +1,836 @@
+[
+  {
+    "title": "Phở Bò Hà Nội",
+    "content": "Phở Bò là món ăn truyền thống nổi tiếng nhất của Việt Nam, đặc biệt là Hà Nội. Nước dùng được ninh từ xương bò trong nhiều giờ, kết hợp cùng các loại gia vị như hồi, quế, gừng tạo nên hương vị đậm đà, thơm ngon. Bánh phở mềm mịn, thịt bò tái mỏng được chần qua nước sôi, ăn kèm với hành lá, ngò gai và chanh.\n\nGhi chú dinh dưỡng: Phở bò cung cấp protein từ thịt bò, carbohydrate từ bánh phở, và nhiều vitamin từ rau thơm. Để giảm calories, có thể chọn phần thịt nạc thay vì nạm. Nước dùng trong nên hạn chế uống hết để giảm lượng natri.",
+    "description": "Món phở bò truyền thống Hà Nội với nước dùng ninh từ xương bò, bánh phở mềm, thịt bò tái và rau thơm đặc trưng.",
+    "image": "https://images.unsplash.com/photo-1631709497146-a239ef373cf1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwcGhvJTIwYmVlZnxlbnwwfDB8fHwxNzY3NzU3MDAxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 180,
+    "region": 0,
+    "difficult_level": 2,
+    "energy": 380,
+    "protein": 25,
+    "fat": 8,
+    "carbohydrate": 52,
+    "unit": "tô",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Xương bò",
+        "energy": 150,
+        "protein": 12,
+        "fat": 10,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Thịt bò nạm",
+        "energy": 250,
+        "protein": 26,
+        "fat": 15,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Bánh phở tươi",
+        "energy": 210,
+        "protein": 4,
+        "fat": 0.5,
+        "carbohydrate": 45
+      },
+      {
+        "name": "Hành tây",
+        "energy": 40,
+        "protein": 1,
+        "fat": 0,
+        "carbohydrate": 9
+      },
+      {
+        "name": "Gừng",
+        "energy": 20,
+        "protein": 0.5,
+        "fat": 0.2,
+        "carbohydrate": 4
+      },
+      {
+        "name": "Hồi (star anise)",
+        "energy": 15,
+        "protein": 0.5,
+        "fat": 0.5,
+        "carbohydrate": 3
+      },
+      {
+        "name": "Quế",
+        "energy": 10,
+        "protein": 0.2,
+        "fat": 0.1,
+        "carbohydrate": 2
+      },
+      {
+        "name": "Nước mắm",
+        "energy": 10,
+        "protein": 1,
+        "fat": 0,
+        "carbohydrate": 1
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Ninh nước dùng:** Rửa sạch xương bò, chần sơ qua nước sôi 5 phút rồi vớt ra. Cho xương vào nồi nước mới, thêm hành tây, gừng nướng. Ninh liu riu 6-8 tiếng.",
+      "**Bước 2: Ướp gia vị:** Cho hồi, quế, thảo quả vào túi vải, thả vào nồi nước dùng. Nêm nếm với nước mắm, muối, đường.",
+      "**Bước 3: Chuẩn bị thịt bò:** Thái thịt bò nạm mỏng, ướp với ít muối, tiêu. Luộc chín 70% để riêng.",
+      "**Bước 4: Trụng bánh phở:** Đun sôi nước, trụng bánh phở tươi khoảng 15 giây, vớt ra tô.",
+      "**Bước 5: Hoàn thiện:** Xếp thịt bò tái lên bánh phở, chan nước dùng sôi. Rắc hành lá, ngò gai. Ăn kèm chanh, ớt, giá đỗ."
+    ],
+    "tags": [
+      "Phở",
+      "Món Việt",
+      "Bò",
+      "Món Chính",
+      "Hà Nội",
+      "Bữa Sáng"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f6"
+    },
+    "processing_food": "Khác",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Bún Chả Hà Nội",
+    "content": "Bún Chả là món ăn đặc sản của Hà Nội, gồm bún tươi ăn kèm với chả nướng (thịt lợn viên và thịt ba chỉ nướng than hoa) chấm nước mắm chua ngọt. Món ăn nổi tiếng với hương thơm nồng nàn từ thịt nướng, vị chua ngọt hài hòa của nước chấm, và sự tươi mát từ rau sống.\n\nGhi chú dinh dưỡng: Bún chả giàu protein từ thịt lợn, carbohydrate từ bún. Để giảm lượng mỡ, nên chọn phần thịt nạc vai thay vì ba chỉ toàn bộ. Ăn nhiều rau sống giúp tăng chất xơ.",
+    "description": "Món bún chả Hà Nội truyền thống với thịt nướng than hoa, bún tươi và nước mắm chua ngọt đặc trưng.",
+    "image": "https://images.unsplash.com/photo-1597577652129-7ffad9d37ad4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwYnVuJTIwY2hhJTIwZ3JpbGxlZCUyMHBvcmt8ZW58MHwwfHx8MTc2Nzc1NzAwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 60,
+    "region": 0,
+    "difficult_level": 1,
+    "energy": 520,
+    "protein": 28,
+    "fat": 22,
+    "carbohydrate": 48,
+    "unit": "phần",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Thịt ba chỉ",
+        "energy": 518,
+        "protein": 9,
+        "fat": 53,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Thịt nạc vai",
+        "energy": 143,
+        "protein": 20,
+        "fat": 7,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Bún tươi",
+        "energy": 192,
+        "protein": 3.5,
+        "fat": 0.3,
+        "carbohydrate": 43
+      },
+      {
+        "name": "Nước mắm",
+        "energy": 10,
+        "protein": 1,
+        "fat": 0,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Đường",
+        "energy": 50,
+        "protein": 0,
+        "fat": 0,
+        "carbohydrate": 12.5
+      },
+      {
+        "name": "Giấm",
+        "energy": 5,
+        "protein": 0,
+        "fat": 0,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Tỏi băm",
+        "energy": 15,
+        "protein": 0.6,
+        "fat": 0,
+        "carbohydrate": 3
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Ướp thịt:** Băm nhỏ thịt nạc vai, trộn với hành tím, tỏi, nước mắm, tiêu. Vo viên tròn. Thái thịt ba chỉ miếng vừa, ướp tương tự.",
+      "**Bước 2: Nướng thịt:** Nướng chả viên và thịt ba chỉ trên bếp than hoa, trở đều 2 mặt cho thơm và chín vàng.",
+      "**Bước 3: Pha nước chấm:** Pha nước mắm, đường, giấm, tỏi băm, ớt theo tỷ lệ 1:1:1 (nước mắm:đường:giấm). Thêm nước lọc.",
+      "**Bước 4: Trụng bún:** Trụng bún tươi qua nước sôi, vớt ra rổ để ráo.",
+      "**Bước 5: Thưởng thức:** Cho thịt nướng vào tô nước chấm. Ăn bún kèm rau sống, chấm nước mắm có thịt nướng."
+    ],
+    "tags": [
+      "Bún Chả",
+      "Món Việt",
+      "Thịt Lợn",
+      "Nướng",
+      "Hà Nội",
+      "Món Chính"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f6"
+    },
+    "processing_food": "Nướng",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Cơm Tấm Sườn Bì Chả",
+    "content": "Cơm Tấm là món ăn đặc sản miền Nam Việt Nam, sử dụng gạo tấm (gạo vỡ) nấu thành cơm, ăn kèm với sườn nướng, bì (thịt lợn luộc xắt sợi) và chả trứng. Món ăn được hoàn thiện với nước mắm pha chua ngọt và dưa leo cà chua.\n\nGhi chú dinh dưỡng: Cơm tấm có chỉ số đường huyết cao hơn cơm gạo thường, nên ăn kèm nhiều rau và protein. Sườn nướng có thể chọn phần ít mỡ để giảm calories.",
+    "description": "Món cơm tấm Sài Gòn truyền thống với sườn nướng, bì, chả trứng và nước mắm đặc trưng.",
+    "image": "https://images.unsplash.com/photo-1707535347953-6cf5a129d55c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwYnJva2VuJTIwcmljZSUyMGNvbSUyMHRhbXxlbnwwfDB8fHwxNzY3NzU3MDA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 50,
+    "region": 2,
+    "difficult_level": 1,
+    "energy": 650,
+    "protein": 30,
+    "fat": 25,
+    "carbohydrate": 72,
+    "unit": "phần",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Gạo tấm",
+        "energy": 356,
+        "protein": 6.5,
+        "fat": 0.6,
+        "carbohydrate": 79
+      },
+      {
+        "name": "Sườn lợn",
+        "energy": 277,
+        "protein": 16,
+        "fat": 23,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Thịt da lợn (bì)",
+        "energy": 364,
+        "protein": 16,
+        "fat": 33,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Trứng",
+        "energy": 155,
+        "protein": 13,
+        "fat": 11,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Nước mắm",
+        "energy": 10,
+        "protein": 1,
+        "fat": 0,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Sả",
+        "energy": 5,
+        "protein": 0.2,
+        "fat": 0.1,
+        "carbohydrate": 1
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Ướp sườn:** Chặt sườn miếng nhỏ, ướp với nước mắm, tỏi, sả băm, đường, tiêu. Ướp ít nhất 2 tiếng.",
+      "**Bước 2: Làm bì:** Luộc thịt da lợn với ít muối, gừng. Sau khi chín, vớt ra để nguội, thái sợi mỏng. Trộn với tỏi phi, nước mắm.",
+      "**Bước 3: Làm chả trứng:** Đánh trứng với ít hành lá, nước mắm. Chiên thành miếng mỏng, cuộn lại, thái lát.",
+      "**Bước 4: Nướng sườn:** Nướng sườn trên bếp than hoặc lò nướng, thỉnh thoảng quết mỡ hành cho thơm.",
+      "**Bước 5: Hoàn thiện:** Múc cơm tấm ra đĩa, xếp sườn, bì, chả trứng. Rưới nước mắm, ăn kèm dưa leo, cà chua."
+    ],
+    "tags": [
+      "Cơm Tấm",
+      "Món Việt",
+      "Sườn",
+      "Miền Nam",
+      "Sài Gòn",
+      "Món Chính"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f6"
+    },
+    "processing_food": "Nướng",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Gỏi Cuốn Tôm Thịt",
+    "content": "Gỏi Cuốn là món ăn nhẹ nhàng, tươi mát của Việt Nam, gồm bánh tráng cuốn rau sống, bún, tôm luộc và thịt heo. Món ăn được chấm cùng nước mắm hoặc tương đậu phộng, mang lại hương vị hài hòa giữa sự tươi mát của rau, vị ngọt tự nhiên của tôm thịt.\n\nGhi chú dinh dưỡng: Gỏi cuốn là món ăn ít calories, giàu chất xơ từ rau sống và protein từ tôm thịt. Đây là lựa chọn tuyệt vời cho người ăn kiêng hoặc muốn ăn lành mạnh.",
+    "description": "Món gỏi cuốn tươi mát với tôm, thịt, bún và rau sống cuốn bánh tráng, chấm tương hoặc nước mắm.",
+    "image": "https://images.unsplash.com/photo-1734771308348-ad90bf5835ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwZnJlc2glMjBzcHJpbmclMjByb2xsc3xlbnwwfDB8fHwxNzY3NzU3MDA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 30,
+    "region": 2,
+    "difficult_level": 0,
+    "energy": 180,
+    "protein": 12,
+    "fat": 3,
+    "carbohydrate": 28,
+    "unit": "phần (4-5 cuốn)",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Bánh tráng",
+        "energy": 80,
+        "protein": 1,
+        "fat": 0.2,
+        "carbohydrate": 18
+      },
+      {
+        "name": "Tôm luộc",
+        "energy": 99,
+        "protein": 24,
+        "fat": 0.3,
+        "carbohydrate": 0.2
+      },
+      {
+        "name": "Thịt ba chỉ luộc",
+        "energy": 130,
+        "protein": 8,
+        "fat": 11,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Bún tươi",
+        "energy": 70,
+        "protein": 1.5,
+        "fat": 0.1,
+        "carbohydrate": 16
+      },
+      {
+        "name": "Xà lách",
+        "energy": 5,
+        "protein": 0.5,
+        "fat": 0.1,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Rau thơm (ngò, húng)",
+        "energy": 3,
+        "protein": 0.3,
+        "fat": 0,
+        "carbohydrate": 0.6
+      },
+      {
+        "name": "Đậu phộng rang",
+        "energy": 60,
+        "protein": 2.5,
+        "fat": 5,
+        "carbohydrate": 2
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Chuẩn bị nguyên liệu:** Luộc tôm, thịt cho chín. Trụng bún, rửa rau sống, để ráo.",
+      "**Bước 2: Làm nước chấm:** Pha tương đậu phộng với nước ấm, thêm tỏi băm, đường, ớt. Hoặc pha nước mắm chua ngọt.",
+      "**Bước 3: Cuốn gỏi cuốn:** Nhúng bánh tráng qua nước, đặt lên thớt. Xếp rau, bún, tôm, thịt lên giữa. Gập 2 bên vào rồi cuốn tròn.",
+      "**Bước 4: Thưởng thức:** Xếp gỏi cuốn ra đĩa, ăn kèm nước chấm tương hoặc nước mắm."
+    ],
+    "tags": [
+      "Gỏi Cuốn",
+      "Món Việt",
+      "Tôm",
+      "Rau Sống",
+      "Lành Mạnh",
+      "Món Phụ"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f9"
+    },
+    "processing_food": "Khác",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Canh Chua Cá",
+    "content": "Canh Chua Cá là món ăn đặc trưng miền Nam Việt Nam, với nước canh chua từ me, thơm từ sả, ngọt tự nhiên từ cá và rau củ. Món canh mang hương vị tươi mát, kích thích vị giác, thường được ăn kèm cơm nóng.\n\nGhi chú dinh dưỡng: Canh chua cá giàu protein từ cá, vitamin và khoáng chất từ rau củ. Món ăn ít calories, phù hợp cho người muốn giảm cân hoặc ăn lành mạnh.",
+    "description": "Món canh chua cá miền Nam với vị chua từ me, thơm sả, ngọt từ cá và rau củ.",
+    "image": "https://images.unsplash.com/photo-1595786153212-e45f596c3e92?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwc291ciUyMHNvdXAlMjBmaXNofGVufDB8MHx8fDE3Njc3NTcwMDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 40,
+    "region": 2,
+    "difficult_level": 0,
+    "energy": 150,
+    "protein": 18,
+    "fat": 4,
+    "carbohydrate": 12,
+    "unit": "tô",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Cá lóc hoặc cá basa",
+        "energy": 105,
+        "protein": 22,
+        "fat": 2,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Me chua",
+        "energy": 20,
+        "protein": 0.3,
+        "fat": 0.1,
+        "carbohydrate": 5
+      },
+      {
+        "name": "Cà chua",
+        "energy": 18,
+        "protein": 0.9,
+        "fat": 0.2,
+        "carbohydrate": 3.9
+      },
+      {
+        "name": "Dứa (thơm)",
+        "energy": 30,
+        "protein": 0.3,
+        "fat": 0.1,
+        "carbohydrate": 7.5
+      },
+      {
+        "name": "Đậu bắp",
+        "energy": 15,
+        "protein": 1,
+        "fat": 0.1,
+        "carbohydrate": 3
+      },
+      {
+        "name": "Rau muống",
+        "energy": 8,
+        "protein": 0.8,
+        "fat": 0.1,
+        "carbohydrate": 1.5
+      },
+      {
+        "name": "Sả",
+        "energy": 5,
+        "protein": 0.2,
+        "fat": 0.1,
+        "carbohydrate": 1
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Sơ chế cá:** Rửa sạch cá, cắt khúc vừa ăn. Ướp với ít muối, tiêu, sả băm.",
+      "**Bước 2: Nấu nước dùng:** Đun sôi nước, cho me chua vào nấu, lọc bỏ xơ. Nêm nước mắm, đường, muối.",
+      "**Bước 3: Thêm rau củ:** Cho cà chua, dứa, đậu bắp vào nấu. Sau đó thêm cá, nấu khoảng 10 phút.",
+      "**Bước 4: Hoàn thiện:** Thêm rau muống, nấu thêm 2 phút. Tắt bếp, cho rau thơm (ngò gai, húng).",
+      "**Bước 5: Thưởng thức:** Múc canh chua ra tô, ăn nóng với cơm trắng."
+    ],
+    "tags": [
+      "Canh Chua",
+      "Món Việt",
+      "Cá",
+      "Miền Nam",
+      "Canh/Súp",
+      "Lành Mạnh"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276dba606bb1ae0c040b"
+    },
+    "processing_food": "Canh/Súp",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Bánh Xèo Miền Tây",
+    "content": "Bánh Xèo là món ăn dân dã của miền Nam, đặc biệt là miền Tây. Bánh được làm từ bột gạo pha nước cốt dừa, đổ thành bánh mỏng giòn, nhân tôm thịt, giá đỗ. Bánh xèo ăn kèm rau sống và nước mắm chua ngọt.\n\nGhi chú dinh dưỡng: Bánh xèo có hàm lượng calories khá cao do chiên với nhiều dầu. Để giảm lượng dầu mỡ, có thể dùng chảo chống dính và ít dầu hơn. Ăn kèm nhiều rau sống giúp tăng chất xơ.",
+    "description": "Bánh xèo miền Tây giòn rụm với nhân tôm thịt, giá đỗ, ăn kèm rau sống và nước mắm.",
+    "image": "https://images.unsplash.com/photo-1763218412758-1539a5cb9237?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwYmFuaCUyMHhlbyUyMHBhbmNha2V8ZW58MHwwfHx8MTc2Nzc1NzAwOXww&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 45,
+    "region": 2,
+    "difficult_level": 1,
+    "energy": 420,
+    "protein": 15,
+    "fat": 28,
+    "carbohydrate": 32,
+    "unit": "phần (2 bánh)",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Bột bánh xèo",
+        "energy": 120,
+        "protein": 2,
+        "fat": 0.5,
+        "carbohydrate": 27
+      },
+      {
+        "name": "Nước cốt dừa",
+        "energy": 230,
+        "protein": 2,
+        "fat": 24,
+        "carbohydrate": 3
+      },
+      {
+        "name": "Tôm tươi",
+        "energy": 85,
+        "protein": 20,
+        "fat": 0.5,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Thịt ba chỉ",
+        "energy": 150,
+        "protein": 6,
+        "fat": 14,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Giá đỗ",
+        "energy": 15,
+        "protein": 1.5,
+        "fat": 0.1,
+        "carbohydrate": 2.5
+      },
+      {
+        "name": "Hành lá",
+        "energy": 5,
+        "protein": 0.3,
+        "fat": 0,
+        "carbohydrate": 1
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Pha bột:** Trộn bột bánh xèo với nước cốt dừa, thêm nghệ, ít muối. Để bột nghỉ 30 phút.",
+      "**Bước 2: Sơ chế nhân:** Tôm bóc vỏ, thịt thái mỏng. Xào sơ tôm thịt với hành tím.",
+      "**Bước 3: Đổ bánh:** Làm nóng chảo, cho dầu. Múc bột đổ mỏng đều, rải tôm thịt, giá đỗ lên nửa bánh.",
+      "**Bước 4: Chiên bánh:** Đậy nắp, chiên đến khi bánh giòn vàng. Gập bánh lại thành nửa hình tròn.",
+      "**Bước 5: Thưởng thức:** Bánh xèo ăn với rau sống (xà lách, húng, rau thơm), cuốn bánh tráng, chấm nước mắm chua ngọt."
+    ],
+    "tags": [
+      "Bánh Xèo",
+      "Món Việt",
+      "Tôm",
+      "Miền Tây",
+      "Chiên",
+      "Món Chính"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f6"
+    },
+    "processing_food": "Chiên",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Chè Đậu Xanh",
+    "content": "Chè Đậu Xanh là món tráng miệng truyền thống Việt Nam, được làm từ đậu xanh nấu nhuyễn, nước cốt dừa béo ngậy và đường. Món chè có hương vị ngọt dịu, thơm mùi dừa, mát lạnh, rất phù hợp cho những ngày nóng bức.\n\nGhi chú dinh dưỡng: Đậu xanh giàu protein thực vật, chất xơ và vitamin. Tuy nhiên do có đường và nước cốt dừa nên calories khá cao. Có thể giảm lượng đường để phù hợp với người ăn kiêng.",
+    "description": "Món chè đậu xanh ngọt mát với nước cốt dừa, thích hợp làm tráng miệng hoặc giải khát.",
+    "image": "https://images.unsplash.com/photo-1738573519644-93b700f3adf3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwbXVuZyUyMGJlYW4lMjBkZXNzZXJ0fGVufDB8MHx8fDE3Njc3NTcwMTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 60,
+    "region": 0,
+    "difficult_level": 0,
+    "energy": 280,
+    "protein": 8,
+    "fat": 12,
+    "carbohydrate": 38,
+    "unit": "chén",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Đậu xanh",
+        "energy": 105,
+        "protein": 7,
+        "fat": 0.4,
+        "carbohydrate": 19
+      },
+      {
+        "name": "Đường trắng",
+        "energy": 100,
+        "protein": 0,
+        "fat": 0,
+        "carbohydrate": 25
+      },
+      {
+        "name": "Nước cốt dừa",
+        "energy": 115,
+        "protein": 1,
+        "fat": 12,
+        "carbohydrate": 1.5
+      },
+      {
+        "name": "Lá dứa",
+        "energy": 2,
+        "protein": 0.1,
+        "fat": 0,
+        "carbohydrate": 0.5
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Nấu đậu:** Ngâm đậu xanh 2-3 tiếng. Vo sạch, nấu với nước và lá dứa cho đến khi đậu mềm nhũn.",
+      "**Bước 2: Nêm nếm:** Thêm đường vào nồi đậu, đun nhỏ lửa, khuấy đều cho đường tan.",
+      "**Bước 3: Hoàn thiện:** Tắt bếp, cho nước cốt dừa vào, khuấy đều. Để nguội hoặc cho đá.",
+      "**Bước 4: Thưởng thức:** múc chè ra chén, rưới thêm nước cốt dừa. Ăn lạnh hoặc nóng đều ngon."
+    ],
+    "tags": [
+      "Chè",
+      "Món Việt",
+      "Đậu Xanh",
+      "Tráng Miệng",
+      "Đồ Ngọt"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276dba606bb1ae0c040e"
+    },
+    "processing_food": "Khác",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Gà Xào Sả Ớt",
+    "content": "Gà Xào Sả Ớt là món ăn đơn giản nhưng đậm đà, thơm lừng mùi sả và cay nồng từ ớt. Thịt gà được xào chín vàng, thấm đều gia vị, ăn kèm cơm nóng rất ngon miệng. Đây là món ăn phổ biến trong các bữa cơm gia đình Việt Nam.\n\nGhi chú dinh dưỡng: Gà xào sả ớt giàu protein, ít carbohydrate. Nếu dùng ức gà thay vì đùi gà sẽ giảm được lượng mỡ. Món ăn phù hợp cho người tập gym hoặc muốn tăng cơ.",
+    "description": "Món gà xào sả ớt thơm nồng, đậm đà với hương vị đặc trưng của sả và ớt.",
+    "image": "https://images.unsplash.com/photo-1658248630171-ebc992499bd5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwbGVtb25ncmFzcyUyMGNoaWNrZW58ZW58MHwwfHx8MTc2Nzc1NzAxMnww&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 30,
+    "region": 1,
+    "difficult_level": 0,
+    "energy": 280,
+    "protein": 32,
+    "fat": 14,
+    "carbohydrate": 6,
+    "unit": "phần",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Thịt gà (đùi hoặc ức)",
+        "energy": 165,
+        "protein": 31,
+        "fat": 3.6,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Sả",
+        "energy": 10,
+        "protein": 0.4,
+        "fat": 0.2,
+        "carbohydrate": 2
+      },
+      {
+        "name": "Ớt",
+        "energy": 5,
+        "protein": 0.2,
+        "fat": 0.1,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Tỏi",
+        "energy": 15,
+        "protein": 0.6,
+        "fat": 0,
+        "carbohydrate": 3
+      },
+      {
+        "name": "Nước mắm",
+        "energy": 10,
+        "protein": 1,
+        "fat": 0,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Dầu ăn",
+        "energy": 120,
+        "protein": 0,
+        "fat": 14,
+        "carbohydrate": 0
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Ướp gà:** Thái thịt gà miếng vừa, ướp với sả băm, tỏi băm, ớt, nước mắm, tiêu, đường. Ướp 20 phút.",
+      "**Bước 2: Xào gà:** Làm nóng chảo với dầu, cho gà vào xào trên lửa lớn cho thịt săn lại.",
+      "**Bước 3: Nêm nếm:** Khi gà gần chín, nêm thêm ít nước mắm, đường. Xào đều cho gia vị thấm.",
+      "**Bước 4: Hoàn thiện:** Khi gà chín vàng, thơm lừng, tắt bếp. Rắc hành lá lên trên.",
+      "**Bước 5: Thưởng thức:** Múc gà xào ra đĩa, ăn nóng với cơm trắng."
+    ],
+    "tags": [
+      "Gà",
+      "Xào",
+      "Món Việt",
+      "Sả Ớt",
+      "Món Chính",
+      "Nhanh Gọn"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c0405"
+    },
+    "processing_food": "Xào",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Cá Kho Tộ",
+    "content": "Cá Kho Tộ là món ăn truyền thống miền Nam, đặc biệt phổ biến trong dịp Tết. Cá được kho với nước mắm, nước dừa tươi, đường, tạo nên vị mặn ngọt hài hòa. Món ăn có màu nâu đẹp mắt, thịt cá mềm thấm gia vị, ăn rất đưa cơm.\n\nGhi chú dinh dưỡng: Cá giàu protein và omega-3 tốt cho tim mạch. Tuy nhiên do kho với đường và nước mắm nên có hàm lượng natri cao, người huyết áp cao nên hạn chế.",
+    "description": "Món cá kho tộ miền Nam với nước mắm, nước dừa, vị mặn ngọt đậm đà.",
+    "image": "https://images.unsplash.com/photo-1707056707308-b4cc2fa10ff3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwY2FyYW1lbGl6ZWQlMjBmaXNoJTIwa2hvfGVufDB8MHx8fDE3Njc3NTcwMTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 50,
+    "region": 2,
+    "difficult_level": 1,
+    "energy": 220,
+    "protein": 20,
+    "fat": 12,
+    "carbohydrate": 8,
+    "unit": "phần",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Cá basa hoặc cá lóc",
+        "energy": 105,
+        "protein": 22,
+        "fat": 2,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Nước dừa tươi",
+        "energy": 46,
+        "protein": 0.5,
+        "fat": 5,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Nước mắm",
+        "energy": 15,
+        "protein": 1.5,
+        "fat": 0,
+        "carbohydrate": 1.5
+      },
+      {
+        "name": "Đường",
+        "energy": 50,
+        "protein": 0,
+        "fat": 0,
+        "carbohydrate": 12.5
+      },
+      {
+        "name": "Ớt",
+        "energy": 5,
+        "protein": 0.2,
+        "fat": 0.1,
+        "carbohydrate": 1
+      },
+      {
+        "name": "Tỏi",
+        "energy": 15,
+        "protein": 0.6,
+        "fat": 0,
+        "carbohydrate": 3
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Sơ chế cá:** Rửa sạch cá, cắt khúc vừa. Ướp với nước mắm, tiêu, tỏi băm.",
+      "**Bước 2: Làm nước màu:** Đun đường với ít nước thành nước màu caramel.",
+      "**Bước 3: Kho cá:** Cho cá vào nồi đất, thêm nước màu, nước mắm, nước dừa, ớt. Đun sôi.",
+      "**Bước 4: Hầm nhỏ lửa:** Hạ nhỏ lửa, kho liu riu khoảng 30-40 phút cho cá mềm, nước sốt sánh.",
+      "**Bước 5: Thưởng thức:** Múc cá kho ra tô, rưới nước sốt. Ăn nóng với cơm trắng."
+    ],
+    "tags": [
+      "Cá",
+      "Kho",
+      "Món Việt",
+      "Miền Nam",
+      "Món Chính",
+      "Tết"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f6"
+    },
+    "processing_food": "Kho",
+    "status": 1,
+    "type": 0
+  },
+  {
+    "title": "Rau Muống Xào Tỏi",
+    "content": "Rau Muống Xào Tỏi là món ăn đơn giản, nhanh gọn nhưng rất ngon và bổ dưỡng. Rau muống giòn, ngọt tự nhiên, xào với tỏi thơm lừng. Đây là món rau phổ biến trong các bữa cơm gia đình Việt Nam, dễ làm và giàu dinh dưỡng.\n\nGhi chú dinh dưỡng: Rau muống giàu vitamin A, C, sắt và chất xơ, tốt cho tiêu hóa và mắt. Món ăn ít calories, phù hợp cho người ăn kiêng.",
+    "description": "Món rau muống xào tỏi giòn ngọt, thơm lừng, bổ dưỡng và dễ làm.",
+    "image": "https://images.unsplash.com/photo-1767158615608-302f06fd3371?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NTM2Njh8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwd2F0ZXIlMjBzcGluYWNoJTIwc3RpciUyMGZyeXxlbnwwfDB8fHwxNzY3NzU3MDE1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "time": 10,
+    "region": 0,
+    "difficult_level": 0,
+    "energy": 80,
+    "protein": 3,
+    "fat": 5,
+    "carbohydrate": 7,
+    "unit": "phần",
+    "quantity": 1,
+    "ingredients": [
+      {
+        "name": "Rau muống",
+        "energy": 19,
+        "protein": 2.6,
+        "fat": 0.2,
+        "carbohydrate": 3.1
+      },
+      {
+        "name": "Tỏi",
+        "energy": 20,
+        "protein": 0.8,
+        "fat": 0,
+        "carbohydrate": 4.5
+      },
+      {
+        "name": "Dầu ăn",
+        "energy": 45,
+        "protein": 0,
+        "fat": 5,
+        "carbohydrate": 0
+      },
+      {
+        "name": "Nước mắm",
+        "energy": 5,
+        "protein": 0.5,
+        "fat": 0,
+        "carbohydrate": 0.5
+      }
+    ],
+    "instructions": [
+      "**Bước 1: Sơ chế rau:** Rửa sạch rau muống, cắt khúc 5cm, để ráo nước.",
+      "**Bước 2: Phi tỏi:** Làm nóng chảo với dầu, cho tỏi băm vào phi thơm.",
+      "**Bước 3: Xào rau:** Cho rau muống vào xào nhanh tay trên lửa lớn.",
+      "**Bước 4: Nêm nếm:** Thêm ít nước mắm, muối, xào đều cho rau chín vừa, vẫn giòn.",
+      "**Bước 5: Thưởng thức:** Múc rau ra đĩa, ăn nóng với cơm."
+    ],
+    "tags": [
+      "Rau",
+      "Xào",
+      "Món Việt",
+      "Rau Muống",
+      "Món Phụ",
+      "Lành Mạnh"
+    ],
+    "user_id": {
+      "$oid": "691c0521752805e9ab312e03"
+    },
+    "category_recipe_id": {
+      "$oid": "6905276cba606bb1ae0c03f9"
+    },
+    "processing_food": "Xào",
+    "status": 1,
+    "type": 0
+  }
+]

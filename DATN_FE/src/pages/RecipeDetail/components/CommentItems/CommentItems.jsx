@@ -5,14 +5,14 @@ import { useMutation } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import toast from 'react-hot-toast'
 import ThreeDotComment from '../ThreeDotComment/ThreeDotComment'
-import { deleteComment } from '../../../../apis/recipeApi'
+import { deleteCommentRecipe } from '../../../../apis/recipeApi'
 import { FaCheckCircle } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 
 export default function CommentItems({ comment }) {
   const navigate = useNavigate()
   const deleteCommentMutation = useMutation({
-    mutationFn: (body) => deleteComment(body)
+    mutationFn: (body) => deleteCommentRecipe(body)
   })
 
   const handleDeleteComment = async () => {

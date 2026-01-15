@@ -13,6 +13,7 @@ import { AppContext } from '../../contexts/app.context'
 import Loading from '../../components/GlobalComponents/Loading'
 import { queryClient } from '../../main'
 import toast from 'react-hot-toast'
+import { FcGoogle } from 'react-icons/fc'
 
 export default function Login() {
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
@@ -134,19 +135,23 @@ export default function Login() {
         </div>
       </form>
       <div className='px-4 pb-4 rounded-full'>
+        {/* Divider */}
+        <div className='flex items-center my-4'>
+          <div className='flex-1 border-t border-gray-300'></div>
+          <span className='px-4 text-gray-500 text-sm'>hoặc</span>
+          <div className='flex-1 border-t border-gray-300'></div>
+        </div>
+
+        {/* Google Login Button */}
         <Link
           to={googleOAuthUrl}
-          className='px-4 py-3 mt-4 border flex justify-center items-center gap-2 border-slate-200 rounded-full w-full text-gray-400 font-semiboldhover:border-slate-400 hover:text-red-600 hover:shadow transition duration-150'
+          className='flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-gray-200 rounded-full hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 group'
         >
-          <img
-            className='w-6 h-6'
-            src='https://www.svgrepo.com/show/475656/google-color.svg'
-            loading='lazy'
-            alt='google logo'
-          />
-          <span>Login with Google</span>
+          <FcGoogle className='text-2xl' />
+          <span className='text-gray-600 font-medium group-hover:text-gray-800'>Đăng nhập với Google</span>
         </Link>
-        <div className='text-gray-500 flex justify-center items-center mt-2 '>
+
+        <div className='text-gray-500 flex justify-center items-center mt-4'>
           <span className='text-gray-400'>Bạn chưa có tài khoản?</span>
           <Link className='ml-1 font-medium text-red-400 hover:underline hover:text-red-700' to='/register'>
             Đăng ký

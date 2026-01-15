@@ -29,7 +29,11 @@ import {
   unlikeMealPlan as unlikeMealPlanApi,
   applyMealPlan as applyMealPlanApi,
   createMealPlan as createMealPlanApi,
-  shareMealPlan as shareMealPlanApi
+  shareMealPlan as shareMealPlanApi,
+  getMealPlanSocialContext as getMealPlanSocialContextApi,
+  inviteFriendToMealPlan as inviteFriendToMealPlanApi,
+  rateMealPlan as rateMealPlanApi,
+  reportMealPlan as reportMealPlanApi
 } from '../../../services/mealPlanService'
 import { getImageUrl } from '../../../utils/imageUrl'
 import { MEAL_PLAN_CATEGORIES } from '../../../constants/mealPlan'
@@ -40,6 +44,7 @@ export default function MealPlanDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { profile } = useContext(AppContext)
+  const userId = profile?._id
   const [mealPlan, setMealPlan] = useState(null)
   const [mealPlanRaw, setMealPlanRaw] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -62,8 +67,16 @@ export default function MealPlanDetail() {
   const [shareForm, setShareForm] = useState({ content: '', privacy: '0' })
   const [shareLoading, setShareLoading] = useState(false)
   const commentsRef = useRef(null)
-  const [friendsApplying] = useState([])
   const [reloadToken, setReloadToken] = useState(0)
+  const [socialContext, setSocialContext] = useState({
+    friends_applying: [],
+    invite_candidates: [],
+    invites: []
+  })
+  const [socialLoading, setSocialLoading] = useState(false)
+  const [inviteLoading, setInviteLoading] = useState(null)
+  const [userRating, setUserRating] = useState(0)
+  const [ratingSubmitting, setRatingSubmitting] = useState(false)
   
   // Thêm state để quản lý modal cách chế biến
   const [showCookingModal, setShowCookingModal] = useState(false)
@@ -150,6 +163,7 @@ export default function MealPlanDetail() {
         shares: mealPlanData.shared_count || 0,
         applies: mealPlanData.applied_count || 0
       })
+      setUserRating(mealPlanData.user_rating || 0)
       setShareForm((prev) => ({
         ...prev,
         content: prev.content?.trim() ? prev.content : ''
@@ -162,9 +176,39 @@ export default function MealPlanDetail() {
     }
   }, [id])
 
+  const loadSocialContext = useCallback(async () => {
+    if (!id || !userId) {
+      setSocialContext({
+        friends_applying: [],
+        invite_candidates: [],
+        invites: []
+      })
+      return
+    }
+
+    try {
+      setSocialLoading(true)
+      const response = await getMealPlanSocialContextApi(id)
+      setSocialContext(response.data.result || {
+        friends_applying: [],
+        invite_candidates: [],
+        invites: []
+      })
+    } catch (err) {
+      console.error('Failed to fetch meal plan social context', err)
+      toast.error('Không thể tải thông tin bạn bè cho thực đơn này')
+    } finally {
+      setSocialLoading(false)
+    }
+  }, [id, userId])
+
   useEffect(() => {
     loadMealPlan()
   }, [loadMealPlan, reloadToken])
+
+  useEffect(() => {
+    loadSocialContext()
+  }, [loadSocialContext, reloadToken])
 
   // Helper function to calculate average nutrition from raw plan data
   const calculateAverageNutrition = (planData) => {
@@ -206,6 +250,42 @@ export default function MealPlanDetail() {
       protein: Math.round(totals.protein / divisor),
       carbs: Math.round(totals.carbs / divisor),
       fat: Math.round(totals.fat / divisor)
+    }
+  }
+
+  const handleRateMealPlan = async (value) => {
+    if (!userId) {
+      toast.error('Bạn cần đăng nhập để đánh giá thực đơn này')
+      return
+    }
+    if (!value || value < 1 || value > 5) return
+
+    try {
+      setRatingSubmitting(true)
+      const previousRating = userRating
+      await rateMealPlanApi(id, value)
+      setUserRating(value)
+      setMealPlan((prev) => {
+        if (!prev) return prev
+        const hasPrevious = previousRating > 0
+        const previousContribution = hasPrevious ? previousRating : 0
+        const previousCount = prev.ratingCount || 0
+        const nextCount = hasPrevious ? previousCount : previousCount + 1
+        const totalRating = prev.rating * previousCount - previousContribution + value
+        const nextRating = nextCount ? Number((totalRating / nextCount).toFixed(1)) : prev.rating
+        return {
+          ...prev,
+          rating: nextRating,
+          ratingCount: nextCount
+        }
+      })
+      toast.success('Cảm ơn bạn đã đánh giá thực đơn!')
+    } catch (error) {
+      console.error('Rate meal plan failed', error)
+      const fallbackMessage = error?.response?.data?.message || 'Không thể gửi đánh giá'
+      toast.error(fallbackMessage)
+    } finally {
+      setRatingSubmitting(false)
     }
   }
 
@@ -459,6 +539,41 @@ export default function MealPlanDetail() {
     }
   }
 
+  const handleReportMealPlan = async () => {
+    if (!userId) {
+      toast.error('Bạn cần đăng nhập để báo cáo thực đơn này')
+      return
+    }
+
+    const reason = window.prompt('Vui lòng mô tả lý do báo cáo thực đơn này:')
+    if (!reason || !reason.trim()) return
+
+    try {
+      await reportMealPlanApi(id, reason.trim())
+      toast.success('Đã gửi báo cáo thực đơn')
+    } catch (error) {
+      console.error('Report meal plan failed', error)
+      const fallbackMessage = error?.response?.data?.message || 'Không thể gửi báo cáo'
+      toast.error(fallbackMessage)
+    }
+  }
+
+  const handleInviteFriend = async (friendId) => {
+    if (!friendId || !id) return
+    try {
+      setInviteLoading(friendId)
+      await inviteFriendToMealPlanApi(id, friendId)
+      toast.success('Đã gửi lời mời tham gia thực đơn')
+      await loadSocialContext()
+    } catch (error) {
+      console.error('Invite friend failed', error)
+      const fallbackMessage = error?.response?.data?.message || 'Không thể gửi lời mời'
+      toast.error(fallbackMessage)
+    } finally {
+      setInviteLoading(null)
+    }
+  }
+
   const openCloneModal = () => {
     if (!mealPlanRaw) {
       toast.error('Đang chuẩn bị dữ liệu thực đơn, vui lòng thử lại sau')
@@ -478,7 +593,8 @@ export default function MealPlanDetail() {
     setCheckingActiveSchedule(true)
     setStartDate(getCurrentDate())
     try {
-      const schedule = await getActiveMealSchedule()
+      const schedulePayload = await getActiveMealSchedule()
+      const schedule = schedulePayload?.schedule || null
       setActiveSchedule(schedule)
       setApplyMode(schedule ? 'replace' : 'schedule')
     } catch (err) {
@@ -576,6 +692,10 @@ export default function MealPlanDetail() {
     setShowCookingModal(false);
     setActiveMeal(null);
   };
+
+  const friendsApplying = socialContext?.friends_applying || []
+  const inviteCandidates = socialContext?.invite_candidates || []
+  const pendingInvites = socialContext?.invites || []
 
   if (loading) {
     return (
@@ -730,6 +850,17 @@ export default function MealPlanDetail() {
                   <span>Lưu vào Thực đơn của tôi</span>
                 </button>
 
+                {!isOwner && (
+                  <button
+                    type="button"
+                    onClick={handleReportMealPlan}
+                    className="flex items-center px-3 py-1.5 rounded-full border border-red-200 text-red-700 bg-red-50 hover:bg-red-100"
+                  >
+                    <FaInfoCircle className="mr-1" />
+                    <span>Báo cáo</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={openApplyModal}
@@ -869,6 +1000,40 @@ export default function MealPlanDetail() {
         
         {/* Sidebar - 1/3 width on desktop */}
         <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Đánh giá thực đơn</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Chia sẻ cảm nhận của bạn</p>
+              </div>
+              <span className="text-lg font-semibold text-yellow-500">{(mealPlan.rating || 0).toFixed(1)}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isFilled = star <= (userRating || Math.round(mealPlan.rating))
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => handleRateMealPlan(star)}
+                    disabled={ratingSubmitting}
+                    className={`text-xl transition-transform ${
+                      isFilled ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+                    } ${ratingSubmitting ? 'cursor-not-allowed opacity-60' : 'hover:scale-110'}`}
+                    aria-label={`Đánh giá ${star} sao`}
+                  >
+                    <FaStar />
+                  </button>
+                )
+              })}
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {userRating ? `Bạn đã đánh giá ${userRating}/5` : 'Chọn số sao'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Đã có {mealPlan.ratingCount} lượt đánh giá.</p>
+            {ratingSubmitting && <p className="text-xs text-gray-400 mt-1">Đang gửi đánh giá...</p>}
+          </div>
+
           {/* Nutrition summary card */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Thông tin dinh dưỡng</h2>
@@ -902,39 +1067,148 @@ export default function MealPlanDetail() {
             
           </div>
           
-          {/* Friends applying placeholder */}
+          {/* Friends applying & invites */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <FaUserFriends className="text-green-600" />
-                Bạn bè đang áp dụng
+                Bạn bè & lời mời
               </h3>
-              <span className="text-xs text-gray-500">Sắp ra mắt</span>
+              {userId && (
+                <button
+                  type="button"
+                  onClick={loadSocialContext}
+                  disabled={socialLoading}
+                  className="text-xs px-3 py-1 border border-gray-200 dark:border-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
+                >
+                  {socialLoading ? 'Đang tải...' : 'Làm mới'}
+                </button>
+              )}
             </div>
-            {friendsApplying.length > 0 ? (
-              <ul className="space-y-3">
-                {friendsApplying.map((friend) => (
-                  <li key={friend.id} className="flex items-center gap-3">
-                    <img src={friend.avatar} alt={friend.name} className="w-10 h-10 rounded-full object-cover" />
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{friend.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Đang áp dụng đến ngày {friend.until}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
+
+            {!userId ? (
               <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                Kết nối bạn bè để xem ai đang áp dụng thực đơn này cùng bạn. Chúng tôi sẽ kích hoạt trung tâm bạn bè sau khi hoàn tất tính năng quản lý thực đơn.
+                Đăng nhập để xem ai đang áp dụng thực đơn này cùng bạn và gửi lời mời ngay lập tức.
               </div>
+            ) : socialLoading ? (
+              <div className="flex justify-center py-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-5">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Bạn bè đang áp dụng</p>
+                  {friendsApplying.length ? (
+                    <ul className="space-y-3">
+                      {friendsApplying.map((friend) => {
+                        const progressValue = Math.min(Math.max(Number(friend.progress) || 0, 0), 100)
+                        return (
+                          <li key={friend.user_id} className="flex gap-3">
+                            <img
+                              src={getImageUrl(friend.avatar) || 'https://i.pravatar.cc/80'}
+                              alt={friend.name}
+                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-gray-900 dark:text-white">{friend.name}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {friend.status === 'paused' ? 'Tạm dừng theo dõi' : 'Đang áp dụng'} · Cập nhật{' '}
+                                    {friend.updated_at ? new Date(friend.updated_at).toLocaleDateString('vi-VN') : 'gần đây'}
+                                  </p>
+                                </div>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                                  {friend.start_date ? `${new Date(friend.start_date).toLocaleDateString('vi-VN')}` : ''}
+                                </span>
+                              </div>
+                              <div className="mt-2">
+                                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                  <span>Tiến độ</span>
+                                  <span>{progressValue}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mt-1">
+                                  <div
+                                    className="h-full bg-green-500 rounded-full"
+                                    style={{ width: `${progressValue}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                      Chưa có bạn bè nào áp dụng thực đơn này. Hãy là người đầu tiên mở lời!
+                    </div>
+                  )}
+                </div>
+
+                <div className="mb-5">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Mời bạn bè tham gia</p>
+                  {inviteCandidates.length ? (
+                    <ul className="space-y-3">
+                      {inviteCandidates.slice(0, 4).map((candidate) => (
+                        <li key={candidate.user_id} className="flex items-center gap-3">
+                          <img
+                            src={getImageUrl(candidate.avatar) || 'https://i.pravatar.cc/80'}
+                            alt={candidate.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 dark:text-white">{candidate.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{candidate.email || 'Bạn bè'} </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={candidate.already_invited || inviteLoading === candidate.user_id}
+                            onClick={() => handleInviteFriend(candidate.user_id)}
+                            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                              candidate.already_invited
+                                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'border-green-300 text-green-700 hover:bg-green-50'
+                            } ${inviteLoading === candidate.user_id ? 'opacity-60' : ''}`}
+                          >
+                            {candidate.already_invited
+                              ? 'Đã mời'
+                              : inviteLoading === candidate.user_id
+                              ? 'Đang gửi...'
+                              : 'Mời'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                      Không tìm thấy bạn bè phù hợp để mời. Hãy tăng tương tác để mở rộng danh sách bạn bè.
+                    </div>
+                  )}
+                  {inviteCandidates.length > 4 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Hiển thị 4 người phù hợp nhất. Tiếp tục kết nối để thấy nhiều gợi ý hơn.
+                    </p>
+                  )}
+                </div>
+
+                {pendingInvites.length > 0 && (
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Lời mời đang chờ</p>
+                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                      {pendingInvites.map((invite) => (
+                        <li key={invite.invite_id} className="flex items-center justify-between">
+                          <span>{invite.receiver?.name || 'Bạn bè'}</span>
+                          <span className="text-xs text-gray-400">
+                            {invite.created_at ? new Date(invite.created_at).toLocaleDateString('vi-VN') : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
-            <button
-              type="button"
-              onClick={() => toast.info('Tính năng kết bạn sẽ sớm được cập nhật')}
-              className="mt-4 w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30"
-            >
-              Mời bạn bè tham gia
-            </button>
           </div>
         </div>
       </div>

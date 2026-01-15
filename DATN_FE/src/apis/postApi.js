@@ -1,5 +1,9 @@
 import http from '../utils/http'
 
+// Public APIs (no auth required)
+export const getPublicPosts = (params) => http.get('/posts/public', { params })
+export const getPublicPostDetail = (id) => http.get(`/posts/public/${id}`)
+
 export const createPost = (body) =>
   http.post('/posts', body, {
     headers: {

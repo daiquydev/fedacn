@@ -13,7 +13,7 @@ import {
 } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USER_MESSAGE } from '~/constants/messages'
-import { RequestUserBody, UpdateUserBody } from '~/models/requests/user.request'
+import { RequestUserBody, UpdateHealthProfileBody, UpdateUserBody } from '~/models/requests/user.request'
 import AlbumModel from '~/models/schemas/album.schema'
 import BookmarkAlbumModel from '~/models/schemas/bookmarkAlbum.schema'
 import BookmarkRecipeModel from '~/models/schemas/bookmarkRecipe.schema'
@@ -113,6 +113,61 @@ class UsersService {
               }
             }
           }
+        }
+      },
+
+      // lấy danh sách người mình đang theo dõi
+      {
+        $lookup: {
+          from: 'follows',
+          localField: '_id',
+          foreignField: 'user_id',
+          as: 'following_relations'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'following_relations.follow_id',
+          foreignField: '_id',
+          as: 'followings'
+        }
+      },
+      {
+        $addFields: {
+          followings: {
+            $filter: {
+              input: '$followings',
+              as: 'following',
+              cond: { $eq: ['$$following.status', UserStatus.active] }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          followings_count: { $size: '$followings' }
+        }
+      },
+      {
+        $addFields: {
+          followings: {
+            $map: {
+              input: '$followings',
+              as: 'following',
+              in: {
+                _id: '$$following._id',
+                email: '$$following.email',
+                name: '$$following.name',
+                avatar: '$$following.avatar'
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          following_relations: 0
         }
       },
 
@@ -511,6 +566,86 @@ class UsersService {
     if (user) {
       return omit(user.toObject(), ['password', 'upgrade_request'])
     }
+  }
+  async updateHealthProfileService({
+    user_id,
+    gender,
+    age,
+    height,
+    weight,
+    target_weight,
+    activity_level,
+    health_goal,
+    dietary_preferences,
+    allergies,
+    bmi,
+    bmr,
+    tdee
+  }: UpdateHealthProfileBody) {
+    const normalizeNumber = (value: unknown) => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : undefined
+    }
+
+    const ageNumber = normalizeNumber(age)
+    const heightNumber = normalizeNumber(height)
+    const weightNumber = normalizeNumber(weight)
+    const targetWeightNumber = normalizeNumber(target_weight)
+    const bmiNumber = normalizeNumber(bmi)
+    const bmrNumber = normalizeNumber(bmr)
+    const tdeeNumber = normalizeNumber(tdee)
+
+    const activityLevelMap: Record<string, number> = {
+      'Ít vận động': 1,
+      'Vận động nhẹ': 2,
+      'Vận động vừa phải': 3,
+      'Vận động nhiều': 4,
+      'Vận động rất nhiều': 5
+    }
+
+    const updatePayload: Record<string, unknown> = {}
+
+    if (gender) updatePayload['gender'] = gender
+    if (ageNumber !== undefined) updatePayload['age'] = ageNumber
+    if (heightNumber !== undefined) updatePayload['height'] = heightNumber
+    if (weightNumber !== undefined) {
+      updatePayload['weight'] = weightNumber
+      updatePayload['pre_weight'] = [
+        {
+          weight: weightNumber,
+          date: moment().toDate()
+        }
+      ]
+    }
+    if (targetWeightNumber !== undefined) updatePayload['target_weight'] = targetWeightNumber
+    if (health_goal) updatePayload['health_goal'] = health_goal
+    if (dietary_preferences !== undefined) updatePayload['dietary_preferences'] = dietary_preferences
+    if (allergies !== undefined) updatePayload['allergies'] = allergies
+
+    if (activity_level) {
+      updatePayload['activity_level_text'] = activity_level
+      const mappedLevel = activityLevelMap[activity_level]
+      if (mappedLevel) {
+        updatePayload['activity_level'] = mappedLevel
+      }
+    }
+
+    if (bmiNumber !== undefined) updatePayload['BMI'] = bmiNumber
+    if (bmrNumber !== undefined) updatePayload['BMR'] = bmrNumber
+    if (tdeeNumber !== undefined) updatePayload['TDEE'] = tdeeNumber
+
+    const user = await UserModel.findOneAndUpdate({ _id: new ObjectId(user_id) }, updatePayload, {
+      new: true
+    })
+
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: USER_MESSAGE.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    return omit(user.toObject(), ['password', 'upgrade_request'])
   }
   async updateUserService({ user_id, name, user_name, birthday, address }: UpdateUserBody) {
     // check xem db có tồn tại user_name không, có thì không cho update

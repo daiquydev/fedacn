@@ -1,33 +1,19 @@
-import { useEffect, useState } from 'react'
-import { useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 // * React icons
-import {
-  FaCookieBite,
-  FaShareAlt,
-  FaRunning,
-  FaTrophy,
-  FaChartLine,
-  FaUtensils,
-  FaCalendarAlt,
-  FaClipboardList,
-  FaPlayCircle
-} from 'react-icons/fa'
-import { BsFillCalendarHeartFill, BsFillHeartFill, BsPeopleFill } from 'react-icons/bs'
+import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie } from 'react-icons/fa'
+import { BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
-import { MdMenu, MdSportsSoccer } from 'react-icons/md'
+import { MdMenu, MdOutlineSpaceDashboard } from 'react-icons/md'
 import { NavLink, useLocation } from 'react-router-dom'
 import Submenu from './SubMenu'
 import { FaPenToSquare } from 'react-icons/fa6'
-import { IoMdAlbums } from 'react-icons/io'
-import { MdBook } from 'react-icons/md'
 import Logo from '../Logo'
 // import { AppContext } from '../../../contexts/app.context'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { currentAccount, updateRequest } from '../../../apis/userApi'
 import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
-import { IoIosArrowForward } from 'react-icons/io'
 
 export default function SideBar() {
   let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
@@ -47,12 +33,8 @@ export default function SideBar() {
 
   const [openMenus, setOpenMenus] = useState({})
 
-  const checkSubmenu = () => {
-    if (userData?.data.result[0]?.role === 1) {
-      return true
-    }
-    return false
-  }
+  const checkSubmenu = () => Number(userData?.data.result[0]?.role) === 1
+  const isAdmin = Number(userData?.data.result[0]?.role) === 2
   const updateRequestMutation = useMutation({
     mutationFn: (body) => updateRequest(body)
   })
@@ -112,6 +94,19 @@ export default function SideBar() {
     }
   }
 
+  const menuGroups = [
+    {
+      name: 'Thực đơn',
+      icon: FaUtensils,
+      path: 'meal-plan',
+      menus: [
+        { subName: 'Tất cả thực đơn', subPath: '' },
+        { subName: 'Thực đơn của tôi', subPath: 'my' },
+        { subName: 'Thực đơn đang áp dụng', subPath: 'active' }
+      ]
+    }
+  ]
+
   const subMenusList = checkSubmenu()
     ? [
         {
@@ -124,81 +119,9 @@ export default function SideBar() {
             { subName: 'Tạo blog dinh dưỡng', subPath: 'blog-list' }
           ],
           path: 'chef'
-        },
-        {
-          name: 'Sự kiện của tôi',
-          icon: FaRunning,
-          menus: [
-            { subName: 'Sự kiện Đang Tham gia', subPath: 'da-tham-gia' },
-            { subName: 'Lịch sử sự kiện', subPath: 'lich-su' }
-          ],
-          path: 'sport-event'
-        },
-        {
-          name: 'Thử thách của tôi',
-          icon: FaTrophy,
-          menus: [
-            { subName: 'Thử thách đã tham gia', subPath: 'my-challenges' },
-            { subName: 'Tạo thử thách mới', subPath: 'create' }
-          ],
-          path: 'challenge'
-        },
-        {
-          name: 'Thực đơn & Dinh dưỡng',
-          icon: FaUtensils,
-          menus: [
-            { subName: 'Lịch ăn uống của tôi', subPath: 'my-eat-schedule' },
-            { subName: 'Quản lý thực đơn', subPath: 'eat-plan' }
-          ],
-          path: 'schedule'
         }
       ]
-    : [
-        // {
-        //   name: 'Sức khoẻ',
-        //   icon: BsFillHeartFill,
-        //   menus: [
-        //     { subName: 'Công cụ tính toán', subPath: 'fitness-calculator' },
-        //     { subName: 'Lịch sử tính toán', subPath: 'fitness-history' }
-        //   ],
-        //   path: 'fitness'
-        // },
-        // {
-        //   name: 'Lịch trình',
-        //   icon: BsFillCalendarHeartFill,
-        //   menus: [
-        //     { subName: 'Lịch trình ăn uống', subPath: 'eat-schedule' },
-        //     { subName: 'Lịch trình tập luyện', subPath: 'ex-schedule' }
-        //   ],
-        //   path: 'schedule'
-        // },
-        {
-          name: 'Sự kiện của tôi',
-          icon: FaRunning,
-          menus: [
-            { subName: 'Sự kiện Đang Tham gia', subPath: 'da-tham-gia' },
-            { subName: 'Lịch sử sự kiện', subPath: 'lich-su' }
-          ],
-          path: 'sport-event'
-        },
-        {
-          name: 'Thử thách của tôi',
-          icon: FaTrophy,
-          menus: [
-            { subName: 'Thử thách đã tham gia', subPath: 'my-challenges' }
-          ],
-          path: 'challenge'
-        },
-        {
-          name: 'Thực đơn & Dinh dưỡng',
-          icon: FaUtensils,
-          menus: [
-            { subName: 'Lịch ăn uống của tôi', subPath: 'my-eat-schedule' },
-            { subName: 'Quản lý thực đơn', subPath: 'eat-plan' }
-          ],
-          path: 'schedule'
-        }
-      ]
+    : []
 
   return (
     <>
@@ -230,37 +153,31 @@ export default function SideBar() {
                   Cộng đồng
                 </NavLink>
               </li>
-             
               <li>
-                <NavLink to={'/meal-plan'} className='link-custom '>
-                  <FaUtensils size={25} className='min-w-max' />
-                  Thực đơn
+                <NavLink to={'/personal-dashboard'} className='link-custom '>
+                  <FaChartPie size={25} className='min-w-max' />
+                  Trang Cá Nhân
                 </NavLink>
               </li>
               <li>
-                <NavLink to={'/meal-plan/my'} className='link-custom '>
-                  <FaClipboardList size={25} className='min-w-max' />
-                  Thực đơn của tôi
+                <NavLink to={'/friends'} className='link-custom '>
+                  <FaUserFriends size={25} className='min-w-max' />
+                  Bạn bè
                 </NavLink>
               </li>
-              <li>
-                <NavLink to={'/meal-plan/my-saved'} className='link-custom '>
-                  <BsFillHeartFill size={25} className='min-w-max' />
-                  Thực đơn đã lưu
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to={'/meal-plan/active'} className='link-custom '>
-                  <FaPlayCircle size={25} className='min-w-max' />
-                  Thực đơn đang áp dụng
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to={'/schedule/my-eat-schedule'} className='link-custom '>
-                  <BsFillCalendarHeartFill size={25} className='min-w-max' />
-                  Lịch ăn uống
-                </NavLink>
-              </li>
+              {isAdmin && (
+                <li>
+                  <NavLink to={'/admin'} className='link-custom '>
+                    <MdOutlineSpaceDashboard size={25} className='min-w-max' />
+                    Trang quản trị
+                  </NavLink>
+                </li>
+              )}
+              {menuGroups.map((menu) => (
+                <li key={menu.name}>
+                  <Submenu data={menu} />
+                </li>
+              ))}
               <li>
                 <NavLink to={'/user-calendar'} className='link-custom '>
                   <FaCalendarAlt size={25} className='min-w-max' />
@@ -279,7 +196,7 @@ export default function SideBar() {
                   Góc chia sẻ
                 </NavLink>
               </li> */}
-              <li>
+              {/* <li>
                 <NavLink 
                   to={'/sport-event'} 
                   end
@@ -298,18 +215,8 @@ export default function SideBar() {
                   <FaTrophy size={25} className='min-w-max' />
                   Thử thách cộng đồng
                 </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to={'/user-stats'} 
-                  className='link-custom'
-                >
-                  <FaChartLine size={25} className='min-w-max' />
-                  Thống kê tiến trình
-                </NavLink>
-              </li>
-
-              {(open || isTabletMid) && (
+              </li> */}
+              {(open || isTabletMid) && subMenusList.length > 0 && (
                 <div className='border-y py-4 border-slate-300 dark:border-slate-700'>
                   <small className='pl-3 text-slate-500 dark:text-slate-400 font-medium inline-block mb-2'>
                     Người dùng
@@ -317,11 +224,11 @@ export default function SideBar() {
                   <div className='flex flex-col'>
                     {subMenusList?.map((menu) => (
                       <div key={menu.name} className='mb-1 last:mb-0'>
-                        <Submenu 
-                          data={menu} 
+                        <Submenu
+                          data={menu}
                           isOpen={openMenus[menu.name]}
                           onToggle={() => {
-                            setOpenMenus(prev => ({
+                            setOpenMenus((prev) => ({
                               ...prev,
                               [menu.name]: !prev[menu.name]
                             }))
@@ -332,12 +239,6 @@ export default function SideBar() {
                   </div>
                 </div>
               )}
-              <li>
-                <NavLink to={'/bookmark'} className='link-custom'>
-                  <MdBook size={25} className='min-w-max' />
-                  <span className='font-medium'>Mục đã lưu</span>
-                </NavLink>
-              </li>
             </ul>
            
           </div>

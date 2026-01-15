@@ -9,6 +9,7 @@ import {
   unfollowUserController,
   updateAvatarUserController,
   updateCoverAvatarUserController,
+  updateHealthProfileUserController,
   updatePasswordUserController,
   updateUserController
 } from '~/controllers/userControllers/user.controller'
@@ -54,6 +55,12 @@ usersRouter.put(
   accessTokenValidator,
   updateProfileValidator,
   wrapRequestHandler(updateUserController)
+)
+
+usersRouter.put(
+  '/update-health-profile',
+  accessTokenValidator,
+  wrapRequestHandler(updateHealthProfileUserController)
 )
 
 usersRouter.get('/bookmarks', accessTokenValidator, wrapRequestHandler(getBookmarkedUserController))

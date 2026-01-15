@@ -1,0 +1,32 @@
+# LaTeX report files
+laTex_report/
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
+*.nlo
+*.nls
+*.ilg
+*.ind
+*.idx
+*.glo
+*.gls
+*.ist
+*.acn
+*.acr
+*.alg
+*.glsdefs
+
+# LaTeX temporary files
+*.bcf
+*.run.xml
+*.snm
+*.nav
+*.vrb

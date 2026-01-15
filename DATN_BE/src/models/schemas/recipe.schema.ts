@@ -24,6 +24,17 @@ export interface Recipe {
     fat: number
     carbohydrate: number
   }[]
+  instructions?: (
+    | string
+    | {
+        step?: number
+        instruction?: string
+        description?: string
+        time?: number
+        note?: string
+      }
+  )[]
+  tags?: string[]
   user_id: Types.ObjectId
   processing_food?: string
   status?: RecipeStatus
@@ -60,6 +71,14 @@ const RecipeSchema = new mongoose.Schema<Recipe>(
         carbohydrate: { type: Number, default: 0 }
       }
     ],
+    instructions: {
+      type: [mongoose.SchemaTypes.Mixed],
+      default: []
+    },
+    tags: {
+      type: [String],
+      default: []
+    },
     user_id: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'users',

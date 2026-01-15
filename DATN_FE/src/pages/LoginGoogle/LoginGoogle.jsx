@@ -2,63 +2,106 @@ import { useContext, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { setAccessTokenToLS, setProfileToLS, setRefreshTokenToLS } from '../../utils/auth'
 import { AppContext } from '../../contexts/app.context'
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import { FcGoogle } from 'react-icons/fc'
 
 export default function LoginGoogle() {
   const [params] = useSearchParams()
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
   const [isBanner, setIsBanner] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
   useEffect(() => {
     const access_token = params.get('access_token')
     const refresh_token = params.get('refresh_token')
-    console.log(params.get('user'))
-    const user = JSON.parse(params.get('user'))
-    console.log(user)
-    console.log(access_token, refresh_token, user)
-    if (access_token !== null && refresh_token !== null && user !== null) {
-      setAccessTokenToLS(access_token)
-      setRefreshTokenToLS(refresh_token)
-      setProfileToLS(user)
-      setIsAuthenticated(true)
-      setProfile(user)
-    } else {
-      setIsBanner(true)
-    }
+    const userParam = params.get('user')
+    
+    // Small delay for better UX
+    setTimeout(() => {
+      if (access_token && refresh_token && userParam) {
+        try {
+          const user = JSON.parse(userParam)
+          setAccessTokenToLS(access_token)
+          setRefreshTokenToLS(refresh_token)
+          setProfileToLS(user)
+          setIsAuthenticated(true)
+          setProfile(user)
+          setIsLoading(false)
+        } catch (error) {
+          console.error('Error parsing user data:', error)
+          setIsBanner(true)
+          setIsLoading(false)
+        }
+      } else {
+        setIsBanner(true)
+        setIsLoading(false)
+      }
+    }, 500)
   }, [params, setIsAuthenticated, setProfile])
-  return (
-    <div className='h-screen bg-white'>
-      <div className=' p-6  md:mx-auto'>
-        {!isBanner && (
-          <svg viewBox='0 0 24 24' className='text-green-600 w-16 h-16 mx-auto my-6'>
-            <path
-              fill='currentColor'
-              d='M12,0A12,12,0,1,0,24,12,12.014,12.014,0,0,0,12,0Zm6.927,8.2-6.845,9.289a1.011,1.011,0,0,1-1.43.188L5.764,13.769a1,1,0,1,1,1.25-1.562l4.076,3.261,6.227-8.451A1,1,0,1,1,18.927,8.2Z'
-            ></path>
-          </svg>
-        )}
-        <div className='text-center'>
-          <h3 className='md:text-2xl text-base text-gray-900 font-semibold text-center'>
-            {isBanner ? 'Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập trang này' : 'Đăng nhập thành công'}
-          </h3>
-          {isBanner ? (
-            <p className='text-gray-600 my-2'>
-              Tài khoản của bạn đã bị khóa. Vui lòng liên hệ với quản trị viên để biết thêm thông tin
-            </p>
-          ) : (
-            <p className='text-gray-600 my-2'>Hãy quay lại trang đăng nhập</p>
-          )}
 
-          <div className='py-10 text-center'>
-            {isBanner ? (
-              <a href='/login' className='px-12 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3'>
-                Quay lại trang đăng nhập
-              </a>
-            ) : (
-              <a href='/home' className='px-12 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3'>
-                Quay lại trang chủ
-              </a>
-            )}
+  if (isLoading) {
+    return (
+      <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center animate-pulse'>
+            <FcGoogle className='text-3xl' />
           </div>
+          <p className='text-gray-600'>Đang xử lý đăng nhập...</p>
         </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4'>
+      <div className='bg-white rounded-2xl shadow-xl max-w-md w-full p-8'>
+        {!isBanner ? (
+          <>
+            {/* Success State */}
+            <div className='text-center'>
+              <div className='w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center'>
+                <FaCheckCircle className='text-4xl text-green-500' />
+              </div>
+              <h2 className='text-2xl font-bold text-gray-900 mb-2'>Đăng nhập thành công!</h2>
+              <p className='text-gray-600 mb-6'>
+                Chào mừng bạn quay trở lại. Hãy bắt đầu khám phá ngay!
+              </p>
+              <a
+                href='/home'
+                className='inline-flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg shadow-green-500/25'
+              >
+                Đi đến trang chủ
+              </a>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Error State */}
+            <div className='text-center'>
+              <div className='w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center'>
+                <FaTimesCircle className='text-4xl text-red-500' />
+              </div>
+              <h2 className='text-2xl font-bold text-gray-900 mb-2'>Đăng nhập thất bại</h2>
+              <p className='text-gray-600 mb-6'>
+                Tài khoản của bạn có thể đã bị khóa hoặc có lỗi xảy ra trong quá trình xác thực.
+              </p>
+              <div className='space-y-3'>
+                <a
+                  href='/login'
+                  className='inline-flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-500/25'
+                >
+                  Thử đăng nhập lại
+                </a>
+                <a
+                  href='/register'
+                  className='inline-flex items-center justify-center w-full px-6 py-3 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-300'
+                >
+                  Tạo tài khoản mới
+                </a>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

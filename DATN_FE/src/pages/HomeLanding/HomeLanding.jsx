@@ -17,14 +17,14 @@ export default function HomeLanding() {
                 <Link to="/" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
                   Trang Chủ
                 </Link>
+                <Link to="/explore" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
+                  Khám Phá
+                </Link>
                 <Link to="/about" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
                   Thông tin
                 </Link>
                 <Link to="/get-started" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
                   Bắt đầu
-                </Link>
-                <Link to="/blog" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
-                  Blog
                 </Link>
                 <Link to="/contact" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
                   Liên hệ

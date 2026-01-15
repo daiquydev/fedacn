@@ -23,6 +23,9 @@ export default function UserAvatar() {
     }
   }, [])
   const { setIsAuthenticated, setProfile, profile } = useContext(AppContext)
+
+  // Dùng fallback an toàn khi chưa có profile hoặc avatar rỗng
+  const avatarSrc = profile?.avatar ? profile.avatar : useravatar
   const logoutAccountMutation = useMutation({
     mutationFn: (body) => logoutAccount(body)
   })
@@ -54,7 +57,7 @@ export default function UserAvatar() {
         <div className='w-8 h-8 md:w-10 object-cover md:h-10 rounded-full'>
           <img
             className='w-8 h-8 md:w-10 object-cover md:h-10 rounded-full'
-            src={profile.avatar === '' ? useravatar : profile.avatar}
+            src={avatarSrc}
             alt='user photo'
           />
         </div>
