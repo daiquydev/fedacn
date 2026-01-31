@@ -1,7 +1,8 @@
 import { seedIngredientsData } from './seedIngredients'
 import { seedRecipesData } from './seedRecipes'
+import { seedSportEventsData } from './seedSportEvents'
 
-export const initializeDatabase = () => {
+export const initializeDatabase = async () => {
   console.log('Initializing lowdb database...')
   
   // Seed ingredients data
@@ -9,6 +10,9 @@ export const initializeDatabase = () => {
   
   // Seed recipes data
   seedRecipesData()
+  
+  // Seed sport events data
+  await seedSportEventsData()
   
   console.log('Database initialization completed!')
 }

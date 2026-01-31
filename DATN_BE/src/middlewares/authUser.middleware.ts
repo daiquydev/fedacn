@@ -7,12 +7,64 @@ import UserModel from '~/models/schemas/user.schema'
 import authUserService from '~/services/userServices/authUser.services'
 import { comparePassword } from '~/utils/crypto'
 import { ErrorWithStatus } from '~/utils/error'
-import { verifyToken } from '~/utils/jwt'
+import { verifyToken as jwtVerifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
-import { Request } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
 import { envConfig } from '~/constants/config'
 import { UserRoles, UserStatus } from '~/constants/enums'
+
+// Middleware to verify token
+export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization
+  console.log('🔐 Authorization header received:', authHeader ? authHeader.substring(0, 50) + '...' : 'NO HEADER')
+  const token = authHeader?.split(' ')[1]
+  
+  if (!token) {
+    console.warn('⚠️ No token found - Authorization header:', authHeader)
+    return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      message: 'Token is required'
+    })
+  }
+
+  try {
+    console.log('🔍 Verifying token...')
+    const decoded = await jwtVerifyToken({
+      token,
+      secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
+    })
+    console.log('✅ Token verified, decoded:', decoded)
+    ;(req as any).decoded = decoded
+    next()
+  } catch (error) {
+    console.error('❌ Token verification failed:', (error as Error).message)
+    return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      message: 'Invalid or expired token'
+    })
+  }
+}
+
+// Middleware to verify token optionally (does not block request if token is missing/invalid)
+export const verifyTokenOptional = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization
+  const token = authHeader?.split(' ')[1]
+  
+  if (!token) {
+    return next()
+  }
+
+  try {
+    const decoded = await jwtVerifyToken({
+      token,
+      secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
+    })
+    ;(req as any).decoded = decoded
+  } catch (error) {
+    // Ignore invalid tokens, just proceed as guest
+    console.warn('⚠️ Optional token verification failed:', (error as Error).message)
+  }
+  next()
+}
 
 export const registerValidator = validate(
   checkSchema(
@@ -153,32 +205,32 @@ export const accessTokenValidator = validate(
         notEmpty: true,
         custom: {
           options: async (value: string, { req }) => {
-            const access_token = value.split(' ')[1]
+            const access_token = value.split(' ')[1];
             if (!access_token) {
               throw new ErrorWithStatus({
                 message: AUTH_USER_MESSAGE.ACCESS_TOKEN_IS_REQUIRED,
                 status: HTTP_STATUS.UNAUTHORIZED
-              })
+              });
             }
             try {
-              const decoded_authorization = await verifyToken({
+              const decoded_authorization = await jwtVerifyToken({
                 token: access_token,
                 secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
-              })
+              });
               if (decoded_authorization.status === UserStatus.banned) {
                 throw new ErrorWithStatus({
                   message: AUTH_USER_MESSAGE.ACCOUNT_BANNED,
                   status: HTTP_STATUS.UNAUTHORIZED
-                })
+                });
               }
-              ;(req as Request).decoded_authorization = decoded_authorization
+              (req as any).decoded_authorization = decoded_authorization;
             } catch (error) {
               throw new ErrorWithStatus({
                 message: capitalize((error as JsonWebTokenError).message),
                 status: HTTP_STATUS.UNAUTHORIZED
-              })
+              });
             }
-            return true
+            return true;
           }
         }
       }
@@ -190,25 +242,25 @@ export const accessTokenValidator = validate(
 // Optional access token validator - allows unauthenticated access but parses token if present
 export const optionalAccessTokenValidator = async (req: Request, res: any, next: any) => {
   try {
-    const authHeader = req.headers.authorization
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next()
+      return next();
     }
-    const access_token = authHeader.split(' ')[1]
+    const access_token = authHeader.split(' ')[1];
     if (!access_token) {
-      return next()
+      return next();
     }
-    const decoded_authorization = await verifyToken({
+    const decoded_authorization = await jwtVerifyToken({
       token: access_token,
       secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
-    })
+    });
     if (decoded_authorization.status !== UserStatus.banned) {
-      req.decoded_authorization = decoded_authorization
+      (req as any).decoded_authorization = decoded_authorization;
     }
   } catch (error) {
     // Silently ignore invalid tokens for public access
   }
-  return next()
+  return next();
 }
 
 export const refreshTokenValidator = validate(
@@ -221,36 +273,39 @@ export const refreshTokenValidator = validate(
               throw new ErrorWithStatus({
                 message: AUTH_USER_MESSAGE.REFRESH_TOKEN_IS_REQUIRED,
                 status: HTTP_STATUS.UNAUTHORIZED
-              })
+              });
             }
             try {
               const [decoded_refresh_token, refresh_token] = await Promise.all([
-                verifyToken({ token: value, secretOrPublicKey: envConfig.JWT_SECRET_REFRESH_TOKEN }),
+                jwtVerifyToken({
+                  token: value,
+                  secretOrPublicKey: envConfig.JWT_SECRET_REFRESH_TOKEN
+                }),
                 RefreshTokenModel.findOne({ token: value })
-              ])
+              ]);
               if (refresh_token === null) {
                 throw new ErrorWithStatus({
                   message: AUTH_USER_MESSAGE.USED_REFRESH_TOKEN_OR_NOT_EXIST,
                   status: HTTP_STATUS.UNAUTHORIZED
-                })
+                });
               }
               if (decoded_refresh_token.status === UserStatus.banned) {
                 throw new ErrorWithStatus({
                   message: AUTH_USER_MESSAGE.ACCOUNT_BANNED,
                   status: HTTP_STATUS.UNAUTHORIZED
-                })
+                });
               }
-              ;(req as Request).decoded_refresh_token = decoded_refresh_token
+              (req as any).decoded_refresh_token = decoded_refresh_token;
             } catch (error) {
               if (error instanceof JsonWebTokenError) {
                 throw new ErrorWithStatus({
                   message: capitalize(error.message),
                   status: HTTP_STATUS.UNAUTHORIZED
-                })
+                });
               }
-              throw error
+              throw error;
             }
-            return true
+            return true;
           }
         }
       }

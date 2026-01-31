@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaMapMarkerAlt, FaRunning, FaCalendarAlt, FaClock } from 'react-icons/fa';
-import { MdVideocam } from 'react-icons/md';
+import { FaMapMarkerAlt, FaRunning, FaCalendarAlt, FaClock, FaPlus } from 'react-icons/fa';
+import { MdVideocam, MdCheckCircle } from 'react-icons/md';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import moment from 'moment';
 import ParticipantsList from '../../../components/ParticipantsList';
 
@@ -12,31 +13,30 @@ import ParticipantsList from '../../../components/ParticipantsList';
  * @param {Object} props.event - The event data to display
  * @param {Array} props.participants - Participants data with follow status
  * @param {Function} props.onJoin - Function to call when user joins the event
+ * @param {Boolean} props.isJoining - Whether the join mutation is in progress
  */
-const SportEventCard = ({ event, participants = [], onJoin }) => {
+const SportEventCard = ({ event, participants = [], onJoin, isJoining }) => {
   const navigate = useNavigate();
   
-  // Sample data - In production this would come from API
-  // This simulates participants with followed users marked
-  const eventParticipants = participants || [
-    { id: 1, name: "Nguyễn Văn A", avatar: "", isFollowed: true },
-    { id: 2, name: "Trần Thị B", avatar: "", isFollowed: false },
-    { id: 3, name: "Lê Văn C", avatar: "", isFollowed: true },
-    { id: 4, name: "Phạm Thị D", avatar: "", isFollowed: false },
-    { id: 5, name: "Hoàng Văn E", avatar: "", isFollowed: false },
-  ];
+  // Use participants from API or fallback to event.participants_ids data
+  const eventParticipants = event.participants_ids?.map(p => ({
+    id: p._id,
+    name: p.name,
+    avatar: p.avatar,
+    isFollowed: false
+  })) || [];
   
   const handleClick = () => {
-    navigate(`/sport-event/${event.id}`);
+    navigate(`/sport-event/${event._id}`);
   };
   
   const handleJoin = (e) => {
     e.stopPropagation(); // Prevent triggering card click
-    if (onJoin) onJoin(event.id);
+    if (onJoin) onJoin(event._id);
   };
   
   const isOnline = event.eventType === 'online';
-  const eventDate = moment(event.date);
+  const eventDate = moment(event.startDate);
   
   return (
     <div 
@@ -121,16 +121,23 @@ const SportEventCard = ({ event, participants = [], onJoin }) => {
         <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700">
           {event.isJoined ? (
             <button 
-              className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-medium flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400"
+              className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400 gap-2"
             >
+              <MdCheckCircle />
               Đã tham gia
             </button>
           ) : (
             <button 
               onClick={handleJoin}
-              className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition-colors"
+              disabled={isJoining || event.participants >= event.maxParticipants}
+              className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
             >
-              Tham gia ngay
+              {isJoining ? (
+                <AiOutlineLoading3Quarters className="animate-spin" />
+              ) : (
+                <FaPlus className="text-xs" />
+              )}
+              {event.participants >= event.maxParticipants ? 'Đã đầy chỗ' : 'Tham gia ngay'}
             </button>
           )}
         </div>

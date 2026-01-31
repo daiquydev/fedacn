@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 export default function EventHistory() {
   const navigate = useNavigate();
   const [pastEvents, setPastEvents] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
   // --- Filtering State ---
@@ -20,34 +20,12 @@ export default function EventHistory() {
   const [filterEndDate, setFilterEndDate] = useState('');
 
   // --- Sorting State ---
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' }); // Default sort by date descending
+  const [sortConfig, setSortConfig] = useState({ key: 'startDate', direction: 'desc' }); // Default sort by date descending
 
   useEffect(() => {
-    const fetchPastEvents = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // --- Placeholder API Call ---
-        // In a real app, you might pass filter/sort params here: 
-        // e.g., /api/user/events/history?category=${filterCategory}&startDate=${filterStartDate}&endDate=${filterEndDate}&sortBy=${sortConfig.key}&sortDir=${sortConfig.direction}
-        console.log("Fetching past events (simulated)...");
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-
-        // More varied example data
-        const fetchedEvents = [
-          {
-            id: 4,
-            name: "Winter Marathon Challenge",
-            date: "2024-01-15T07:00:00Z",
-            endDate: "2024-01-15T10:15:30Z",
-            location: "Downtown Route, Central City",
-            category: "Running",
-            participants: 312,
-            image: "https://images.unsplash.com/photo-1540539234-c14a20fb7c7b",
-            performance: "Completed",
-            ranking: 54,
-            totalParticipants: 312,
-            achievement: "Finisher",
+    // Fetch past events from API - currently showing empty since all events are in future
+    // setPastEvents([])
+  }, []);
             time: "02:15:30",
           },
           {

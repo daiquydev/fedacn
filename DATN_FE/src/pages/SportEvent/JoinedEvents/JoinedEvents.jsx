@@ -5,7 +5,7 @@ import { MdSportsSoccer, MdDirectionsRun, MdFitnessCenter } from 'react-icons/md
 import { IoIosFitness } from 'react-icons/io';
 import moment from 'moment';
 import toast from 'react-hot-toast';
-import { allSportEvents } from '../../../data/sportEvents';
+import { getJoinedEvents } from '../../../apis/sportEventApi';
 
 const getCategoryIcon = (category) => {
   switch(category?.toLowerCase()) {
@@ -29,25 +29,29 @@ export default function JoinedEvents() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const [joinedEvents, setJoinedEvents] = useState(
-    allSportEvents.filter(event => event.isJoined)
-  );
+  const [joinedEvents, setJoinedEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [eventToLeave, setEventToLeave] = useState(null);
 
   useEffect(() => {
-    setJoinedEvents(allSportEvents.filter(event => event.isJoined));
+    fetchJoinedEvents();
   }, []);
 
-  useEffect(() => {
-    if (location.state?.joinedEvent) {
-      const eventId = location.state.joinedEvent;
-      const joinedEvent = allSportEvents.find(e => e.id === eventId);
-      if (joinedEvent) {
-        toast.success(`Đã tham gia sự kiện: ${joinedEvent.name}`);
-      }
-      navigate(location.pathname, { replace: true, state: {} });
+  const fetchJoinedEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await getJoinedEvents({ page: 1, limit: 50 });
+      const { events = [] } = response.data?.result || {};
+      setJoinedEvents(events);
+    } catch (error) {
+      console.error('Error fetching joined events:', error);
+      toast.error('Không thể tải danh sách sự kiện đã tham gia');
+    } finally {
+      setLoading(false);
+    }
+  }
     }
   }, [location.state, navigate]);
 

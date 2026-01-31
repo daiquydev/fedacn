@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 // * React icons
-import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie } from 'react-icons/fa'
+import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie, FaTrophy } from 'react-icons/fa'
 import { BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
-import { MdMenu, MdOutlineSpaceDashboard } from 'react-icons/md'
+import { MdMenu, MdOutlineSpaceDashboard, MdSportsSoccer } from 'react-icons/md'
 import { NavLink, useLocation } from 'react-router-dom'
 import Submenu from './SubMenu'
 import { FaPenToSquare } from 'react-icons/fa6'
@@ -184,19 +184,7 @@ export default function SideBar() {
                   Lịch Cá Nhân
                 </NavLink>
               </li>
-              {/* <li>
-                <NavLink to={'/album'} className='link-custom '>
-                  <IoMdAlbums size={25} className='min-w-max' />
-                  Album
-                </NavLink>
-              </li> */}
-              {/* <li>
-                <NavLink to={'/blog'} className='link-custom '>
-                  <FaShareAlt size={25} className='min-w-max' />
-                  Góc chia sẻ
-                </NavLink>
-              </li> */}
-              {/* <li>
+              <li>
                 <NavLink 
                   to={'/sport-event'} 
                   end
@@ -206,16 +194,6 @@ export default function SideBar() {
                   Sự kiện thể thao
                 </NavLink>
               </li>
-              <li>
-                <NavLink 
-                  to={'/challenge'} 
-                  end
-                  className='link-custom'
-                >
-                  <FaTrophy size={25} className='min-w-max' />
-                  Thử thách cộng đồng
-                </NavLink>
-              </li> */}
               {(open || isTabletMid) && subMenusList.length > 0 && (
                 <div className='border-y py-4 border-slate-300 dark:border-slate-700'>
                   <small className='pl-3 text-slate-500 dark:text-slate-400 font-medium inline-block mb-2'>

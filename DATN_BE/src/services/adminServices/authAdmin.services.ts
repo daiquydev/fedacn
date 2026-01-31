@@ -49,7 +49,7 @@ class AuthAdminService {
 
       const { iat: access_token_iat, exp: access_token_exp } = await this.decodeAccessToken(access_token)
       return {
-        access_token: `Bearer ${access_token}`,
+        access_token: access_token,
         access_token_iat,
         access_token_exp,
         user: omit(user.toObject(), ['password', 'upgrade_request'])

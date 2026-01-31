@@ -176,7 +176,7 @@ class AuthUserService {
         exp: new Date(refresh_token_exp * 1000)
       })
       return {
-        access_token: `Bearer ${access_token}`,
+        access_token: access_token,
         refresh_token,
         access_token_iat,
         access_token_exp,
@@ -219,7 +219,7 @@ class AuthUserService {
         exp: new Date(refresh_token_exp * 1000)
       })
       return {
-        access_token: `Bearer ${access_token}`,
+        access_token: access_token,
         refresh_token,
         access_token_iat,
         access_token_exp,
@@ -267,7 +267,7 @@ class AuthUserService {
         exp: new Date(refresh_token_exp * 1000)
       })
       return {
-        access_token: `Bearer ${access_token}`,
+        access_token: access_token,
         refresh_token,
         access_token_iat,
         access_token_exp,
@@ -305,7 +305,7 @@ class AuthUserService {
         exp: new Date(refresh_token_exp * 1000)
       })
       return {
-        access_token: `Bearer ${access_token}`,
+        access_token: access_token,
         refresh_token,
         access_token_iat,
         access_token_exp,
@@ -358,7 +358,7 @@ class AuthUserService {
         exp: new Date(exp * 1000)
       })
       return {
-        access_token: `Bearer ${new_access_token}`,
+        access_token: new_access_token,
         refresh_token: new_refresh_token
       }
     }

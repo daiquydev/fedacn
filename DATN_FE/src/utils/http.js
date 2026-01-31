@@ -31,8 +31,12 @@ class Http {
     this.instance.interceptors.request.use(
       (config) => {
         if (this.accessToken && config.headers) {
-          config.headers.Authorization = this.accessToken
+          config.headers.Authorization = 'Bearer ' + this.accessToken
+          console.log('📤 Sending Authorization header:', config.headers.Authorization.substring(0, 50) + '...')
           return config
+        }
+        if (!this.accessToken) {
+          console.warn('⚠️ No access token found in storage')
         }
         return config
       },
@@ -45,11 +49,15 @@ class Http {
         const { url } = response.config
         if (url === '/auth/users/login') {
           // console.log(response.data)
-          this.accessToken = response.data.result.access_token
-          this.refreshToken = response.data.result.refresh_token
-          setAccessTokenToLS(this.accessToken)
-          setRefreshTokenToLS(this.refreshToken)
-          // console.log(response.data.result.user)
+          const { access_token, refresh_token } = response.data.result || {}
+          if (access_token) {
+            this.accessToken = access_token
+            setAccessTokenToLS(access_token)
+          }
+          if (refresh_token) {
+            this.refreshToken = refresh_token
+            setRefreshTokenToLS(refresh_token)
+          }
           setProfileToLS(response.data.result.user)
         } else if (url === '/auth/users/logout') {
           this.accessToken = ''
@@ -88,7 +96,7 @@ class Http {
               console.log(access_token)
               return this.instance({
                 ...config,
-                headers: { ...config.headers, Authorization: access_token }
+                headers: { ...config.headers, Authorization: 'Bearer ' + access_token }
               })
             })
           }

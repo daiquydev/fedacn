@@ -34,6 +34,7 @@ import { initializeDatabase } from './config/initDatabase'
 import nutritionRouter from './routes/userRoutes/nutrition.routes'
 import lowdbRecipesRouter from './routes/userRoutes/lowdbRecipes.routes'
 import personalDashboardRouter from './routes/userRoutes/personalDashboard.routes'
+import sportEventRouter from './routes/userRoutes/sportEvent.routes'
 
 const app: Express = express()
 const port = envConfig.port
@@ -104,6 +105,7 @@ app.use('/api/user-meal-schedules', userMealSchedulesRouter)
 app.use('/api/lowdb-recipes', lowdbRecipesRouter)
 app.use('/api/nutrition', nutritionRouter)
 app.use('/api/personal-dashboard', personalDashboardRouter)
+app.use('/api/sport-events', sportEventRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)
 app.use('/api/admin', userAdminRouter)
@@ -121,7 +123,7 @@ async function startServer() {
     
     // Initialize database and seed data after connection
     trainRecipesRecommender()
-    initializeDatabase()
+    await initializeDatabase()
     
     httpServer.listen(port, () => {
       console.log(`Example app listening on port ${port}`)

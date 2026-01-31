@@ -73,7 +73,9 @@ const SearchImage = lazy(() => import('./pages/SearchImage'))
 const Bookmark = lazy(() => import('./pages/Bookmark'))
 const Search = lazy(() => import('./pages/Search'))
 const SportEvent = lazy(() => import('./pages/SportEvent'))
-const EventDetail = lazy(() => import('./pages/SportEvent/EventDetail'))
+const CreateSportEvent = lazy(() => import('./pages/SportEvent/CreateSportEvent'))
+const MySportEvents = lazy(() => import('./pages/SportEvent/MySportEvents'))
+const EditSportEvent = lazy(() => import('./pages/SportEvent/EditSportEvent'))
 const JoinedEvents = lazy(() => import('./pages/SportEvent/JoinedEvents'))
 const EventHistory = lazy(() => import('./pages/SportEvent/EventHistory'))
 const SportEventDetail = lazy(() => import('./pages/SportEventDetail'))
@@ -463,6 +465,36 @@ export default function useRouteElement() {
             <MainLayout>
               <Suspense>
                 <SportEvent />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/create',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <CreateSportEvent />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/edit/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <EditSportEvent />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/my-events',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MySportEvents />
               </Suspense>
             </MainLayout>
           )
