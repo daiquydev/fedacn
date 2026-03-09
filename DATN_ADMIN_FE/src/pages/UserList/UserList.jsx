@@ -3,8 +3,7 @@ import { getAllUserAdmin } from '../../apis/adminApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { omit } from 'lodash'
-import { FaSearch, FaUsers, FaUserCheck, FaUserSlash, FaFilter, FaSync } from 'react-icons/fa'
-import { MdChef } from 'react-icons/md'
+import { FaSearch, FaUsers, FaUserCheck, FaUserSlash, FaFilter, FaSync, FaUtensils } from 'react-icons/fa'
 import Loading from '../../components/GlobalComponents/Loading'
 import Pagination from '../../components/GlobalComponents/Pagination/Pagination'
 import useQueryConfig from '../../hooks/useQueryConfig'
@@ -117,7 +116,7 @@ export default function UserList() {
         <MiniStatCard icon={FaUsers} label='Tổng người dùng' value={totalUsers} color='border-l-blue-400' iconBg='bg-gradient-to-br from-blue-400 to-blue-600' />
         <MiniStatCard icon={FaUserCheck} label='Đang hoạt động' value={activeCount} color='border-l-emerald-400' iconBg='bg-gradient-to-br from-emerald-400 to-green-600' />
         <MiniStatCard icon={FaUserSlash} label='Bị khóa' value={bannedCount} color='border-l-red-400' iconBg='bg-gradient-to-br from-red-400 to-rose-600' />
-        <MiniStatCard icon={MdChef} label='Đầu bếp' value={chefCount} color='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
+        <MiniStatCard icon={FaUtensils} label='Đầu bếp' value={chefCount} color='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
       </div>
 
       {/* ── Filters ── */}
