@@ -94,7 +94,7 @@ export default function FoodBanner() {
             <div className='w-full h-full bg-black opacity-50 absolute border dark:border-none shadow shadow-red-400 md:rounded-lg top-0 left-0' />
             <div className='absolute z-10 lg:bottom-10 md:bottom-8 bottom-0 lg:px-7 md:px-10 px-4 py-4'>
               <p className='lg:text-4xl mb-2 md:text-2xl text-2xl font-semibold leading-9 text-white'>
-                Top 3 công thức hot ở <span className='text-red-500'>Cook</span>Healthy
+                Top 3 công thức hot ở <span className='text-red-500'>Fit</span>Connect
               </p>
               <p className='lg:text-2xl flex items-center mb-2  pt-5 font-normal lg:leading-9 text-white'>
                 {data?.data.result[1].title}
@@ -117,7 +117,7 @@ export default function FoodBanner() {
             <div className='w-full h-full bg-black opacity-50 absolute border dark:border-none shadow shadow-red-400 md:rounded-lg top-0 left-0' />
             <div className='absolute z-10 lg:bottom-10 md:bottom-8 bottom-0 lg:px-7 md:px-10 px-4 py-4'>
               <p className='lg:text-4xl mb-2 md:text-2xl text-2xl font-semibold leading-9 text-white'>
-                Top 3 công thức hot ở <span className='text-red-500'>Cook</span>Healthy
+                Top 3 công thức hot ở <span className='text-red-500'>Fit</span>Connect
               </p>
               <p className='lg:text-2xl flex items-center mb-2  pt-5 font-normal lg:leading-9 text-white'>
                 {data?.data.result[2].title}
