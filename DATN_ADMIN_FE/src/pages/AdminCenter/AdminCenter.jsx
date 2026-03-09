@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FaUserShield, FaBookOpen, FaUtensils, FaWarning, FaTrashAlt, FaCheckCircle } from 'react-icons/fa'
+import { FaUserShield, FaBookOpen, FaUtensils, FaExclamationTriangle, FaTrashAlt, FaCheckCircle } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 
 const makeId = () => Math.random().toString(36).slice(2, 9)
@@ -92,7 +92,7 @@ export default function AdminCenter() {
           <StatCard icon={<FaUserShield />} label='Người dùng' primary={stats.totalUsers} secondary={`${stats.suspendedUsers} bị khóa`} color='bg-blue-100 dark:bg-blue-900/40' />
           <StatCard icon={<FaUtensils />} label='Món ăn' primary={stats.totalRecipes} secondary={`${stats.hiddenRecipes} ẩn/vi phạm`} color='bg-emerald-100 dark:bg-emerald-900/40' />
           <StatCard icon={<FaBookOpen />} label='Thực đơn' primary={stats.totalMealPlans} secondary='Đang theo dõi' color='bg-amber-100 dark:bg-amber-900/40' />
-          <StatCard icon={<FaWarning />} label='Báo cáo' primary={stats.pendingReports} secondary='Chờ xử lý' color='bg-red-100 dark:bg-red-900/40' />
+          <StatCard icon={<FaExclamationTriangle />} label='Báo cáo' primary={stats.pendingReports} secondary='Chờ xử lý' color='bg-red-100 dark:bg-red-900/40' />
         </div>
 
         <section className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
