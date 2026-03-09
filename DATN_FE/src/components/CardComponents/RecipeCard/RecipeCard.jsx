@@ -19,16 +19,16 @@ import { getImageUrl } from '../../../utils/imageUrl'
 const getDummyParticipants = (recipe) => {
   // Ensure the number of participants reflects the recipe popularity
   const basedCount = recipe.total_likes || recipe.likes || 3; // Base on likes count or default to 3
-  
+
   // Generate between 3-8 participants for UI purposes, influenced by likes
   const count = Math.min(Math.max(Math.floor(basedCount / 3), 3), 8);
-  
+
   // Hardcoded followed users (in a real app, this would come from user's follow list)
   const followedIds = [1, 3, 5, 7];
-  
+
   const participants = [];
   const seed = parseInt(recipe._id?.slice(-4), 16) || 0;
-  
+
   for (let i = 0; i < count; i++) {
     const id = ((seed + i) % 15) + 1;
     participants.push({
@@ -38,7 +38,7 @@ const getDummyParticipants = (recipe) => {
       isFollowed: followedIds.includes(id)
     });
   }
-  
+
   return participants;
 };
 
@@ -168,7 +168,7 @@ export default function RecipeCard({ recipe }) {
             <span className='block text-gray-400 text-xs'>Người tạo: {recipe.user.name}</span>
           ) : (
             <span className='block text-xs text-gray-400'>
-              Người tạo: <span className='text-green-500'>Nutri</span>Community
+              Người tạo: <span className='text-green-500'>Fit</span>Connect
             </span>
           )}
 
@@ -176,10 +176,10 @@ export default function RecipeCard({ recipe }) {
             Ngày tạo: {moment(recipe.createdAt).format('MM/DD/YYYY')}
           </span>
         </div>
-        
+
         {/* Participants who have tried this recipe */}
         <div className="py-2">
-          <ParticipantsList 
+          <ParticipantsList
             participants={getDummyParticipants(recipe)}
             initialLimit={3}
             size="sm"
@@ -187,7 +187,7 @@ export default function RecipeCard({ recipe }) {
             showCount={false}
           />
         </div>
-        
+
         <div className='flex justify-between'>
           <div className='flex items-center pt-3'>
             <span onClick={handleLike}>

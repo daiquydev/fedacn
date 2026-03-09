@@ -18,7 +18,7 @@ export default function BlogDetail() {
       return getBlogForUser(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   const { data: recommendBlog } = useQuery({
@@ -34,7 +34,7 @@ export default function BlogDetail() {
       })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   //bỏ blog hiện tại ra khỏi danh sách recommend và limted 4 bài

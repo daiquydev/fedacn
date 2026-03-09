@@ -10,6 +10,7 @@ import { HiShieldCheck, HiSparkles, HiUsers } from 'react-icons/hi'
 import { MdOutlineSpaceDashboard } from 'react-icons/md'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import AdminWorkoutManager from './AdminWorkoutManager'
 
 const quickActions = [
   {
@@ -53,43 +54,43 @@ export default function AdminPanel() {
     queryKey: ['me'],
     queryFn: currentAccount,
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 60
+    staleTime: 1000
   })
 
   const { data: reportData, isLoading: isLoadingReports } = useQuery({
     queryKey: ['admin-post-reports'],
     queryFn: () => getPostReports({ page: 1, limit: 10 }),
-    staleTime: 60 * 1000
+    staleTime: 1000
   })
 
   const { data: mealPlanReportData, isLoading: isLoadingMealPlanReports } = useQuery({
     queryKey: ['admin-meal-plan-reports'],
     queryFn: () => getMealPlanReports({ page: 1, limit: 10 }),
-    staleTime: 60 * 1000
+    staleTime: 1000
   })
 
   const { data: publicPostsData, isLoading: isLoadingPosts } = useQuery({
     queryKey: ['admin-public-posts', postPage, postSearch],
     queryFn: () => getPublicPosts({ page: postPage, limit: 20, search: postSearch || undefined }),
-    staleTime: 60 * 1000
+    staleTime: 1000
   })
 
   const { data: mealPlansData, isLoading: isLoadingMealPlans } = useQuery({
     queryKey: ['admin-meal-plans', mealPage, mealSearch],
     queryFn: () => mealPlanApi.getMealPlans({ limit: 20, page: mealPage, search: mealSearch || undefined }),
-    staleTime: 60 * 1000
+    staleTime: 1000
   })
 
   const { data: recipesData, isLoading: isLoadingRecipes } = useQuery({
     queryKey: ['admin-recipes', recipePage, recipeSearch],
     queryFn: () => getInspectorRecipes({ page: recipePage, limit: 20, search: recipeSearch || undefined }),
-    staleTime: 60 * 1000
+    staleTime: 1000
   })
 
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['admin-users'],
     queryFn: () => getUsersAdmin({ page: 1, limit: 20, role: undefined, status: undefined }),
-    staleTime: 60 * 1000
+    staleTime: 1000
   })
 
   const deleteMealPlanMutation = useMutation({
@@ -658,6 +659,9 @@ export default function AdminPanel() {
         )}
         <p className='text-xs text-slate-500 mt-3'>API: /inspectors/meal-plan-reports (chỉ admin/inspector). Hiện chỉ hiển thị danh sách báo cáo, chưa có hành động xử lý.</p>
       </div>
+
+      {/* Workout Management */}
+      <AdminWorkoutManager />
     </div>
   )
 }

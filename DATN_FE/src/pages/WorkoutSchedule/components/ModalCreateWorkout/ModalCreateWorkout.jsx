@@ -116,13 +116,13 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
                 placeholder='Nhập cân nặng của bạn'
               />
               <Input
-                title='Nhập lượng calo muốn đốt cháy (cal)'
+                title='Nhập lượng kcal muốn đốt cháy (kcal)'
                 type='number'
                 name='calo_target'
                 id='calo_target'
                 register={register}
                 errors={errors.calo_target}
-                placeholder='Nhập lượng calo muốn đốt cháy của bạn'
+                placeholder='Nhập lượng kcal muốn đốt cháy của bạn'
               />
               <div className='flex flex-wrap items-center justify-between gap-1 mb-3'>
                 {' '}

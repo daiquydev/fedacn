@@ -17,7 +17,7 @@ export default function UserRecipe({ user_id }) {
       return getUserRecipe(user_id, queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   console.log(queryConfig)

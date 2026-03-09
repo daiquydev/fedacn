@@ -18,7 +18,7 @@ export default function AlbumDetail() {
       return getAlbumDetailForInspector(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   const album = data?.data.result[0]
@@ -32,7 +32,7 @@ export default function AlbumDetail() {
       })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   console.log(recipeData)

@@ -11,7 +11,7 @@ export default function HomeLanding() {
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <FaLeaf className="h-8 w-8 text-green-500" />
-                <span className="ml-2 text-xl font-bold text-green-600 dark:text-green-400">NutriCommunity</span>
+                <span className="ml-2 text-xl font-bold text-green-600 dark:text-green-400">FitConnect</span>
               </div>
               <div className="hidden md:ml-6 md:flex md:space-x-8">
                 <Link to="/" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
@@ -55,7 +55,7 @@ export default function HomeLanding() {
                     <span className="block text-green-600 dark:text-green-400">Kết Nối</span>
                   </h1>
                   <p className="mt-3 text-base text-gray-500 dark:text-gray-400 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                    Chào mừng đến với NutriCommunity - Nơi bạn có thể kết nối với cộng đồng yêu thích dinh dưỡng và sức khỏe một cách an toàn và tin cậy.
+                    Chào mừng đến với FitConnect - Nơi bạn có thể kết nối với cộng đồng yêu thích thể dục thể thao và rèn luyện sức khỏe một cách an toàn và tin cậy.
                   </p>
                   <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                     <div className="rounded-md shadow">
@@ -77,7 +77,7 @@ export default function HomeLanding() {
           <div className="lg:text-center">
             <h2 className="text-base text-green-600 dark:text-green-400 font-semibold tracking-wide uppercase">Tính năng</h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Với NutriCommunity, bạn có thể làm gì?
+              Với FitConnect, bạn có thể làm gì?
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export default function HomeLanding() {
               <ul className="mt-4 space-y-4">
                 <li>
                   <a href="#" className="text-base text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400">
-                    Email: contact@nutricommunity.com
+                    Email: contact@fitconnect.com
                   </a>
                 </li>
                 <li>
@@ -234,7 +234,7 @@ export default function HomeLanding() {
           </div>
           <div className="mt-8 border-t border-gray-200 pt-8">
             <p className="text-base text-gray-400 text-center">
-              © 2024 NutriCommunity. All rights reserved.
+              © 2024 FitConnect. All rights reserved.
             </p>
           </div>
         </div>

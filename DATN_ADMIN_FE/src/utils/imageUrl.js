@@ -1,32 +1,41 @@
-// Base URL for the API
-const API_BASE_URL = 'http://localhost:5000'
+// Base URL cho API (doi thanh env var de deploy duoc)
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000'
 
 /**
- * Convert relative image path to full URL
- * @param {string} imagePath - Relative image path from backend (e.g., "/uploads/images/posts/filename.webp")
- * @returns {string} - Full image URL
+ * Lay full URL cua anh.
+ * - Neu la Cloudinary URL (https://res.cloudinary.com/...) -> tra ve truc tiep
+ * - Neu la full URL khac -> tra ve truc tiep
+ * - Neu la relative path -> append voi API base URL
  */
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return ''
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath
+
+  if (typeof imagePath === 'object') {
+    const candidate = imagePath?.url || imagePath?.path || imagePath?.src || ''
+    return getImageUrl(candidate)
   }
-  
-  // If it starts with '/', it's already a relative path from root
-  if (imagePath.startsWith('/')) {
-    return `${API_BASE_URL}${imagePath}`
+
+  if (typeof imagePath !== 'string') return ''
+
+  const normalized = imagePath.trim()
+  if (!normalized) return ''
+
+  // Da la full URL (Cloudinary, hoac bat ky CDN nao) -> tra ve truc tiep
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized
   }
-  
-  // Otherwise, prepend with /uploads/ (fallback)
-  return `${API_BASE_URL}/uploads/${imagePath}`
+
+  // Path tuong doi bat dau bang '/'
+  if (normalized.startsWith('/')) {
+    return `${API_BASE_URL}${normalized}`
+  }
+
+  // Fallback: them /uploads/ o truoc (de tuong thich voi data cu)
+  return `${API_BASE_URL}/uploads/${normalized}`
 }
 
 /**
- * Get multiple image URLs
- * @param {string[]} imagePaths - Array of relative image paths
- * @returns {string[]} - Array of full image URLs
+ * Lay nhieu URLs
  */
 export const getImageUrls = (imagePaths) => {
   if (!Array.isArray(imagePaths)) return []

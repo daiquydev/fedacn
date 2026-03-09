@@ -19,7 +19,7 @@ export default function AlbumList() {
       return getAlbumsForInspector(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
   console.log(data)
 

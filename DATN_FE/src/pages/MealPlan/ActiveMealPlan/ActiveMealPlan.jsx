@@ -211,17 +211,17 @@ const normalizeMealItem = (meal, index = 0) => {
   const normalizedRecipe =
     recipe && typeof recipe === 'object'
       ? {
-          ...recipe,
-          _id: recipe._id || recipe.id,
-          title: recipe.title || fallbackTitle,
-          image: recipe.image || recipe.hero_image || meal.image,
-          hero_image: recipe.hero_image || recipe.image || meal.image,
-          calories: recipe.calories ?? recipe.energy ?? recipe.kcal,
-          protein: recipe.protein ?? recipe.proteins,
-          carbohydrate: recipe.carbohydrate ?? recipe.carbs,
-          fat: recipe.fat ?? recipe.fats,
-          summary: recipe.summary || recipe.description || meal.notes || ''
-        }
+        ...recipe,
+        _id: recipe._id || recipe.id,
+        title: recipe.title || fallbackTitle,
+        image: recipe.image || recipe.hero_image || meal.image,
+        hero_image: recipe.hero_image || recipe.image || meal.image,
+        calories: recipe.calories ?? recipe.energy ?? recipe.kcal,
+        protein: recipe.protein ?? recipe.proteins,
+        carbohydrate: recipe.carbohydrate ?? recipe.carbs,
+        fat: recipe.fat ?? recipe.fats,
+        summary: recipe.summary || recipe.description || meal.notes || ''
+      }
       : recipe
 
   const normalizedStatus = (() => {
@@ -268,8 +268,8 @@ const buildCookingModalData = (meal, recipeDoc, fallbackInstructions = '') => {
   const ingredients = Array.isArray(recipeDoc?.ingredients) && recipeDoc.ingredients.length
     ? recipeDoc.ingredients
     : Array.isArray(meal?.recipe_id?.ingredients) && meal.recipe_id.ingredients.length
-    ? meal.recipe_id.ingredients
-    : []
+      ? meal.recipe_id.ingredients
+      : []
 
   const rawInstructions =
     recipeDoc?.instructions ||
@@ -592,17 +592,17 @@ const ActiveMealPlan = () => {
         const fallbackTitle = meal.name || recipe.title || mealTypeLabel
         const normalizedRecipe = recipe && typeof recipe === 'object'
           ? {
-              ...recipe,
-              _id: recipe._id || recipe.id,
-              title: recipe.title || fallbackTitle,
-              image: recipe.image || meal.image,
-              hero_image: recipe.hero_image || meal.image,
-              calories: recipe.calories || recipe.energy,
-              protein: recipe.protein,
-              carbohydrate: recipe.carbohydrate,
-              fat: recipe.fat,
-              summary: recipe.summary || recipe.description || meal.notes || ''
-            }
+            ...recipe,
+            _id: recipe._id || recipe.id,
+            title: recipe.title || fallbackTitle,
+            image: recipe.image || meal.image,
+            hero_image: recipe.hero_image || meal.image,
+            calories: recipe.calories || recipe.energy,
+            protein: recipe.protein,
+            carbohydrate: recipe.carbohydrate,
+            fat: recipe.fat,
+            summary: recipe.summary || recipe.description || meal.notes || ''
+          }
           : undefined
 
         return {
@@ -919,67 +919,67 @@ const ActiveMealPlan = () => {
   return (
     <>
       <div className="min-h-screen py-6 px-4 md:px-6">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-4 hover:text-gray-900"
-      >
-        <FaChevronLeft /> Trở lại
-      </button>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-4 hover:text-gray-900"
+        >
+          <FaChevronLeft /> Trở lại
+        </button>
 
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-100 dark:border-emerald-900/50 bg-emerald-700 text-white shadow-2xl mb-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 opacity-95" />
-        {heroCover && (
-          <div className="absolute inset-0 pointer-events-none">
-            <div
-              className="w-full h-full bg-cover bg-center opacity-40 mix-blend-soft-light"
-              style={{ backgroundImage: `url(${heroCover})` }}
-            />
-          </div>
-        )}
-        <div className="relative z-10 grid lg:grid-cols-[2fr,1fr] gap-8 p-6 md:p-8">
-          <div className="space-y-5">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/70">Thực đơn đang áp dụng</p>
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight">{scheduleDetail?.title || 'Chưa có thực đơn hoạt động'}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-white/85">
-              <span className="px-3 py-1 rounded-full border border-white/40 text-xs font-semibold tracking-wide">
-                {statusBadge?.label || 'Đang áp dụng'}
-              </span>
-              {scheduleStartDate && (
-                <span className="inline-flex items-center gap-1">
-                  <FaCalendarAlt /> Bắt đầu: {formatDate(scheduleStartDate)}
-                </span>
-              )}
-              {scheduleEndDate && (
-                <span className="inline-flex items-center gap-1">
-                  <FaClock /> Kết thúc: {formatDate(scheduleEndDate)}
-                </span>
-              )}
-              {scheduleDetail?.duration && <span>{scheduleDetail.duration} ngày</span>}
+        <div className="relative overflow-hidden rounded-3xl border border-emerald-100 dark:border-emerald-900/50 bg-emerald-700 text-white shadow-2xl mb-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 opacity-95" />
+          {heroCover && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div
+                className="w-full h-full bg-cover bg-center opacity-40 mix-blend-soft-light"
+                style={{ backgroundImage: `url(${heroCover})` }}
+              />
             </div>
-            <p className="text-sm text-white/85">
-              {todaySummary?.meals?.length
-                ? `Hôm nay có ${todaySummary.meals.length} bữa • ${todaySummary.nutrition?.calories || 0} kcal${todayTeaser ? ` • ${todayTeaser}` : ''}`
-                : 'Áp dụng thực đơn để theo dõi hành trình ăn uống của bạn theo phong cách mạng xã hội.'}
-            </p>
-            {planTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {planTags.map((tag) => (
-                  <span key={tag} className="px-3 py-1 rounded-full bg-white/15 text-xs font-semibold tracking-wide">
-                    #{tag}
+          )}
+          <div className="relative z-10 grid lg:grid-cols-[2fr,1fr] gap-8 p-6 md:p-8">
+            <div className="space-y-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Thực đơn đang áp dụng</p>
+              <h1 className="text-3xl md:text-4xl font-bold leading-tight">{scheduleDetail?.title || 'Chưa có thực đơn hoạt động'}</h1>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-white/85">
+                <span className="px-3 py-1 rounded-full border border-white/40 text-xs font-semibold tracking-wide">
+                  {statusBadge?.label || 'Đang áp dụng'}
+                </span>
+                {scheduleStartDate && (
+                  <span className="inline-flex items-center gap-1">
+                    <FaCalendarAlt /> Bắt đầu: {formatDate(scheduleStartDate)}
                   </span>
-                ))}
+                )}
+                {scheduleEndDate && (
+                  <span className="inline-flex items-center gap-1">
+                    <FaClock /> Kết thúc: {formatDate(scheduleEndDate)}
+                  </span>
+                )}
+                {scheduleDetail?.duration && <span>{scheduleDetail.duration} ngày</span>}
               </div>
-            )}
-            <div className="flex flex-wrap gap-3">
-              {/* actions, badges, etc. could go here */}
-            </div>
-            <div
-              className="w-28 h-28 rounded-full flex items-center justify-center"
-              style={{
-                background: `conic-gradient(#ffffff ${(completionPercent || 0) * 3.6}deg, rgba(255,255,255,0.2) 0)`
-              }}
-            >
+              <p className="text-sm text-white/85">
+                {todaySummary?.meals?.length
+                  ? `Hôm nay có ${todaySummary.meals.length} bữa • ${todaySummary.nutrition?.calories || 0} kcal${todayTeaser ? ` • ${todayTeaser}` : ''}`
+                  : 'Áp dụng thực đơn để theo dõi hành trình ăn uống của bạn theo phong cách mạng xã hội.'}
+              </p>
+              {planTags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {planTags.map((tag) => (
+                    <span key={tag} className="px-3 py-1 rounded-full bg-white/15 text-xs font-semibold tracking-wide">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3">
+                {/* actions, badges, etc. could go here */}
+              </div>
+              <div
+                className="w-28 h-28 rounded-full flex items-center justify-center"
+                style={{
+                  background: `conic-gradient(#ffffff ${(completionPercent || 0) * 3.6}deg, rgba(255,255,255,0.2) 0)`
+                }}
+              >
                 <div className="w-20 h-20 bg-white/90 text-emerald-600 rounded-full flex flex-col items-center justify-center">
                   <span className="text-2xl font-bold">{completionPercent}%</span>
                   <span className="text-[10px] uppercase tracking-wide text-emerald-700">tiến độ</span>
@@ -1090,11 +1090,10 @@ const ActiveMealPlan = () => {
                           key={dateKey}
                           type="button"
                           onClick={() => setSelectedDate(dateKey)}
-                          className={`px-3 py-1 rounded-full border text-sm transition-colors ${
-                            isActive
+                          className={`px-3 py-1 rounded-full border text-sm transition-colors ${isActive
                               ? 'bg-emerald-600 border-emerald-600 text-white'
                               : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-400'
-                          }`}
+                            }`}
                           title={formatDate(dateKey)}
                         >
                           Ngày {dayNumber || '?'} ({formatShortDate(dateKey)})
@@ -1149,7 +1148,7 @@ const ActiveMealPlan = () => {
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-300">
                         <p className="font-semibold text-gray-900 dark:text-white">Mục tiêu hằng ngày</p>
-                        <p>Calories: {goalNutrition.calories || '—'}</p>
+                        <p>kcal: {goalNutrition.calories || '—'}</p>
                         <p>Protein: {goalNutrition.protein || '—'} g</p>
                         <p>Carbs: {goalNutrition.carbs || '—'} g</p>
                         <p>Chất béo: {goalNutrition.fat || '—'} g</p>
@@ -1237,7 +1236,7 @@ const ActiveMealPlan = () => {
                           <div className="flex items-center gap-2 text-gray-700 dark:text-gray-100">
                             <FaFireAlt className="text-emerald-500" />
                             <div>
-                              <p className="text-xs text-gray-500">Calories</p>
+                              <p className="text-xs text-gray-500">kcal</p>
                               <p className="font-semibold">{nextDayNutrition.calories}</p>
                             </div>
                           </div>
@@ -1448,9 +1447,8 @@ const ActiveMealPlan = () => {
                                     type="button"
                                     onClick={() => handleCompleteMeal(meal._id)}
                                     disabled={isFutureSelectedDate}
-                                    className={`px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm hover:bg-emerald-50 ${
-                                      isFutureSelectedDate ? 'opacity-60 cursor-not-allowed' : ''
-                                    }`}
+                                    className={`px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm hover:bg-emerald-50 ${isFutureSelectedDate ? 'opacity-60 cursor-not-allowed' : ''
+                                      }`}
                                   >
                                     Đánh dấu hoàn thành
                                   </button>
@@ -1458,9 +1456,8 @@ const ActiveMealPlan = () => {
                                     type="button"
                                     onClick={() => handleSkipMeal(meal._id)}
                                     disabled={isFutureSelectedDate}
-                                    className={`px-4 py-2 border border-amber-500 text-amber-600 rounded-lg text-sm hover:bg-amber-50 ${
-                                      isFutureSelectedDate ? 'opacity-60 cursor-not-allowed' : ''
-                                    }`}
+                                    className={`px-4 py-2 border border-amber-500 text-amber-600 rounded-lg text-sm hover:bg-amber-50 ${isFutureSelectedDate ? 'opacity-60 cursor-not-allowed' : ''
+                                      }`}
                                   >
                                     Bỏ qua bữa này
                                   </button>
@@ -1630,7 +1627,7 @@ const ActiveMealPlan = () => {
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Thông tin dinh dưỡng</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 rounded-lg p-3 text-center">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Calories</p>
+                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">kcal</p>
                       <p className="text-lg font-semibold text-gray-900 dark:text-white">{cookingModal.nutrition.calories}</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 rounded-lg p-3 text-center">

@@ -136,11 +136,11 @@ export default function ModalUpdateHealthProfile({ handleCloseModalUpdateHealthP
           </div>
 
           <div className="border dark:border-gray-600 border-red-200"></div>
-          
+
           <form noValidate onSubmit={onSubmit} className="p-4">
             <div className="mb-6">
               <h4 className="text-sm uppercase font-semibold text-gray-600 dark:text-gray-300 mb-3">Thông tin cơ bản</h4>
-              
+
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
                   Giới tính sinh học <span className="text-red-500">*</span>
@@ -183,7 +183,7 @@ export default function ModalUpdateHealthProfile({ handleCloseModalUpdateHealthP
                   errors={errors.age}
                   placeholder="Nhập tuổi"
                 />
-                
+
                 <Input
                   title="Chiều cao (cm)"
                   type="number"
@@ -193,7 +193,7 @@ export default function ModalUpdateHealthProfile({ handleCloseModalUpdateHealthP
                   errors={errors.height}
                   placeholder="Nhập chiều cao"
                 />
-                
+
                 <Input
                   title="Cân nặng (kg)"
                   type="number"
@@ -208,7 +208,7 @@ export default function ModalUpdateHealthProfile({ handleCloseModalUpdateHealthP
 
             <div className="mb-6">
               <h4 className="text-sm uppercase font-semibold text-gray-600 dark:text-gray-300 mb-3">Hoạt động & Mục tiêu</h4>
-              
+
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
                   Mức độ hoạt động thể chất hàng ngày <span className="text-red-500">*</span>
@@ -263,44 +263,47 @@ export default function ModalUpdateHealthProfile({ handleCloseModalUpdateHealthP
               )}
             </div>
 
-            <div className="mb-6">
-              <h4 className="text-sm uppercase font-semibold text-gray-600 dark:text-gray-300 mb-3">Sở thích & Hạn chế ăn uống (Tùy chọn)</h4>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
-                  Chế độ ăn kiêng đặc biệt
-                </label>
-                <select
-                  {...register('dietary_preferences')}
-                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="">Không có</option>
-                  <option value="Ăn chay">Ăn chay (Vegetarian)</option>
-                  <option value="Ăn thuần chay">Ăn thuần chay (Vegan)</option>
-                  <option value="Keto">Keto</option>
-                  <option value="Low-carb">Low-carb</option>
-                  <option value="Paleo">Paleo</option>
-                  <option value="Không Gluten">Không Gluten</option>
-                  <option value="Không Lactose">Không Lactose</option>
-                </select>
-              </div>
+            {/* Sở thích & Hạn chế ăn uống - tạm ẩn vì tính năng thực đơn chưa hiện thực */}
+            {false && (
+              <div className="mb-6">
+                <h4 className="text-sm uppercase font-semibold text-gray-600 dark:text-gray-300 mb-3">Sở thích &amp; Hạn chế ăn uống (Tùy chọn)</h4>
 
-              <div className="mb-4">
-                <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
-                  Thực phẩm dị ứng hoặc không thích
-                </label>
-                <textarea
-                  {...register('allergies')}
-                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-white"
-                  placeholder="Nhập các thực phẩm dị ứng hoặc không thích (cách nhau bằng dấu phẩy)"
-                  rows="3"
-                ></textarea>
+                <div className="mb-4">
+                  <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+                    Chế độ ăn kiêng đặc biệt
+                  </label>
+                  <select
+                    {...register('dietary_preferences')}
+                    className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value="">Không có</option>
+                    <option value="Ăn chay">Ăn chay (Vegetarian)</option>
+                    <option value="Ăn thuần chay">Ăn thuần chay (Vegan)</option>
+                    <option value="Keto">Keto</option>
+                    <option value="Low-carb">Low-carb</option>
+                    <option value="Paleo">Paleo</option>
+                    <option value="Không Gluten">Không Gluten</option>
+                    <option value="Không Lactose">Không Lactose</option>
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+                    Thực phẩm dị ứng hoặc không thích
+                  </label>
+                  <textarea
+                    {...register('allergies')}
+                    className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-white"
+                    placeholder="Nhập các thực phẩm dị ứng hoặc không thích (cách nhau bằng dấu phẩy)"
+                    rows="3"
+                  ></textarea>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-lg mb-4">
               <p className="text-sm text-gray-700 dark:text-gray-200">
-                <span className="font-semibold">Lưu ý:</span> Các thông tin này được sử dụng để tính toán các chỉ số sức khỏe và đề xuất phù hợp với bạn. 
+                <span className="font-semibold">Lưu ý:</span> Các thông tin này được sử dụng để tính toán các chỉ số sức khỏe và đề xuất phù hợp với bạn.
                 Dữ liệu của bạn được bảo mật và chỉ được sử dụng để cá nhân hóa trải nghiệm của bạn.
               </p>
             </div>

@@ -8,7 +8,8 @@ import {
   joinSportEventController,
   leaveSportEventController,
   getMyEventsController,
-  getJoinedEventsController
+  getJoinedEventsController,
+  inviteFriendToEventController
 } from '~/controllers/userControllers/sportEvent.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -16,6 +17,7 @@ import sportEventSessionRouter from './sportEventSession.routes'
 import sportEventProgressRouter from './sportEventProgress.routes'
 import sportEventPostRouter from './sportEventPost.routes'
 import sportEventAttendanceRouter from './sportEventAttendance.routes'
+import activityTrackingRouter from './activityTracking.routes'
 import {
   createEventCommentController,
   getEventCommentsController,
@@ -25,6 +27,8 @@ import {
 import {
   shareEventPostController
 } from '~/controllers/userControllers/sportEventPost.controller'
+
+import videoSessionRouter from './sportEventVideoSession.routes'
 
 const sportEventRouter = Router()
 
@@ -42,6 +46,8 @@ sportEventRouter.put('/:id', verifyToken, wrapRequestHandler(updateSportEventCon
 sportEventRouter.delete('/:id', verifyToken, wrapRequestHandler(deleteSportEventController))
 sportEventRouter.post('/:id/join', verifyToken, wrapRequestHandler(joinSportEventController))
 sportEventRouter.post('/:id/leave', verifyToken, wrapRequestHandler(leaveSportEventController))
+sportEventRouter.post('/:id/invite', verifyToken, wrapRequestHandler(inviteFriendToEventController))
+
 
 // Post Comments Routes
 sportEventRouter.post('/posts/:postId/comments', verifyToken, wrapRequestHandler(createEventCommentController))
@@ -57,6 +63,9 @@ sportEventRouter.use('/:eventId/sessions', sportEventSessionRouter)
 sportEventRouter.use('/:eventId/progress', sportEventProgressRouter)
 sportEventRouter.use('/:eventId/posts', sportEventPostRouter)
 sportEventRouter.use('/:eventId/sessions/:sessionId', sportEventAttendanceRouter)
+sportEventRouter.use('/:eventId/activities', activityTrackingRouter)
+sportEventRouter.use('/:eventId/video-sessions', videoSessionRouter)
 
 export default sportEventRouter
+
 

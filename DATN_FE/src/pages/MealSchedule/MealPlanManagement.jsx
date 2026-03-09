@@ -9,7 +9,7 @@ export default function MealPlanManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  
+
   // Mô phỏng fetch dữ liệu
   useEffect(() => {
     setTimeout(() => {
@@ -91,12 +91,12 @@ export default function MealPlanManagement() {
           startDate: null
         }
       ];
-      
+
       setMealPlans(mockMealPlans);
       setLoading(false);
     }, 800);
   }, []);
-  
+
   // Filter meal plans based on search query and filter type
   const getFilteredMealPlans = () => {
     return mealPlans.filter(plan => {
@@ -104,7 +104,7 @@ export default function MealPlanManagement() {
       if (searchQuery && !plan.title.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-      
+
       // Filter by type
       if (filterType === 'active' && !plan.active) {
         return false;
@@ -113,18 +113,18 @@ export default function MealPlanManagement() {
       } else if (filterType !== 'all' && filterType !== 'active' && filterType !== 'bookmarked' && plan.type !== filterType) {
         return false;
       }
-      
+
       return true;
     });
   };
-  
+
   // Toggle bookmark status
   const handleToggleBookmark = (id) => {
-    setMealPlans(prevPlans => prevPlans.map(plan => 
+    setMealPlans(prevPlans => prevPlans.map(plan =>
       plan.id === id ? { ...plan, bookmarked: !plan.bookmarked } : plan
     ));
   };
-  
+
   // Toggle like status
   const handleToggleLike = (id) => {
     setMealPlans(prevPlans => prevPlans.map(plan => {
@@ -135,29 +135,29 @@ export default function MealPlanManagement() {
       return plan;
     }));
   };
-  
+
   // Start a meal plan
   const handleStartPlan = (id) => {
     // In a real app, you would call an API to start the plan
     // For this demo, we'll just update the local state
     const today = new Date().toISOString();
-    
-    setMealPlans(prevPlans => prevPlans.map(plan => 
-      plan.id === id ? { 
-        ...plan, 
-        active: true, 
+
+    setMealPlans(prevPlans => prevPlans.map(plan =>
+      plan.id === id ? {
+        ...plan,
+        active: true,
         startDate: today,
         progress: 0,
         daysCompleted: 0
       } : plan
     ));
-    
+
     // Navigate to the meal schedule page
     navigate('/schedule/my-eat-schedule');
   };
-  
+
   const filteredMealPlans = getFilteredMealPlans();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -165,7 +165,7 @@ export default function MealPlanManagement() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen py-6 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -178,7 +178,7 @@ export default function MealPlanManagement() {
           </p>
         </div>
       </div>
-      
+
       {/* Search and filters */}
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
@@ -193,16 +193,16 @@ export default function MealPlanManagement() {
             className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
-        
+
         <div className="relative">
           <button
             onClick={() => setShowFilterMenu(!showFilterMenu)}
             className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center"
           >
-            <FaFilter className="mr-2" /> 
-            {filterType === 'all' ? 'Tất cả thực đơn' : 
-             filterType === 'active' ? 'Đang theo dõi' : 
-             filterType === 'bookmarked' ? 'Đã lưu' : filterType}
+            <FaFilter className="mr-2" />
+            {filterType === 'all' ? 'Tất cả thực đơn' :
+              filterType === 'active' ? 'Đang theo dõi' :
+                filterType === 'bookmarked' ? 'Đã lưu' : filterType}
             {showFilterMenu && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-1 z-10 border border-gray-200 dark:border-gray-700">
                 <button
@@ -274,19 +274,19 @@ export default function MealPlanManagement() {
           </button>
         </div>
       </div>
-      
+
       {/* Meal Plans Grid */}
       {filteredMealPlans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMealPlans.map((plan) => (
-            <div 
+            <div
               key={plan.id}
               className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
             >
               <div className="relative">
-                <img 
-                  src={plan.image} 
-                  alt={plan.title} 
+                <img
+                  src={plan.image}
+                  alt={plan.title}
                   className="w-full h-40 object-cover"
                 />
                 <div className="absolute top-2 right-2 flex space-x-2">
@@ -295,11 +295,10 @@ export default function MealPlanManagement() {
                       e.stopPropagation();
                       handleToggleBookmark(plan.id);
                     }}
-                    className={`p-2 rounded-full ${
-                      plan.bookmarked 
+                    className={`p-2 rounded-full ${plan.bookmarked
                         ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
                         : 'bg-gray-800/40 text-white hover:bg-gray-800/60'
-                    }`}
+                      }`}
                     aria-label={plan.bookmarked ? 'Bỏ lưu' : 'Lưu'}
                   >
                     <FaBookmark />
@@ -330,7 +329,7 @@ export default function MealPlanManagement() {
                 )}
               </div>
               <div className="p-4">
-                <h2 
+                <h2
                   className="text-lg font-semibold text-gray-900 dark:text-white mb-1 cursor-pointer hover:text-green-600 dark:hover:text-green-400"
                   onClick={() => navigate(`/meal-plan/${plan.id}`)}
                 >
@@ -339,18 +338,18 @@ export default function MealPlanManagement() {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
                   {plan.description}
                 </p>
-                
+
                 <div className="flex items-center mb-4">
-                  <img 
-                    src={plan.authorAvatar} 
-                    alt={plan.author} 
+                  <img
+                    src={plan.authorAvatar}
+                    alt={plan.author}
                     className="w-6 h-6 rounded-full mr-2"
                   />
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {plan.author} · {new Date(plan.createdAt).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="text-center p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <FaRegCalendarAlt className="mx-auto text-blue-500 dark:text-blue-400 mb-1" />
@@ -364,11 +363,11 @@ export default function MealPlanManagement() {
                   </div>
                   <div className="text-center p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <FaFire className="mx-auto text-orange-500 dark:text-orange-400 mb-1" />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Calo</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">kcal</p>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{plan.totalCalories}</p>
                   </div>
                 </div>
-                
+
                 {plan.active ? (
                   <div>
                     <div className="mb-2">
@@ -379,8 +378,8 @@ export default function MealPlanManagement() {
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
-                        <div 
-                          className="bg-green-600 h-1.5 rounded-full" 
+                        <div
+                          className="bg-green-600 h-1.5 rounded-full"
                           style={{ width: `${plan.progress}%` }}
                         />
                       </div>
@@ -400,18 +399,17 @@ export default function MealPlanManagement() {
                     Bắt đầu ngay
                   </button>
                 )}
-                
+
                 <div className="flex justify-between items-center mt-3">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleLike(plan.id);
                     }}
-                    className={`flex items-center text-sm ${
-                      plan.liked 
+                    className={`flex items-center text-sm ${plan.liked
                         ? 'text-red-600 dark:text-red-400'
                         : 'text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400'
-                    }`}
+                      }`}
                   >
                     <FaHeart className="mr-1" /> {plan.likes}
                   </button>

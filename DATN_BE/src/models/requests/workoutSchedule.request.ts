@@ -20,7 +20,6 @@ export interface CreateWorkoutItemsBody {
     workout_schedule_id: string
     activity_name: string
     time: number
-    met: number
     current_date: Date
   }[]
 }

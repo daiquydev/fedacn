@@ -21,7 +21,7 @@ export default function MePost({ user }) {
       return nextPage
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   const content = data?.pages.map((dataMePost) =>

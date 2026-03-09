@@ -19,7 +19,7 @@ export default function Recipe() {
       return getCategoryRecipes()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const fetchRecipes = async ({ pageParam }) => {
@@ -37,7 +37,7 @@ export default function Recipe() {
       return nextPage
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   const handleChangeSort = (e) => {
@@ -318,7 +318,7 @@ export default function Recipe() {
                 >
                   <option value='all'>Bài viết</option>
                   <option value='0'>Đầu bếp</option>
-                  <option value='1'>NutriCommunity</option>
+                  <option value='1'>FitConnect</option>
                 </select>
 
                 {isLoadingCategory ? (

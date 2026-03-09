@@ -44,9 +44,9 @@ export default function MealPlan() {
     const params = {
       page: filter.page,
       limit: filter.limit,
-      sort: filter.sort_by === 'created_at' && filter.sort_order === 'desc' ? 'newest' : 
-            filter.sort_by === 'created_at' && filter.sort_order === 'asc' ? 'oldest' :
-            filter.sort_by === 'likes_count' && filter.sort_order === 'desc' ? 'popular' : 'newest',
+      sort: filter.sort_by === 'created_at' && filter.sort_order === 'desc' ? 'newest' :
+        filter.sort_by === 'created_at' && filter.sort_order === 'asc' ? 'oldest' :
+          filter.sort_by === 'likes_count' && filter.sort_order === 'desc' ? 'popular' : 'newest',
       search: searchTerm || undefined,
       category: filter.category || undefined,
       duration: filter.duration_filter || undefined
@@ -162,261 +162,266 @@ export default function MealPlan() {
   }
 
   return (
-    <div className="min-h-screen py-6 px-4 md:px-6">
-      {/* Header with title and create button */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white flex items-center">
-            <FaUtensils className="mr-2 text-green-600 dark:text-green-400" />
-            Thực Đơn Cộng Đồng
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Khám phá và chia sẻ các thực đơn dinh dưỡng từ cộng đồng
-          </p>
-        </div>
-        <div className="flex gap-3 mt-4 md:mt-0">
-          <button 
-            onClick={handleOpenCreateRecipeModal}
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow flex items-center transition-colors"
-          >
-            <FaCookieBite className="mr-2" /> Tạo Món Ăn
-          </button>
-          <button 
-            onClick={handleOpenCreateModal}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors"
-          >
-            <FaPlus className="mr-2" /> Tạo Thực Đơn
-          </button>
-        </div>
-      </div>
-
-      {/* Search and filter section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Search input */}
-          <div className="lg:col-span-2">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm thực đơn..."
-                className="w-full py-2 pl-10 pr-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <AiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-xl" />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Page Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-6">
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 max-w-6xl mx-auto">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <FaUtensils className="text-white text-2xl" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Thực Đơn Cộng Đồng</h1>
+              <p className="text-white/75 text-sm mt-0.5">Khám phá và chia sẻ các thực đơn dinh dưỡng từ cộng đồng</p>
             </div>
           </div>
-
-          {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 col-span-full lg:col-span-2">
-            {/* Sort filter */}
-            <div className="relative w-full">
-              <select
-                className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
-                value={
-                  filter.sort_by === 'created_at' && filter.sort_order === 'desc' ? 'newest' :
-                  filter.sort_by === 'created_at' && filter.sort_order === 'asc' ? 'oldest' :
-                  filter.sort_by === 'likes_count' && filter.sort_order === 'desc' ? 'popular' : 'newest'
-                }
-                onChange={(e) => handleFilterChange('sort', e.target.value)}
-              >
-                <option value="newest">Mới nhất</option>
-                <option value="oldest">Cũ nhất</option>
-                <option value="popular">Phổ biến nhất</option>
-              </select>
-              <FaSortAmountDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z"/></svg>
-              </div>
-            </div>
-
-            {/* Duration filter */}
-            <div className="relative w-full">
-              <select
-                className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
-                value={
-                  filter.duration_filter === '1-3' ? 'short' :
-                  filter.duration_filter === '4-7' ? 'medium' :
-                  filter.duration_filter === '8+' ? 'long' : 'all'
-                }
-                onChange={(e) => handleFilterChange('duration', e.target.value)}
-              >
-                <option value="all">Tất cả thời gian</option>
-                <option value="short">Ngắn (≤ 3 ngày)</option>
-                <option value="medium">Trung bình (4-7 ngày)</option>
-                <option value="long">Dài (&gt; 7 ngày)</option>
-              </select>
-              <IoMdTime className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z"/></svg>
-              </div>
-            </div>
-
-            {/* Category filter */}
-            <div className="relative w-full">
-              <select
-                className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
-                value={filter.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-              >
-                <option value="all">Tất cả loại</option>
-                {Object.entries(MEAL_PLAN_CATEGORIES).map(([id, name]) => (
-                  <option key={id} value={id}>{name}</option>
-                ))}
-              </select>
-              <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z"/></svg>
-              </div>
-            </div>
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick={handleOpenCreateRecipeModal}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-xl transition backdrop-blur"
+            >
+              <FaCookieBite /> Tạo Món Ăn
+            </button>
+            <button
+              onClick={handleOpenCreateModal}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-green-700 hover:bg-gray-50 text-sm font-semibold rounded-xl transition shadow-lg"
+            >
+              <FaPlus /> Tạo Thực Đơn
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-        </div>
-      )}
+      <div className="py-6 px-4 md:px-6">
 
-      {/* Error State */}
-      {error && (
-        <div className="text-center py-20">
-          <div className="text-red-500 mb-4">Đã xảy ra lỗi: {error}</div>
-          <button 
-            onClick={() => fetchMealPlans()}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-          >
-            Thử lại
-          </button>
-        </div>
-      )}
-
-      {/* Meal Plans Grid */}
-      {!loading && !error && (
-        <>
-          {mealPlans.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mealPlans.map(plan => (
-                <MealPlanCard 
-                  key={plan._id} 
-                  plan={plan} 
-                  onClick={() => navigate(`/meal-plan/${plan._id}`)}
-                  onAction={handleMealPlanAction}
+        {/* Search and filter section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* Search input */}
+            <div className="lg:col-span-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm thực đơn..."
+                  className="w-full py-2 pl-10 pr-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              ))}
+                <AiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-xl" />
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-20">
-              <FaCalendarAlt className="mx-auto text-5xl text-gray-400 dark:text-gray-600 mb-4" />
-              <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400">Không tìm thấy thực đơn nào</h3>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">Thử điều chỉnh bộ lọc hoặc tạo thực đơn mới</p>
-              <button 
-                onClick={handleOpenCreateModal}
-                className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
-              >
-                <FaPlus className="mr-2" /> Tạo Thực Đơn
-              </button>
-              <button 
-                onClick={handleOpenCreateRecipeModal}
-                className="mt-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
-              >
-                <FaCookieBite className="mr-2" /> Tạo Món Ăn
-              </button>
-            </div>
-          )}
 
-          {/* Load more button */}
-          {pagination && pagination.current_page < pagination.total_pages && (
-            <div className="flex justify-center mt-8">
-              <button 
-                onClick={handleLoadMore}
-                disabled={loading}
-                className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Đang tải...' : 'Xem thêm'}
-              </button>
-            </div>
-          )}
-        </>
-      )}
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 col-span-full lg:col-span-2">
+              {/* Sort filter */}
+              <div className="relative w-full">
+                <select
+                  className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
+                  value={
+                    filter.sort_by === 'created_at' && filter.sort_order === 'desc' ? 'newest' :
+                      filter.sort_by === 'created_at' && filter.sort_order === 'asc' ? 'oldest' :
+                        filter.sort_by === 'likes_count' && filter.sort_order === 'desc' ? 'popular' : 'newest'
+                  }
+                  onChange={(e) => handleFilterChange('sort', e.target.value)}
+                >
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="popular">Phổ biến nhất</option>
+                </select>
+                <FaSortAmountDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z" /></svg>
+                </div>
+              </div>
 
-      {/* Create Meal Plan Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
-            onClick={() => setShowCreateModal(false)}
-          ></div>
-          
-          {/* Modal Content */}
-          <div 
-            ref={createModalRef} 
-            className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-4 my-6 z-20 max-h-[92vh] overflow-y-auto"
-          >
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                <FaPlus className="mr-2 text-green-500" /> Tạo Thực Đơn Mới
-              </h2>
-              <button 
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            
-            {/* Modal Body */}
-            <div className="p-4 sm:p-6">
-              <CreateMealPlanModal 
-                onClose={handleCloseCreateModal} 
-                onCreate={createMealPlan}
-              />
+              {/* Duration filter */}
+              <div className="relative w-full">
+                <select
+                  className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
+                  value={
+                    filter.duration_filter === '1-3' ? 'short' :
+                      filter.duration_filter === '4-7' ? 'medium' :
+                        filter.duration_filter === '8+' ? 'long' : 'all'
+                  }
+                  onChange={(e) => handleFilterChange('duration', e.target.value)}
+                >
+                  <option value="all">Tất cả thời gian</option>
+                  <option value="short">Ngắn (≤ 3 ngày)</option>
+                  <option value="medium">Trung bình (4-7 ngày)</option>
+                  <option value="long">Dài (&gt; 7 ngày)</option>
+                </select>
+                <IoMdTime className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z" /></svg>
+                </div>
+              </div>
+
+              {/* Category filter */}
+              <div className="relative w-full">
+                <select
+                  className="appearance-none w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 text-sm"
+                  value={filter.category}
+                  onChange={(e) => handleFilterChange('category', e.target.value)}
+                >
+                  <option value="all">Tất cả loại</option>
+                  {Object.entries(MEAL_PLAN_CATEGORIES).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+                <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <svg className="w-4 h-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.71 3.916c-.533.531-1.391.531-1.924 0l-3.71-3.916c-.408-.418-.436-1.17 0-1.615z" /></svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Create Recipe Modal */}
-      {showCreateRecipeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
-            onClick={() => setShowCreateRecipeModal(false)}
-          ></div>
-          
-          {/* Modal Content */}
-          <div 
-            ref={createRecipeModalRef} 
-            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl mx-4 my-4 z-20 max-h-[90vh] overflow-y-auto"
-          >
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                <FaCookieBite className="mr-2 text-orange-500" /> Tạo Món Ăn Mới
-              </h2>
-              <button 
-                onClick={() => setShowCreateRecipeModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            
-            {/* Modal Body */}
-            <div className="p-4 sm:p-6">
-              <CreateRecipeModal 
-                onClose={handleCloseCreateRecipeModal} 
-                onRecipeCreated={handleRecipeCreated}
-              />
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-20">
+            <div className="text-red-500 mb-4">Đã xảy ra lỗi: {error}</div>
+            <button
+              onClick={() => fetchMealPlans()}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
+
+        {/* Meal Plans Grid */}
+        {!loading && !error && (
+          <>
+            {mealPlans.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mealPlans.map(plan => (
+                  <MealPlanCard
+                    key={plan._id}
+                    plan={plan}
+                    onClick={() => navigate(`/meal-plan/${plan._id}`)}
+                    onAction={handleMealPlanAction}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <FaCalendarAlt className="mx-auto text-5xl text-gray-400 dark:text-gray-600 mb-4" />
+                <h3 className="text-xl font-medium text-gray-500 dark:text-gray-400">Không tìm thấy thực đơn nào</h3>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">Thử điều chỉnh bộ lọc hoặc tạo thực đơn mới</p>
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
+                >
+                  <FaPlus className="mr-2" /> Tạo Thực Đơn
+                </button>
+                <button
+                  onClick={handleOpenCreateRecipeModal}
+                  className="mt-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow flex items-center transition-colors mx-auto"
+                >
+                  <FaCookieBite className="mr-2" /> Tạo Món Ăn
+                </button>
+              </div>
+            )}
+
+            {/* Load more button */}
+            {pagination && pagination.current_page < pagination.total_pages && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loading}
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Đang tải...' : 'Xem thêm'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Create Meal Plan Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+              onClick={() => setShowCreateModal(false)}
+            ></div>
+
+            {/* Modal Content */}
+            <div
+              ref={createModalRef}
+              className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-4 my-6 z-20 max-h-[92vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <FaPlus className="mr-2 text-green-500" /> Tạo Thực Đơn Mới
+                </h2>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FaTimes size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 sm:p-6">
+                <CreateMealPlanModal
+                  onClose={handleCloseCreateModal}
+                  onCreate={createMealPlan}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Create Recipe Modal */}
+        {showCreateRecipeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+              onClick={() => setShowCreateRecipeModal(false)}
+            ></div>
+
+            {/* Modal Content */}
+            <div
+              ref={createRecipeModalRef}
+              className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl mx-4 my-4 z-20 max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <FaCookieBite className="mr-2 text-orange-500" /> Tạo Món Ăn Mới
+                </h2>
+                <button
+                  onClick={() => setShowCreateRecipeModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FaTimes size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 sm:p-6">
+                <CreateRecipeModal
+                  onClose={handleCloseCreateRecipeModal}
+                  onRecipeCreated={handleRecipeCreated}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

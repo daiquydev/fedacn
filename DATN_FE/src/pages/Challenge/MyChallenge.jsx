@@ -1,403 +1,252 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { FaTrophy, FaCalendarAlt, FaRunning, FaSwimmer, FaBiking, FaDumbbell, FaMedal, FaUpload, FaImage, FaVideo, FaCheck, FaChartBar, FaCloudUploadAlt, FaTimes, FaSync } from 'react-icons/fa'
-import { MdDirectionsWalk } from 'react-icons/md'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { FaDumbbell, FaClock, FaCalendarAlt, FaHistory, FaFire, FaRedo, FaChevronDown, FaChevronUp, FaCheckCircle } from 'react-icons/fa'
+import { GiWeightLiftingUp, GiMuscleUp } from 'react-icons/gi'
+import { MdFitnessCenter } from 'react-icons/md'
+import { getWorkoutHistory } from '../../apis/workoutSessionApi'
 import moment from 'moment'
-import { toast } from 'react-hot-toast'
-import ChallengeProgress from './components/ChallengeProgress'
-import SmartWatchSync from './components/SmartWatchSync'
+import 'moment/locale/vi'
 
-// Mock data
-const mockMyChallenges = [
-  {
-    id: 1,
-    title: "30 Days Running Challenge",
-    startDate: "2025-03-30T00:00:00Z",
-    endDate: "2025-04-30T23:59:59Z",
-    category: "Running",
-    targetValue: 100,
-    targetUnit: "km",
-    currentValue: 65,
-    progress: 65,
-    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5",
-    streak: 5,
-    lastUpdate: "2025-04-01T10:00:00Z",
-    rank: 3,
-    totalParticipants: 215,
-    achievements: [
-      { id: 1, name: "First Mile", icon: "🏃‍♂️", description: "Completed first mile" },
-      { id: 2, name: "Early Bird", icon: "🌅", description: "5 morning runs" }
-    ],
-    recentActivities: [
-      {
-        id: 1,
-        date: "2025-04-01T10:00:00Z",
-        value: 5,
-        unit: "km",
-        evidence: "activity1.jpg"
-      }
-    ],
-    status: "ongoing"
-  },
-  
-  // Thêm 2 thử thách đang tham gia
-  {
-    id: 2,
-    title: "Cycling Adventure Challenge",
-    startDate: "2025-03-10T00:00:00Z",
-    endDate: "2025-05-10T23:59:59Z",
-    category: "Cycling",
-    targetValue: 300,
-    targetUnit: "km",
-    currentValue: 120,
-    progress: 40,
-    image: "https://images.unsplash.com/photo-1541625602330-2277a4c46182",
-    streak: 3,
-    lastUpdate: "2025-04-15T16:30:00Z",
-    rank: 12,
-    totalParticipants: 176,
-    achievements: [
-      { id: 1, name: "Weekend Rider", icon: "🚴", description: "Completed 3 weekend rides" },
-      { id: 2, name: "Hill Climber", icon: "⛰️", description: "Climbed 500m elevation" }
-    ],
-    recentActivities: [
-      {
-        id: 1,
-        date: "2025-03-15T16:30:00Z",
-        value: 25,
-        unit: "km",
-        evidence: "cycling_route.jpg"
-      },
-      {
-        id: 2,
-        date: "2025-04-13T09:15:00Z",
-        value: 18,
-        unit: "km",
-        evidence: "mountain_path.jpg"
-      }
-    ],
-    status: "ongoing"
-  },
-  {
-    id: 3,
-    title: "Daily Yoga Practice",
-    startDate: "2025-03-15T00:00:00Z",
-    endDate: "2025-05-15T23:59:59Z",
-    category: "Yoga",
-    targetValue: 60,
-    targetUnit: "sessions",
-    currentValue: 28,
-    progress: 47,
-    image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b",
-    streak: 7,
-    lastUpdate: "2025-03-18T06:45:00Z",
-    rank: 5,
-    totalParticipants: 320,
-    achievements: [
-      { id: 1, name: "Morning Flow", icon: "🧘‍♀️", description: "7 consecutive morning practices" },
-      { id: 2, name: "Flexible Mind", icon: "🧠", description: "Tried 5 different yoga styles" },
-      { id: 3, name: "Balanced Life", icon: "☯️", description: "20 total sessions completed" }
-    ],
-    recentActivities: [
-      {
-        id: 1,
-        date: "2024-04-18T06:45:00Z",
-        value: 1,
-        unit: "session",
-        evidence: "morning_yoga.jpg"
-      },
-      {
-        id: 2,
-        date: "2024-04-17T07:00:00Z",
-        value: 1,
-        unit: "session",
-        evidence: "yoga_pose.jpg"
-      }
-    ],
-    status: "ongoing"
-  },
-  
-  // Thêm 3 thử thách đã kết thúc
-  {
-    id: 4,
-    title: "Winter Swimming Challenge",
-    startDate: "2024-01-01T00:00:00Z",
-    endDate: "2024-02-29T23:59:59Z",
-    category: "Swimming",
-    targetValue: 30,
-    targetUnit: "km",
-    currentValue: 30,
-    progress: 100,
-    image: "https://images.unsplash.com/photo-1560090995-01632a28895b",
-    streak: 12,
-    lastUpdate: "2024-02-27T14:20:00Z",
-    rank: 2,
-    totalParticipants: 148,
-    achievements: [
-      { id: 1, name: "Cold Warrior", icon: "❄️", description: "Swam in temperatures below 20°C" },
-      { id: 2, name: "Distance Master", icon: "🏊‍♂️", description: "Swam 30km total" },
-      { id: 3, name: "Consistency King", icon: "👑", description: "Maintained 10+ day streak" }
-    ],
-    recentActivities: [
-      {
-        id: 1,
-        date: "2024-02-27T14:20:00Z",
-        value: 1.5,
-        unit: "km",
-        evidence: "pool_finish.jpg"
-      }
-    ],
-    status: "completed"
-  },
-  {
-    id: 5,
-    title: "30-Day Plank Challenge",
-    startDate: "2024-02-01T00:00:00Z",
-    endDate: "2024-03-01T23:59:59Z",
-    category: "Strength",
-    targetValue: 30,
-    targetUnit: "days",
-    currentValue: 25,
-    progress: 83,
-    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6",
-    streak: 0,
-    lastUpdate: "2024-02-25T20:10:00Z",
-    rank: 45,
-    totalParticipants: 523,
-    achievements: [
-      { id: 1, name: "Core Starter", icon: "💪", description: "Completed first week of planks" },
-      { id: 2, name: "Mid-challenge Warrior", icon: "⚔️", description: "Reached 2-minute plank" }
-    ],
-    recentActivities: [
-      {
-        id: 1,
-        date: "2024-02-25T20:10:00Z",
-        value: 1,
-        unit: "day",
-        evidence: "plank_position.jpg"
-      }
-    ],
-    status: "completed"
-  },
-  {
-    id: 6,
-    title: "Spring 10K Steps Challenge",
-    startDate: "2024-03-01T00:00:00Z",
-    endDate: "2024-03-31T23:59:59Z",
-    category: "Walking",
-    targetValue: 300000,
-    targetUnit: "steps",
-    currentValue: 287500,
-    progress: 96,
-    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8",
-    streak: 0,
-    lastUpdate: "2024-03-30T22:00:00Z",
-    rank: 8,
-    totalParticipants: 412,
-    achievements: [
-      { id: 1, name: "Explorer", icon: "🧭", description: "Walked in 5 different locations" },
-      { id: 2, name: "Dedicated Walker", icon: "👣", description: "Reached 200,000 steps" },
-      { id: 3, name: "Urban Trekker", icon: "🏙️", description: "Completed 10 city walks" }
-    ],
-    recentActivities: [
-      {
-        id: 1,
-        date: "2024-03-30T22:00:00Z",
-        value: 12500,
-        unit: "steps",
-        evidence: "step_counter.jpg"
-      },
-      {
-        id: 2,
-        date: "2024-03-29T21:15:00Z",
-        value: 9800,
-        unit: "steps",
-        evidence: "evening_walk.jpg"
-      }
-    ],
-    status: "completed"
+moment.locale('vi')
+
+const MUSCLE_LABELS = {
+  'chest': 'Ngực', 'abs': 'Bụng', 'obliques': 'Chéo bụng',
+  'biceps': 'Bắp tay trước', 'forearm': 'Cẳng tay',
+  'front-deltoids': 'Vai trước', 'quadriceps': 'Đùi trước', 'adductor': 'Đùi trong',
+  'trapezius': 'Cơ thang', 'upper-back': 'Lưng trên', 'lower-back': 'Lưng dưới',
+  'back-deltoids': 'Vai sau', 'triceps': 'Bắp tay sau',
+  'hamstring': 'Đùi sau', 'calves': 'Bắp chân',
+  'gluteal': 'Mông', 'abductors': 'Đùi ngoài'
+}
+
+const EQUIPMENT_LABELS = {
+  'bodyweight': 'Cơ thể', 'dumbbell': 'Tạ tay', 'barbell': 'Tạ đòn',
+  'kettlebell': 'Tạ ấm', 'band': 'Dây kháng lực', 'plate': 'Máy / Đĩa tạ',
+  'pull-up-bar': 'Xà đơn', 'bench': 'Ghế tập'
+}
+
+const EXERCISES_PREVIEW_LIMIT = 3
+
+function SessionCard({ session }) {
+  const [expanded, setExpanded] = useState(false)
+  const exercises = session.exercises || []
+  const visibleExercises = expanded ? exercises : exercises.slice(0, EXERCISES_PREVIEW_LIMIT)
+  const hasMore = exercises.length > EXERCISES_PREVIEW_LIMIT
+
+  const statusConfig = {
+    completed: {
+      icon: <GiWeightLiftingUp />,
+      bg: 'bg-green-100 dark:bg-green-900/30',
+      text: 'text-green-600 dark:text-green-400',
+      badge: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+      label: 'Hoàn thành',
+      dot: 'bg-green-500',
+    },
+    quit: {
+      icon: <FaRedo />,
+      bg: 'bg-red-100 dark:bg-red-900/30',
+      text: 'text-red-500 dark:text-red-400',
+      badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+      label: 'Đã hủy',
+      dot: 'bg-red-500',
+    },
   }
-];
-
-export default function MyChallenge() {
-  const navigate = useNavigate()
-  const [myChallenges, setMyChallenges] = useState(mockMyChallenges)
-  const [activeTab, setActiveTab] = useState('active') // active, completed
-  const [selectedChallengeId, setSelectedChallengeId] = useState(null);
-  const [evidences, setEvidences] = useState({});
-
-  const filteredChallenges = myChallenges.filter(challenge => {
-    if (activeTab === 'active') {
-      return moment(challenge.endDate).isAfter(moment())
-    }
-    return moment(challenge.endDate).isBefore(moment())
-  })
-
-  const handleRemoveChallenge = (challengeId) => {
-    setMyChallenges(prev => prev.filter(c => c.id !== challengeId))
-  }
+  const cfg = statusConfig[session.status] || statusConfig.quit
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <FaTrophy className="text-yellow-500 mr-3" size={30} />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Thử thách của tôi
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">
-                  Theo dõi tiến độ và thành tích của bạn
-                </p>
-              </div>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      {/* Card Header */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-50 dark:border-gray-700/60">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${cfg.bg} ${cfg.text}`}>
+            {cfg.icon}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm">
+                {exercises.length > 0 ? `${exercises.length} bài tập` : 'Phiên tập'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${cfg.badge}`}>
+                {cfg.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+              <FaCalendarAlt className="text-[10px]" />
+              <span>{moment(session.createdAt).format('dddd, DD/MM/YYYY – HH:mm')}</span>
             </div>
           </div>
+        </div>
+        <span className="text-xs text-gray-400 hidden sm:block">
+          {moment(session.createdAt).fromNow()}
+        </span>
+      </div>
 
-          {/* Tabs */}
-          <div className="flex space-x-4 mb-6">
-            <button
-              className={`px-4 py-2 rounded-lg font-medium ${
-                activeTab === 'active'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-              onClick={() => setActiveTab('active')}
-            >
-              Đang tham gia
-            </button>
-            <button
-              className={`px-4 py-2 rounded-lg font-medium ${
-                activeTab === 'completed'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-              onClick={() => setActiveTab('completed')}
-            >
-              Đã hoàn thành
-            </button>
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700/60 border-b border-gray-50 dark:border-gray-700/60">
+        <div className="flex flex-col items-center py-3 gap-0.5">
+          <div className="flex items-center gap-1 text-blue-500">
+            <FaDumbbell className="text-xs" />
+            <span className="font-bold text-gray-800 dark:text-gray-100 text-base">{session.total_sets || 0}</span>
           </div>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wide">Sets</span>
+        </div>
+        <div className="flex flex-col items-center py-3 gap-0.5">
+          <div className="flex items-center gap-1 text-orange-500">
+            <FaFire className="text-xs" />
+            <span className="font-bold text-gray-800 dark:text-gray-100 text-base">{(session.total_calories || 0).toLocaleString()}</span>
+          </div>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wide">Kcal</span>
+        </div>
+        <div className="flex flex-col items-center py-3 gap-0.5">
+          <div className="flex items-center gap-1 text-indigo-500">
+            <FaClock className="text-xs" />
+            <span className="font-bold text-gray-800 dark:text-gray-100 text-base">{session.duration_minutes || 0}</span>
+          </div>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wide">Phút</span>
+        </div>
+      </div>
 
-          {/* Challenges Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredChallenges.map(challenge => (
-              <div
-                key={challenge.id}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md overflow-hidden flex flex-col"
-              >
-                <div className="relative h-40">
-                  <img
-                    src={challenge.image}
-                    alt={challenge.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 right-2 bg-black/50 text-white text-xs py-1 px-2 rounded-full">
-                    Hạng {challenge.rank}/{challenge.totalParticipants}
-                  </div>
-                </div>
-
-                <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
-                    {challenge.title}
-                  </h3>
-
-                  <ChallengeProgress
-                    currentValue={challenge.currentValue}
-                    targetValue={challenge.targetValue}
-                    targetUnit={challenge.targetUnit}
-                    progress={challenge.progress}
-                  />
-
-                  <div className="mt-3 space-y-2 flex-1">
-                    <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                      <FaCalendarAlt className="mr-2 text-green-500" />
-                      {moment(challenge.endDate).format('DD/MM/YYYY')}
-                    </div>
-
-                    <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                      <FaRunning className="mr-2 text-green-500" />
-                      Chuỗi ngày: {challenge.streak} ngày
-                    </div>
-
-                    {/* Achievements - Giới hạn hiển thị 2 thành tích */}
-                    {challenge.achievements.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {challenge.achievements.slice(0, 2).map(achievement => (
-                          <div
-                            key={achievement.id}
-                            className="flex items-center bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full"
-                            title={achievement.description}
-                          >
-                            <span className="mr-1">{achievement.icon}</span>
-                            {achievement.name}
-                          </div>
-                        ))}
-                        {challenge.achievements.length > 2 && (
-                          <div className="flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded-full">
-                            +{challenge.achievements.length - 2}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4">
-                    <button
-                      onClick={() => navigate(`/challenge/${challenge.status === 'completed' ? 1 : 0}`)}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                    >
-                      Chi tiết
-                    </button>
-                  </div>
-                  
-                  {challenge.status !== 'completed' && (
-                    <div className="mt-3">
-                      <SmartWatchSync 
-                        challenge={challenge} 
-                        onActivityComplete={(activityData) => {
-                          // Cập nhật thách thức với dữ liệu mới từ hoạt động
-                          const updatedChallenges = myChallenges.map(c => {
-                            if (c.id === challenge.id) {
-                              // Tính toán tiến độ mới
-                              const newCurrentValue = c.currentValue + activityData.value;
-                              const newProgress = Math.min(100, Math.round((newCurrentValue / c.targetValue) * 100));
-                              
-                              return {
-                                ...c,
-                                currentValue: newCurrentValue,
-                                progress: newProgress,
-                                lastUpdate: activityData.date,
-                                // Thêm hoạt động mới vào đầu danh sách
-                                recentActivities: [
-                                  {
-                                    id: activityData.id,
-                                    date: activityData.date,
-                                    value: activityData.value,
-                                    unit: activityData.unit,
-                                    source: activityData.source,
-                                    deviceName: activityData.deviceName,
-                                    evidence: activityData.category + '_activity.jpg'
-                                  },
-                                  ...(c.recentActivities || [])
-                                ]
-                              };
-                            }
-                            return c;
-                          });
-                          
-                          // Cập nhật state với các thử thách đã được cập nhật
-                          setMyChallenges(updatedChallenges);
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
+      {/* Exercises list */}
+      {exercises.length > 0 && (
+        <div className="px-5 py-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+            <MdFitnessCenter className="inline mr-1" />Bài tập
+          </p>
+          <div className="space-y-1.5">
+            {visibleExercises.map((ex, idx) => (
+              <div key={idx} className="flex items-center gap-2.5 py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group">
+                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                  {idx + 1}
+                </span>
+                <span className="text-sm text-gray-700 dark:text-gray-200 font-medium flex-1 truncate">
+                  {ex.exercise_name}
+                </span>
+                {ex.sets?.length > 0 && (
+                  <span className="text-[10px] text-gray-400 flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 rounded-full">
+                    {ex.sets.length} set
+                  </span>
+                )}
+                <FaCheckCircle className="text-green-400 text-xs flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             ))}
           </div>
+
+          {hasMore && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded(v => !v) }}
+              className="mt-2 flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+            >
+              {expanded
+                ? <><FaChevronUp className="text-[10px]" /> Thu gọn</>
+                : <><FaChevronDown className="text-[10px]" /> Xem thêm {exercises.length - EXERCISES_PREVIEW_LIMIT} bài tập</>
+              }
+            </button>
+          )}
         </div>
+      )}
+
+      {/* Muscles & Equipment tags */}
+      {((session.muscles_targeted?.length > 0) || (session.equipment_used?.length > 0)) && (
+        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+          {session.muscles_targeted?.map(m => (
+            <span key={m} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-full text-[10px] font-medium border border-blue-100 dark:border-blue-800">
+              💪 {MUSCLE_LABELS[m] || m}
+            </span>
+          ))}
+          {session.equipment_used?.map(eq => (
+            <span key={eq} className="px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded-full text-[10px] font-medium border border-purple-100 dark:border-purple-800">
+              🏋️ {EQUIPMENT_LABELS[eq] || eq}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function MyChallenge() {
+  const [page, setPage] = useState(1)
+
+  const { data: historyData, isLoading } = useQuery({
+    queryKey: ['workoutHistory', page],
+    queryFn: () => getWorkoutHistory({ page, limit: 10 }),
+    staleTime: 1000
+  })
+
+  const sessions = historyData?.data?.result?.sessions || []
+  const total = historyData?.data?.result?.total || 0
+
+  return (
+    <div>
+      {/* Page Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-6">
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <FaHistory className="text-white text-2xl" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Lịch sử tập luyện</h1>
+              <p className="text-white/75 text-sm mt-0.5">Tổng cộng {total} phiên tập đã thực hiện</p>
+            </div>
+          </div>
+          <Link
+            to="/challenge"
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-xl transition backdrop-blur self-start sm:self-auto"
+          >
+            <GiWeightLiftingUp /> Tập mới
+          </Link>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="container mx-auto max-w-3xl px-4 py-6">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4" />
+            <p className="text-gray-500">Đang tải...</p>
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-16">
+            <GiMuscleUp className="mx-auto text-6xl text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">Chưa có phiên tập nào</h3>
+            <p className="text-gray-400 mb-6">Bắt đầu bài tập đầu tiên của bạn ngay!</p>
+            <Link to="/challenge" className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">
+              <FaDumbbell /> Bắt đầu tập
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sessions.map((session) => (
+              <SessionCard key={session._id} session={session} />
+            ))}
+
+            {/* Pagination */}
+            {total > 10 && (
+              <div className="flex justify-center gap-2 mt-6">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium"
+                >
+                  Trước
+                </button>
+                <span className="px-4 py-2 text-sm text-gray-500">
+                  Trang {page} / {Math.ceil(total / 10)}
+                </span>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= Math.ceil(total / 10)}
+                  className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium"
+                >
+                  Sau
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
-} 
+}

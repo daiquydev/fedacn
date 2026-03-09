@@ -68,7 +68,7 @@ export default function WorkoutScheduleDetail() {
       return getWorkoutSchedule(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const workout = data?.data.result
@@ -105,7 +105,7 @@ export default function WorkoutScheduleDetail() {
     },
     enabled: !!workout?._id,
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const completeDateWorkOutItemMutation = useMutation({
@@ -188,13 +188,13 @@ export default function WorkoutScheduleDetail() {
             </div>
 
             <h3 className='text-lg font-semibold text-green-700 dark:text-green-500 '>
-              Tổng lượng calo đã đốt cháy: {item.total_calories} cal
+              Tổng lượng kcal đã đốt cháy: {item.total_calories} kcal
             </h3>
             <p className='mb-2 text-base font-normal whitespace-pre-line text-gray-500 dark:text-gray-400'>
               {/* // map ra tên các bài tập và nối với lượng calo đốt cháy của từng bài tập bằng dấu - và nối các bài tập bằng dấu enter */}
               {
                 item.items
-                  .map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} cal`)
+                  .map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} kcal`)
                   .join('\n') // nối các bài tập bằng dấu enter
               }
             </p>
@@ -224,12 +224,12 @@ export default function WorkoutScheduleDetail() {
               </div>
             </div>
             <h3 className='text-lg font-semibold text-red-700 dark:text-red-500 '>
-              Tổng lượng calo đã đốt cháy: {item.total_calories} cal
+              Tổng lượng kcal đã đốt cháy: {item.total_calories} kcal
             </h3>
             <p className='mb-2 text-base font-normal whitespace-pre-line text-gray-500 dark:text-gray-400'>
               {
                 item.items
-                  .map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} cal`)
+                  .map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} kcal`)
                   .join('\n') // nối các bài tập bằng dấu enter
               }
             </p>
@@ -260,12 +260,12 @@ export default function WorkoutScheduleDetail() {
               {moment(item.date).format('MMM Do YY')}
               <span className='m-3'>Đang tiến hành</span>
             </div>
-            <h3 className='text-lg font-semibold text-blue-400 '>Đang tiến hành đốt cháy: {item.total_calories} cal</h3>
+            <h3 className='text-lg font-semibold text-blue-400 '>Đang tiến hành đốt cháy: {item.total_calories} kcal</h3>
 
             <p className='mb-2 text-base font-normal whitespace-pre-line text-gray-500 dark:text-gray-400'>
               {
                 item.items
-                  .map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} cal`)
+                  .map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} kcal`)
                   .join('\n') // nối các bài tập bằng dấu enter
               }
             </p>
@@ -294,11 +294,11 @@ export default function WorkoutScheduleDetail() {
             <span className='m-3'>Dự kiến</span>
           </div>
           <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
-            Tổng lượng calo đốt cháy dự kiến: {item.total_calories} cal
+            Tổng lượng kcal đốt cháy dự kiến: {item.total_calories} kcal
           </h3>
           <p className='mb-2 text-base whitespace-pre-line font-normal text-gray-500 dark:text-gray-400'>
             {
-              item.items.map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} cal`).join('\n') // nối các bài tập bằng dấu enter
+              item.items.map((workoutItem) => `${workoutItem.activity_name} - ${workoutItem.calo_burn} kcal`).join('\n') // nối các bài tập bằng dấu enter
             }
           </p>
           <div className='flex gap-2 items-center '>
@@ -355,7 +355,7 @@ export default function WorkoutScheduleDetail() {
             <div className='flex gap-2 flex-wrap lg:justify-between items-center'>
               <div className=''>
                 <p className='font-medium text-lg'>
-                  Đã hoàn thành: {workout?.total_calo_burn} / {workout?.calo_target} calories
+                  Đã hoàn thành: {workout?.total_calo_burn} / {workout?.calo_target} kcal
                 </p>
                 <span className='text-sm text-gray-400 dark:text-gray-500'>
                   {moment(workout?.start_date).format('MMM Do YY')} - {moment(workout?.end_date).format('MMM Do YY')}

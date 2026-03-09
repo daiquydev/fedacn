@@ -1,11 +1,11 @@
 import { BsFillImageFill, BsFillSunFill } from 'react-icons/bs'
 import useravatar from '../../assets/images/useravatar.jpg'
 import { MdNightlight } from 'react-icons/md'
-import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaArrowRight } from 'react-icons/fa'
+import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaUserPlus } from 'react-icons/fa'
 import { PiClockAfternoonFill } from 'react-icons/pi'
 import PostCard from '../../components/CardComponents/PostCard'
-import BlogCard from '../../components/CardComponents/BlogCard'
 import { useContext, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import ModalUploadPost from './components/ModalUploadPost'
 import { getNewsFeed } from '../../apis/postApi'
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
@@ -13,25 +13,38 @@ import { useInView } from 'react-intersection-observer'
 import LoadingHome from './components/LoadingHome'
 import { AppContext } from '../../contexts/app.context'
 import Loading from '../../components/GlobalComponents/Loading'
-import { getBlogsForUser } from '../../apis/blogApi'
 import { followUser, recommendUser } from '../../apis/userApi'
 import { queryClient } from '../../main'
-import { useNavigate, Link } from 'react-router-dom'
-import { MdBook, MdClose } from 'react-icons/md'
-import { UserDashboard } from '../../components/Dashboard'
+import { useNavigate } from 'react-router-dom'
+import { MdClose } from 'react-icons/md'
+import CalendarNotifications from '../../components/Dashboard/CalendarNotifications'
 
 export default function Home() {
   const { profile } = useContext(AppContext)
   const [modalPost, setModalPost] = useState(false)
   const [showBanner, setShowBanner] = useState(true)
+  const [initialPostContent, setInitialPostContent] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Auto-open post modal with pre-filled content when navigated from event/activity share
+  useEffect(() => {
+    if (location.state?.openPost) {
+      setInitialPostContent(location.state.initialContent || '')
+      setModalPost(true)
+      // Clear state so back navigation doesn't re-open
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
 
   const openModalPost = () => {
+    setInitialPostContent('')
     setModalPost(true)
   }
 
   const closeModalPost = () => {
     setModalPost(false)
+    setInitialPostContent('')
   }
   const { ref, inView } = useInView()
   const fetchNewsFeed = async ({ pageParam }) => {
@@ -47,7 +60,7 @@ export default function Home() {
       return nextPage
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const content = data?.pages.map((dataNewFeeds) =>
@@ -62,14 +75,6 @@ export default function Home() {
     }
   }, [inView, hasNextPage, fetchNextPage])
 
-  const { data: blogData } = useQuery({
-    queryKey: ['blogs-list-user', { limit: 4 }],
-    queryFn: () => {
-      return getBlogsForUser({ limit: 4 })
-    },
-    placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
-  })
 
   const { data: userData } = useQuery({
     queryKey: ['recommed-list-user'],
@@ -77,7 +82,7 @@ export default function Home() {
       return recommendUser()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   if (status === 'pending') {
@@ -93,9 +98,9 @@ export default function Home() {
   }
   return (
     <div className='space-y-8 w-full'>
-      {/* Dashboard section - Đặt ở trên cùng, toàn màn hình */}
+      {/* Thông báo lịch cá nhân - Đặt ở trên cùng, toàn màn hình */}
       <div className='w-full'>
-        <UserDashboard />
+        <CalendarNotifications />
       </div>
 
       {/* Main content grid */}
@@ -106,18 +111,19 @@ export default function Home() {
           <div className="bg-white py-4 px-6 shadow-md rounded-xl dark:bg-color-primary mb-6">
             <div>{checkTime(profile)}</div>
             <div className='flex justify-between items-center gap-2 md:gap-4 w-full mt-4'>
-              <div className='w-10 h-10 md:w-12 overflow-hidden md:h-12 rounded-full cursor-pointer'>
+              <div className='w-10 h-10 md:w-12 flex-shrink-0 overflow-hidden md:h-12 rounded-full cursor-pointer ring-2 ring-green-200 dark:ring-green-800'>
                 <img
                   className='w-10 h-10 md:w-12 object-cover md:h-12 rounded-full'
-                  src={profile.avatar === '' ? useravatar : profile.avatar}
+                  src={profile?.avatar && profile.avatar !== '' ? profile.avatar : useravatar}
                   alt='user photo'
+                  onError={(e) => { e.target.src = useravatar }}
                 />
               </div>
               <div
                 onClick={openModalPost}
-                className='bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-800 w-[90%] md:w-[92%] cursor-pointer hover:bg-slate-200 transition-all h-12 md:h-14 my-4 flex items-center rounded-full'
+                className='bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-800 flex-1 cursor-pointer hover:bg-slate-200 transition-all h-12 md:h-14 my-4 flex items-center rounded-full'
               >
-                <span className='mx-4 text-gray-500 dark:text-gray-400'>Bạn đang nghĩ gì về sức khỏe và dinh dưỡng?</span>
+                <span className='mx-4 text-gray-500 dark:text-gray-400 text-sm md:text-base'>Bạn đang nghĩ gì về sức khỏe và thể thao?</span>
               </div>
             </div>
             <div className='border-t pt-4 mt-2 dark:border-gray-700 border-gray-200'></div>
@@ -130,7 +136,7 @@ export default function Home() {
               </div>
               <button
                 onClick={openModalPost}
-                className='px-4 py-2 bg-red-700 hover:bg-red-800 text-sm text-white rounded-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out'
+                className='px-5 py-2 bg-green-600 hover:bg-green-700 text-sm font-medium text-white rounded-lg shadow-sm hover:shadow-md transition duration-150 ease-in-out'
               >
                 Đăng bài viết
               </button>
@@ -166,52 +172,14 @@ export default function Home() {
                     <ItemUser key={user._id} user={user} />
                   ))}
                 </div>
-                {userData?.data?.result.length > 0 && (
-                  <div className="pt-3 mt-3 border-t border-gray-100 dark:border-gray-700">
-                    <Link 
-                      to="/search?tab=people"
-                      className="flex justify-center items-center text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                    >
-                      Xem thêm gợi ý <FaArrowRight className="ml-1 w-3 h-3" />
-                    </Link>
-                  </div>
-                )}
+
               </div>
             </div>
           )}
 
-          {/* Latest Blogs */}
-          <div className="w-full shadow-md bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
-            <div className="bg-gradient-to-r from-green-700 to-green-600 dark:from-green-800 dark:to-green-700 py-3 px-4">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <MdBook className="mr-2" /> Blog mới nhất
-              </h3>
-            </div>
-            <div className="p-4 space-y-4">
-              {blogData?.data?.result.blogs.map((blog) => {
-                return (
-                  <BlogCard
-                    key={blog._id}
-                    blogItem={blog}
-                    imgClass='w-full max-h-[20rem] object-cover rounded-t-xl scale-100 overflow-hidden'
-                    dateClass='flex text-xs items-center gap-4 pt-2 pb-1'
-                    titleClass='font-bold transition-all cursor-pointer line-clamp-2 hover:text-green-600'
-                    descriptionClass='leading-relaxed text-sm line-clamp-2 mt-2 mb-3'
-                    linkClass='inline-block font-bold hover:text-green-600 transition-all duration-300 ease-in-out'
-                  />
-                )
-              })}
-              <Link
-                to={`/blog`}
-                className='w-full flex justify-center text-center py-2 font-medium dark:text-gray-300 text-gray-600 hover:text-green-600 cursor-pointer transition-all duration-300'
-              >
-                Xem thêm bài viết...
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
-      {modalPost && <ModalUploadPost profile={profile} closeModalPost={closeModalPost} />}
+      {modalPost && <ModalUploadPost profile={profile} closeModalPost={closeModalPost} initialContent={initialPostContent} />}
     </div>
   )
 }
@@ -293,7 +261,7 @@ const ItemUser = ({ user }) => {
           />
         </div>
       </div>
-      
+
       {/* Thông tin user - Cột 2 */}
       <div className="min-w-0 overflow-hidden">
         <div
@@ -311,13 +279,14 @@ const ItemUser = ({ user }) => {
           @{user.user_name}
         </div>
       </div>
-      
-      {/* Nút theo dõi - Cột 3 */}
-      <button 
-        onClick={handleFollow} 
-        className="w-20 h-8 flex-shrink-0 flex items-center justify-center text-xs font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-md shadow-sm hover:shadow transition-all"
+
+      {/* Nút kết bạn - Cột 3 */}
+      <button
+        onClick={handleFollow}
+        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-md shadow-sm hover:shadow transition-all"
       >
-        Theo dõi
+        <FaUserPlus size={11} />
+        Kết bạn
       </button>
     </div>
   )

@@ -16,7 +16,7 @@ export default function BlogDetail() {
       return getBlogDetailForInspector(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   return (

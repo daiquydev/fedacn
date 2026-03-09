@@ -26,7 +26,7 @@ export default function LineChart({ meal }) {
       return getDateMealItem(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const dataCalo = lineData?.data.result.mealDate

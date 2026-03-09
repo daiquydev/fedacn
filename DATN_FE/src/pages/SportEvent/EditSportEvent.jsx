@@ -1,58 +1,97 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { 
-  FaArrowLeft, 
-  FaRunning, 
-  FaCalendarAlt, 
-  FaMapMarkerAlt, 
-  FaDumbbell, 
-  FaImage, 
-  FaUsers, 
+import {
+  FaArrowLeft,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaImage,
+  FaUsers,
   FaFileAlt,
   FaPlus,
   FaTrash,
   FaTrophy,
   FaBullseye,
-  FaQuestionCircle,
-  FaListUl,
   FaStar,
   FaCheckCircle,
-  FaInfoCircle
+  FaInfoCircle,
+  FaClock,
+  FaExclamationCircle
 } from 'react-icons/fa'
-import { MdSportsSoccer, MdVideocam, MdHelpOutline, MdOutlineGavel } from 'react-icons/md'
+import { MdVideocam } from 'react-icons/md'
 import { getSportEvent, updateSportEvent } from '../../apis/sportEventApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
+import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
 import moment from 'moment'
+
+// ==================== DATE/TIME HELPERS ====================
+const isValidDateStr = (val) => {
+  if (!val || val.length !== 10) return false
+  const [d, m, y] = val.split('/').map(Number)
+  if (!d || !m || !y || y < 2000 || y > 2100) return false
+  const date = new Date(y, m - 1, d)
+  return date.getDate() === d && date.getMonth() === m - 1 && date.getFullYear() === y
+}
+
+const isValidTimeStr = (val) => {
+  if (!val || val.length !== 5) return false
+  const [h, min] = val.split(':').map(Number)
+  return h >= 0 && h <= 23 && min >= 0 && min <= 59
+}
+
+const isPastDate = (dateStr) => {
+  if (!isValidDateStr(dateStr)) return false
+  const [d, m, y] = dateStr.split('/').map(Number)
+  const date = new Date(y, m - 1, d)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return date < today
+}
+
+const parseDateToISO = (dateStr, timeStr = '00:00') => {
+  const [d, m, y] = dateStr.split('/')
+  return new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00`).toISOString()
+}
+
+const formatDateInput = (raw) => {
+  const digits = raw.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2)
+  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4)
+}
+
+const formatTimeInput = (raw) => {
+  const digits = raw.replace(/\D/g, '').slice(0, 4)
+  if (digits.length <= 2) return digits
+  return digits.slice(0, 2) + ':' + digits.slice(2)
+}
+// ===========================================================
 
 const EditSportEvent = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  
+
   const [newEvent, setNewEvent] = useState({
     name: '',
-    startDate: '',
-    startTime: '',
-    endDate: '',
-    endTime: '',
+    startDate: '',      // DD/MM/YYYY text
+    endDate: '',        // DD/MM/YYYY text
+    eventTime: '',      // HH:mm text
     location: '',
-    category: 'Chạy bộ',
-    difficulty: 'Trung bình',
+    category: '',
     maxParticipants: 50,
     targetValue: 0,
     targetUnit: 'km',
     image: '',
     description: '',
     detailedDescription: '',
-    eventType: 'offline',
+    eventType: 'Ngoài trời',
     requirements: '',
-    benefits: '',
-    rules: [''],
-    rewards: [''],
-    faqs: [{ question: '', answer: '' }]
+    benefits: ''
   })
 
   const [errors, setErrors] = useState({})
+  const [locationSuggestions, setLocationSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Fetch current event data
   const { data: eventData, isLoading: isLoadingEvent } = useQuery({
@@ -61,30 +100,32 @@ const EditSportEvent = () => {
     enabled: !!id
   })
 
+  // Populate form from existing event
   useEffect(() => {
-    if (eventData?.data?.result || eventData?.result) {
-      const event = eventData.data?.result || eventData.result
+    const event = eventData?.data?.result || eventData?.result
+    if (event) {
       setNewEvent({
         name: event.name || '',
-        startDate: event.startDate ? moment(event.startDate).format('YYYY-MM-DD') : '',
-        startTime: event.startDate ? moment(event.startDate).format('HH:mm') : '',
-        endDate: event.endDate ? moment(event.endDate).format('YYYY-MM-DD') : '',
-        endTime: event.endDate ? moment(event.endDate).format('HH:mm') : '',
+        startDate: event.startDate ? moment(event.startDate).format('DD/MM/YYYY') : '',
+        endDate: event.endDate ? moment(event.endDate).format('DD/MM/YYYY') : '',
+        eventTime: event.startDate ? moment(event.startDate).format('HH:mm') : '',
         location: event.location || '',
-        category: event.category || 'Chạy bộ',
-        difficulty: event.difficulty || 'Trung bình',
+        category: event.category || '',
         maxParticipants: event.maxParticipants || 50,
         targetValue: event.targetValue || 0,
-        targetUnit: event.targetUnit || 'km',
+        targetUnit: (() => {
+          const unit = event.targetUnit || 'km'
+          const type = event.eventType || 'Ngoài trời'
+          // Nếu sự kiện Trong nhà mà unit là 'km' thì tự đổi sang 'kcal'
+          if (type === 'Trong nhà' && unit === 'km') return 'kcal'
+          return unit
+        })(),
         image: event.image || '',
         description: event.description || '',
         detailedDescription: event.detailedDescription || '',
-        eventType: event.eventType || 'offline',
+        eventType: event.eventType || 'Ngoài trời',
         requirements: event.requirements || '',
-        benefits: event.benefits || '',
-        rules: event.rules?.length > 0 ? event.rules : [''],
-        rewards: event.rewards?.length > 0 ? event.rewards : [''],
-        faqs: event.faqs?.length > 0 ? event.faqs : [{ question: '', answer: '' }]
+        benefits: event.benefits || ''
       })
     }
   }, [eventData])
@@ -102,77 +143,127 @@ const EditSportEvent = () => {
     }
   })
 
-  const categories = [
-    { name: 'Chạy bộ', icon: <FaRunning /> },
-    { name: 'Đạp xe', icon: <MdSportsSoccer /> },
-    { name: 'Bơi lội', icon: <FaDumbbell /> },
-    { name: 'Fitness', icon: <FaDumbbell /> },
-    { name: 'Bóng rổ', icon: <MdSportsSoccer /> },
-    { name: 'Yoga', icon: <FaRunning /> },
-    { name: 'Cầu lông', icon: <MdSportsSoccer /> }
-  ]
+  const { data: categoriesData } = useQuery({
+    queryKey: ['sportCategories'],
+    queryFn: () => sportCategoryApi.getAll(),
+    staleTime: 1000
+  })
 
-  const difficulties = ['Dễ', 'Trung bình', 'Khó', 'Thử thách']
+  const categories = categoriesData?.data?.result || []
+  const filteredCategories = categories.filter(c => c.type === newEvent.eventType)
 
+  useEffect(() => {
+    if (filteredCategories.length > 0) {
+      setNewEvent(prev => {
+        if (!filteredCategories.some(c => c.name === prev.category)) {
+          return { ...prev, category: filteredCategories[0].name }
+        }
+        return prev
+      })
+    }
+  }, [categoriesData, newEvent.eventType])
+
+  // ==================== REAL-TIME FIELD VALIDATOR ====================
+  const validateField = (name, value, currentState = newEvent) => {
+    let error = null
+    switch (name) {
+      case 'name':
+        if (!value?.trim()) error = 'Vui lòng nhập tên sự kiện'
+        break
+      case 'startDate':
+        if (!value) error = 'Vui lòng nhập ngày bắt đầu'
+        else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
+        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+        else if (currentState.endDate && isValidDateStr(currentState.endDate)) {
+          const [sd, sm, sy] = value.split('/').map(Number)
+          const [ed, em, ey] = currentState.endDate.split('/').map(Number)
+          if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd))
+            setErrors(prev => ({ ...prev, endDate: 'Ngày kết thúc phải sau ngày bắt đầu' }))
+          else
+            setErrors(prev => ({ ...prev, endDate: null }))
+        }
+        break
+      case 'endDate':
+        if (!value) error = 'Vui lòng nhập ngày kết thúc'
+        else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
+        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+        else if (currentState.startDate && isValidDateStr(currentState.startDate)) {
+          const [sd, sm, sy] = currentState.startDate.split('/').map(Number)
+          const [ed, em, ey] = value.split('/').map(Number)
+          if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd))
+            error = 'Ngày kết thúc phải sau ngày bắt đầu'
+        }
+        break
+      case 'eventTime':
+        if (!value) error = 'Vui lòng nhập thời điểm'
+        else if (!isValidTimeStr(value)) error = 'Thời điểm không hợp lệ — định dạng HH:mm'
+        break
+      case 'location':
+        if (!value?.trim()) error = 'Vui lòng nhập địa điểm'
+        break
+      case 'description':
+        if (!value?.trim()) error = 'Vui lòng nhập mô tả ngắn'
+        break
+      case 'image':
+        if (!value?.trim()) error = 'Vui lòng tải lên ảnh bìa'
+        break
+      default:
+        break
+    }
+    setErrors(prev => ({ ...prev, [name]: error }))
+    return error
+  }
+
+  // ==================== HANDLERS ====================
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setNewEvent(prev => ({ ...prev, [name]: value }))
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
-  }
 
-  const handleArrayChange = (index, value, field) => {
-    const newArr = [...newEvent[field]]
-    newArr[index] = value
-    setNewEvent(prev => ({ ...prev, [field]: newArr }))
-  }
-
-  const addArrayItem = (field) => {
-    setNewEvent(prev => ({ ...prev, [field]: [...prev[field], ''] }))
-  }
-
-  const removeArrayItem = (index, field) => {
-    const newArr = [...newEvent[field]]
-    if (newArr.length > 1) {
-      newArr.splice(index, 1)
-      setNewEvent(prev => ({ ...prev, [field]: newArr }))
+    if (name === 'location') {
+      if (value.length > 2) {
+        fetch(`https://rsapi.goong.io/Place/AutoComplete?api_key=UMRiT4CiOH9UU9Ju9L1YJLSYZM5EQberRoSsyfDW&input=${encodeURIComponent(value)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.predictions) {
+              setLocationSuggestions(data.predictions)
+              setShowSuggestions(true)
+            }
+          })
+          .catch(console.error)
+      } else {
+        setShowSuggestions(false)
+      }
     }
   }
 
-  const handleFaqChange = (index, field, value) => {
-    const newFaqs = [...newEvent.faqs]
-    newFaqs[index][field] = value
-    setNewEvent(prev => ({ ...prev, faqs: newFaqs }))
+  const handleDateChange = (e) => {
+    const { name, value } = e.target
+    const formatted = formatDateInput(value)
+    setNewEvent(prev => ({ ...prev, [name]: formatted }))
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
   }
 
-  const addFaq = () => {
-    setNewEvent(prev => ({ ...prev, faqs: [...prev.faqs, { question: '', answer: '' }] }))
+  const handleTimeChange = (e) => {
+    const { name, value } = e.target
+    const formatted = formatTimeInput(value)
+    setNewEvent(prev => ({ ...prev, [name]: formatted }))
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
   }
 
-  const removeFaq = (index) => {
-    const newFaqs = [...newEvent.faqs]
-    if (newFaqs.length > 1) {
-      newFaqs.splice(index, 1)
-      setNewEvent(prev => ({ ...prev, faqs: newFaqs }))
-    }
+  const handleSelectLocation = (address) => {
+    setNewEvent(prev => ({ ...prev, location: address }))
+    setShowSuggestions(false)
+    setErrors(prev => ({ ...prev, location: null }))
   }
 
   const validateForm = () => {
+    const fields = ['name', 'startDate', 'endDate', 'eventTime', 'location', 'description', 'image']
     const sErr = {}
-    if (!newEvent.name.trim()) sErr.name = 'Yêu cầu tên sự kiện'
-    if (!newEvent.startDate) sErr.startDate = 'Yêu cầu ngày bắt đầu'
-    if (!newEvent.startTime) sErr.startTime = 'Yêu cầu giờ bắt đầu'
-    if (!newEvent.endDate) sErr.endDate = 'Yêu cầu ngày kết thúc'
-    if (!newEvent.endTime) sErr.endTime = 'Yêu cầu giờ kết thúc'
-    if (!newEvent.location.trim()) sErr.location = 'Yêu cầu địa điểm'
-    if (!newEvent.description.trim()) sErr.description = 'Yêu cầu mô tả ngắn'
-    if (!newEvent.image.trim()) sErr.image = 'Yêu cầu URL ảnh'
-
-    if (newEvent.startDate && newEvent.endDate) {
-      const start = new Date(`${newEvent.startDate}T${newEvent.startTime}`)
-      const end = new Date(`${newEvent.endDate}T${newEvent.endTime}`)
-      if (end <= start) sErr.endDate = 'Thời gian kết thúc phải sau bắt đầu'
-    }
-
+    fields.forEach(f => {
+      const e = validateField(f, newEvent[f])
+      if (e) sErr[f] = e
+    })
     setErrors(sErr)
     return Object.keys(sErr).length === 0
   }
@@ -180,26 +271,46 @@ const EditSportEvent = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!validateForm()) {
-      toast.error('Vui lòng kiểm tra các thông tin bắt buộc')
+      toast.error('Vui lòng kiểm tra lại các thông tin bắt buộc')
       return
     }
 
-    const start = new Date(`${newEvent.startDate}T${newEvent.startTime}`).toISOString()
-    const end = new Date(`${newEvent.endDate}T${newEvent.endTime}`).toISOString()
+    const timeStr = newEvent.eventTime || '00:00'
+    const startISO = parseDateToISO(newEvent.startDate, timeStr)
+    const endISO = parseDateToISO(newEvent.endDate, '23:59')
 
     const finalData = {
-      ...newEvent,
-      startDate: start,
-      endDate: end,
+      name: newEvent.name,
+      startDate: startISO,
+      endDate: endISO,
+      location: newEvent.location,
+      category: newEvent.category,
       maxParticipants: Number(newEvent.maxParticipants),
       targetValue: Number(newEvent.targetValue),
-      rules: newEvent.rules.filter(r => r.trim()),
-      rewards: newEvent.rewards.filter(r => r.trim()),
-      faqs: newEvent.faqs.filter(f => f.question.trim() && f.answer.trim())
+      targetUnit: (newEvent.eventType === 'Trong nhà' && newEvent.targetUnit === 'km') ? 'kcal' : newEvent.targetUnit,
+      image: newEvent.image,
+      description: newEvent.description,
+      detailedDescription: newEvent.detailedDescription,
+      eventType: newEvent.eventType,
+      requirements: newEvent.requirements,
+      benefits: newEvent.benefits
     }
 
     updateMutation.mutate(finalData)
   }
+
+  // ==================== HELPERS ====================
+  const inputCls = (name) =>
+    `w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white focus:ring-4 transition outline-none ${errors[name]
+      ? 'border-red-400 focus:ring-red-500/10'
+      : 'border-gray-100 dark:border-gray-600 focus:border-blue-400 focus:ring-blue-500/10'
+    }`
+
+  const ErrorMsg = ({ name }) => errors[name]
+    ? <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+      <FaExclamationCircle className="shrink-0" /> {errors[name]}
+    </p>
+    : null
 
   if (isLoadingEvent) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -207,6 +318,7 @@ const EditSportEvent = () => {
     </div>
   )
 
+  // ==================== RENDER ====================
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
@@ -219,85 +331,79 @@ const EditSportEvent = () => {
             <FaArrowLeft className="mr-2" /> Quay lại dashboard
           </button>
           <h1 className="text-3xl font-extrabold">Chỉnh Sửa Sự Kiện</h1>
-          <p className="opacity-90">Cập nhật thông tin chi tiết cho sự kiện của bạn</p>
+          <p className="opacity-90 mt-1">Cập nhật thông tin chi tiết cho sự kiện của bạn</p>
         </div>
       </div>
 
       <div className="container mx-auto px-4">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Form Content - Left Side */}
+
+          {/* ========== LEFT FORM ========== */}
           <div className="lg:col-span-8 space-y-8">
-            
+
             {/* 1. Thông tin chung */}
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaFileAlt className="text-blue-500 text-xl" />
                 <h2 className="text-xl font-bold dark:text-white">1. Thông tin chung</h2>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tên sự kiện *</label>
+
+              <div className="space-y-6">
+                {/* Tên */}
+                <div data-error={!!errors.name}>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    Tên sự kiện <span className="text-red-500">*</span>
+                  </label>
                   <input
                     name="name"
                     value={newEvent.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                        errors.name ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                    }`}
+                    onBlur={e => validateField('name', e.target.value)}
+                    className={inputCls('name')}
                   />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  <ErrorMsg name="name" />
                 </div>
 
+                {/* Danh mục */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Danh mục</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Danh mục thể thao</label>
                   <select
                     name="category"
                     value={newEvent.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-blue-400"
                   >
-                    {categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    {filteredCategories.map(c => <option key={c._id || c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
 
+                {/* Hình thức tổ chức */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Độ khó</label>
-                  <select
-                    name="difficulty"
-                    value={newEvent.difficulty}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none"
-                  >
-                    {difficulties.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Hình thức tổ chức</label>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'offline' }))}
-                      className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition ${
-                        newEvent.eventType === 'offline' 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' 
-                        : 'border-gray-100 dark:border-gray-700 text-gray-500'
-                      }`}
+                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Ngoài trời' }))}
+                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Ngoài trời'
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 shadow-md shadow-green-100'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-green-300'
+                        }`}
                     >
-                      <FaMapMarkerAlt /> <b>Trực tiếp</b>
+                      <div className={`text-3xl ${newEvent.eventType === 'Ngoài trời' ? 'text-green-500' : 'text-gray-400'}`}>🌿</div>
+                      <span className="font-bold text-sm">Ngoài trời</span>
+                      <span className="text-xs text-gray-400">Chạy bộ, đạp xe, leo núi...</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'online' }))}
-                      className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition ${
-                        newEvent.eventType === 'online' 
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400' 
-                        : 'border-gray-100 dark:border-gray-700 text-gray-500'
-                      }`}
+                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Trong nhà', targetUnit: p.targetUnit === 'km' ? 'kcal' : p.targetUnit }))}
+                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Trong nhà'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 shadow-md shadow-blue-100'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-blue-300'
+                        }`}
                     >
-                      <MdVideocam size={20} /> <b>Trực tuyến</b>
+                      <div className={`text-3xl ${newEvent.eventType === 'Trong nhà' ? 'text-blue-500' : 'text-gray-400'}`}>🏠</div>
+                      <span className="font-bold text-sm">Trong nhà</span>
+                      <span className="text-xs text-gray-400">Gym, yoga, bơi lội...</span>
                     </button>
                   </div>
                 </div>
@@ -308,96 +414,117 @@ const EditSportEvent = () => {
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaCalendarAlt className="text-blue-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">2. Thời gian & Địa điểm</h2>
+                <h2 className="text-xl font-bold dark:text-white">2. Thời gian &amp; Địa điểm</h2>
               </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                  {/* Start Date & Time */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
-                       Bắt đầu
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500">Ngày bắt đầu</label>
-                        <input 
-                          type="date" 
-                          name="startDate" 
-                          value={newEvent.startDate} 
-                          onChange={handleInputChange} 
-                          className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                            errors.startDate ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                          }`} 
-                        />
-                         {errors.startDate && <p className="text-red-500 text-xs">{errors.startDate}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500">Giờ bắt đầu</label>
-                        <input 
-                          type="time" 
-                          name="startTime" 
-                          value={newEvent.startTime} 
-                          onChange={handleInputChange} 
-                          className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                            errors.startTime ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                          }`} 
-                        />
-                         {errors.startTime && <p className="text-red-500 text-xs">{errors.startTime}</p>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* End Date & Time */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
-                       Kết thúc
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                         <label className="text-xs font-bold text-gray-500">Ngày kết thúc</label>
-                         <input 
-                           type="date" 
-                           name="endDate" 
-                           value={newEvent.endDate} 
-                           onChange={handleInputChange} 
-                           className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                             errors.endDate ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                           }`} 
-                         />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500">Giờ kết thúc</label>
-                        <input 
-                          type="time" 
-                          name="endTime" 
-                          value={newEvent.endTime} 
-                          onChange={handleInputChange} 
-                          className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                             errors.endTime ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                          }`} 
-                        />
-                         {errors.endTime && <p className="text-red-500 text-xs">{errors.endTime}</p>}
-                      </div>
-                    </div>
-                    {errors.endDate && <p className="text-red-500 text-xs">{errors.endDate}</p>}
-                  </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    {newEvent.eventType === 'offline' ? 'Địa điểm cụ thể *' : 'Nền tảng / Link tham gia'}
-                  </label>
-                  <div className="relative">
-                    <FaMapMarkerAlt className="absolute left-4 top-4 text-gray-400" />
+              <div className="space-y-6">
+                {/* 3 cột ngày/giờ */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Ngày bắt đầu */}
+                  <div data-error={!!errors.startDate}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaCalendarAlt className="inline mr-1 text-green-500" />
+                      Ngày bắt đầu <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      name="location"
-                      value={newEvent.location}
-                      onChange={handleInputChange}
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                        errors.location ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                      }`}
+                      type="text"
+                      name="startDate"
+                      value={newEvent.startDate}
+                      onChange={handleDateChange}
+                      onBlur={e => validateField('startDate', e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                      className={inputCls('startDate')}
                     />
+                    <ErrorMsg name="startDate" />
+                  </div>
+
+                  {/* Ngày kết thúc */}
+                  <div data-error={!!errors.endDate}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaCalendarAlt className="inline mr-1 text-red-400" />
+                      Ngày kết thúc <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="endDate"
+                      value={newEvent.endDate}
+                      onChange={handleDateChange}
+                      onBlur={e => validateField('endDate', e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                      className={inputCls('endDate')}
+                    />
+                    <ErrorMsg name="endDate" />
+                  </div>
+
+                  {/* Thời điểm */}
+                  <div data-error={!!errors.eventTime}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaClock className="inline mr-1 text-orange-400" />
+                      Thời điểm <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="eventTime"
+                      value={newEvent.eventTime}
+                      onChange={handleTimeChange}
+                      onBlur={e => validateField('eventTime', e.target.value)}
+                      placeholder="HH:mm"
+                      maxLength={5}
+                      className={inputCls('eventTime')}
+                    />
+                    <ErrorMsg name="eventTime" />
                   </div>
                 </div>
+
+                {/* Hint */}
+                <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
+                  <FaInfoCircle className="mt-0.5 shrink-0" />
+                  <span>Nhập ngày theo định dạng <strong>DD/MM/YYYY</strong> (VD: 15/06/2026) và giờ theo <strong>HH:mm</strong> (VD: 07:30). Không thể chọn ngày trong quá khứ.</span>
+                </div>
+
+                {/* Địa điểm — chỉ hiện khi là sự kiện ngoài trời */}
+                {newEvent.eventType === 'Ngoài trời' && (
+                  <div data-error={!!errors.location}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaMapMarkerAlt className="inline mr-1 text-green-500" />
+                      Địa điểm cụ thể
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaMapMarkerAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        name="location"
+                        value={newEvent.location}
+                        onChange={handleInputChange}
+                        onBlur={(e) => {
+                          setTimeout(() => setShowSuggestions(false), 200)
+                          validateField('location', e.target.value)
+                        }}
+                        placeholder="Tìm địa điểm..."
+                        className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white transition outline-none ${errors.location
+                          ? 'border-red-400'
+                          : 'border-gray-100 dark:border-gray-600 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10'
+                          }`}
+                      />
+                      {showSuggestions && locationSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                          {locationSuggestions.map((sl, index) => (
+                            <div
+                              key={index}
+                              className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                              onClick={() => handleSelectLocation(sl.description)}
+                            >
+                              📍 {sl.description}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <ErrorMsg name="location" />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -405,31 +532,68 @@ const EditSportEvent = () => {
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaBullseye className="text-orange-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">3. Mục tiêu & Sức chứa</h2>
+                <h2 className="text-xl font-bold dark:text-white">3. Mục tiêu &amp; Sức chứa</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Số người tối đa */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Số lượng người tối đa</label>
-                  <div className="flex items-center border-2 border-gray-100 dark:border-gray-600 rounded-xl px-4 dark:bg-gray-700">
-                    <FaUsers className="text-gray-400 mr-2" />
-                    <input type="number" name="maxParticipants" value={newEvent.maxParticipants} onChange={handleInputChange} className="w-full py-3 bg-transparent dark:text-white outline-none" />
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    <FaUsers className="inline mr-1 text-blue-500" />
+                    Số người tối đa
+                  </label>
+                  <div className="flex items-center border-2 border-gray-100 dark:border-gray-600 rounded-xl overflow-hidden dark:bg-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => setNewEvent(p => ({ ...p, maxParticipants: Math.max(1, Number(p.maxParticipants) - 10) }))}
+                      className="px-4 py-3 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-500 transition font-bold text-lg"
+                    >−</button>
+                    <input
+                      type="number"
+                      name="maxParticipants"
+                      value={newEvent.maxParticipants}
+                      onChange={handleInputChange}
+                      min={1}
+                      className="flex-1 py-3 bg-transparent dark:text-white text-center font-bold text-lg focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewEvent(p => ({ ...p, maxParticipants: Number(p.maxParticipants) + 10 }))}
+                      className="px-4 py-3 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-500 transition font-bold text-lg"
+                    >+</button>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Tối đa người tham gia</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mục tiêu</label>
-                    <input type="number" name="targetValue" value={newEvent.targetValue} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Đơn vị</label>
-                    <select name="targetUnit" value={newEvent.targetUnit} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none">
-                      <option value="km">km</option>
-                      <option value="calo">calo</option>
-                      <option value="bước">bước</option>
+
+                {/* Mục tiêu */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    <FaBullseye className="inline mr-1 text-orange-500" />
+                    Mục tiêu sự kiện
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      name="targetValue"
+                      value={newEvent.targetValue}
+                      onChange={handleInputChange}
+                      min={0}
+                      placeholder="0"
+                      className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-orange-400 font-bold text-lg text-center"
+                    />
+                    <select
+                      name="targetUnit"
+                      value={newEvent.targetUnit}
+                      onChange={handleInputChange}
+                      className="w-24 px-3 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-orange-400 font-bold"
+                    >
+                      {newEvent.eventType === 'Ngoài trời' && <option value="km">km</option>}
+                      <option value="kcal">kcal</option>
                       <option value="phút">phút</option>
+                      <option value="giờ">giờ</option>
                     </select>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Mục tiêu cần hoàn thành để nhận phần thưởng</p>
                 </div>
               </div>
             </section>
@@ -438,67 +602,56 @@ const EditSportEvent = () => {
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaImage className="text-purple-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">4. Hình ảnh & Mô tả</h2>
+                <h2 className="text-xl font-bold dark:text-white">4. Hình ảnh &amp; Mô tả</h2>
               </div>
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Ảnh bìa (URL) *</label>
-                  <input name="image" value={newEvent.image} onChange={handleInputChange} className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${errors.image ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'}`} />
+                <div data-error={!!errors.image}>
+                  <CloudinaryImageUploader
+                    label="Ảnh bìa"
+                    required
+                    value={newEvent.image}
+                    onChange={(url) => {
+                      setNewEvent(prev => ({ ...prev, image: url }))
+                      if (errors.image) setErrors(prev => ({ ...prev, image: null }))
+                    }}
+                    error={errors.image}
+                    folder="sport-events"
+                  />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mô tả ngắn *</label>
-                  <textarea name="description" value={newEvent.description} onChange={handleInputChange} rows={2} maxLength={150} className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white resize-none outline-none ${errors.description ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'}`} />
+                <div data-error={!!errors.description}>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mô tả ngắn <span className="text-red-500">*</span></label>
+                  <textarea
+                    name="description"
+                    value={newEvent.description}
+                    onChange={handleInputChange}
+                    onBlur={e => validateField('description', e.target.value)}
+                    rows={2}
+                    maxLength={150}
+                    className={inputCls('description') + ' resize-none'}
+                  />
+                  <div className="flex justify-between items-center mt-1">
+                    <ErrorMsg name="description" />
+                    <span className="text-[10px] text-gray-400 font-bold ml-auto">{newEvent.description.length}/150</span>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mô tả chi tiết</label>
-                  <textarea name="detailedDescription" value={newEvent.detailedDescription} onChange={handleInputChange} rows={5} className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none" />
+                  <textarea
+                    name="detailedDescription"
+                    value={newEvent.detailedDescription}
+                    onChange={handleInputChange}
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none focus:border-purple-400 transition"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="Yêu cầu" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none" />
-                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="Lợi ích" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none" />
-                </div>
-              </div>
-            </section>
-
-            {/* 5. Quy định & FAQ */}
-            <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
-              <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
-                <MdOutlineGavel className="text-red-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">5. Quy định & FAQ</h2>
-              </div>
-              <div className="space-y-8">
-                <div>
-                  <div className="flex justify-between items-center mb-4"><label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Quy định</label><button type="button" onClick={() => addArrayItem('rules')} className="text-xs font-bold text-blue-500">+ THÊM QUY ĐỊNH</button></div>
-                  <div className="space-y-3">
-                    {newEvent.rules.map((rule, i) => (
-                      <div key={i} className="flex gap-2">
-                        <input value={rule} onChange={(e) => handleArrayChange(i, e.target.value, 'rules')} className="flex-1 px-4 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-blue-500" />
-                        <button type="button" onClick={() => removeArrayItem(i, 'rules')} className="text-gray-300 hover:text-red-500"><FaTrash size={14} /></button>
-                      </div>
-                    ))}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Yêu cầu tham gia</label>
+                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="Yêu cầu..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
                   </div>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-4"><label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phần thưởng</label><button type="button" onClick={() => addArrayItem('rewards')} className="text-xs font-bold text-yellow-500">+ THÊM PHẦN THƯỞNG</button></div>
-                  <div className="space-y-3">
-                    {newEvent.rewards.map((reward, i) => (
-                      <div key={i} className="flex gap-2">
-                        <input value={reward} onChange={(e) => handleArrayChange(i, e.target.value, 'rewards')} className="flex-1 px-4 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-yellow-500" />
-                        <button type="button" onClick={() => removeArrayItem(i, 'rewards')} className="text-gray-300 hover:text-red-500"><FaTrash size={14} /></button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-4"><label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Câu hỏi</label><button type="button" onClick={addFaq} className="text-xs font-bold text-blue-500">+ THÊM FAQ</button></div>
-                  <div className="space-y-4">
-                    {newEvent.faqs.map((faq, i) => (
-                      <div key={i} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border dark:border-gray-600 space-y-2 relative">
-                        <button type="button" onClick={() => removeFaq(i)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><FaTrash size={12} /></button>
-                        <input value={faq.question} onChange={(e) => handleFaqChange(i, 'question', e.target.value)} placeholder="Câu hỏi" className="w-full bg-transparent border-b dark:text-white outline-none pb-1" />
-                        <textarea value={faq.answer} onChange={(e) => handleFaqChange(i, 'answer', e.target.value)} placeholder="Trả lời" rows={2} className="w-full bg-transparent dark:text-gray-300 outline-none resize-none pt-1" />
-                      </div>
-                    ))}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Lợi ích khi tham gia</label>
+                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="Lợi ích..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
                   </div>
                 </div>
               </div>
@@ -506,46 +659,92 @@ const EditSportEvent = () => {
 
           </div>
 
-          {/* Preview Sidebar - Right Side */}
+          {/* ========== RIGHT PREVIEW ========== */}
           <div className="lg:col-span-4 lg:sticky lg:top-8 h-fit space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
-                <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2 mb-8 uppercase text-xs tracking-widest">
-                    <FaStar className="text-yellow-400" /> BẢN XEM TRƯỚC CẬP NHẬT
-                </h3>
+              <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2 mb-8 uppercase text-xs tracking-widest">
+                <FaStar className="text-yellow-400" /> BẢN XEM TRƯỚC CẬP NHẬT
+              </h3>
 
-                {/* Event Card Preview */}
-                <div className="rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-2xl mb-8">
-                  <div className="relative h-44 bg-gray-100 dark:bg-gray-700">
-                    {newEvent.image && <img src={newEvent.image} alt="Preview" className="w-full h-full object-cover" />}
-                    <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 shadow-sm uppercase tracking-tighter">{newEvent.category}</div>
+              {/* Preview Card */}
+              <div className="rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-2xl mb-8">
+                <div className="relative h-44 bg-gray-100 dark:bg-gray-700">
+                  {newEvent.image && <img src={newEvent.image} alt="Preview" className="w-full h-full object-cover" />}
+                  <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-xl text-[10px] font-black shadow-sm">
+                    {newEvent.eventType === 'Ngoài trời'
+                      ? <span className="text-green-600">🌿 Ngoài trời</span>
+                      : <span className="text-blue-600">🏠 Trong nhà</span>
+                    }
                   </div>
-                  <div className="p-6 bg-white dark:bg-gray-800">
-                    <h4 className="font-black text-gray-800 dark:text-white line-clamp-2 min-h-[3rem] mb-4">{newEvent.name || 'Tên sự kiện'}</h4>
-                    <div className="grid grid-cols-2 gap-y-2 text-[10px] font-bold text-gray-400 mb-6 uppercase tracking-tighter">
-                      <span className="flex items-center gap-1"><FaCalendarAlt className="text-blue-500" /> {newEvent.startDate ? moment(newEvent.startDate).format('DD/MM/YYYY') : '--'}</span>
-                      <span className="flex items-center gap-1"><FaUsers className="text-green-500" /> {newEvent.maxParticipants} NGƯỜI</span>
-                      <span className="col-span-2 flex items-center gap-1 text-blue-600"><FaBullseye /> {newEvent.targetValue}{newEvent.targetUnit}</span>
+                  <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 shadow-sm uppercase tracking-tighter">
+                    {newEvent.category}
+                  </div>
+                </div>
+                <div className="p-6 bg-white dark:bg-gray-800">
+                  <h4 className="font-black text-gray-800 dark:text-white line-clamp-2 min-h-[3rem] mb-4">
+                    {newEvent.name || 'Tên sự kiện'}
+                  </h4>
+                  <div className="space-y-2 text-[10px] font-bold text-gray-400 mb-6 uppercase tracking-tighter">
+                    <div className="flex items-center gap-1">
+                      <FaCalendarAlt className="text-green-500" />
+                      <span>Bắt đầu: {newEvent.startDate || '--/--/----'}</span>
                     </div>
-                    <div className="w-full py-3 bg-blue-600 text-white text-[10px] font-black text-center rounded-xl opacity-80 cursor-default">XEM CHI TIẾT</div>
+                    <div className="flex items-center gap-1">
+                      <FaCalendarAlt className="text-red-400" />
+                      <span>Kết thúc: {newEvent.endDate || '--/--/----'}</span>
+                    </div>
+                    {newEvent.eventTime && (
+                      <div className="flex items-center gap-1">
+                        <FaClock className="text-orange-400" />
+                        <span>Thời điểm: {newEvent.eventTime}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <FaUsers className="text-blue-500" />
+                      <span>{newEvent.maxParticipants} Người</span>
+                    </div>
+                    {newEvent.targetValue > 0 && (
+                      <div className="flex items-center gap-1 text-blue-600">
+                        <FaBullseye />
+                        <span>{newEvent.targetValue} {newEvent.targetUnit}</span>
+                      </div>
+                    )}
                   </div>
+                  <div className="w-full py-3 bg-blue-600 text-white text-[10px] font-black text-center rounded-xl opacity-80 cursor-default">XEM CHI TIẾT</div>
                 </div>
+              </div>
 
-                <button
-                    type="submit"
-                    disabled={updateMutation.isPending}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-blue-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50 flex"
-                >
-                    {updateMutation.isPending ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : 'CẬP NHẬT THAY ĐỔI'}
-                </button>
-                
-                <div className="mt-6 flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl">
-                    <FaInfoCircle className="text-blue-600 shrink-0" />
-                    <p className="text-[10px] text-blue-800 dark:text-blue-400 font-bold leading-relaxed">
-                        Bạn có thể tiếp tục chỉnh sửa sau này nếu cần thiết.
-                    </p>
-                </div>
+              {/* Checklist */}
+              <div className="space-y-3 mb-8">
+                {[
+                  { label: 'Tên sự kiện', done: !!newEvent.name },
+                  { label: 'Thời gian sự kiện', done: !!(newEvent.startDate && newEvent.endDate && newEvent.eventTime) },
+                  { label: 'Địa điểm', done: !!newEvent.location },
+                  { label: 'Ảnh bìa', done: !!newEvent.image },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                    <FaCheckCircle className={item.done ? 'text-green-500' : 'text-gray-300'} />
+                    <span className="text-sm dark:text-gray-300">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-blue-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50 flex"
+              >
+                {updateMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : 'CẬP NHẬT THAY ĐỔI'}
+              </button>
+
+              <div className="mt-6 flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl">
+                <FaInfoCircle className="text-blue-600 shrink-0" />
+                <p className="text-[10px] text-blue-800 dark:text-blue-400 font-bold leading-relaxed">
+                  Bạn có thể tiếp tục chỉnh sửa sau này nếu cần thiết.
+                </p>
+              </div>
             </div>
           </div>
 

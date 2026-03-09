@@ -1,0 +1,123 @@
+import { Request, Response } from 'express'
+import sportEventVideoSessionService from '~/services/userServices/sportEventVideoSession.services'
+
+// ─── Join Video Session ────────────────────────────────────────────────────────
+export const joinVideoSessionController = async (req: Request, res: Response) => {
+    try {
+        const { eventId } = req.params
+        const userId = (req as any).decoded?.user_id
+        const { sessionId } = req.body
+
+        const videoSession = await sportEventVideoSessionService.joinVideoSessionService(
+            eventId,
+            userId,
+            sessionId
+        )
+
+        return res.status(201).json({
+            result: videoSession,
+            message: 'Đã tham gia video call thành công'
+        })
+    } catch (error) {
+        return res.status(400).json({
+            message: (error as Error).message
+        })
+    }
+}
+
+// ─── End Video Session ─────────────────────────────────────────────────────────
+export const endVideoSessionController = async (req: Request, res: Response) => {
+    try {
+        const { eventId, vsId } = req.params
+        const userId = (req as any).decoded?.user_id
+        const { activeSeconds, totalSeconds } = req.body
+
+        // Validate input
+        if (activeSeconds === undefined || activeSeconds === null) {
+            return res.status(400).json({ message: 'activeSeconds là bắt buộc' })
+        }
+        if (totalSeconds === undefined || totalSeconds === null) {
+            return res.status(400).json({ message: 'totalSeconds là bắt buộc' })
+        }
+        if (activeSeconds < 0 || totalSeconds < 0) {
+            return res.status(400).json({ message: 'Giá trị thời gian không hợp lệ' })
+        }
+
+        const result = await sportEventVideoSessionService.endVideoSessionService(
+            eventId,
+            vsId,
+            userId,
+            Number(activeSeconds),
+            Number(totalSeconds)
+        )
+
+        return res.json({
+            result,
+            message: 'Kết thúc video call và ghi nhận tiến độ thành công'
+        })
+    } catch (error) {
+        return res.status(400).json({
+            message: (error as Error).message
+        })
+    }
+}
+
+// ─── Get Video Sessions (history) ─────────────────────────────────────────────
+export const getVideoSessionsController = async (req: Request, res: Response) => {
+    try {
+        const { eventId } = req.params
+        const userId = (req as any).decoded?.user_id
+
+        const sessions = await sportEventVideoSessionService.getVideoSessionsService(eventId, userId)
+
+        return res.json({
+            result: sessions,
+            message: 'Lấy lịch sử video session thành công'
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: (error as Error).message
+        })
+    }
+}
+
+// ─── Get Active Video Session ──────────────────────────────────────────────────
+export const getActiveVideoSessionController = async (req: Request, res: Response) => {
+    try {
+        const { eventId } = req.params
+        const userId = (req as any).decoded?.user_id
+
+        const session = await sportEventVideoSessionService.getActiveVideoSessionService(
+            eventId,
+            userId
+        )
+
+        return res.json({
+            result: session,
+            message: session ? 'Có video session đang hoạt động' : 'Không có video session đang hoạt động'
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: (error as Error).message
+        })
+    }
+}
+
+// ─── Get Video Session Stats ──────────────────────────────────────────────────
+export const getVideoSessionStatsController = async (req: Request, res: Response) => {
+    try {
+        const { eventId } = req.params
+        const userId = (req as any).decoded?.user_id
+
+        const stats = await sportEventVideoSessionService.getVideoSessionStatsService(eventId, userId)
+
+        return res.json({
+            result: stats,
+            message: 'Lấy thống kê video session thành công'
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: (error as Error).message
+        })
+    }
+}

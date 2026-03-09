@@ -24,7 +24,8 @@ export enum NotificationTypes {
   bookmarkAlbum,
   shareMealPlan,
   mealPlanInvite,
-  system
+  system,
+  sportEventInvite
 }
 
 // có 2 kiểu type là đủ 5000 follow hoặc gửi minh chứng

@@ -14,7 +14,7 @@ export default function Bookmark() {
       return bookmarkUser()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   return (

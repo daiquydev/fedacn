@@ -32,7 +32,7 @@ export default function PieChart({ meal, profile }) {
       })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const item = mealItem?.data.result[0] ? mealItem?.data.result[0].total_calories : 0

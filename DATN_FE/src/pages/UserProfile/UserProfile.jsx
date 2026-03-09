@@ -33,11 +33,20 @@ export default function UserProfile() {
       return getProfile(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
   const profileOwner = useMemo(() => userData?.data?.result?.[0], [userData])
   const isFollowing = Boolean(profileOwner?.is_following)
   const isSelf = profile?.user_id === id
+
+  // Kiểm tra người kia có follow lại mình không (để biết là "bạn bè" hay "đã gửi lời mời")
+  const isMutual = useMemo(() => {
+    if (!profileOwner || !profile) return false
+    // profileOwner.followers là danh sách người follow họ, check xem mình có trong đó không
+    const theirFollowers = profileOwner?.followers || []
+    return theirFollowers.some((f) => String(f._id) === String(profile?.user_id))
+  }, [profileOwner, profile])
+
   const followMutation = useMutation({
     mutationFn: (body) => followUser(body)
   })
@@ -54,7 +63,7 @@ export default function UserProfile() {
             queryClient.invalidateQueries({
               queryKey: ['user-profile']
             })
-            toast.success('Đã hủy theo dõi')
+            toast.success('Đã hủy kết bạn')
           }
         }
       )
@@ -64,7 +73,7 @@ export default function UserProfile() {
         {
           onSuccess: () => {
             newSocket.emit('follow', {
-              content: 'Đã theo dõi bạn',
+              content: isMutual ? 'Đã chấp nhận lời mời kết bạn' : 'Đã gửi lời mời kết bạn với bạn',
               to: id,
               name: profile.name,
               avatar: profile.avatar
@@ -72,7 +81,7 @@ export default function UserProfile() {
             queryClient.invalidateQueries({
               queryKey: ['user-profile']
             })
-            toast.success('Theo dõi thành công')
+            toast.success(isMutual ? 'Đã trở thành bạn bè!' : 'Đã gửi lời mời kết bạn')
           }
         }
       )
@@ -128,12 +137,18 @@ export default function UserProfile() {
                       <div onClick={handleFollow}>
                         {!isFollowing ? (
                           <button className='block btn btn-xs  md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>
-                            <div className='flex text-xs justify-center gap-1 items-center'>+ Theo dõi</div>
+                            <div className='flex text-xs justify-center gap-1 items-center'>+ Kết bạn</div>
+                          </button>
+                        ) : isMutual ? (
+                          <button className='block btn btn-xs  md:inline-block md:w-auto  bg-emerald-600 hover:bg-emerald-700 border-none text-white rounded-lg font-semibold text-sm  md:order-2'>
+                            <div className='flex text-xs justify-center gap-1 items-center'>
+                              <FaCheckCircle /> <div>Bạn bè</div>
+                            </div>
                           </button>
                         ) : (
                           <button className='block btn btn-xs  md:inline-block md:w-auto  bg-blue-400 hover:bg-blue-500 border-none text-white rounded-lg font-semibold text-sm  md:order-2'>
                             <div className='flex text-xs justify-center gap-1 items-center'>
-                              <FaCheckCircle /> <div>Đã theo dõi</div>
+                              <FaCheckCircle /> <div>Đã gửi lời mời</div>
                             </div>
                           </button>
                         )}

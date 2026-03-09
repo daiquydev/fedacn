@@ -36,6 +36,16 @@ class UsersService {
     )
 
     if (user_id !== follow_id) {
+      // Kiểm tra xem follow_id có đang follow user_id không (mutual = kết bạn thành công)
+      const isAlreadyFollowingBack = await FollowModel.findOne({
+        user_id: new ObjectId(follow_id),
+        follow_id: new ObjectId(user_id)
+      })
+
+      const notificationContent = isAlreadyFollowingBack
+        ? 'Đã chấp nhận lời mời kết bạn của bạn'
+        : 'Đã gửi lời mời kết bạn với bạn'
+
       await NotificationModel.findOneAndUpdate(
         {
           sender_id: new ObjectId(user_id),
@@ -47,7 +57,7 @@ class UsersService {
           sender_id: new ObjectId(user_id),
           receiver_id: new ObjectId(follow_id),
           link_id: user_id,
-          content: 'Đã theo dõi bạn',
+          content: notificationContent,
           type: NotificationTypes.follow
         },
         { upsert: true }

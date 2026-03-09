@@ -35,7 +35,18 @@ import nutritionRouter from './routes/userRoutes/nutrition.routes'
 import lowdbRecipesRouter from './routes/userRoutes/lowdbRecipes.routes'
 import personalDashboardRouter from './routes/userRoutes/personalDashboard.routes'
 import sportEventRouter from './routes/userRoutes/sportEvent.routes'
-
+import sportCategoryRouter from './routes/userRoutes/sportCategory.routes'
+import adminSportCategoryRouter from './routes/adminRoutes/sportCategory.routes'
+import adminSportEventRouter from './routes/adminRoutes/sportEvent.routes'
+import exerciseRouter from './routes/userRoutes/exercise.routes'
+import workoutSessionRouter from './routes/userRoutes/workoutSession.routes'
+import publicEquipmentRouter from './routes/userRoutes/equipment.routes'
+import publicMuscleGroupRouter from './routes/userRoutes/muscleGroup.routes'
+import adminEquipmentRouter from './routes/adminRoutes/equipment.routes'
+import adminMuscleGroupRouter from './routes/adminRoutes/muscleGroup.routes'
+import adminExerciseRouter from './routes/adminRoutes/exercise.routes'
+import aiRouter from './routes/userRoutes/ai.routes'
+import savedWorkoutTemplateRouter from './routes/userRoutes/savedWorkoutTemplate.routes'
 const app: Express = express()
 const port = envConfig.port
 
@@ -106,8 +117,20 @@ app.use('/api/lowdb-recipes', lowdbRecipesRouter)
 app.use('/api/nutrition', nutritionRouter)
 app.use('/api/personal-dashboard', personalDashboardRouter)
 app.use('/api/sport-events', sportEventRouter)
+app.use('/api/sport-categories', sportCategoryRouter)
+app.use('/api/exercises', exerciseRouter)
+app.use('/api/workout-sessions', workoutSessionRouter)
+app.use('/api/equipment', publicEquipmentRouter)
+app.use('/api/muscle-groups', publicMuscleGroupRouter)
+app.use('/api/ai', aiRouter)
+app.use('/api/saved-workouts', savedWorkoutTemplateRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)
+app.use('/api/admin/sport-categories', adminSportCategoryRouter)
+app.use('/api/admin/sport-events', adminSportEventRouter)
+app.use('/api/admin/equipment', adminEquipmentRouter)
+app.use('/api/admin/muscle-groups', adminMuscleGroupRouter)
+app.use('/api/admin/exercises', adminExerciseRouter)
 app.use('/api/admin', userAdminRouter)
 app.use('/api/inspectors', inspectorRouter)
 app.use('/api/writters', writterRouter)
@@ -120,11 +143,11 @@ initSocket(httpServer)
 async function startServer() {
   try {
     await connectDB()
-    
+
     // Initialize database and seed data after connection
     trainRecipesRecommender()
     await initializeDatabase()
-    
+
     httpServer.listen(port, () => {
       console.log(`Example app listening on port ${port}`)
     })

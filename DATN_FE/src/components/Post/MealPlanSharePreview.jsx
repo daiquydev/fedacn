@@ -26,7 +26,7 @@ export default function MealPlanSharePreview({ mealPlanId, prefetchedMealPlan, o
     queryKey: ['shared-meal-plan', normalizedId],
     queryFn: () => getMealPlanDetail(normalizedId),
     enabled: shouldFetch,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   if (!normalizedId) {

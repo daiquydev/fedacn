@@ -18,9 +18,12 @@ import MealScheduleModel from '~/models/schemas/mealSchedule.schema'
 import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
+import AIUsageLogModel from '~/models/schemas/aiUsageLog.schema'
+import SportEventModel from '~/models/schemas/sportEvent.schema'
 import UserModel from '~/models/schemas/user.schema'
 import WorkoutItemModel from '~/models/schemas/workoutItem.schemas'
 import WorkoutScheduleModel from '~/models/schemas/workoutSchedule.schema'
+import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import { hashPassword } from '~/utils/crypto'
 import { sendAcceptEmailNodeMailer, sendRejectEmailNodeMailer } from '~/utils/emailMailer'
 
@@ -500,128 +503,197 @@ class UserAdminService {
     return user
   }
   async dashboardService() {
-    // lấy số lượng user có role là user, số lượng user có role là writter, số lượng user có role là inspector, số lượng user có role là chef
-    const [user, writter, inspector, chef] = await Promise.all([
+    // === ACCOUNT ===
+    const [user, activeUser] = await Promise.all([
       UserModel.countDocuments({ role: UserRoles.user }),
-      UserModel.countDocuments({ role: UserRoles.writter }),
-      UserModel.countDocuments({ role: UserRoles.inspector }),
-      UserModel.countDocuments({ role: UserRoles.chef })
-    ])
-    // lấy số lượng user đang active có role là user, số lượng user đang active có role là writter, số lượng user đang active có role là inspector, số lượng user đang active có role là chef
-    const [activeUser, activeWritter, activeInspector, activeChef] = await Promise.all([
-      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.active }),
-      UserModel.countDocuments({ role: UserRoles.writter, status: UserStatus.active }),
-      UserModel.countDocuments({ role: UserRoles.inspector, status: UserStatus.active }),
-      UserModel.countDocuments({ role: UserRoles.chef, status: UserStatus.active })
+      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.active })
     ])
 
-    // lấy số lượng công thức đang active, số lượng công thức đang pending, số lượng công thức bị reject
+    // === FOOD CONTENT ===
     const [activeRecipe, pendingRecipe, rejectRecipe] = await Promise.all([
       RecipeModel.countDocuments({ status: RecipeStatus.accepted }),
       RecipeModel.countDocuments({ status: RecipeStatus.pending }),
       RecipeModel.countDocuments({ status: RecipeStatus.rejected })
     ])
-
-    // lấy số lương album đang active, số lượng album đang pending, số lượng album bị reject
     const [activeAlbum, pendingAlbum, rejectAlbum] = await Promise.all([
       AlbumModel.countDocuments({ status: AlbumStatus.accepted }),
       AlbumModel.countDocuments({ status: AlbumStatus.pending }),
       AlbumModel.countDocuments({ status: AlbumStatus.rejected })
     ])
-
-    // lấy số lượng blog đang active, số lượng blog đang pending, số lượng blog bị reject
     const [activeBlog, pendingBlog, rejectBlog] = await Promise.all([
       BlogModel.countDocuments({ status: BlogStatus.accepted }),
       BlogModel.countDocuments({ status: BlogStatus.pending }),
       BlogModel.countDocuments({ status: BlogStatus.rejected })
     ])
 
-    // lấy số lượng post đăng theo 10 ngày gần nhất
+    // === COMMUNITY STATS ===
+    const tenDaysAgoCommunity = new Date()
+    tenDaysAgoCommunity.setDate(tenDaysAgoCommunity.getDate() - 10)
+
+    const [totalPosts, totalComments, totalLikes, reportedPosts] = await Promise.all([
+      PostModel.countDocuments({ is_banned: false }),
+      CommentPostModel.countDocuments({ is_banned: false }),
+      LikePostModel.countDocuments({}),
+      PostModel.countDocuments({ 'report_post.0': { $exists: true }, is_banned: false })
+    ])
+
+    // 10-ngày trend: posts mỗi ngày
     const posts = await PostModel.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $gte: new Date(new Date().setDate(new Date().getDate() - 10))
+      { $match: { createdAt: { $gte: tenDaysAgoCommunity }, is_banned: false } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ])
+
+    // 10-ngày trend: comments mỗi ngày
+    const dailyComments = await CommentPostModel.aggregate([
+      { $match: { createdAt: { $gte: tenDaysAgoCommunity }, is_banned: false } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ])
+
+    // 10-ngày trend: likes mỗi ngày
+    const dailyLikes = await LikePostModel.aggregate([
+      { $match: { createdAt: { $gte: tenDaysAgoCommunity } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ])
+
+    // === BMI DISTRIBUTION ===
+    const bmiUsers = await UserModel.aggregate([
+      { $match: { BMI: { $ne: null } } },
+      { $project: { BMI: 1 } }
+    ])
+    const underWeight = bmiUsers.filter((u) => u.BMI < 18.5).length
+    const normal = bmiUsers.filter((u) => u.BMI >= 18.5 && u.BMI < 24.9).length
+    const overWeight = bmiUsers.filter((u) => u.BMI >= 25 && u.BMI < 29.9).length
+    const obesity = bmiUsers.filter((u) => u.BMI >= 30).length
+    const totalBmiUsers = bmiUsers.length
+
+    // === AI USAGE ===
+    const tenDaysAgoAI = new Date()
+    tenDaysAgoAI.setDate(tenDaysAgoAI.getDate() - 10)
+
+    const [aiCreatePost, aiAnalyzeFitness, aiAnalyzeWorkout, aiDailyRaw] = await Promise.all([
+      AIUsageLogModel.countDocuments({ feature: 'create_post' }),
+      AIUsageLogModel.countDocuments({ feature: 'analyze_fitness' }),
+      AIUsageLogModel.countDocuments({ feature: 'analyze_workout' }),
+      AIUsageLogModel.aggregate([
+        { $match: { createdAt: { $gte: tenDaysAgoAI } } },
+        {
+          $group: {
+            _id: {
+              date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+              feature: '$feature'
+            },
+            count: { $sum: 1 }
           }
-        }
-      },
+        },
+        { $sort: { '_id.date': 1 } }
+      ])
+    ])
+
+    // Reshape: tách thành 3 series riêng
+    const aiDailyCreatePost = aiDailyRaw
+      .filter((d: any) => d._id.feature === 'create_post')
+      .map((d: any) => ({ _id: d._id.date, count: d.count }))
+    const aiDailyAnalyzeFitness = aiDailyRaw
+      .filter((d: any) => d._id.feature === 'analyze_fitness')
+      .map((d: any) => ({ _id: d._id.date, count: d.count }))
+    const aiDailyAnalyzeWorkout = aiDailyRaw
+      .filter((d: any) => d._id.feature === 'analyze_workout')
+      .map((d: any) => ({ _id: d._id.date, count: d.count }))
+
+    // === SPORT EVENTS ===
+    const [totalEvents, outdoorEvents, indoorEvents] = await Promise.all([
+      SportEventModel.countDocuments({ isDeleted: { $ne: true } }),
+      SportEventModel.countDocuments({ isDeleted: { $ne: true }, eventType: 'Ngoài trời' }),
+      SportEventModel.countDocuments({ isDeleted: { $ne: true }, eventType: 'Trong nhà' })
+    ])
+
+    // Top 5 thể loại sport theo số người tham gia
+    const topCategories = await SportEventModel.aggregate([
+      { $match: { isDeleted: { $ne: true } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-          count: { $sum: 1 }
+          _id: '$category',
+          totalParticipants: { $sum: '$participants' },
+          eventCount: { $sum: 1 }
         }
       },
-      {
-        $sort: { _id: 1 }
-      }
+      { $sort: { totalParticipants: -1 } },
+      { $limit: 5 },
+      { $project: { _id: 0, category: '$_id', totalParticipants: 1, eventCount: 1 } }
     ])
 
-    const users = await UserModel.aggregate([
-      {
-        $match: {
-          BMI: { $ne: null }
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          BMI: 1
-        }
-      }
+    // === WORKOUT SESSIONS ===
+    const tenDaysAgo = new Date()
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10)
+
+    const [totalSessions, totalKcalResult, dailySessions] = await Promise.all([
+      WorkoutSessionModel.countDocuments({ status: 'completed' }),
+      WorkoutSessionModel.aggregate([
+        { $match: { status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$total_calories' } } }
+      ]),
+      WorkoutSessionModel.aggregate([
+        {
+          $match: {
+            status: 'completed',
+            finished_at: { $gte: tenDaysAgo }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$finished_at' } },
+            count: { $sum: 1 },
+            totalKcal: { $sum: '$total_calories' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ])
     ])
-    // tính tổng số lượng người có BMI
-    const underWeight = users.filter((user) => user.BMI < 18.5).length
-    const normal = users.filter((user) => user.BMI >= 18.5 && user.BMI < 24.9).length
-    const overWeight = users.filter((user) => user.BMI >= 25 && user.BMI < 29.9).length
-    const obesity = users.filter((user) => user.BMI >= 30).length
 
-    // tính tổng users
-
-    const totalUser = users.length
+    const totalKcal = totalKcalResult?.[0]?.total ?? 0
 
     return {
       account: {
-        users: {
-          total: user,
-          active: activeUser
-        },
-        writters: {
-          total: writter,
-          active: activeWritter
-        },
-        inspectors: {
-          total: inspector,
-          active: activeInspector
-        },
-        chefs: {
-          total: chef,
-          active: activeChef
-        }
+        users: { total: user, active: activeUser }
       },
       food: {
-        recipes: {
-          total: activeRecipe,
-          pending: pendingRecipe,
-          reject: rejectRecipe
-        },
-        albums: {
-          total: activeAlbum,
-          pending: pendingAlbum,
-          reject: rejectAlbum
-        },
-        blogs: {
-          total: activeBlog,
-          pending: pendingBlog,
-          reject: rejectBlog
-        }
+        recipes: { total: activeRecipe, pending: pendingRecipe, reject: rejectRecipe },
+        albums: { total: activeAlbum, pending: pendingAlbum, reject: rejectAlbum },
+        blogs: { total: activeBlog, pending: pendingBlog, reject: rejectBlog }
       },
       posts,
-      usersBMI: {
-        total: totalUser,
-        underWeight,
-        normal,
-        overWeight,
-        obesity
+      usersBMI: { total: totalBmiUsers, underWeight, normal, overWeight, obesity },
+      sportEvents: {
+        total: totalEvents,
+        outdoor: outdoorEvents,
+        indoor: indoorEvents,
+        topCategories
+      },
+      workoutStats: {
+        totalSessions,
+        totalKcal: Math.round(totalKcal),
+        dailySessions
+      },
+      communityStats: {
+        totalPosts,
+        totalComments,
+        totalLikes,
+        reportedPosts,
+        dailyPosts: posts,
+        dailyComments,
+        dailyLikes
+      },
+      aiUsage: {
+        createPost: aiCreatePost,
+        analyzeFitness: aiAnalyzeFitness,
+        analyzeWorkout: aiAnalyzeWorkout,
+        total: aiCreatePost + aiAnalyzeFitness + aiAnalyzeWorkout,
+        dailyCreatePost: aiDailyCreatePost,
+        dailyAnalyzeFitness: aiDailyAnalyzeFitness,
+        dailyAnalyzeWorkout: aiDailyAnalyzeWorkout
       }
     }
   }

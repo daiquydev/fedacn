@@ -12,6 +12,9 @@ export interface SportEventProgress {
   calories?: number
   proofImage?: string
   notes?: string
+  source?: 'manual' | 'video_call' | 'gps'
+  sessionId?: Types.ObjectId
+  activeSeconds?: number
   createdAt?: Date
   updatedAt?: Date
 }
@@ -27,7 +30,10 @@ const SportEventProgressSchema = new mongoose.Schema<SportEventProgress>(
     time: { type: String },
     calories: { type: Number },
     proofImage: { type: String, default: '' },
-    notes: { type: String, default: '' }
+    notes: { type: String, default: '' },
+    source: { type: String, enum: ['manual', 'video_call', 'gps'], default: 'manual' },
+    sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'sport_event_sessions', default: null },
+    activeSeconds: { type: Number, default: null }
   },
   {
     timestamps: true,

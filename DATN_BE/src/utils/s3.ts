@@ -1,28 +1,18 @@
-import * as Minio from 'minio'
+import { v2 as cloudinary } from 'cloudinary'
+import streamifier from 'streamifier'
 
-const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || 'localhost'
-const MINIO_PORT = Number(process.env.MINIO_PORT || 9000)
-const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true'
-const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY || 'minioadmin'
-const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY || 'minioadmin'
-const MINIO_BUCKET = process.env.MINIO_BUCKET || 'cookhealthy'
-const MINIO_PUBLIC_ENDPOINT = process.env.MINIO_PUBLIC_ENDPOINT
-
-const minioClient = new Minio.Client({
-  endPoint: MINIO_ENDPOINT,
-  port: MINIO_PORT,
-  useSSL: MINIO_USE_SSL,
-  accessKey: MINIO_ACCESS_KEY,
-  secretKey: MINIO_SECRET_KEY
+// Cấu hình Cloudinary từ biến môi trường
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 })
 
-const ensureBucket = async () => {
-  const exists = await minioClient.bucketExists(MINIO_BUCKET)
-  if (!exists) {
-    await minioClient.makeBucket(MINIO_BUCKET, 'us-east-1')
-  }
-}
-
+/**
+ * Upload file lên Cloudinary.
+ * Interface giữ nguyên như uploadFileToS3 cũ để không cần sửa code ở các services.
+ * Trả về { Location, Key, Bucket } tương thích với code cũ.
+ */
 export const uploadFileToS3 = async ({
   filename,
   contentType,
@@ -31,46 +21,50 @@ export const uploadFileToS3 = async ({
   filename: string
   contentType: string
   body: Buffer | string
-}) => {
-  await ensureBucket()
-  const size = Buffer.isBuffer(body) ? body.length : undefined
-  await minioClient.putObject(MINIO_BUCKET, filename, body, size, {
-    'Content-Type': contentType
-  })
+}): Promise<{ Location: string; Key: string; Bucket: string }> => {
+  return new Promise((resolve, reject) => {
+    // Xác định resource_type: 'video' cho video, 'image' cho ảnh, 'raw' cho file khác
+    let resourceType: 'image' | 'video' | 'raw' = 'raw'
+    if (contentType.startsWith('image/')) resourceType = 'image'
+    else if (contentType.startsWith('video/')) resourceType = 'video'
 
-  // Xây public URL ổn định, tự thêm port nếu MINIO_PUBLIC_ENDPOINT thiếu
-  const buildPublicBase = () => {
-    if (MINIO_PUBLIC_ENDPOINT) {
-      try {
-        const url = new URL(MINIO_PUBLIC_ENDPOINT)
-        const defaultHttp = !url.port && url.protocol === 'http:' && MINIO_PORT !== 80
-        const defaultHttps = !url.port && url.protocol === 'https:' && MINIO_PORT !== 443
-        if (defaultHttp || defaultHttps) {
-          url.port = MINIO_PORT.toString()
+    // Lấy public_id từ filename (bỏ extension để Cloudinary quản lý)
+    const publicId = filename.replace(/\.[^/.]+$/, '')
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        public_id: publicId,
+        resource_type: resourceType,
+        overwrite: true
+      },
+      (error, result) => {
+        if (error || !result) {
+          return reject(error || new Error('Cloudinary upload failed'))
         }
-        return url.toString().replace(/\/$/, '')
-      } catch {
-        // Nếu env không hợp lệ, fallback sang cấu hình nội bộ
+        resolve({
+          Location: result.secure_url, // URL công khai HTTPS
+          Key: result.public_id,
+          Bucket: process.env.CLOUDINARY_CLOUD_NAME || ''
+        })
       }
-    }
-    return `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_ENDPOINT}:${MINIO_PORT}`
-  }
+    )
 
-  const publicBase = buildPublicBase()
-
-  return {
-    Location: `${publicBase}/${MINIO_BUCKET}/${filename}`,
-    Key: filename,
-    Bucket: MINIO_BUCKET
-  }
+    // Chuyển Buffer thành Stream để upload
+    const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body)
+    streamifier.createReadStream(buffer).pipe(uploadStream)
+  })
 }
 
-export const deleteFileFromS3 = async (filename: string) => {
+/**
+ * Xóa file trên Cloudinary theo public_id (Key).
+ * Interface giữ nguyên như deleteFileFromS3 cũ.
+ */
+export const deleteFileFromS3 = async (filename: string): Promise<void> => {
   try {
-    const exists = await minioClient.bucketExists(MINIO_BUCKET)
-    if (!exists) return
-    await minioClient.removeObject(MINIO_BUCKET, filename)
+    // filename có thể là public_id hoặc tên file có extension
+    const publicId = filename.replace(/\.[^/.]+$/, '')
+    await cloudinary.uploader.destroy(publicId)
   } catch (error) {
-    console.log(error)
+    console.error('[Cloudinary] Error deleting file:', error)
   }
 }

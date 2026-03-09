@@ -104,7 +104,7 @@ export default function EditAlbum() {
       return getRecipesForChef(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { register: registerRecipe, handleSubmit: handleSubmitRecipe } = useForm({

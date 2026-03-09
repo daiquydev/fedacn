@@ -73,13 +73,12 @@ const TodayMealCard = ({ meal, onNavigate }) => {
   }
 
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
-      isCompleted 
-        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
-        : isSkipped
+    <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${isCompleted
+      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+      : isSkipped
         ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60'
         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-emerald-300'
-    }`}>
+      }`}>
       {image ? (
         <img src={image} alt={meal.name} className="w-16 h-16 rounded-xl object-cover" />
       ) : (
@@ -146,7 +145,7 @@ const MealPlanHistoryCard = ({ schedule }) => {
   }
 
   return (
-    <div 
+    <div
       className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all cursor-pointer"
       onClick={() => navigate(`/meal-plan/${mealPlan?._id}`)}
     >
@@ -171,7 +170,7 @@ const MealPlanHistoryCard = ({ schedule }) => {
           </div>
           {/* Progress bar */}
           <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all"
               style={{ width: `${schedule.progress}%` }}
             />
@@ -253,16 +252,14 @@ export default function PersonalDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <MdDashboard className="text-3xl" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Trang Cá Nhân</h1>
-              <p className="text-white/80">Xin chào, {profile?.name || 'Bạn'}! Theo dõi hoạt động và hành trình dinh dưỡng của bạn.</p>
-            </div>
+      <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-6 py-6">
+        <div className="relative flex items-center gap-4 max-w-7xl mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+            <MdDashboard className="text-white text-2xl" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Trang Cá Nhân</h1>
+            <p className="text-white/80 text-sm mt-0.5">Xin chào, {profile?.name || 'Bạn'}! Theo dõi hoạt động và hành trình dinh dưỡng của bạn.</p>
           </div>
         </div>
       </div>
@@ -281,11 +278,10 @@ export default function PersonalDashboard() {
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap ${
-                  activeTab === id
-                    ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap ${activeTab === id
+                  ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
               >
                 <Icon className="text-lg" />
                 {label}
@@ -353,7 +349,7 @@ export default function PersonalDashboard() {
                     <span>{stats.mealPlans.activePlan.progress}%</span>
                   </div>
                   <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-white rounded-full transition-all"
                       style={{ width: `${stats.mealPlans.activePlan.progress}%` }}
                     />
@@ -367,7 +363,7 @@ export default function PersonalDashboard() {
               {/* Calories Chart */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-gray-900 dark:text-white">Calories tiêu thụ</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">kcal tiêu thụ</h3>
                   <select
                     value={caloriesDays}
                     onChange={(e) => setCaloriesDays(Number(e.target.value))}
@@ -382,22 +378,22 @@ export default function PersonalDashboard() {
                   <AreaChart data={calories}>
                     <defs>
                       <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       tickFormatter={(value) => new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                       stroke="#9CA3AF"
                       fontSize={12}
                     />
                     <YAxis stroke="#9CA3AF" fontSize={12} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1F2937', 
-                        border: 'none', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: 'none',
                         borderRadius: '8px',
                         color: '#fff'
                       }}
@@ -452,7 +448,7 @@ export default function PersonalDashboard() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-900 dark:text-white">Lịch sử thực đơn</h3>
-                <button 
+                <button
                   onClick={() => setActiveTab('mealplans')}
                   className="text-emerald-500 hover:text-emerald-600 text-sm font-medium"
                 >
@@ -486,7 +482,7 @@ export default function PersonalDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{today?.todayNutrition?.calories || 0}</p>
-                    <p className="text-xs text-gray-500">Calories</p>
+                    <p className="text-xs text-gray-500">kcal</p>
                   </div>
                 </div>
               </div>
@@ -537,7 +533,7 @@ export default function PersonalDashboard() {
                     </span>
                   </div>
                   <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all"
                       style={{ width: `${today?.todayNutrition?.total ? (today.todayNutrition.completed / today.todayNutrition.total) * 100 : 0}%` }}
                     />
@@ -582,17 +578,17 @@ export default function PersonalDashboard() {
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={nutrition?.trend || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     tickFormatter={(value) => new Date(value).toLocaleDateString('vi-VN', { weekday: 'short' })}
                     stroke="#9CA3AF"
                     fontSize={12}
                   />
                   <YAxis stroke="#9CA3AF" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1F2937', 
-                      border: 'none', 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1F2937',
+                      border: 'none',
                       borderRadius: '8px',
                       color: '#fff'
                     }}
@@ -650,7 +646,7 @@ export default function PersonalDashboard() {
                         </span>
                       </div>
                       <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className={`h-full bg-${color}-500 rounded-full transition-all`}
                           style={{ width: `${Math.min((actual / goal) * 100, 100)}%` }}
                         />
@@ -716,7 +712,7 @@ export default function PersonalDashboard() {
                   <FaPlus /> Tạo bài viết mới
                 </Link>
               </div>
-              
+
               {myPostsLoading ? (
                 <div className="flex justify-center py-8">
                   <Loading />
@@ -724,8 +720,8 @@ export default function PersonalDashboard() {
               ) : myPosts?.length > 0 ? (
                 <div className="space-y-4">
                   {myPosts.map((post) => (
-                    <div 
-                      key={post._id} 
+                    <div
+                      key={post._id}
                       className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:shadow-md transition-all cursor-pointer"
                       onClick={() => navigate(`/post/${post._id}`)}
                     >
@@ -736,9 +732,9 @@ export default function PersonalDashboard() {
                             <div className={`grid gap-1 ${post.image.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} w-32`}>
                               {post.image.slice(0, 4).map((img, idx) => (
                                 <div key={idx} className="relative aspect-square">
-                                  <img 
-                                    src={getImageUrl(img.url)} 
-                                    alt="" 
+                                  <img
+                                    src={getImageUrl(img.url)}
+                                    alt=""
                                     className="w-full h-full rounded-lg object-cover"
                                   />
                                   {idx === 3 && post.image.length > 4 && (
@@ -751,11 +747,11 @@ export default function PersonalDashboard() {
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Post Content */}
                         <div className="flex-1 min-w-0">
                           <p className="text-gray-900 dark:text-white line-clamp-3 mb-2">{post.content || 'Không có nội dung'}</p>
-                          
+
                           {/* Post Meta */}
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
@@ -772,10 +768,10 @@ export default function PersonalDashboard() {
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* Actions */}
                         <div className="flex items-start gap-2">
-                          <button 
+                          <button
                             onClick={(e) => {
                               e.stopPropagation()
                               navigate(`/post/${post._id}`)
@@ -789,7 +785,7 @@ export default function PersonalDashboard() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {/* Pagination */}
                   {postsPagination && postsPagination.total_pages > 1 && (
                     <div className="flex justify-center gap-2 mt-6">
@@ -833,14 +829,13 @@ export default function PersonalDashboard() {
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">Bài viết nổi bật nhất</h3>
                 <div className="space-y-3">
                   {posts.topPosts.slice(0, 3).map((post, index) => (
-                    <div 
-                      key={post._id} 
+                    <div
+                      key={post._id}
                       className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       onClick={() => navigate(`/post/${post._id}`)}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                        index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-700'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-700'
+                        }`}>
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">

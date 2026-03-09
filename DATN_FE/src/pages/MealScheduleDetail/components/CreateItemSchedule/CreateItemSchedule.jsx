@@ -31,7 +31,7 @@ export default function CreateItemSchedule({ meal }) {
       return getCategoryIngredients()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data, isLoading } = useQuery({
@@ -40,7 +40,7 @@ export default function CreateItemSchedule({ meal }) {
       return getIngredients(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { register: registerIngredients, handleSubmit: handleSubmitIngredients } = useForm({

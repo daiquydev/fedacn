@@ -35,7 +35,7 @@ export default function WritterList() {
       return getAllUserAdmin(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   console.log(queryConfig)

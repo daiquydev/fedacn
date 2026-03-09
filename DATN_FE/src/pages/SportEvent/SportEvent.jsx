@@ -1,45 +1,68 @@
 import React, { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  FaRunning, 
-  FaCalendarAlt, 
-  FaMapMarkerAlt, 
-  FaUserFriends, 
-  FaSearch, 
-  FaTrophy, 
-  FaBiking, 
-  FaSwimmer, 
-  FaDumbbell, 
-  FaPlus 
+import {
+  FaRunning,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaUserFriends,
+  FaSearch,
+  FaTrophy,
+  FaBiking,
+  FaSwimmer,
+  FaDumbbell,
+  FaPlus
 } from 'react-icons/fa'
 import { MdSportsSoccer, MdDirectionsWalk } from 'react-icons/md'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import SportEventCard from './components/SportEventCard'
 import { getAllSportEvents, joinSportEvent } from '../../apis/sportEventApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
+import { currentAccount } from '../../apis/userApi'
 import toast from 'react-hot-toast'
 
 const SportEvent = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  
+
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [eventType, setEventType] = useState('all') // all, online, offline
+  const [eventType, setEventType] = useState('all') // all, Ngoài trời, Trong nhà
   const [sortBy, setSortBy] = useState('popular')
 
   // Fetch sport events with React Query
-  const { 
-    data: eventsData, 
-    isLoading, 
-    error 
+  const {
+    data: eventsData,
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['sportEvents', { sortBy }],
     queryFn: () => getAllSportEvents({ page: 1, limit: 100, sortBy }),
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    staleTime: 1000
   })
 
   const sportEvents = eventsData?.data?.result?.events || eventsData?.result?.events || []
+
+  // Fetch current user's social graph
+  const { data: meData } = useQuery({
+    queryKey: ['me'],
+    queryFn: currentAccount,
+    staleTime: 1000
+  })
+
+  const me = meData?.data?.result?.[0]
+  const myFollowers = useMemo(() => me?.followers || [], [me])
+  const myFollowings = useMemo(() => me?.followings || [], [me])
+  const followerIds = useMemo(() => new Set(myFollowers.map(p => String(p._id))), [myFollowers])
+  const followingIds = useMemo(() => new Set(myFollowings.map(p => String(p._id))), [myFollowings])
+
+  // Friends = mutual follow
+  const myFriends = useMemo(
+    () => myFollowers.filter(p => followingIds.has(String(p._id))),
+    [myFollowers, followingIds]
+  )
+  const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
+  const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
 
   // Join event mutation
   const joinEventMutation = useMutation({
@@ -90,15 +113,33 @@ const SportEvent = () => {
     return filtered
   }, [sportEvents, searchTerm, selectedCategory, eventType, sortBy])
 
-  // Các danh mục thể thao
-  const categories = [
-    { id: 'all', name: 'Tất cả', icon: <MdSportsSoccer /> },
-    { id: 'Chạy bộ', name: 'Chạy bộ', icon: <FaRunning /> },
-    { id: 'Đạp xe', name: 'Đạp xe', icon: <FaBiking /> },
-    { id: 'Bơi lội', name: 'Bơi lội', icon: <FaSwimmer /> },
-    { id: 'Fitness', name: 'Fitness', icon: <FaDumbbell /> },
-    { id: 'Yoga', name: 'Yoga', icon: <MdDirectionsWalk /> }
-  ]
+  // Fetch sport categories
+  const { data: categoriesData } = useQuery({
+    queryKey: ['sportCategories'],
+    queryFn: () => sportCategoryApi.getAll(),
+    staleTime: 1000
+  })
+
+  // Dynamic categories from DB
+  const dbCategories = categoriesData?.data?.result || []
+
+  // Custom Icon Mapping if needed (optional)
+  const getIconForCategory = (name) => {
+    switch (name?.toLowerCase()) {
+      case 'chạy bộ': return <FaRunning />
+      case 'đạp xe': return <FaBiking />
+      case 'bơi lội': return <FaSwimmer />
+      case 'fitness': return <FaDumbbell />
+      case 'yoga': return <MdDirectionsWalk />
+      default: return <MdSportsSoccer />
+    }
+  }
+
+  // Filter categories based on selected eventType ('Ngoài trời' or 'Trong nhà')
+  const availableCategories = useMemo(() => {
+    if (eventType === 'all') return dbCategories
+    return dbCategories.filter(cat => cat.type === eventType)
+  }, [dbCategories, eventType])
 
   const handleJoinEvent = (eventId) => {
     joinEventMutation.mutate(eventId)
@@ -106,7 +147,7 @@ const SportEvent = () => {
 
   // Skeleton loader
   const SkeletonCard = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 animate-pulse">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 animate-pulse">
       <div className="h-48 bg-gray-300 dark:bg-gray-700" />
       <div className="p-4">
         <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded mb-3 w-3/4" />
@@ -123,118 +164,129 @@ const SportEvent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+      {/* Page Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-500 px-6 py-6">
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 container mx-auto">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <MdSportsSoccer className="text-white text-2xl" />
+            </div>
             <div>
-              <h1 className="text-4xl font-bold mb-2">Sự kiện Thể thao</h1>
-              <p className="text-red-100">
-                Khám phá và tham gia các sự kiện thể thao hấp dẫn
-              </p>
+              <h1 className="text-2xl font-bold text-white">Sự kiện Thể thao</h1>
+              <p className="text-white/75 text-sm mt-0.5">Khám phá và đăng ký tham gia các sự kiện phù hợp với bạn</p>
             </div>
-            <div className="flex gap-3">
-              <Link
-                to="/sport-event/my-events"
-                className="bg-white text-red-600 hover:bg-red-50 px-6 py-3 rounded-lg font-semibold transition shadow-md flex items-center gap-2"
-              >
-                <FaTrophy />
-                Sự kiện của tôi
-              </Link>
-              <Link
-                to="/sport-event/create"
-                className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold transition shadow-md flex items-center gap-2"
-              >
-                <FaPlus />
-                Tạo sự kiện mới
-              </Link>
-            </div>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <Link
+              to="/sport-event/my-events"
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2 text-sm"
+            >
+              <FaTrophy /> Sự kiện của tôi
+            </Link>
+            <Link
+              to="/sport-event/create"
+              className="bg-white hover:bg-gray-50 text-red-600 px-4 py-2 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
+            >
+              <FaPlus /> Tạo sự kiện mới
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          {/* Search and Sort */}
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm sự kiện..."
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-red-500 dark:focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* Modern Search & Filters Section */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20 shadow-sm transition-all">
+        <div className="container mx-auto px-4 py-6">
+
+          {/* Top Row: Main Tabs & Search Engine */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
+
+            {/* Event Type Tabs */}
+            <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => { setEventType('all'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${eventType === 'all'
+                  ? 'bg-white text-red-600 shadow-md transform scale-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                Tất cả loại hình
+              </button>
+              <button
+                onClick={() => { setEventType('Ngoài trời'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${eventType === 'Ngoài trời'
+                  ? 'bg-white text-green-600 shadow-md transform scale-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                🌿 Ngoài trời
+              </button>
+              <button
+                onClick={() => { setEventType('Trong nhà'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${eventType === 'Trong nhà'
+                  ? 'bg-white text-blue-600 shadow-md transform scale-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                🏠 Trong nhà
+              </button>
             </div>
 
-            {/* Sort Dropdown */}
-            <div className="w-full md:w-64">
+            {/* Search and Sort */}
+            <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 flex-1 lg:flex-none justify-end">
+              <div className="relative group flex-1 sm:max-w-xs">
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Tìm tên, địa điểm..."
+                  className="w-full pl-11 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full sm:w-48 px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 font-medium dark:text-white focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none cursor-pointer appearance-none"
               >
-                <option value="popular">📊 Phổ biến nhất</option>
-                <option value="newest">🆕 Mới nhất</option>
+                <option value="popular">📊 Nổi bật nhất</option>
+                <option value="newest">🆕 Mới cập nhật</option>
                 <option value="soonest">📅 Sắp diễn ra</option>
               </select>
             </div>
+
           </div>
 
-          {/* Event Type Filter */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button
-              onClick={() => setEventType('all')}
-              className={`px-4 py-2 rounded-full font-medium transition ${
-                eventType === 'all'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setEventType('online')}
-              className={`px-4 py-2 rounded-full font-medium transition ${
-                eventType === 'online'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              🌐 Trực tuyến
-            </button>
-            <button
-              onClick={() => setEventType('offline')}
-              className={`px-4 py-2 rounded-full font-medium transition ${
-                eventType === 'offline'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              📍 Trực tiếp
-            </button>
-          </div>
-
-          {/* Category Pills */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
+          {/* Bottom Row: Dynamic Category Pills */}
+          {availableCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2.5">
               <button
-                key={category.id}
-                className={`flex items-center px-4 py-2 rounded-full font-medium transition ${
-                  selectedCategory === category.id
-                    ? 'bg-red-500 text-white shadow-md'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-                onClick={() => setSelectedCategory(category.id)}
+                className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === 'all'
+                  ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
+                  : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
+                  }`}
+                onClick={() => setSelectedCategory('all')}
               >
-                <span className="mr-2">{category.icon}</span>
-                {category.name}
+                <MdSportsSoccer className={`mr-2 ${selectedCategory === 'all' ? 'text-red-500' : 'text-gray-400'}`} />
+                Tất cả môn
               </button>
-            ))}
-          </div>
+
+              {availableCategories.map((category) => (
+                <button
+                  key={category._id}
+                  className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === category.name
+                    ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
+                    : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
+                    }`}
+                  onClick={() => setSelectedCategory(category.name)}
+                >
+                  <span className={`mr-2 ${selectedCategory === category.name ? 'text-red-500' : 'text-gray-400'}`}>
+                    {getIconForCategory(category.name)}
+                  </span>
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -275,11 +327,13 @@ const SportEvent = () => {
           /* Events Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
-              <SportEventCard 
-                key={event._id || event.id} 
+              <SportEventCard
+                key={event._id || event.id}
                 event={event}
                 onJoin={handleJoinEvent}
                 isJoining={joinEventMutation.isPending && joinEventMutation.variables === (event._id || event.id)}
+                friendIds={friendIds}
+                connectedIds={connectedIds}
               />
             ))}
           </div>

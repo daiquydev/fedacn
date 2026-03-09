@@ -33,7 +33,8 @@ const NotificationTypes = {
   bookmarkAlbum: 9,
   shareMealPlan: 10,
   mealPlanInvite: 11,
-  system: 12
+  system: 12,
+  sportEventInvite: 14
 }
 
 export default function NotificationPopUp() {
@@ -53,7 +54,7 @@ export default function NotificationPopUp() {
       return checkReadNotification()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   useEffect(() => {
@@ -173,8 +174,8 @@ export default function NotificationPopUp() {
                     {isFetchingNextPage
                       ? 'Đang tải ...'
                       : hasNextPage
-                      ? 'Xem thêm kết quả khác'
-                      : 'Không còn thông báo nào '}
+                        ? 'Xem thêm kết quả khác'
+                        : 'Không còn thông báo nào '}
                   </button>
                 </div>
               </div>
@@ -241,6 +242,9 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
     }
     if (notification.type === NotificationTypes.mealPlanInvite) {
       return openInviteModal()
+    }
+    if (notification.type === NotificationTypes.sportEventInvite) {
+      return navigate(`/sport-event/${notification.link_id}`)
     }
     return undefined
   }
@@ -321,7 +325,7 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
           </span>
         </div>
         <div onClick={handleRead} className='ms-3 text-sm font-normal'>
-          <div className='text-sm font-semibold text-gray-900 dark:text-white'>NutriCommunity</div>
+          <div className='text-sm font-semibold text-gray-900 dark:text-white'>FitConnect</div>
           <div className='text-xs font-normal'>{notification.content}</div>
           <span className='text-xs font-medium text-blue-600 dark:text-blue-300'>
             {moment(notification.createdAt).fromNow()}

@@ -53,7 +53,7 @@ export default function RecipeDetail() {
     },
     enabled: Boolean(id),
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
   const likeMutation = useMutation({
     mutationFn: (body) => likeRecipe(body)

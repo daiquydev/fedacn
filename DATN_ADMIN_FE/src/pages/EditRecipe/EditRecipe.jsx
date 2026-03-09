@@ -42,7 +42,7 @@ export default function EditRecipe() {
       return getCategoryIngredients()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data: ingredients, isLoading } = useQuery({
@@ -51,7 +51,7 @@ export default function EditRecipe() {
       return getIngredients(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { register: registerIngredients, handleSubmit: handleSubmitIngredients } = useForm({
@@ -94,7 +94,7 @@ export default function EditRecipe() {
       return getRecipeDetailForWritter(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
   const recipe = data?.data.result[0]
   // console.log(recipe)
@@ -212,7 +212,7 @@ export default function EditRecipe() {
       return getCategoryRecipes()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   return (

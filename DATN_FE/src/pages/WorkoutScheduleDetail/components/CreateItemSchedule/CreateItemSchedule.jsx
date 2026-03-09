@@ -31,7 +31,7 @@ export default function CreateItemSchedule({ workout }) {
       return getActivities(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { register: registerActivity, handleSubmit: handleSubmitActivity } = useForm({
@@ -47,7 +47,6 @@ export default function CreateItemSchedule({ workout }) {
   } = useForm({
     defaultValues: {
       activity_name: '',
-      met: '',
       time: ''
     },
     resolver: yupResolver(schemaAddItemWorkout)
@@ -103,7 +102,6 @@ export default function CreateItemSchedule({ workout }) {
       return {
         activity_name: item.activity_name,
         time: item.time,
-        met: item.met,
         workout_schedule_id: workout._id,
         current_date: timeWorkout
       }
@@ -241,15 +239,6 @@ export default function CreateItemSchedule({ workout }) {
             register={register}
             errors={errors.activity_name}
             placeholder='Nhập tên hoạt động'
-          />
-          <Input
-            title='Nhập chỉ số met'
-            type='number'
-            name='met'
-            register={register}
-            errors={errors.met}
-            id='met'
-            placeholder='Nhập chỉ số met'
           />
           <Input
             title='Nhập thời gian (phút)'
@@ -399,9 +388,7 @@ const AcitivityItem = ({ activity, workoutState, setWorkoutState }) => {
     const dataWithId = {
       activity_name: activity.activity,
       time: data.time,
-      id: activity._id,
-      // chuyển đổi met từ string sang number
-      met: parseFloat(activity.met)
+      id: activity._id
     }
     console.log(dataWithId)
     setWorkoutState((prev) => [...prev, dataWithId])

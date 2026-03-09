@@ -14,7 +14,7 @@ export default function Logo({
         <FaLeaf className="h-8 w-8 text-green-500" size={sizeLogo} />
       </div>
       <span className={textClassName}>
-        <span className='text-green-600 dark:text-green-400'>NutriCommunity</span>
+        <span className='text-green-600 dark:text-green-400'>FitConnect</span>
         <DarkMode />
       </span>
     </div>

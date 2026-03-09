@@ -25,7 +25,7 @@ export default function LineChart({ workout }) {
       return getDateWorkoutItem(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const dataCalo = lineData?.data.result.workoutDate
@@ -39,7 +39,7 @@ export default function LineChart({ workout }) {
       },
       title: {
         display: true,
-        text: 'Biểu đồ lượng calo đã, đang và dự kiến đốt cháy'
+        text: 'Biểu đồ kcal đã, đang và dự kiến đốt cháy'
       }
     }
   }
@@ -48,7 +48,7 @@ export default function LineChart({ workout }) {
     labels,
     datasets: [
       {
-        label: 'Lượng calo',
+        label: 'kcal',
         data: dataCalo?.map((item) => item.total_calories),
         borderColor: 'rgb(255, 99, 132)',
         backgroundColor: 'rgba(255, 99, 132, 0.5)'

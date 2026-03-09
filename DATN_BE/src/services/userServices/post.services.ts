@@ -61,7 +61,7 @@ class PostService {
       body: processedBuffer
     })) as { Location?: string }
 
-    const location = uploadResult?.Location || `http://localhost:9000/cookhealthy/${key}`
+    const location = uploadResult?.Location || ''
 
     return {
       location,
@@ -1912,7 +1912,7 @@ class PostService {
   // Function để lấy posts có meal plan
   async getPostsWithMealPlanService({ page = '1', limit = '10', user_id }: { page?: string; limit?: string; user_id?: string }) {
     const skip = (Number(page) - 1) * Number(limit)
-    
+
     const aggregationPipeline = [
       {
         $match: {

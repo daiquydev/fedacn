@@ -20,7 +20,7 @@ export default function RecipeList() {
       return getCategoryRecipes()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data, isLoading } = useQuery({
@@ -29,7 +29,7 @@ export default function RecipeList() {
       return getMyRecipes(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const handleChangeSort = (e) => {

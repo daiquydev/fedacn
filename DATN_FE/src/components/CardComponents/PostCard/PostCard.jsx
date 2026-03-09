@@ -25,6 +25,8 @@ import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
 import { getImageUrl } from '../../../utils/imageUrl'
 import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
+import SportEventPreviewCard, { extractSportEventId, cleanSportEventMarker } from '../../Post/SportEventPreviewCard'
+import ActivityPreviewCard, { extractActivityIds, cleanActivityMarker } from '../../Post/ActivityPreviewCard'
 
 export default function PostCard({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -259,12 +261,6 @@ function CheckTypeOfPost({
             </div>
           </div>
           <div className='flex gap-1 items-center'>
-            <div
-              onClick={() => navigate(`/post/${data._id}`)}
-              className='text-xs md:text-sm font-medium transition-all hover:text-blue-400 cursor-pointer'
-            >
-              Xem thêm
-            </div>
             <ThreeDotPost
               isPending={isPending}
               userID={data.user._id}
@@ -274,9 +270,20 @@ function CheckTypeOfPost({
           </div>
         </div>
         <ShowMoreContent className='px-4 text-sm whitespace-pre-line pb-5 md:px-0'>
-          <p className=''>{data.content}</p>
+          <p className=''>{cleanActivityMarker(cleanSportEventMarker(data.content))}</p>
         </ShowMoreContent>
-        <CheckLengthOfImages navigate={navigate} data={data} images={data.images} />
+        <CheckLengthOfImages navigate={navigate} data={data} images={data?.images} />
+        {/* Sport Event Preview */}
+        {extractSportEventId(data.content) && (
+          <SportEventPreviewCard eventId={extractSportEventId(data.content)} />
+        )}
+        {/* Activity Progress Preview */}
+        {extractActivityIds(data.content) && (
+          <ActivityPreviewCard
+            activityId={extractActivityIds(data.content).activityId}
+            eventId={extractActivityIds(data.content).eventId}
+          />
+        )}
       </>
     )
   }
@@ -325,12 +332,6 @@ function CheckTypeOfPost({
             </div>
           </div>
           <div className='flex gap-1 items-center'>
-            <div
-              onClick={() => navigate(`/post/${data._id}`)}
-              className='text-xs md:text-sm font-medium transition-all hover:text-blue-400 cursor-pointer'
-            >
-              Xem thêm
-            </div>
             <ThreeDotPost
               isPending={isPending}
               userID={data.user._id}
@@ -394,65 +395,69 @@ function CheckTypeOfPost({
           </div>
         </div>
         <div className='flex gap-1 items-center'>
-          <div
-            onClick={() => navigate(`/post/${data._id}`)}
-            className='text-xs md:text-sm font-medium transition-all hover:text-blue-400 cursor-pointer'
-          >
-            Xem thêm
-          </div>
           <ThreeDotPost isPending={isPending} userID={data.user._id} handleDeletePost={handleDeletePost} post={data} />
         </div>
       </div>
       <ShowMoreContent className='px-4  whitespace-pre-line text-sm pb-5 md:px-0'>
-        <p className=''>{data.content}</p>
+        <p className=''>{cleanActivityMarker(cleanSportEventMarker(data.content))}</p>
       </ShowMoreContent>
       <div className='border mt-2 mb-2 dark:border-gray-700 border-red-200 '></div>
-      <div className='flex justify-between items-start'>
-        <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>
-          <div className='flex mx-3 items-center'>
-            <div onClick={checkNavigateProfileParentUser} className='inline-block mr-4'>
-              <img
-                className='rounded-full object-cover max-w-none w-10 h-10 md:w-12 md:h-12'
-                src={data.parent_user.avatar === '' ? useravatar : data.parent_user.avatar}
-              />
-            </div>
-            <div className='flex flex-col'>
-              <div onClick={checkNavigateProfileParentUser} className='flex items-center'>
-                <div className='flex items-center gap-2 hover:underline cursor-pointer  text-lg font-bold mr-2'>
-                  {data.parent_user.name}
-                  {data.parent_user.role === 1 && (
-                    <div className='text-blue-400 rounded-full flex justify-center items-center '>
-                      <FaCheckCircle size={15} />
-                    </div>
-                  )}
+      {data.parent_user && data.parent_post ? (
+        <>
+          <div className='flex justify-between items-start'>
+            <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>
+              <div className='flex mx-3 items-center'>
+                <div onClick={checkNavigateProfileParentUser} className='inline-block mr-4'>
+                  <img
+                    className='rounded-full object-cover max-w-none w-10 h-10 md:w-12 md:h-12'
+                    src={data.parent_user.avatar === '' || !data.parent_user.avatar ? useravatar : data.parent_user.avatar}
+                  />
                 </div>
-              </div>
-              <div className='flex gap-2 items-center'>
-                <div className='text-slate-500 dark:text-slate-300'>{moment(data.parent_post.createdAt).fromNow()}</div>
-                {data.parent_post.status === 0 && (
-                  <div>
-                    <MdPublic />
+                <div className='flex flex-col'>
+                  <div onClick={checkNavigateProfileParentUser} className='flex items-center'>
+                    <div className='flex items-center gap-2 hover:underline cursor-pointer  text-lg font-bold mr-2'>
+                      {data.parent_user.name}
+                      {data.parent_user.role === 1 && (
+                        <div className='text-blue-400 rounded-full flex justify-center items-center '>
+                          <FaCheckCircle size={15} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-                {data.parent_post.status === 1 && (
-                  <div>
-                    <FaUserFriends />
+                  <div className='flex gap-2 items-center'>
+                    <div className='text-slate-500 dark:text-slate-300'>
+                      {data.parent_post.createdAt ? moment(data.parent_post.createdAt).fromNow() : ''}
+                    </div>
+                    {data.parent_post.status === 0 && (
+                      <div>
+                        <MdPublic />
+                      </div>
+                    )}
+                    {data.parent_post.status === 1 && (
+                      <div>
+                        <FaUserFriends />
+                      </div>
+                    )}
+                    {data.parent_post.status === 2 && (
+                      <div>
+                        <RiGitRepositoryPrivateFill />
+                      </div>
+                    )}
                   </div>
-                )}
-                {data.parent_post.status === 2 && (
-                  <div>
-                    <RiGitRepositoryPrivateFill />
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
+          <ShowMoreContent className='px-4 whitespace-pre-line text-sm pb-5 md:px-0'>
+            <p className=''>{data.parent_post.content}</p>
+          </ShowMoreContent>
+          <CheckLengthOfImages navigate={navigate} data={data.parent_post} images={data.parent_images || []} />
+        </>
+      ) : (
+        <div className='px-4 py-4 md:px-0 mx-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-center mt-2'>
+          <span className='text-gray-500 italic'>Bài viết gốc đã bị xóa hoặc không còn hiển thị.</span>
         </div>
-      </div>
-      <ShowMoreContent className='px-4 whitespace-pre-line text-sm pb-5 md:px-0'>
-        <p className=''>{data.parent_post.content}</p>
-      </ShowMoreContent>
-      <CheckLengthOfImages navigate={navigate} data={data.parent_post} images={data.parent_images} />
+      )}
     </>
   )
 }

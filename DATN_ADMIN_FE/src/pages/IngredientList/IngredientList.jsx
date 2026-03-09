@@ -32,7 +32,7 @@ export default function IngredientList() {
       return getCategoryIngredients()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data, isLoading } = useQuery({
@@ -41,7 +41,7 @@ export default function IngredientList() {
       return getIngredients(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const handleChangeCategory = (e) => {

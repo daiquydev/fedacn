@@ -17,7 +17,7 @@ export default function AlbumDetail() {
       return getAlbumForUser(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   const album = data?.data.result[0]
@@ -42,7 +42,7 @@ export default function AlbumDetail() {
       return nextPage
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   const bookmarkMutation = useMutation({

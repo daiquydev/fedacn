@@ -27,7 +27,7 @@ export default function Album() {
       return nextPage
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   const handleChangeSort = (e) => {

@@ -11,6 +11,8 @@
     "fetch:users-posts": "ts-node -r tsconfig-paths/register ./scripts/fetchUsersPostsImages.ts",
     "seed:recipes": "ts-node -r tsconfig-paths/register ./scripts/seedRecipes.ts",
     "seed:users-posts": "ts-node -r tsconfig-paths/register ./scripts/seedUsersAndPosts.ts",
+    "seed:sport-events": "ts-node -r tsconfig-paths/register ./scripts/reseedSportEvents.ts",
+    "seed:exercises": "ts-node -r tsconfig-paths/register ./src/scripts/seedExercises.ts",
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "audit:recipe-instructions": "ts-node -r tsconfig-paths/register ./src/scripts/auditRecipeInstructions.ts",
     "lint": "eslint .",
@@ -33,6 +35,7 @@
     "@types/morgan": "^1.9.5",
     "@types/node": "^20.6.0",
     "@types/nodemailer": "^6.4.15",
+    "@types/streamifier": "^0.1.2",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^6.6.0",
     "@typescript-eslint/parser": "^6.6.0",
@@ -61,6 +64,7 @@
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "cloudinary": "^2.9.0",
     "content-based-recommender-ts": "^2.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -83,6 +87,7 @@
     "nodemailer": "^6.9.13",
     "sharp": "^0.33.5",
     "socket.io": "^4.7.5",
+    "streamifier": "^0.1.1",
     "uuid": "^9.0.1"
   },
   "engines": {

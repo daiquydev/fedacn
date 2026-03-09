@@ -46,14 +46,14 @@ class SportEventSessionService {
     videoCallUrl?: string
     maxParticipants?: number
   }) {
-    // Verify event exists and is online
+    // Verify event exists and is Trong nhà (indoor)
     const event = await SportEventModel.findById(eventId)
     if (!event) {
       throw new Error('Event not found')
     }
 
-    if (event.eventType !== 'online') {
-      throw new Error('Sessions can only be created for online events')
+    if (event.eventType !== 'Trong nhà') {
+      throw new Error('Sessions can only be created for Trong nhà (indoor) events')
     }
 
     // Check if session number already exists

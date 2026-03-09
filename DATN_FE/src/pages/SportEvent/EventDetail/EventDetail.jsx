@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { 
-  FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaClock, FaInfoCircle, FaCheck, 
-  FaArrowLeft, FaMedal, FaTrophy, FaStar, FaChartLine, FaChevronDown, FaChevronUp, FaStopwatch, 
+import {
+  FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaClock, FaInfoCircle, FaCheck,
+  FaArrowLeft, FaMedal, FaTrophy, FaStar, FaChartLine, FaChevronDown, FaChevronUp, FaStopwatch,
   FaExclamationTriangle, FaBiking, FaSwimmer, FaDumbbell, FaAward
 } from 'react-icons/fa'
 import { MdSportsSoccer, MdLeaderboard } from 'react-icons/md'
@@ -30,30 +30,30 @@ export default function EventDetail() {
       setLoading(true)
       setError(null)
       console.log('🔍 Fetching event with ID:', id)
-      
+
       const response = await getSportEvent(id)
       console.log('📦 Full Response:', response)
       console.log('📦 Response keys:', Object.keys(response))
       console.log('📦 Response.data:', response.data)
       console.log('📦 Response.data?.result:', response.data?.result)
-      
+
       let eventData = response.data?.result
-      
+
       // Fallback if result doesn't exist
       if (!eventData) {
         console.warn('⚠️ No result in response, checking direct response')
         eventData = response.result || response.data
       }
-      
+
       console.log('📍 EventData:', eventData)
       console.log('📍 EventData._id:', eventData?._id)
-      
+
       if (!eventData || !eventData._id) {
         setError('Sự kiện không tồn tại.')
         toast.error('Sự kiện không tồn tại')
         return
       }
-      
+
       setEvent(eventData)
     } catch (error) {
       console.error('Error fetching event:', error)
@@ -69,7 +69,7 @@ export default function EventDetail() {
       setIsJoining(true)
       const response = await joinSportEvent(id)
       const updatedEvent = response.data?.result
-      
+
       setEvent(updatedEvent)
       toast.success('Bạn đã tham gia sự kiện!')
     } catch (error) {
@@ -85,7 +85,7 @@ export default function EventDetail() {
       setIsJoining(true)
       const response = await leaveSportEvent(id)
       const updatedEvent = response.data?.result
-      
+
       setEvent(updatedEvent)
       toast.success('Bạn đã rời khỏi sự kiện!')
       setShowLeaveConfirm(false)
@@ -99,8 +99,8 @@ export default function EventDetail() {
 
   const getCategoryIcon = (category) => {
     if (!category) return <MdSportsSoccer className="text-green-500 text-2xl" />
-    
-    switch(category.toLowerCase()) {
+
+    switch (category.toLowerCase()) {
       case 'chạy bộ':
       case 'running':
         return <FaRunning className="text-green-500 text-2xl" />
@@ -132,14 +132,14 @@ export default function EventDetail() {
   if (error || !event) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="mb-4 flex items-center text-green-500 hover:text-green-600 transition-colors"
         >
           <FaArrowLeft className="mr-2" />
           Quay lại
         </button>
-        
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
           <div className="text-center">
             <FaExclamationTriangle className="text-5xl text-red-500 mx-auto mb-4" />
@@ -149,7 +149,7 @@ export default function EventDetail() {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Sự kiện bạn đang tìm kiếm không được tìm thấy hoặc đã bị xóa.
             </p>
-            <button 
+            <button
               className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
               onClick={() => navigate('/sport-event')}
             >
@@ -168,7 +168,7 @@ export default function EventDetail() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <button 
+      <button
         onClick={() => navigate(-1)}
         className="mb-6 flex items-center text-green-500 hover:text-green-600 transition-colors font-medium"
       >
@@ -183,14 +183,14 @@ export default function EventDetail() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
             <div className="relative h-80 md:h-96 bg-gray-200 dark:bg-gray-700">
               {event.image && (
-                <img 
-                  src={event.image} 
+                <img
+                  src={event.image}
                   alt={event.name}
                   className="w-full h-full object-cover"
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60"></div>
-              
+
               {/* Event Category Badge */}
               <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 rounded-full px-4 py-2 flex items-center">
                 {getCategoryIcon(event.category)}
@@ -275,9 +275,14 @@ export default function EventDetail() {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Mô tả chi tiết</h2>
               <div className="prose dark:prose-invert max-w-none">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-6">
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-4">
                   {event.description}
                 </p>
+                {event.detailedDescription && (
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-6">
+                    {event.detailedDescription}
+                  </p>
+                )}
               </div>
 
               {/* Requirements & Benefits */}
@@ -317,19 +322,25 @@ export default function EventDetail() {
                     <div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Loại sự kiện</div>
                       <div className="font-medium text-gray-900 dark:text-white capitalize">
-                        {event.eventType === 'online' ? 'Trực tuyến' : 'Trực tiếp'}
+                        {event.eventType}
                       </div>
                     </div>
                     <div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Số người tối đa</div>
                       <div className="font-medium text-gray-900 dark:text-white">{event.maxParticipants} người</div>
                     </div>
+                    {event.targetValue > 0 && (
+                      <div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Mục tiêu</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{event.targetValue} {event.targetUnit}</div>
+                      </div>
+                    )}
                     <div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Người tổ chức</div>
                       <div className="flex items-center mt-1">
                         {event.createdBy?.avatar && (
-                          <img 
-                            src={event.createdBy.avatar} 
+                          <img
+                            src={event.createdBy.avatar}
                             alt={event.createdBy.name}
                             className="w-8 h-8 rounded-full mr-2"
                           />
@@ -348,14 +359,14 @@ export default function EventDetail() {
                     <FaUserFriends className="mr-2 text-green-500" />
                     Người tham gia ({event.participants})
                   </h3>
-                  
+
                   {event.participants_ids && event.participants_ids.length > 0 ? (
                     <div className="space-y-2">
                       {(showAllParticipants ? event.participants_ids : event.participants_ids.slice(0, 5)).map((participant) => (
                         <div key={participant._id} className="flex items-center">
                           {participant.avatar && (
-                            <img 
-                              src={participant.avatar} 
+                            <img
+                              src={participant.avatar}
                               alt={participant.name}
                               className="w-8 h-8 rounded-full mr-2"
                             />
@@ -364,7 +375,7 @@ export default function EventDetail() {
                         </div>
                       ))}
                       {event.participants_ids.length > 5 && (
-                        <button 
+                        <button
                           onClick={() => setShowAllParticipants(!showAllParticipants)}
                           className="text-green-500 hover:text-green-600 text-sm pt-2 font-medium"
                         >
@@ -397,7 +408,7 @@ export default function EventDetail() {
                   <span className="text-2xl font-bold text-blue-500">{event.maxParticipants - event.participants}</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-4">
-                  <div 
+                  <div
                     className="bg-green-500 h-3 rounded-full transition-all duration-300"
                     style={{ width: `${(event.participants / event.maxParticipants) * 100}%` }}
                   ></div>
@@ -432,7 +443,7 @@ export default function EventDetail() {
 
             {/* Leaderboard (Mock data - will be updated later) */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-              <div 
+              <div
                 className="bg-gradient-to-r from-green-500 to-green-600 p-4 flex justify-between items-center cursor-pointer"
                 onClick={() => setShowLeaderboard(!showLeaderboard)}
               >
@@ -450,7 +461,7 @@ export default function EventDetail() {
                   {!isEventStarted ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <FaChartLine className="mx-auto text-4xl mb-3 text-gray-300 dark:text-gray-600" />
-                      <p>Bảng xếp hạng sẽ được mở<br/>khi sự kiện bắt đầu</p>
+                      <p>Bảng xếp hạng sẽ được mở<br />khi sự kiện bắt đầu</p>
                       <p className="mt-2 text-sm">
                         {moment(event.startDate).format('DD/MM/YYYY HH:mm')}
                       </p>
@@ -466,8 +477,8 @@ export default function EventDetail() {
                               {index === 2 && <FaMedal className="text-amber-600 text-lg" />}
                               {index >= 3 && <span className="text-sm font-bold text-gray-600 dark:text-gray-300">{index + 1}</span>}
                             </div>
-                            <img 
-                              src={participant.avatar || 'https://via.placeholder.com/32'} 
+                            <img
+                              src={participant.avatar || 'https://via.placeholder.com/32'}
                               alt={participant.name}
                               className="w-6 h-6 rounded-full mr-2"
                             />
@@ -496,15 +507,15 @@ export default function EventDetail() {
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
               <FaExclamationTriangle className="text-red-600 text-xl" />
             </div>
-            
+
             <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center mb-2">
               Rời khỏi sự kiện?
             </h3>
-            
+
             <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
               Bạn có chắc chắn muốn rời khỏi sự kiện "<strong>{event.name}</strong>" không?
             </p>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLeaveConfirm(false)}
@@ -512,7 +523,7 @@ export default function EventDetail() {
               >
                 Hủy
               </button>
-              
+
               <button
                 onClick={handleLeave}
                 disabled={isJoining}

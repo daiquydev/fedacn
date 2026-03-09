@@ -1,40 +1,30 @@
-import { useState, useRef, useContext } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  AiFillHeart,
-  AiOutlineHeart,
-  AiOutlineLoading3Quarters 
+import {
+  AiOutlineLoading3Quarters
 } from 'react-icons/ai'
-import { 
-  FaCheckCircle, 
-  FaUserFriends, 
-  FaMedal, 
-  FaSort, 
-  FaSortUp, 
-  FaSortDown, 
-  FaSearch, 
-  FaTimes, 
-  FaImage, 
-  FaCalendarAlt, 
-  FaMapMarkerAlt, 
-  FaTrophy, 
-  FaUserCircle, 
+import {
+  FaMedal,
+  FaTimes,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaTrophy,
   FaUsers,
   FaArrowLeft,
   FaShare,
-  FaPlus
+  FaPlus,
+  FaSearch,
+  FaUserFriends as FaInvite,
+  FaCheck,
+  FaBell
 } from 'react-icons/fa'
-import { 
-  MdPublic, 
-  MdVideocam, 
-  MdOutlineHistoryEdu, 
-  MdErrorOutline, 
-  MdCheckCircle 
+import {
+  MdVideocam,
+  MdErrorOutline,
+  MdCheckCircle
 } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
-import { PiShareFatLight } from 'react-icons/pi'
-import { LiaComments } from 'react-icons/lia'
 import moment from 'moment'
 import toast from 'react-hot-toast'
 
@@ -48,97 +38,120 @@ import {
   getUserProgress,
   addProgress,
   getParticipants,
-  getLeaderboard,
-  getEventPosts,
-  createEventPost,
-  likeEventPost,
-  shareEventPost,
   checkInSession,
   checkOutSession,
-  isCheckedIn,
-  getSessionAttendance
+  inviteFriendToEvent
 } from '../../apis/sportEventApi'
+import { currentAccount } from '../../apis/userApi'
 
 // Components
-import AttendanceTracker from '../../components/AttendanceTracker'
-import SessionAttendanceSummary from '../../components/SessionAttendanceSummary'
-import SessionNotification from '../../components/SessionNotification'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
-import { AppContext } from '../../contexts/app.context'
 import SportEventProgress from './components/SportEventProgress'
 import SportEventLeaderboard from './components/SportEventLeaderboard'
-import SportEventComments from './components/SportEventComments'
+import SportEventShareModal from '../../components/SportEvent/SportEventShareModal'
+import IndoorEventProgress from './components/IndoorEventProgress'
 
 export default function SportEventDetail() {
 
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { profile } = useContext(AppContext)
-  
+
   // UI State
   const [activeTab, setActiveTab] = useState('details')
   const [searchTerm, setSearchTerm] = useState('')
-  const [showVideoCall, setShowVideoCall] = useState(false)
-  const [showSessionNotification, setShowSessionNotification] = useState(false)
-  const [isSessionActive, setIsSessionActive] = useState(false)
   const [showLeaveModal, setShowLeaveModal] = useState(false)
-  
+  const [showMapPopup, setShowMapPopup] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [friendSearch, setFriendSearch] = useState('')
+  const [invitedIds, setInvitedIds] = useState(new Set())
+
   // Form State
-  const [newPost, setNewPost] = useState({ content: '', images: [] })
-  const [progressUpdate, setProgressUpdate] = useState({ 
-    value: '', 
-    distance: '', 
+  const [progressUpdate, setProgressUpdate] = useState({
+    value: '',
+    distance: '',
     time: '',
-    calories: '', 
+    calories: '',
     proofImage: '',
-    notes: '' 
+    notes: ''
   })
-  const fileInputRef = useRef(null)
 
   // ==================== DATA FETCHING ====================
-  
+
   // Fetch Event Details
-  const { 
-    data: eventData, 
-    isLoading: isLoadingEvent, 
-    error: eventError 
+  const {
+    data: eventData,
+    isLoading: isLoadingEvent,
+    error: eventError
   } = useQuery({
     queryKey: ['sportEvent', id],
     queryFn: () => getSportEvent(id),
     enabled: !!id
   })
 
+  // Fetch current user's friends/followers
+  const { data: meData } = useQuery({
+    queryKey: ['me'],
+    queryFn: currentAccount,
+    staleTime: 1000
+  })
+
+  const me = meData?.data?.result?.[0]
+  const myFollowers = useMemo(() => me?.followers || [], [me])
+  const myFollowings = useMemo(() => me?.followings || [], [me])
+  const followerIds = useMemo(() => new Set(myFollowers.map(p => String(p._id))), [myFollowers])
+  const followingIds = useMemo(() => new Set(myFollowings.map(p => String(p._id))), [myFollowings])
+
+  // Friends = mutual follow
+  const myFriends = useMemo(
+    () => myFollowers.filter(p => followingIds.has(String(p._id))),
+    [myFollowers, followingIds]
+  )
+  const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
+
+  // All people I'm connected to (friends + following) for social ring detection
+  const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
+
+  // Filtered friends for invite modal
+  const filteredFriendsForInvite = useMemo(() => {
+    const kw = friendSearch.toLowerCase().trim()
+    return myFriends.filter(f => {
+      if (!kw) return true
+      return (f.name || '').toLowerCase().includes(kw) || (f.email || '').toLowerCase().includes(kw)
+    })
+  }, [myFriends, friendSearch])
+
   const event = eventData?.data?.result || eventData?.result
 
-  // Fetch Sessions (for online events)
-  const { 
-    data: sessionsData, 
-    isLoading: isLoadingSessions 
+  // Fetch Sessions (for Trong nhà events)
+  const {
+    data: sessionsData,
+    isLoading: isLoadingSessions
   } = useQuery({
     queryKey: ['eventSessions', id],
     queryFn: () => getEventSessions(id),
-    enabled: !!id && event?.eventType === 'online'
+    enabled: !!id && event?.eventType === 'Trong nhà'
   })
 
   const sessions = sessionsData?.data?.result || sessionsData?.result || []
 
   // Fetch Next Session
-  const { 
-    data: nextSessionData 
+  const {
+    data: nextSessionData
   } = useQuery({
     queryKey: ['nextSession', id],
     queryFn: () => getNextSession(id),
-    enabled: !!id && event?.eventType === 'online'
+    enabled: !!id && event?.eventType === 'Trong nhà'
   })
 
   const nextSession = nextSessionData?.data?.result || nextSessionData?.result
 
   // Fetch User's Progress
-  const { 
+  const {
     data: userProgressData,
-    isLoading: isLoadingProgress 
+    isLoading: isLoadingProgress
   } = useQuery({
     queryKey: ['userProgress', id],
     queryFn: () => getUserProgress(id),
@@ -147,40 +160,19 @@ export default function SportEventDetail() {
 
   const userProgress = userProgressData?.data?.result || userProgressData?.result
 
-  // Fetch Participants (for Participants Tab)
-  const { 
+  // Fetch Participants (for Leaderboard Preview in Details Tab)
+  const {
     data: participantsData,
-    isLoading: isLoadingParticipants 
+    isLoading: isLoadingParticipants
   } = useQuery({
     queryKey: ['eventParticipants', id, searchTerm],
     queryFn: () => getParticipants(id, { search: searchTerm, limit: 100 }),
-    enabled: !!id && (activeTab === 'participants' || activeTab === 'details')
+    enabled: !!id && activeTab === 'details'
   })
 
   const participants = participantsData?.data?.result?.participants || participantsData?.result?.participants || []
 
-  // Fetch Leaderboard
-  const { 
-    data: leaderboardData 
-  } = useQuery({
-    queryKey: ['eventLeaderboard', id],
-    queryFn: () => getLeaderboard(id),
-    enabled: !!id && activeTab === 'participants'
-  })
-
-  const leaderboard = leaderboardData?.data?.result?.leaderboard || leaderboardData?.result?.leaderboard || []
-
-  // Fetch Posts (for Community Tab)
-  const { 
-    data: postsData,
-    isLoading: isLoadingPosts 
-  } = useQuery({
-    queryKey: ['eventPosts', id],
-    queryFn: () => getEventPosts(id, { page: 1, limit: 20 }),
-    enabled: !!id && activeTab === 'posts'
-  })
-
-  const posts = postsData?.data?.result?.posts || postsData?.result?.posts || []
+  // Removed: Fetch Posts (community posts moved to /home page)
 
   // ==================== MUTATIONS ====================
 
@@ -193,6 +185,18 @@ export default function SportEventDetail() {
     },
     onError: (error) => {
       toast.error(error?.response?.data?.message || 'Không thể tham gia sự kiện')
+    }
+  })
+
+  // Invite Friend Mutation
+  const inviteFriendMutation = useMutation({
+    mutationFn: (friendId) => inviteFriendToEvent(id, friendId),
+    onSuccess: (_, friendId) => {
+      setInvitedIds(prev => new Set([...prev, String(friendId)]))
+      toast.success('Đã gửi lời mời! Bạn bè của bạn sẽ nhận được thông báo.')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || 'Không thể gửi lời mời')
     }
   })
 
@@ -223,45 +227,10 @@ export default function SportEventDetail() {
     }
   })
 
-  // Create Post Mutation
-  const createPostMutation = useMutation({
-    mutationFn: (postData) => createEventPost(id, postData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['eventPosts', id] })
-      toast.success('Đã đăng bài thành công!')
-      setNewPost({ content: '', images: [] })
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    },
-    onError: (error) => {
-      toast.error(error?.response?.data?.message || 'Không thể đăng bài')
-    }
-  })
-
-  // Like Post Mutation
-  const likePostMutation = useMutation({
-    mutationFn: (postId) => likeEventPost(id, postId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['eventPosts', id] })
-    },
-    onError: (error) => {
-      toast.error(error?.response?.data?.message || 'Không thể thích bài viết')
-    }
-  })
-
-  // Share Post Mutation
-  const sharePostMutation = useMutation({
-    mutationFn: (postId) => shareEventPost(id, postId),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['eventPosts', id] })
-      // Copy link to clipboard
-      const link = `${window.location.origin}/sport-event/${id}?postId=${data.data.result._id}`
-      navigator.clipboard.writeText(link)
-      toast.success('Đã sao chép liên kết chia sẻ!')
-    },
-    onError: (error) => {
-      toast.error(error?.response?.data?.message || 'Không thể chia sẻ bài viết')
-    }
-  })
+  // Share Event to Community (open modal inline)
+  const handleShareEvent = () => {
+    setShowShareModal(true)
+  }
 
   // Check-in Mutation
   const checkInMutation = useMutation({
@@ -299,8 +268,9 @@ export default function SportEventDetail() {
         return
       }
 
-      // Check if event has ended
-      if (moment().isAfter(moment(event.endDate))) {
+      // Check if event has ended (allow joining on the end date)
+      const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+      if (isEnded) {
         toast.error('Sự kiện này đã kết thúc')
         return
       }
@@ -319,7 +289,7 @@ export default function SportEventDetail() {
 
   const handleProgressSubmit = (e) => {
     e.preventDefault()
-    
+
     if (!progressUpdate.value || !event?.targetUnit) {
       toast.error('Vui lòng nhập giá trị tiến độ')
       return
@@ -338,52 +308,15 @@ export default function SportEventDetail() {
     addProgressMutation.mutate(progressData)
   }
 
-  const handlePostSubmit = (e) => {
-    e.preventDefault()
-    
-    if (!newPost.content.trim()) {
-      toast.error('Vui lòng nhập nội dung bài viết')
-      return
-    }
-
-    // Create FormData for image upload if needed, but current API expects JSON for images list
-    // Assuming images are already uploaded/URLs or just handled as array
-    // Check if API needs 'images' as array of strings
-    
-    createPostMutation.mutate({
-      content: newPost.content,
-      images: newPost.images
-    })
-  }
-
-
-
-  const handleLikePost = (postId) => {
-    likePostMutation.mutate(postId)
-  }
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files)
-    // TODO: Upload images to server and get URLs
-    // For now, just add placeholder URLs
-    const imageUrls = files.map((file, index) => URL.createObjectURL(file))
-    setNewPost(prev => ({ ...prev, images: [...prev.images, ...imageUrls] }))
-  }
-
-  const removeImage = (index) => {
-    setNewPost(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }))
-  }
-
-
 
   // Calculate progress percentage
+  // Tiến độ tối đa mỗi người = Mục tiêu sự kiện / Số người tối đa
   const calculateProgress = () => {
     if (!userProgress || !event?.targetValue) return 0
     const total = userProgress.totalProgress || 0
-    return Math.min(Math.round((total / event.targetValue) * 100), 100)
+    const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
+    const perPersonTarget = event.targetValue / maxParticipants
+    return Math.min(Math.round((total / perPersonTarget) * 100), 100)
   }
 
   // ==================== LOADING & ERROR STATES ====================
@@ -420,12 +353,54 @@ export default function SportEventDetail() {
   // ==================== RENDER ====================
 
   const progressPercentage = calculateProgress()
-  const isOnline = event.eventType === 'online'
+  const isOnline = event.eventType === 'Trong nhà'
   const eventStartDate = moment(event.startDate)
   const eventEndDate = moment(event.endDate)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Share Sport Event Modal */}
+      {showShareModal && event && (
+        <SportEventShareModal
+          event={event}
+          eventId={id}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
+
+      {/* Map Popup Modal */}
+      {showMapPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowMapPopup(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <FaMapMarkerAlt className="text-red-500" /> Bản đồ địa điểm
+              </h3>
+              <button onClick={() => setShowMapPopup(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
+            <div className="w-full h-[60vh] bg-gray-100 dark:bg-gray-700">
+              <iframe
+                title="Google Maps"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                allow="geolocation"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(event.location)}&output=embed`}
+              ></iframe>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <FaMapMarkerAlt className="text-red-500" /> {event.location}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section with Event Banner */}
       <div className="relative h-96 bg-gradient-to-b from-gray-900 to-gray-800">
         <img
@@ -434,7 +409,7 @@ export default function SportEventDetail() {
           className="absolute inset-0 w-full h-full object-cover opacity-40"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        
+
         {/* Navigation */}
         <div className="absolute top-6 left-6">
           <button
@@ -450,31 +425,25 @@ export default function SportEventDetail() {
         <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
           <div className="container mx-auto max-w-6xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                isOnline ? 'bg-blue-500' : 'bg-green-500'
-              }`}>
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${isOnline ? 'bg-blue-500' : 'bg-green-500'
+                }`}>
                 {isOnline ? (
                   <span className="flex items-center gap-1">
-                    <MdVideocam /> Trực tuyến
+                    <MdVideocam /> Trong nhà
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <FaMapMarkerAlt /> Trực tiếp
+                    <FaMapMarkerAlt /> Ngoài trời
                   </span>
                 )}
               </span>
               <span className="px-4 py-1.5 bg-red-500 rounded-full text-sm font-medium">
                 {event.category}
               </span>
-              {event.difficulty && (
-                <span className="px-4 py-1.5 bg-yellow-500 rounded-full text-sm font-medium">
-                  {event.difficulty}
-                </span>
-              )}
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{event.name}</h1>
-            
+
             <div className="flex flex-wrap items-center gap-6 text-sm md:text-base">
               <div className="flex items-center gap-2">
                 <FaCalendarAlt />
@@ -491,40 +460,74 @@ export default function SportEventDetail() {
             </div>
 
             {/* Join/Leave Button */}
-            <div className="mt-6 flex flex-wrap gap-4">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               {!event.isJoined ? (
-                <button
-                  onClick={handleJoinEvent}
-                  disabled={
-                    joinEventMutation.isPending || 
-                    event.participants >= event.maxParticipants ||
-                    moment().isAfter(moment(event.endDate))
-                  }
-                  className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-lg transition shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {joinEventMutation.isPending ? (
-                    <AiOutlineLoading3Quarters className="animate-spin" />
-                  ) : <FaPlus className="text-sm" />}
-                  {event.participants >= event.maxParticipants ? 'Đã đầy chỗ' : 'Tham gia ngay'}
-                </button>
+                (event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))) ? (
+                  <button
+                    onClick={() => { }}
+                    className="px-8 py-3 bg-white/10 text-white/70 border border-white/20 rounded-lg font-bold text-lg flex items-center gap-2 cursor-default"
+                  >
+                    Sự kiện đã kết thúc
+                  </button>
+                ) : (event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))) ? (
+                  <button
+                    onClick={() => { }}
+                    className="px-8 py-3 bg-white/10 text-white/70 border border-white/20 rounded-lg font-bold text-lg flex items-center gap-2 cursor-default"
+                  >
+                    Sự kiện chưa bắt đầu
+                  </button>
+                ) : (event.maxParticipants > 0 && event.participants >= event.maxParticipants) ? (
+                  <button
+                    onClick={() => { }}
+                    className="px-8 py-3 bg-white/10 text-white/70 border border-white/20 rounded-lg font-bold text-lg flex items-center gap-2 cursor-default"
+                  >
+                    Đã đầy chỗ
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleJoinEvent}
+                    disabled={joinEventMutation.isPending}
+                    className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-lg transition shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {joinEventMutation.isPending ? (
+                      <AiOutlineLoading3Quarters className="animate-spin" />
+                    ) : <FaPlus className="text-sm" />}
+                    Tham gia ngay
+                  </button>
+                )
               ) : (
-                <div className="flex items-center gap-3">
+                <>
                   <div className="px-6 py-3 bg-green-500 text-white rounded-lg font-bold text-lg flex items-center gap-2 shadow-lg shadow-green-500/20">
                     <MdCheckCircle className="text-xl" />
                     Đã tham gia
                   </div>
                   <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                  >
+                    <FaInvite className="text-sm" />
+                    Mời bạn bè
+                  </button>
+                  <button
                     onClick={() => setShowLeaveModal(true)}
                     disabled={leaveEventMutation.isPending}
-                    className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg font-medium transition backdrop-blur-sm flex items-center gap-2"
+                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg font-medium text-sm transition backdrop-blur-sm flex items-center gap-2"
                   >
                     {leaveEventMutation.isPending ? (
                       <AiOutlineLoading3Quarters className="animate-spin" />
                     ) : <FaTimes className="text-sm" />}
                     Rời khỏi
                   </button>
-                </div>
+                </>
               )}
+              {/* Share Event Button - always visible, same row */}
+              <button
+                onClick={handleShareEvent}
+                className="flex items-center gap-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 rounded-lg backdrop-blur-sm transition text-sm font-medium"
+              >
+                <FaShare className="text-sm" />
+                Chia sẻ lên cộng đồng
+              </button>
             </div>
           </div>
         </div>
@@ -533,22 +536,18 @@ export default function SportEventDetail() {
       {/* Tabs Navigation */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="container mx-auto max-w-6xl">
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex">
             {[
               { id: 'details', label: 'Chi tiết', icon: <FaCalendarAlt /> },
               ...(event?.isJoined ? [{ id: 'progress', label: 'Tiến độ', icon: <FaMedal /> }] : []),
-              { id: 'participants', label: 'Người tham gia', icon: <FaUsers /> },
-              { id: 'posts', label: 'Bài đăng cộng đồng', icon: <LiaComments /> },
-              ...(isOnline ? [{ id: 'sessions', label: 'Buổi học trực tiếp', icon: <MdVideocam /> }] : [])
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'text-red-500 border-b-2 border-red-500'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition whitespace-nowrap text-base ${activeTab === tab.id
+                  ? 'text-red-500 border-b-2 border-red-500 bg-red-50 dark:bg-red-900/10'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700/40'
+                  }`}
               >
                 {tab.icon}
                 {tab.label}
@@ -573,6 +572,34 @@ export default function SportEventDetail() {
               </p>
             </div>
 
+            {/* Requirements & Benefits */}
+            {(event.requirements || event.benefits) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Requirements */}
+                {event.requirements && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 shadow-sm">
+                    <h2 className="text-xl font-bold mb-3 text-blue-900 dark:text-blue-300 flex items-center gap-2">
+                      📋 Yêu cầu tham gia
+                    </h2>
+                    <p className="text-blue-800 dark:text-blue-200 whitespace-pre-line">
+                      {event.requirements}
+                    </p>
+                  </div>
+                )}
+                {/* Benefits */}
+                {event.benefits && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 shadow-sm">
+                    <h2 className="text-xl font-bold mb-3 text-green-900 dark:text-green-300 flex items-center gap-2">
+                      🎁 Lợi ích khi tham gia
+                    </h2>
+                    <p className="text-green-800 dark:text-green-200 whitespace-pre-line">
+                      {event.benefits}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Event Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Time Section */}
@@ -582,57 +609,42 @@ export default function SportEventDetail() {
                   <h3 className="font-semibold text-gray-800 dark:text-white">Thời gian</h3>
                 </div>
                 <div className="space-y-3 text-sm">
-                   <div>
-                      <p className="text-xs text-gray-500 uppercase font-bold">Bắt đầu</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {eventStartDate.format('HH:mm')} - {eventStartDate.format('DD/MM/YYYY')}
-                      </p>
-                   </div>
-                   <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
-                      <p className="text-xs text-gray-500 uppercase font-bold">Kết thúc</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {eventEndDate.format('HH:mm')} - {eventEndDate.format('DD/MM/YYYY')}
-                      </p>
-                   </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold">Ngày bắt đầu</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {eventStartDate.format('DD/MM/YYYY')}
+                    </p>
+                  </div>
+                  <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
+                    <p className="text-xs text-gray-500 uppercase font-bold">Ngày kết thúc</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {eventEndDate.format('DD/MM/YYYY')}
+                    </p>
+                  </div>
+                  <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
+                    <p className="text-xs text-gray-500 uppercase font-bold">Thời điểm</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {eventStartDate.format('HH:mm')}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Location/Online Section */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  {isOnline ? (
-                    <MdVideocam className="text-blue-500 text-2xl shrink-0" />
-                  ) : (
+              {/* Location/Online Section — chỉ hiện cho sự kiện ngoài trời */}
+              {!isOnline && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-4">
                     <FaMapMarkerAlt className="text-green-500 text-2xl shrink-0" />
-                  )}
-                  <h3 className="font-semibold text-gray-800 dark:text-white">
-                    {isOnline ? 'Thông tin tham gia' : 'Địa điểm'}
-                  </h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-white">Địa điểm</h3>
+                  </div>
+                  <p
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mb-2 cursor-pointer inline-flex items-center gap-1 border-b border-transparent hover:border-blue-600 dark:hover:border-blue-300 transition"
+                    onClick={() => setShowMapPopup(true)}
+                  >
+                    {event.location}
+                  </p>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">{event.location}</p>
-                {isOnline && (
-                   <div className="mt-2 text-sm">
-                      <p className="text-gray-500 mb-1">Link tham gia:</p>
-                      {event.location && (event.location.startsWith('http') ? (
-                        <a href={event.location} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-all">
-                          {event.location}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400 italic">Link sẽ được cập nhật</span>
-                      ))}
-                      {/* Show next session hint if available */}
-                      {nextSession && (
-                         <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
-                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">Buổi tiếp theo</p>
-                            <p className="font-bold text-blue-800 dark:text-blue-300 line-clamp-1">{nextSession.title}</p>
-                            <p className="text-xs text-blue-700 dark:text-blue-400">
-                               {moment(nextSession.sessionDate).format('HH:mm DD/MM')}
-                            </p>
-                         </div>
-                      )}
-                   </div>
-                )}
-              </div>
+              )}
 
               {/* Target Section */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
@@ -641,15 +653,15 @@ export default function SportEventDetail() {
                   <h3 className="font-semibold text-gray-800 dark:text-white">Mục tiêu</h3>
                 </div>
                 <div className="flex items-end gap-2">
-                   <p className="text-3xl font-black text-gray-900 dark:text-white">
-                      {event.targetValue}
-                   </p>
-                   <p className="text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase">
-                      {event.targetUnit}
-                   </p>
+                  <p className="text-3xl font-black text-gray-900 dark:text-white">
+                    {event.targetValue}
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase">
+                    {event.targetUnit}
+                  </p>
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
-                   Hoàn thành mục tiêu để nhận phần thưởng!
+                  Hoàn thành mục tiêu để nhận phần thưởng!
                 </p>
               </div>
             </div>
@@ -709,28 +721,24 @@ export default function SportEventDetail() {
 
             {/* Leaderboard Preview */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-               <div className="flex items-center justify-between mb-6">
-                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                    <FaMedal className="text-yellow-500" /> Bảng xếp hạng
-                 </h2>
-                 <button 
-                   onClick={() => setActiveTab('participants')}
-                   className="text-sm font-bold text-red-500 hover:text-red-600"
-                 >
-                    Xem tất cả &rarr;
-                 </button>
-               </div>
-               {participants && participants.length > 0 ? (
-                  <SportEventLeaderboard 
-                     participants={participants}
-                     isLoading={isLoadingParticipants}
-                     searchTerm={""}
-                     setSearchTerm={() => {}} // No search in preview
-                     event={event}
-                  />
-               ) : (
-                  <p className="text-center text-gray-500 py-8">Chưa có người tham gia xếp hạng</p>
-               )}
+              <div className="flex items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                  <FaMedal className="text-yellow-500" /> Bảng xếp hạng
+                </h2>
+              </div>
+              {participants && participants.length > 0 ? (
+                <SportEventLeaderboard
+                  participants={participants}
+                  isLoading={isLoadingParticipants}
+                  searchTerm={""}
+                  setSearchTerm={() => { }}
+                  event={event}
+                  connectedIds={connectedIds}
+                  friendIds={friendIds}
+                />
+              ) : (
+                <p className="text-center text-gray-500 py-8">Chưa có người tham gia xếp hạng</p>
+              )}
             </div>
 
             {/* Event Creator Info */}
@@ -738,14 +746,24 @@ export default function SportEventDetail() {
               <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
                 Người tổ chức
               </h2>
-              <div className="flex items-center gap-4">
-                <img
-                  src={getImageUrl(event.creator?.avatar)}
-                  alt={event.creator?.name}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
+              <div
+                className="flex items-center gap-4 cursor-pointer group"
+                onClick={() => event.creator?._id && navigate(`/user/${event.creator._id}`)}
+              >
+                <div className="relative">
+                  <img
+                    src={getImageUrl(event.creator?.avatar)}
+                    alt={event.creator?.name}
+                    className="w-16 h-16 rounded-full object-cover ring-2 ring-transparent group-hover:ring-red-400 transition"
+                  />
+                  {event.creator?._id && friendIds.has(String(event.creator._id)) && (
+                    <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                      <FaCheck className="text-white" style={{ fontSize: 8 }} />
+                    </span>
+                  )}
+                </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-red-500 transition">
                     {event.creator?.name}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -759,500 +777,171 @@ export default function SportEventDetail() {
 
         {/* TIẾN ĐỘ TAB */}
         {activeTab === 'progress' && event.isJoined && (
-          <SportEventProgress 
-            event={event}
-            userProgress={userProgress}
-            addProgressMutation={addProgressMutation}
-            progressUpdate={progressUpdate}
-            setProgressUpdate={setProgressUpdate}
-          />
-        )}
-        
-        {activeTab === 'participants' && (
-          <SportEventLeaderboard 
-             participants={participants}
-             isLoading={isLoadingParticipants}
-             searchTerm={searchTerm}
-             setSearchTerm={setSearchTerm}
-             event={event}
-          />
+          event.eventType === 'Trong nhà'
+            ? <IndoorEventProgress event={event} userProgress={userProgress} />
+            : <SportEventProgress event={event} userProgress={userProgress} />
         )}
 
-        {/* BÀI ĐĂNG CỘNG ĐỒNG TAB */}
-        {activeTab === 'posts' && (
-          <div className="space-y-6">
-            {/* Post Creation Form - Only for Joined Users */}
-            {event.isJoined && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-                  Tạo bài đăng mới
-                </h2>
-                
-                <form onSubmit={handlePostSubmit}>
-                  <textarea
-                    value={newPost.content}
-                    onChange={(e) => setNewPost(prev => ({ ...prev, content: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white resize-none"
-                    placeholder="Chia sẻ thành tích hôm nay của bạn!"
-                    rows={4}
-                  />
 
-                  {/* Image Preview */}
-                  {newPost.images.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                      {newPost.images.map((img, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={img}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-                          >
-                            <FaTimes className="text-xs" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
-                  <div className="flex justify-between items-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    >
-                      <FaImage />
-                      <span>Hình ảnh</span>
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
 
-                    <button
-                      type="submit"
-                      disabled={createPostMutation.isPending || !newPost.content.trim()}
-                      className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {createPostMutation.isPending ? (
-                        <AiOutlineLoading3Quarters className="animate-spin inline mr-2" />
-                      ) : null}
-                      Đăng
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
+      </div>
 
-            {/* Posts Feed */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-                Bài đăng cộng đồng
-              </h2>
-
-              {isLoadingPosts ? (
-                <div className="flex items-center justify-center py-12">
-                  <AiOutlineLoading3Quarters className="animate-spin text-4xl text-blue-500" />
-                </div>
-              ) : posts.length > 0 ? (
-                <div className="space-y-6">
-                  {posts.map((post) => (
-                    <div
-                      key={post._id}
-                      className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0"
-                    >
-                      {/* Post Header */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <img
-                          src={!post.userId?.avatar ? useravatar : getImageUrl(post.userId.avatar)}
-                          alt={post.userId?.name || 'User'}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {post.userId?.name || 'Người dùng'}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {moment(post.createdAt).fromNow()}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Post Content */}
-                      <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-line">
-                        {post.content}
-                      </p>
-
-                      {/* Post Images */}
-                      {post.images && post.images.length > 0 && (
-                        <div className={`grid gap-3 mb-4 ${
-                          post.images.length === 1 ? 'grid-cols-1' :
-                          post.images.length === 2 ? 'grid-cols-2' :
-                          'grid-cols-2'
-                        }`}>
-                          {post.images.map((img, index) => (
-                            <img
-                              key={index}
-                              src={getImageUrl(img)}
-                              alt={`Post image ${index + 1}`}
-                              className="w-full h-64 object-cover rounded-lg"
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Post Actions */}
-                      <div className="flex items-center gap-6 text-gray-600 dark:text-gray-400">
-                        <button
-                          onClick={() => handleLikePost(post._id)}
-                          className={`flex items-center gap-2 transition ${
-                            Array.isArray(post.likedBy) && post.likedBy.includes(profile?._id) 
-                              ? 'text-red-500' 
-                              : 'hover:text-red-500'
-                          }`}
-                        >
-                          {Array.isArray(post.likedBy) && post.likedBy.includes(profile?._id) ? (
-                            <AiFillHeart className="text-xl" />
-                          ) : (
-                            <AiOutlineHeart className="text-xl" />
-                          )}
-                          <span>{post.likeCount || 0} Thích</span>
-                        </button>
-
-                        <div className="flex items-center gap-2 cursor-pointer hover:text-blue-500 transition">
-                          <LiaComments className="text-xl" />
-                          <span>{post.commentCount || 0} Bình luận</span>
-                        </div>
-
-                        <button 
-                          onClick={() => sharePostMutation.mutate(post._id)}
-                          className="flex items-center gap-2 hover:text-blue-500 transition"
-                        >
-                          <PiShareFatLight className="text-xl" />
-                          <span>{post.shareCount || 0} Chia sẻ</span>
-                        </button>
-                      </div>
-
-                      {/* Comments Section */}
-                      <SportEventComments post={post} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <LiaComments className="mx-auto text-gray-400 text-6xl mb-4" />
-                  <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400">
-                    Chưa có bài đăng nào
+      {/* ==================== INVITE FRIENDS MODAL ==================== */}
+      {
+        showInviteModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FaBell className="text-blue-500" />
+                    Mời bạn bè tham gia
                   </h3>
-                  <p className="text-gray-500 mt-2">
-                    Hãy là người đầu tiên chia sẻ thành tích của bạn!
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Bạn bè sẽ nhận được thông báo về sự kiện này
                   </p>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+                <button
+                  onClick={() => { setShowInviteModal(false); setFriendSearch('') }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+                >
+                  <FaTimes className="text-gray-500" />
+                </button>
+              </div>
 
-        {/* BUỔI HỌC TRỰC TIẾP TAB */}
-        {activeTab === 'sessions' && isOnline && (
-          <div className="space-y-8">
-            {/* Next Upcoming Session */}
-            {nextSession && (
-              <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-gray-800 dark:to-gray-750 rounded-lg p-8 shadow-sm border border-red-200 dark:border-red-900">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-                  Buổi học trực tiếp sắp tới
-                </h2>
+              {/* Search */}
+              <div className="px-5 pt-4 pb-2">
+                <div className="relative">
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    placeholder="Tìm tên bạn bè..."
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    {nextSession.title}
-                  </h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <FaCalendarAlt className="text-red-500 text-xl" />
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Ngày</p>
-                        <p className="font-semibold">
-                          {moment(nextSession.sessionDate).format('dddd, DD MMMM, YYYY')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <BsClockHistory className="text-blue-500 text-xl" />
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Thời gian</p>
-                        <p className="font-semibold">
-                          {moment(nextSession.sessionDate).format('HH:mm')} ({nextSession.durationHours}h)
-                        </p>
-                      </div>
-                    </div>
+              {/* Friends List */}
+              <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-2">
+                {myFriends.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                    <FaInvite className="mx-auto text-4xl mb-3 text-gray-300" />
+                    <p className="font-medium">Bạn chưa có người bạn nào</p>
+                    <p className="text-xs mt-1">Kết bạn thêm để có thể mời họ!</p>
                   </div>
-
-                  {nextSession.description && (
-                    <p className="text-gray-700 dark:text-gray-300 mb-6">
-                      {nextSession.description}
-                    </p>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      if (nextSession.videoCallUrl) {
-                        window.open(nextSession.videoCallUrl, '_blank')
-                      } else {
-                        toast.info('Link video call sẽ được cập nhật sớm')
-                      }
-                    }}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    <MdVideocam className="text-2xl" />
-                    Tham gia ngay
-                  </button>
-
-                  {/* Friends also joining */}
-                  {event.participants_ids && event.participants_ids.length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        Có {Math.min(event.participants_ids.length, 3)} người bạn theo dõi đang tham gia
-                      </p>
-                      <div className="flex -space-x-2">
-                        {event.participants_ids.slice(0, 3).map((participant, index) => (
-                          <img
-                            key={index}
-                            src={getImageUrl(participant.avatar)}
-                            alt={participant.name}
-                            className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 object-cover"
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Session List */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-              <div className="border-l-4 border-purple-500 pl-4 mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                  Danh sách buổi học
-                </h2>
-              </div>
-
-              {isLoadingSessions ? (
-                <div className="flex items-center justify-center py-12">
-                  <AiOutlineLoading3Quarters className="animate-spin text-4xl text-blue-500" />
-                </div>
-              ) : sessions.length > 0 ? (
-                <div className="space-y-4">
-                  {sessions.map((session, index) => {
-                    const sessionStart = moment(session.sessionDate)
-                    const sessionEnd = sessionStart.clone().add(session.durationHours, 'hours')
-                    const now = moment()
-                    const isCompleted = session.isCompleted || now.isAfter(sessionEnd)
-                    const isOngoing = now.isBetween(sessionStart, sessionEnd)
-                    const isUpcoming = now.isBefore(sessionStart)
-
+                ) : filteredFriendsForInvite.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    Không tìm thấy bạn bè phù hợp
+                  </div>
+                ) : (
+                  filteredFriendsForInvite.map((friend) => {
+                    const alreadyInvited = invitedIds.has(String(friend._id))
+                    const alreadyJoined = participants.some(p => {
+                      const pid = p._id || p.userId?._id
+                      return String(pid) === String(friend._id)
+                    })
                     return (
                       <div
-                        key={session._id || index}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition"
+                        key={friend._id}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/40 transition"
                       >
-                        <div className="flex flex-col gap-4">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                            Buổi {session.sessionNumber}: {session.title}
-                                        </h3>
-                                        {isCompleted && (
-                                            <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded-full text-sm font-medium">
-                                            Đã hoàn thành
-                                            </span>
-                                        )}
-                                        {isOngoing && (
-                                            <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full text-sm font-medium animate-pulse">
-                                            Đang diễn ra
-                                            </span>
-                                        )}
-                                        {isUpcoming && (
-                                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 rounded-full text-sm font-medium">
-                                            Sắp tới
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                                        <div className="flex items-center gap-2">
-                                            <FaCalendarAlt className="text-gray-400" />
-                                            <span>{sessionStart.format('DD/MM/YYYY')}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <BsClockHistory className="text-gray-400" />
-                                            <span>{sessionStart.format('HH:mm')} - {sessionEnd.format('HH:mm')} ({session.durationHours}h)</span>
-                                        </div>
-                                    </div>
-                                    
-                                    {session.description && (
-                                        <p className="mt-3 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-750 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                                            {session.description}
-                                        </p>
-                                    )}
-
-                                    {/* Camera Preview / Join Link */}
-                                    <div className="mt-4">
-                                      <p className="text-sm font-semibold text-gray-500 mb-2">Phòng học trực tuyến:</p>
-                                      {session.videoCallUrl ? (
-                                        <div 
-                                          onClick={() => window.open(session.videoCallUrl, '_blank')}
-                                          className="relative group cursor-pointer overflow-hidden rounded-xl bg-gray-900 aspect-video max-w-md w-full border border-gray-700 shadow-lg"
-                                        >
-                                          {/* Placeholder / Thumbnail */}
-                                          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 group-hover:text-white/80 transition duration-300">
-                                            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-3 backdrop-blur-sm group-hover:scale-110 transition duration-300">
-                                              <MdVideocam className="text-3xl" />
-                                            </div>
-                                            <p className="font-medium text-sm">Nhấn để tham gia buổi học</p>
-                                          </div>
-                                          
-                                          {/* Overlay Button */}
-                                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                                            <button className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition duration-300 flex items-center gap-2">
-                                              <MdVideocam />
-                                              Tham gia ngay
-                                            </button>
-                                          </div>
-                                          
-                                          {/* Link text at bottom */}
-                                          <div className="absolute bottom-3 left-0 right-0 px-4 text-center">
-                                            <p className="text-xs text-white/40 truncate">{session.videoCallUrl}</p>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="aspect-video max-w-md w-full bg-gray-100 dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-gray-400">
-                                            <MdVideocam className="text-4xl mb-2 opacity-50" />
-                                            <p className="text-sm">Chưa có link phòng học</p>
-                                        </div>
-                                      )}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons for Ongoing Session */}
-                                {event.isJoined && isOngoing && (
-                                    <div className="flex flex-col gap-2 shrink-0">
-                                        <button
-                                            onClick={() => checkInMutation.mutate(session._id)}
-                                            disabled={checkInMutation.isPending}
-                                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold text-sm transition disabled:opacity-50 whitespace-nowrap"
-                                        >
-                                            Điểm danh
-                                        </button>
-                                        <button
-                                            onClick={() => checkOutMutation.mutate(session._id)}
-                                            disabled={checkOutMutation.isPending}
-                                            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition disabled:opacity-50 whitespace-nowrap"
-                                        >
-                                            Kết thúc
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                        <div className="relative shrink-0">
+                          <img
+                            src={friend.avatar || useravatar}
+                            alt={friend.name}
+                            className="w-11 h-11 rounded-full object-cover border-2 border-green-400"
+                          />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
                         </div>
-
-                        {/* Attendance Info - Only for completed sessions */}
-                        {isCompleted && event.isJoined && (
-                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <details className="group">
-                              <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline font-medium text-sm">
-                                Xem thông tin điểm danh của bạn
-                              </summary>
-                              <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {/* Placeholder for attendance details */}
-                                  Thông tin điểm danh chi tiết sẽ được hiển thị ở đây.
-                                </p>
-                              </div>
-                            </details>
-                          </div>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{friend.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{friend.email}</p>
+                        </div>
+                        <div className="shrink-0">
+                          {alreadyJoined ? (
+                            <span className="text-xs px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full font-medium flex items-center gap-1">
+                              <FaCheck size={10} /> Đã tham gia
+                            </span>
+                          ) : alreadyInvited ? (
+                            <span className="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full font-medium flex items-center gap-1">
+                              <FaCheck size={10} /> Đã mời
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => inviteFriendMutation.mutate(friend._id)}
+                              disabled={inviteFriendMutation.isPending}
+                              className="text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium transition flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {inviteFriendMutation.isPending ? (
+                                <AiOutlineLoading3Quarters className="animate-spin" size={10} />
+                              ) : (
+                                <FaBell size={10} />
+                              )}
+                              Mời
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )
-                  })}
+                  })
+                )}
+              </div>
 
-                  {/* Attendance Instructions */}
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">
-                      Lưu ý về Điểm danh
-                    </h4>
-                    <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                      <li>• Bạn có thể điểm danh khi buổi học đang diễn ra.</li>
-                      <li>• Nhớ nhấn "Kết thúc" khi rời khỏi buổi học để ghi nhận thời gian.</li>
-                      <li>• Hệ thống sẽ tự động tính thời gian tham gia của bạn dựa trên Check-in/Check-out.</li>
-                    </ul>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <BsCalendarCheck className="mx-auto text-gray-400 text-6xl mb-4" />
-                  <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400">
-                    Chưa có buổi học nào
-                  </h3>
-                  <p className="text-gray-500 mt-2">
-                    Các buổi học sẽ được cập nhật sớm
-                  </p>
-                </div>
-              )}
+              {/* Modal Footer */}
+              <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-b-2xl">
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  💡 Bạn bè sẽ nhận thông báo — nhấn vào sẽ dẫn đến trang sự kiện này
+                </p>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        )
+      }
+
       {/* Leave Confirmation Modal */}
-      {showLeaveModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-scaleIn border border-gray-100 dark:border-gray-700">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mb-6">
-                <FaTimes size={32} />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">
-                Rời khỏi sự kiện?
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                Bạn có chắc chắn muốn rời khỏi sự kiện <span className="font-bold text-gray-800 dark:text-white">"{event.name}"</span> không? 
-                Tiến độ hiện tại của bạn sẽ không bị xóa nhưng bạn sẽ không xuất hiện trong bảng xếp hạng nữa.
-              </p>
-              
-              <div className="flex gap-4 w-full">
-                <button
-                  onClick={() => setShowLeaveModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  onClick={confirmLeaveEvent}
-                  disabled={leaveEventMutation.isPending}
-                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {leaveEventMutation.isPending && (
-                    <AiOutlineLoading3Quarters className="animate-spin" />
-                  )}
-                  Xác nhận rời
-                </button>
+      {
+        showLeaveModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-scaleIn border border-gray-100 dark:border-gray-700">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mb-6">
+                  <FaTimes size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">
+                  Rời khỏi sự kiện?
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                  Bạn có chắc chắn muốn rời khỏi sự kiện <span className="font-bold text-gray-800 dark:text-white">"{event.name}"</span> không?
+                  Tiến độ hiện tại của bạn sẽ không bị xóa nhưng bạn sẽ không xuất hiện trong bảng xếp hạng nữa.
+                </p>
+
+                <div className="flex gap-4 w-full">
+                  <button
+                    onClick={() => setShowLeaveModal(false)}
+                    className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    onClick={confirmLeaveEvent}
+                    disabled={leaveEventMutation.isPending}
+                    className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {leaveEventMutation.isPending && (
+                      <AiOutlineLoading3Quarters className="animate-spin" />
+                    )}
+                    Xác nhận rời
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   )
 }

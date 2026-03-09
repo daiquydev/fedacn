@@ -58,7 +58,7 @@ export default function FoodBanner() {
       return getTopRecipes()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
   const navigate = useNavigate()
 
@@ -71,7 +71,7 @@ export default function FoodBanner() {
             <div className='w-full h-full bg-black opacity-50 absolute border dark:border-none shadow shadow-green-400 md:rounded-lg top-0 left-0' />
             <div className='absolute z-10 lg:bottom-10 md:bottom-8 bottom-0 lg:px-7 md:px-10 px-4 py-4'>
               <p className='lg:text-4xl mb-2 md:text-2xl text-2xl font-semibold leading-9 text-white'>
-                Top 3 thực đơn hot ở <span className='text-green-500'>Nutri</span>Community
+                Top 3 thực đơn hot ở <span className='text-green-500'>Fit</span>Connect
               </p>
               <p className='lg:text-2xl flex items-center mb-2 pt-5 font-normal lg:leading-9 text-white'>
                 {data?.data.result[0].title}

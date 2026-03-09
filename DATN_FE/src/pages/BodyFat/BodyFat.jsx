@@ -9,14 +9,15 @@ import { useContext, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { calculateBodyFat, saveBodyFatData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
-import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
 import { AppContext } from '../../contexts/app.context'
 import { setProfileToLS } from '../../utils/auth'
+import AIAnalysisModal from '../../components/GlobalComponents/AIAnalysisModal/AIAnalysisModal'
+import CalculatorSidebar from '../../components/GlobalComponents/CalculatorSidebar/CalculatorSidebar'
 
 export default function BodyFat() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [dataBodyFat, setDataBodyFat] = useState({})
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
   const { setProfile, profile } = useContext(AppContext)
   const {
     register,
@@ -33,14 +34,6 @@ export default function BodyFat() {
     }
   })
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-  }
-
   const calculateBodyFatMutation = useMutation({
     mutationFn: (body) => calculateBodyFat(body)
   })
@@ -52,30 +45,21 @@ export default function BodyFat() {
     console.log(data)
     setDataBodyFat(data)
     calculateBodyFatMutation.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
-        setDataBodyFat((prev) => ({ ...prev, body_fat: data.data.result }))
-        handleOpenModal()
+      onSuccess: (res) => {
+        const fatValue = res.data.result
+        setDataBodyFat((prev) => ({ ...prev, body_fat: fatValue }))
+        // Auto-save
+        saveBodyFatMutation.mutate({ ...data, body_fat: fatValue }, {
+          onSuccess: (saved) => {
+            toast.success('Đã tính và lưu chỉ số Body Fat')
+            setProfile(saved?.data.result)
+            setProfileToLS(saved?.data.result)
+          }
+        })
       },
-      onError: () => {
-        console.log('error')
-      }
+      onError: () => { console.log('error') }
     })
   })
-
-  const handleSaveBodyFatData = () => {
-    saveBodyFatMutation.mutate(dataBodyFat, {
-      onSuccess: (data) => {
-        toast.success('Lưu chỉ số body fat thành công')
-        setProfile(data?.data.result)
-        setProfileToLS(data?.data.result)
-        handleCloseModal()
-      },
-      onError: () => {
-        toast.error('Lưu chỉ số body fat thất bại')
-      }
-    })
-  }
   return (
     <>
       <div className='grid xl:mx-4  pt-2 xl:gap-3 xl:grid-cols-6'>
@@ -259,118 +243,56 @@ export default function BodyFat() {
           </main>
         </div>
         <div className='col-span-6 order-first xl:order-last my-3 xl:my-0 xl:col-span-2'>
-          <div className='shadow mb-6 bg-white rounded-lg dark:bg-color-primary dark:border-none'>
-            <div className='flex flex-col dark:text-gray-300 justify-center items-center pt-4 text-xl font-semibold text-red-700'>
-              Tính toán Body-Fat{' '}
-              <p className='text-base text-black dark:text-gray-300'>(Theo phương trình SI, Metric Units)</p>
-            </div>
-            <div className='border mt-2 mx-5 dark:border-gray-700 border-red-200 '></div>
-            <form onSubmit={onSubmit} className='p-3'>
-              <Input
-                title='Nhập chiều cao (cm)'
-                type='number'
-                name='height'
-                register={register}
-                errors={errors.height}
-                id='height'
-                placeholder='Nhập chiều cao của bạn'
-              />
-              <Input
-                title='Nhập vòng eo (cm)'
-                type='number'
-                name='waist'
-                register={register}
-                errors={errors.waist}
-                id='waist'
-                placeholder='Nhập vòng eo của bạn'
-              />
-              <Input
-                title='Nhập số đo vòng cổ (cm)'
-                type='number'
-                name='neck'
-                register={register}
-                errors={errors.neck}
-                id='neck'
-                placeholder='Nhập số đo vòng cổ của bạn'
-              />
-              <Input
-                title='Nhập số đo hông (cm)'
-                type='number'
-                name='hip'
-                register={register}
-                errors={errors.hip}
-                id='hip'
-                placeholder='Nhập số đo vòng hông của bạn'
-              />
-
-              <div className='mb-3'>
-                <div className='text-gray-400 lg:text-red-900 mb-1 dark:text-pink-300 text-left italic'>
-                  Giới tính của bạn là:
-                </div>
-                <div className='flex items-center pb-2'>
+          <CalculatorSidebar
+            title='Tính Body Fat'
+            subtitle='(Phần trăm mỡ cơ thể)'
+            gradient='from-blue-500 to-cyan-400'
+            result={(profile?.body_fat || dataBodyFat.body_fat) ? {
+              value: profile?.body_fat || dataBodyFat.body_fat,
+              unit: '%',
+              label: 'Phần trăm mỡ cơ thể'
+            } : null}
+            onAIClick={(profile?.body_fat || dataBodyFat.body_fat) ? () => setIsAIModalOpen(true) : null}
+          >
+            <form onSubmit={onSubmit} noValidate className='space-y-3'>
+              <Input title='Chiều cao (cm)' type='number' name='height' register={register} errors={errors.height} id='height' placeholder='Nhập chiều cao' />
+              <Input title='Vòng cổ (cm)' type='number' name='neck' register={register} errors={errors.neck} id='neck' placeholder='Nhập vòng cổ' />
+              <Input title='Vòng eo (cm)' type='number' name='waist' register={register} errors={errors.waist} id='waist' placeholder='Nhập vòng eo' />
+              <Input title='Vòng hông (cm) — chỉ dành cho nữ' type='number' name='hip' register={register} errors={errors.hip} id='hip' placeholder='Nhập vòng hông' />
+              <div>
+                <div className='text-gray-600 dark:text-gray-400 text-sm font-medium mb-2'>Giới tính:</div>
+                <div className='flex gap-4'>
                   <div className='flex items-center'>
-                    <input
-                      type='radio'
-                      name='default-radio'
-                      value='male'
-                      {...register('gender')}
-                      id='male'
-                      className='radio radio-success'
-                    />
-                    <label htmlFor='male' className='ms-2 text-sm w-20 font-medium text-gray-900 dark:text-gray-300'>
-                      Nam
-                    </label>
+                    <input type='radio' name='default-radio' value='male' {...register('gender')} id='male' className='radio radio-success' />
+                    <label htmlFor='male' className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>Nam</label>
                   </div>
                   <div className='flex items-center'>
-                    <input
-                      type='radio'
-                      name='default-radio'
-                      value='female'
-                      {...register('gender')}
-                      id='female'
-                      className='radio radio-success'
-                    />
-                    <label htmlFor='female' className='ms-2 text-sm w-20 font-medium text-gray-900 dark:text-gray-300'>
-                      Nữ
-                    </label>
+                    <input type='radio' name='default-radio' value='female' {...register('gender')} id='female' className='radio radio-success' />
+                    <label htmlFor='female' className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>Nữ</label>
                   </div>
                 </div>
               </div>
-              <div className='flex justify-center'>
+              <div className='pt-1'>
                 {calculateBodyFatMutation.isPending ? (
-                  <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                  <button disabled className='w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-semibold flex items-center justify-center gap-2 opacity-70'>
+                    <Loading classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
                   </button>
                 ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'> Tính toán</button>
+                  <button className='w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200'>
+                    Tính toán
+                  </button>
                 )}
               </div>
             </form>
-            {(profile?.body_fat || dataBodyFat.body_fat) && (
-              <div className='flex mx-4 justify-center '>
-                <div className='mt-5 w-full pb-10'>
-                  <div className=' text-gray-700 flex justify-center dark:text-gray-300 font-semibold '>
-                    Chỉ số body fat của bạn là: {profile?.body_fat || dataBodyFat.body_fat} %
-                  </div>
-                  <div className='text-red-700 flex justify-center dark:text-red-300 font-medium text-xs'>
-                    Lưu ý: chỉ số body fat được tính dựa trên công thức chuẩn, chỉ mang tính chất tham khảo
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {isModalOpen && (
-          <CalculatorModal
-            closeModal={handleCloseModal}
-            title='Chỉ số body fat của bạn'
-            saveData={handleSaveBodyFatData}
-            helptext='Lưu ý: khi bạn lưu kết quả, các chỉ số liên quan sẽ được cập nhật và lưu lại trong hồ sơ cá nhân của bạn.'
-            isPending={saveBodyFatMutation.isPending}
-            data={calculateBodyFatMutation.data}
-            unit='% body fat'
+          </CalculatorSidebar>
+          <AIAnalysisModal
+            isOpen={isAIModalOpen}
+            onClose={() => setIsAIModalOpen(false)}
+            calculationType='Body Fat'
+            inputData={{ height: dataBodyFat.height, waist: dataBodyFat.waist, neck: dataBodyFat.neck, hip: dataBodyFat.hip, gender: dataBodyFat.gender }}
+            calculatedResult={{ body_fat_percentage: profile?.body_fat || dataBodyFat.body_fat }}
           />
-        )}
+        </div>
       </div>
     </>
   )

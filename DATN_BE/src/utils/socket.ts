@@ -7,13 +7,20 @@ import { verifyAccessToken } from './common'
 const initSocket = (httpServer: ServerHttp) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: 'http://localhost:3000'
-    }
+      origin: '*',
+      methods: ['GET', 'POST']
+    },
+    transports: ['polling', 'websocket']
   })
   const users: {
     [key: string]: {
       socket_id: string
     }
+  } = {}
+
+  // ── Video call room participants info: { [socketId]: { userId, userName, userAvatar } }
+  const vcRoomUsers: {
+    [socketId: string]: { userId: string; userName: string; userAvatar: string | null; roomId: string }
   } = {}
 
   io.use(async (socket, next) => {
@@ -180,7 +187,85 @@ const initSocket = (httpServer: ServerHttp) => {
     socket.on('disconnect', () => {
       delete users[user_id]
       console.log(`user ${socket.id} disconnected`)
-      console.log(users)
+
+      // ── WebRTC: notify all rooms this user was in ──────────────────────────
+      socket.rooms.forEach((room) => {
+        if (room !== socket.id) {
+          socket.to(room).emit('peer-left', { userId: user_id, socketId: socket.id })
+        }
+      })
+    })
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // WebRTC Video Call Signaling
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── Join a video call room (roomId = eventId)
+    socket.on('vc:join-room', ({ roomId, userId, userName, userAvatar }) => {
+      socket.join(roomId)
+
+      // Store this socket's user info for later lookup
+      vcRoomUsers[socket.id] = { userId, userName, userAvatar, roomId }
+
+      // Notify other peers in the room that a new user joined
+      socket.to(roomId).emit('vc:user-joined', {
+        userId,
+        userName,
+        userAvatar,
+        socketId: socket.id
+      })
+
+      // Send the new user a list of existing peers WITH their user info
+      const roomSockets = io.sockets.adapter.rooms.get(roomId)
+      const peers: { socketId: string; userId: string; userName: string; userAvatar: string | null }[] = []
+      if (roomSockets) {
+        roomSockets.forEach((sid) => {
+          if (sid !== socket.id && vcRoomUsers[sid]) {
+            peers.push({
+              socketId: sid,
+              userId: vcRoomUsers[sid].userId,
+              userName: vcRoomUsers[sid].userName,
+              userAvatar: vcRoomUsers[sid].userAvatar
+            })
+          }
+        })
+      }
+      socket.emit('vc:existing-peers', { peers })
+      console.log(`[VC] ${userId} joined room ${roomId}, existing peers: ${peers.length}`)
+    })
+
+    // ── Leave room
+    socket.on('vc:leave-room', ({ roomId }) => {
+      socket.to(roomId).emit('vc:user-left', { socketId: socket.id, userId: user_id })
+      delete vcRoomUsers[socket.id]
+      socket.leave(roomId)
+    })
+
+    // ── WebRTC Offer (initiator → receiver)
+    socket.on('vc:offer', ({ to, offer, from }) => {
+      const senderInfo = vcRoomUsers[socket.id]
+      io.to(to).emit('vc:offer', {
+        offer,
+        from: socket.id,
+        fromUserId: user_id,
+        fromUserName: senderInfo?.userName || null,
+        fromUserAvatar: senderInfo?.userAvatar || null
+      })
+    })
+
+    // ── WebRTC Answer (receiver → initiator)
+    socket.on('vc:answer', ({ to, answer }) => {
+      io.to(to).emit('vc:answer', { answer, from: socket.id })
+    })
+
+    // ── ICE Candidate relay
+    socket.on('vc:ice-candidate', ({ to, candidate }) => {
+      io.to(to).emit('vc:ice-candidate', { candidate, from: socket.id })
+    })
+
+    // ── Screen share state broadcast
+    socket.on('vc:screen-sharing', ({ roomId, sharing }) => {
+      socket.to(roomId).emit('vc:screen-sharing', { socketId: socket.id, sharing, userId: user_id })
     })
   })
 }

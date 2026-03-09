@@ -455,7 +455,7 @@ const UserDashboard = () => {
   } = useQuery({
     queryKey: ['dashboard-active-meal-plan'],
     queryFn: getActiveMealSchedule,
-    staleTime: 1000 * 60
+    staleTime: 1000
   })
 
   const {
@@ -464,7 +464,7 @@ const UserDashboard = () => {
   } = useQuery({
     queryKey: ['dashboard-public-meal-plans'],
     queryFn: () => getPublicMealPlans({ limit: 6, sort: 'popular' }),
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   const scheduleSummary = useMemo(() => {

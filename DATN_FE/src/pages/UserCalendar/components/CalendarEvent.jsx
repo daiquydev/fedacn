@@ -5,7 +5,7 @@ import { MdSportsSoccer } from 'react-icons/md'
 export default function CalendarEvent({ event, onClick, isCompact = false }) {
   // Get color based on event type
   const getBgColor = () => {
-    switch(event.type) {
+    switch (event.type) {
       case 'event':
         return 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-200'
       case 'challenge':
@@ -16,10 +16,10 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
         return 'bg-gray-50 dark:bg-gray-800 border-l-4 border-gray-500 dark:border-gray-400 text-gray-700 dark:text-gray-200'
     }
   }
-  
+
   // Get icon based on event type
   const getEventIcon = () => {
-    switch(event.type) {
+    switch (event.type) {
       case 'event':
         return <MdSportsSoccer size={isCompact ? 12 : 16} className="min-w-[12px]" />
       case 'challenge':
@@ -30,12 +30,11 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
         return null
     }
   }
-  
+
   return (
-    <div 
-      className={`px-2 py-1.5 rounded ${getBgColor()} ${
-        isCompact ? 'text-xs' : 'text-sm'
-      } cursor-pointer hover:brightness-95 dark:hover:brightness-125 transition-all shadow-sm`}
+    <div
+      className={`px-2 py-1.5 rounded ${getBgColor()} ${isCompact ? 'text-xs' : 'text-sm'
+        } cursor-pointer hover:brightness-95 dark:hover:brightness-125 transition-all shadow-sm`}
       onClick={onClick}
       title={event.title}
     >
@@ -46,7 +45,7 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
           {event.title}
         </span>
       </div>
-      
+
       {!isCompact && event.startTime && (
         <div className="flex items-center gap-1 mt-1 text-xs opacity-80">
           <FaClock size={10} />

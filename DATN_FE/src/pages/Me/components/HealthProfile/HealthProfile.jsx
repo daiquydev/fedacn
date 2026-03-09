@@ -8,8 +8,8 @@ import { FaHeartPulse, FaArrowUp, FaArrowDown, FaEquals, FaChartLine } from 'rea
 
 const fadeIn = {
   hidden: { opacity: 0, y: 10 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.4 }
   }
@@ -67,7 +67,7 @@ export default function HealthProfile() {
       return currentAccount()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
 
   const userHealth = userData?.data?.result?.[0]
@@ -168,14 +168,14 @@ export default function HealthProfile() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       variants={staggerContainer}
       initial="hidden"
       animate="visible"
       className="p-6"
     >
       {/* Health summary */}
-      <motion.div 
+      <motion.div
         variants={fadeIn}
         className="mb-8 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/20 rounded-xl overflow-hidden shadow-sm"
       >
@@ -191,12 +191,12 @@ export default function HealthProfile() {
                 </span>
                 <span>{getBMICategory(healthData.bmi)}</span>
               </div>
-              
+
               <div className="text-sm text-gray-600 dark:text-gray-300">
                 Mục tiêu hiện tại: <span className="font-medium">{healthData.health_goal}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-8">
               <div className="text-center">
                 <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
@@ -204,14 +204,14 @@ export default function HealthProfile() {
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Cân nặng (kg)</div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                   {Number.isFinite(healthData.target_weight) ? healthData.target_weight : '—'}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Mục tiêu (kg)</div>
               </div>
-              
+
               <div className="relative w-24 h-24">
                 <svg className="w-full h-full" viewBox="0 0 36 36">
                   <path
@@ -241,14 +241,14 @@ export default function HealthProfile() {
       </motion.div>
 
       <div className="flex justify-between items-center mb-6">
-        <motion.h2 
+        <motion.h2
           variants={fadeIn}
           className="text-xl font-bold text-gray-800 dark:text-white flex items-center"
         >
-          <FaChartLine className="mr-2 text-red-600" /> 
+          <FaChartLine className="mr-2 text-red-600" />
           Chi tiết chỉ số sức khỏe
         </motion.h2>
-        
+
         <motion.button
           variants={fadeIn}
           whileHover={{ scale: 1.05 }}
@@ -260,12 +260,12 @@ export default function HealthProfile() {
         </motion.button>
       </div>
 
-      <motion.div 
+      <motion.div
         variants={staggerContainer}
         className="grid grid-cols-1 md:grid-cols-3 gap-6"
       >
         <motion.div variants={fadeIn}>
-          <HealthProfileCard 
+          <HealthProfileCard
             title="Thông tin cơ bản"
             iconColor="text-blue-500"
             items={[
@@ -278,42 +278,40 @@ export default function HealthProfile() {
         </motion.div>
 
         <motion.div variants={fadeIn}>
-          <HealthProfileCard 
+          <HealthProfileCard
             title="Hoạt động & Mục tiêu"
             iconColor="text-purple-500"
             items={[
               { label: 'Mức độ hoạt động', value: healthData.activity_level || 'Chưa cập nhật' },
               { label: 'Mục tiêu sức khỏe', value: healthData.health_goal || 'Chưa cập nhật' },
-              { label: 'Cân nặng mục tiêu', value: Number.isFinite(healthData.target_weight) ? `${healthData.target_weight} kg` : 'Chưa cập nhật' },
-              { label: 'Chế độ ăn', value: healthData.dietary_preferences || 'Chưa cập nhật' },
-              { label: 'Dị ứng', value: healthData.allergies || 'Không có' }
+              { label: 'Cân nặng mục tiêu', value: Number.isFinite(healthData.target_weight) ? `${healthData.target_weight} kg` : 'Chưa cập nhật' }
             ]}
           />
         </motion.div>
 
         <motion.div variants={fadeIn}>
-          <HealthProfileCard 
+          <HealthProfileCard
             title="Chỉ số sức khỏe"
             iconColor="text-green-500"
             items={[
-              { 
-                label: 'Chỉ số BMI', 
-                value: formatNumber(healthData.bmi), 
+              {
+                label: 'Chỉ số BMI',
+                value: formatNumber(healthData.bmi),
                 description: getBMICategory(healthData.bmi),
                 highlighted: true
               },
-              { 
-                label: 'Chỉ số BMR', 
-                value: Number.isFinite(healthData.bmr) ? `${healthData.bmr.toFixed(0)} calo` : 'Chưa cập nhật', 
+              {
+                label: 'Chỉ số BMR',
+                value: Number.isFinite(healthData.bmr) ? `${healthData.bmr.toFixed(0)} calo` : 'Chưa cập nhật',
                 description: 'Lượng calo cơ thể cần khi nghỉ ngơi'
               },
-              { 
-                label: 'Chỉ số TDEE', 
-                value: Number.isFinite(healthData.tdee) ? `${healthData.tdee.toFixed(0)} calo` : 'Chưa cập nhật', 
+              {
+                label: 'Chỉ số TDEE',
+                value: Number.isFinite(healthData.tdee) ? `${healthData.tdee.toFixed(0)} calo` : 'Chưa cập nhật',
                 description: 'Lượng calo đốt cháy hàng ngày'
               },
-              { 
-                label: 'Khuyến nghị calo', 
+              {
+                label: 'Khuyến nghị calo',
                 value: getRecommendedCalories(healthData),
                 description: `Dựa trên mục tiêu: ${healthData.health_goal}`,
                 highlighted: true
@@ -323,18 +321,11 @@ export default function HealthProfile() {
         </motion.div>
       </motion.div>
 
-      {/* Thêm phần hiển thị các chỉ số nâng cao từ mockdata */}
-      <motion.div 
-        variants={fadeIn}
-        className="mt-8"
-      >
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
-          <FaHeartPulse className="mr-2 text-red-600" /> 
-          Chỉ số sức khỏe nâng cao
-        </h2>
-        
+      {/* Chỉ số sức khỏe nâng cao - tạm ẩn vì chưa hiện thực */}
+      {false && (
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div 
+          <motion.div
             variants={fadeIn}
             className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
           >
@@ -350,7 +341,7 @@ export default function HealthProfile() {
                   style={{ width: `${Math.min(100, Math.max(0, Number.isFinite(healthData.body_fat) ? healthData.body_fat : 0))}%` }}
                 ></div>
               </div>
-              
+
               <div className="flex justify-between items-center mt-4">
                 <span className="text-gray-600 dark:text-gray-400">Khối lượng cơ</span>
                 <span className="font-medium text-gray-800 dark:text-white">{displayOrPlaceholder(healthData.muscle_mass, ' kg')}</span>
@@ -371,7 +362,7 @@ export default function HealthProfile() {
                   }}
                 ></div>
               </div>
-              
+
               <div className="flex justify-between items-center mt-4">
                 <span className="text-gray-600 dark:text-gray-400">Mỡ nội tạng</span>
                 <span className="font-medium text-gray-800 dark:text-white">{displayOrPlaceholder(healthData.visceral_fat)}</span>
@@ -386,8 +377,8 @@ export default function HealthProfile() {
               </div>
             </div>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             variants={fadeIn}
             className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
           >
@@ -403,7 +394,7 @@ export default function HealthProfile() {
                   style={{ width: `${Math.min(100, Math.max(0, Number.isFinite(healthData.sleep_average) ? (healthData.sleep_average / 10) * 100 : 0))}%` }}
                 ></div>
               </div>
-              
+
               <div className="flex justify-between items-center mt-4">
                 <span className="text-gray-600 dark:text-gray-400">Lượng nước uống</span>
                 <span className="font-medium text-gray-800 dark:text-white">{displayOrPlaceholder(healthData.water_intake, ' ml/ngày')}</span>
@@ -414,7 +405,7 @@ export default function HealthProfile() {
                   style={{ width: `${Math.min(100, Math.max(0, Number.isFinite(healthData.water_intake) ? (healthData.water_intake / 3000) * 100 : 0))}%` }}
                 ></div>
               </div>
-              
+
               <div className="flex justify-between items-center mt-4">
                 <span className="text-gray-600 dark:text-gray-400">Số bước đi trung bình</span>
                 <span className="font-medium text-gray-800 dark:text-white">{displayOrPlaceholder(healthData.steps_average, ' bước/ngày')}</span>
@@ -425,7 +416,7 @@ export default function HealthProfile() {
                   style={{ width: `${Math.min(100, Math.max(0, Number.isFinite(healthData.steps_average) ? (healthData.steps_average / 10000) * 100 : 0))}%` }}
                 ></div>
               </div>
-              
+
               <div className="flex justify-between items-center mt-4">
                 <span className="text-gray-600 dark:text-gray-400">Nhịp tim lúc nghỉ</span>
                 <span className="font-medium text-gray-800 dark:text-white">{displayOrPlaceholder(healthData.heart_rate_resting, ' nhịp/phút')}</span>
@@ -437,9 +428,9 @@ export default function HealthProfile() {
             </div>
           </motion.div>
         </div>
-      </motion.div>
+      )}
 
-      <motion.div 
+      <motion.div
         variants={fadeIn}
         className="mt-8 bg-yellow-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-yellow-400 dark:border-yellow-600"
       >
@@ -461,8 +452,8 @@ export default function HealthProfile() {
       </motion.div>
 
       {modalUpdateHealthProfile && (
-        <ModalUpdateHealthProfile 
-          handleCloseModalUpdateHealthProfile={closeModalUpdateHealthProfile} 
+        <ModalUpdateHealthProfile
+          handleCloseModalUpdateHealthProfile={closeModalUpdateHealthProfile}
           healthProfile={healthData}
         />
       )}

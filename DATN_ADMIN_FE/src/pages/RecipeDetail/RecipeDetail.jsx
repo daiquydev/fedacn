@@ -18,7 +18,7 @@ export default function RecipeDetail() {
       return getRecipeDetailForInspector(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   const location = useLocation()

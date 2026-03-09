@@ -78,15 +78,11 @@ class WritterService {
     })
     console.log(newImage)
 
-    // lấy tên ảnh từ newImage.originalname
-    let finalImageUrl = '';
-    if (uploadRes.Location) {
-  // Nếu uploadRes.Location tồn tại, thay thế địa chỉ
-  finalImageUrl = uploadRes.Location.replace('http://localhost/', 'http://localhost:9000/');
-}   else {
-  // Nếu uploadRes.Location không tồn tại, có thể throw lỗi hoặc trả về một URL mặc định
-      throw new Error('Failed to get the file location after upload.');
-}
+    const finalImageUrl = uploadRes.Location
+    if (!finalImageUrl) {
+      throw new Error('Failed to get the file location after upload.')
+    }
+
     const image_name = newImage.originalname.split('.')[0]
 
     console.log(image_name)

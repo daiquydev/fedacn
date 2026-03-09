@@ -79,6 +79,8 @@ const EditSportEvent = lazy(() => import('./pages/SportEvent/EditSportEvent'))
 const JoinedEvents = lazy(() => import('./pages/SportEvent/JoinedEvents'))
 const EventHistory = lazy(() => import('./pages/SportEvent/EventHistory'))
 const SportEventDetail = lazy(() => import('./pages/SportEventDetail'))
+const ActivityTracking = lazy(() => import('./pages/SportEvent/ActivityTracking/ActivityTracking'))
+const ActivityResult = lazy(() => import('./pages/SportEvent/ActivityTracking/ActivityResult'))
 const MealPlan = lazy(() => import('./pages/MealPlan/MealPlan'))
 const MealPlanDetail = lazy(() => import('./pages/MealPlan/MealPlanDetail/MealPlanDetail'))
 const MySavedMealPlans = lazy(() => import('./pages/MealPlan/MySavedMealPlans/MySavedMealPlans'))
@@ -460,7 +462,7 @@ export default function useRouteElement() {
           )
         },
         {
-          path: 'sport-event',
+          path: '/sport-event',
           element: (
             <MainLayout>
               <Suspense>
@@ -480,31 +482,11 @@ export default function useRouteElement() {
           )
         },
         {
-          path: '/sport-event/edit/:id',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <EditSportEvent />
-              </Suspense>
-            </MainLayout>
-          )
-        },
-        {
           path: '/sport-event/my-events',
           element: (
             <MainLayout>
               <Suspense>
                 <MySportEvents />
-              </Suspense>
-            </MainLayout>
-          )
-        },
-        {
-          path: '/sport-event/:id',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <SportEventDetail />
               </Suspense>
             </MainLayout>
           )
@@ -527,6 +509,42 @@ export default function useRouteElement() {
                 <EventHistory />
               </Suspense>
             </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/edit/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <EditSportEvent />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <SportEventDetail />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/sport-event/:eventId/tracking',
+          element: (
+            <Suspense>
+              <ActivityTracking />
+            </Suspense>
+          )
+        },
+        {
+          path: '/sport-event/:eventId/activity/:activityId',
+          element: (
+            <Suspense>
+              <ActivityResult />
+            </Suspense>
           )
         },
         {
@@ -583,15 +601,9 @@ export default function useRouteElement() {
           path: '/challenge',
           element: (
             <MainLayout>
-              <Challenge />
-            </MainLayout>
-          )
-        },
-        {
-          path: '/challenge/:id',
-          element: (
-            <MainLayout>
-              <ChallengeDetail />
+              <Suspense>
+                <Challenge />
+              </Suspense>
             </MainLayout>
           )
         },
@@ -599,7 +611,9 @@ export default function useRouteElement() {
           path: '/challenge/my-challenges',
           element: (
             <MainLayout>
-              <MyChallenge />
+              <Suspense>
+                <MyChallenge />
+              </Suspense>
             </MainLayout>
           )
         },
@@ -607,7 +621,19 @@ export default function useRouteElement() {
           path: '/challenge/create',
           element: (
             <MainLayout>
-              <CreateChallenge />
+              <Suspense>
+                <CreateChallenge />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/challenge/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <ChallengeDetail />
+              </Suspense>
             </MainLayout>
           )
         },
@@ -878,18 +904,18 @@ export default function useRouteElement() {
       )
     },
     {
-      path: '/explore/meal-plan/:id',
-      element: (
-        <Suspense>
-          <PublicMealPlanDetail />
-        </Suspense>
-      )
-    },
-    {
       path: '/explore/meal-plans',
       element: (
         <Suspense>
           <Explore />
+        </Suspense>
+      )
+    },
+    {
+      path: '/explore/meal-plan/:id',
+      element: (
+        <Suspense>
+          <PublicMealPlanDetail />
         </Suspense>
       )
     },

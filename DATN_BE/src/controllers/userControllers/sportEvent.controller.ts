@@ -33,7 +33,14 @@ export const getSportEventController = async (req: Request, res: Response) => {
       result: event,
       message: 'Get sport event successfully'
     })
-  } catch (error) {
+  } catch (error: any) {
+    // Return 410 Gone if the event was soft-deleted (vs 404 for truly missing)
+    if (error?.isDeleted) {
+      return res.status(410).json({
+        message: 'Sport event has been deleted',
+        isDeleted: true
+      })
+    }
     return res.status(404).json({
       message: (error as Error).message
     })
@@ -42,10 +49,10 @@ export const getSportEventController = async (req: Request, res: Response) => {
 
 export const createSportEventController = async (req: Request, res: Response) => {
   try {
-    const { name, description, category, startDate, endDate, location, maxParticipants, image, eventType } = req.body
+    const { name, description, detailedDescription, category, startDate, endDate, location, maxParticipants, image, eventType, targetValue, targetUnit, requirements, benefits } = req.body
     const decoded = (req as any).decoded
     console.log('📋 Create Sport Event - Decoded token:', { user_id: decoded?.user_id, role: decoded?.role })
-    
+
     const userId = decoded?.user_id
 
     if (!userId) {
@@ -65,6 +72,7 @@ export const createSportEventController = async (req: Request, res: Response) =>
     const event = await sportEventService.createSportEventService({
       name,
       description,
+      detailedDescription,
       category,
       startDate,
       endDate,
@@ -72,7 +80,11 @@ export const createSportEventController = async (req: Request, res: Response) =>
       maxParticipants,
       image,
       createdBy: userId,
-      eventType
+      eventType,
+      targetValue: targetValue !== undefined ? Number(targetValue) : undefined,
+      targetUnit,
+      requirements,
+      benefits
     })
 
     return res.status(201).json({
@@ -226,6 +238,31 @@ export const getJoinedEventsController = async (req: Request, res: Response) => 
     })
   } catch (error) {
     return res.status(500).json({
+      message: (error as Error).message
+    })
+  }
+}
+
+export const inviteFriendToEventController = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { friendId } = req.body
+    const userId = (req as any).decoded?.user_id
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+    if (!friendId) {
+      return res.status(400).json({ message: 'friendId is required' })
+    }
+
+    const result = await sportEventService.inviteFriendToEventService(id, userId, friendId)
+    return res.json({
+      result,
+      message: 'Invitation sent successfully'
+    })
+  } catch (error) {
+    return res.status(400).json({
       message: (error as Error).message
     })
   }

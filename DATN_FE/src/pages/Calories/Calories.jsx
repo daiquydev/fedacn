@@ -10,13 +10,14 @@ import { useContext, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { calculateTDEE, saveTDEEData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
-import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
 import { AppContext } from '../../contexts/app.context'
 import { setProfileToLS } from '../../utils/auth'
+import AIAnalysisModal from '../../components/GlobalComponents/AIAnalysisModal/AIAnalysisModal'
+import CalculatorSidebar from '../../components/GlobalComponents/CalculatorSidebar/CalculatorSidebar'
 export default function Calories() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [dataTDEE, setDataTDEE] = useState({})
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
   const { setProfile, profile } = useContext(AppContext)
   const {
     register,
@@ -32,13 +33,6 @@ export default function Calories() {
       activity: profile?.activity_level || 'DEFAULT'
     }
   })
-  const handleOpenModal = () => {
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-  }
 
   const calculateTDEEMutation = useMutation({
     mutationFn: (body) => calculateTDEE(body)
@@ -49,32 +43,25 @@ export default function Calories() {
   })
 
   const onSubmit = handleSubmit((data) => {
+
     console.log(data)
     setDataTDEE(data)
     calculateTDEEMutation.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
-        setDataTDEE((prev) => ({ ...prev, TDEE: data.data.result }))
-        handleOpenModal()
+      onSuccess: (res) => {
+        const tdeeValue = res.data.result
+        setDataTDEE((prev) => ({ ...prev, TDEE: tdeeValue }))
+        // Auto-save
+        saveTDEEMutation.mutate({ ...data, TDEE: tdeeValue }, {
+          onSuccess: (saved) => {
+            toast.success('Đã tính và lưu chỉ số TDEE')
+            setProfile(saved?.data.result)
+            setProfileToLS(saved?.data.result)
+          }
+        })
       },
-      onError: () => {
-        console.log('error')
-      }
+      onError: () => { console.log('error') }
     })
   })
-  const handleSaveTDEEData = () => {
-    saveTDEEMutation.mutate(dataTDEE, {
-      onSuccess: (data) => {
-        toast.success('Lưu chỉ số TDEE thành công')
-        setProfile(data?.data.result)
-        setProfileToLS(data?.data.result)
-        handleCloseModal()
-      },
-      onError: () => {
-        toast.error('Lưu chỉ số TDEE thất bại')
-      }
-    })
-  }
   return (
     <>
       <div className='grid xl:mx-4  pt-2 xl:gap-3 xl:grid-cols-6'>
@@ -84,7 +71,7 @@ export default function Calories() {
               <article className='mx-auto w-full '>
                 <header className='mb-3 not-format'>
                   <h1 className='mb-1 text-3xl font-extrabold dark:text-gray-300 leading-tight text-red-700 '>
-                    Tính Calo tiêu thụ trong một ngày
+                    Tính kcal tiêu thụ trong một ngày
                   </h1>
                   <div className='flex items-center'>
                     Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Nutri</span>
@@ -130,7 +117,7 @@ export default function Calories() {
                   - Bằng cách tính lượng calo tiêu thụ, nhiều chuyên gia dinh dưỡng dựa vào đó để xác định chế độ ăn
                   uống phù hợp và cải thiện cân nặng của các vận động viên.
                 </p>
-                <h2 className='font-bold text-xl my-3 dark:text-gray-300'>1. Một ngày cần bao nhiêu calo là đủ?</h2>
+                <h2 className='font-bold text-xl my-3 dark:text-gray-300'>1. Một ngày cần bao nhiêu kcal là đủ?</h2>
                 <p>
                   Lượng calo nạp vào cơ thể mỗi ngày sẽ quyết định cân nặng và sức khỏe của bạn. Quá nhiều calo sẽ dẫn
                   đến thừa cân và ngược lại. Tuy nhiên, không có quy định chung cho mức calo của mọi người vì mỗi cá
@@ -188,7 +175,7 @@ export default function Calories() {
                   />
                 </div>
                 <h2 className='font-bold text-xl mt-5 mb-3 dark:text-gray-300'>
-                  2. Cách tính calo tiêu thụ để giảm cân
+                  2. Cách tính kcal tiêu thụ để giảm cân
                 </h2>
                 <p>
                   - Theo nghiên cứu, nếu bạn tiêu thụ khoảng 3,500 dư lượng calo, bạn sẽ tăng thêm 1 pound (~0.45 kg).
@@ -250,133 +237,69 @@ export default function Calories() {
           </main>
         </div>
         <div className='col-span-6 order-first xl:order-last my-3 xl:my-0 xl:col-span-2'>
-          <div className='shadow mb-6 bg-white rounded-lg dark:bg-color-primary dark:border-none'>
-            <div className='flex flex-col dark:text-gray-300 justify-center items-center pt-4 text-xl font-semibold text-red-700'>
-              Tính toán TDEE <p className='text-base text-black dark:text-gray-300'>(Theo hệ kilogram và mét)</p>
-            </div>
-            <div className='border mt-2 mx-5 dark:border-gray-700 border-red-200 '></div>
-            <form noValidate onSubmit={onSubmit} className='p-3'>
-              <Input
-                title='Nhập cân nặng (kg)'
-                type='number'
-                name='weight'
-                register={register}
-                errors={errors.weight}
-                id='weight'
-                placeholder='Nhập cân nặng của bạn'
-              />
-              <Input
-                title='Nhập chiều cao (cm)'
-                type='number'
-                register={register}
-                errors={errors.height}
-                name='height'
-                id='height'
-                placeholder='Nhập chiều cao của bạn'
-              />
-              <Input
-                title='Nhập độ tuổi'
-                register={register}
-                errors={errors.age}
-                type='number'
-                name='age'
-                id='age'
-                placeholder='Nhập độ tuổi của bạn'
-              />
-              <div className='mb-3'>
-                <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
-                  Giới tính của bạn là:
-                </div>
-                <div className='flex items-center pb-2'>
+          <CalculatorSidebar
+            title='Tính toán TDEE'
+            subtitle='(Tổng năng lượng tiêu thụ mỗi ngày)'
+            gradient='from-green-500 to-emerald-400'
+            result={(profile?.TDEE || dataTDEE.TDEE) ? {
+              value: profile?.TDEE || dataTDEE.TDEE,
+              unit: 'kcal/ngày',
+              label: 'Tổng năng lượng bạn cần mỗi ngày'
+            } : null}
+            onAIClick={(profile?.TDEE || dataTDEE.TDEE) ? () => setIsAIModalOpen(true) : null}
+          >
+            <form noValidate onSubmit={onSubmit} className='space-y-3'>
+              <Input title='Cân nặng (kg)' type='number' name='weight' register={register} errors={errors.weight} id='weight' placeholder='Nhập cân nặng' />
+              <Input title='Chiều cao (cm)' type='number' name='height' register={register} errors={errors.height} id='height' placeholder='Nhập chiều cao' />
+              <Input title='Tuổi' type='number' name='age' register={register} errors={errors.age} id='age' placeholder='Nhập tuổi' />
+              <div>
+                <div className='text-gray-600 dark:text-gray-400 text-sm font-medium mb-2'>Giới tính:</div>
+                <div className='flex gap-4'>
                   <div className='flex items-center'>
-                    <input
-                      type='radio'
-                      name='default-radio'
-                      value='male'
-                      {...register('gender')}
-                      id='male'
-                      className='radio radio-success'
-                    />
-                    <label htmlFor='male' className='ms-2 text-sm w-20 font-medium text-gray-900 dark:text-gray-300'>
-                      Nam
-                    </label>
+                    <input type='radio' name='gender-radio' value='male' {...register('gender')} id='male' className='radio radio-success' />
+                    <label htmlFor='male' className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>Nam</label>
                   </div>
                   <div className='flex items-center'>
-                    <input
-                      type='radio'
-                      name='default-radio'
-                      value='female'
-                      {...register('gender')}
-                      id='female'
-                      className='radio radio-success'
-                    />
-                    <label htmlFor='female' className='ms-2 text-sm w-20 font-medium text-gray-900 dark:text-gray-300'>
-                      Nữ
-                    </label>
+                    <input type='radio' name='gender-radio' value='female' {...register('gender')} id='female' className='radio radio-success' />
+                    <label htmlFor='female' className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>Nữ</label>
                   </div>
                 </div>
               </div>
-              <div className='mb-3'>
-                <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
-                  Mức độ hoạt động
-                </div>
-                <select
-                  defaultValue='DEFAULT'
-                  {...register('activity')}
-                  className='select w-full mb-2 border border-gray-300 bg-white dark:bg-slate-800 dark:border-none'
-                >
-                  <option disabled value='DEFAULT'>
-                    Nhập mức độ hoạt động thường ngày
-                  </option>
-                  <option value='1.2'>Không có hoặc ít vận động</option>
-                  <option value='1.375'>Nhẹ: 1-3 ngày/tuần</option>
-                  <option value='1.55'>Vừa phải: 3-5 ngày/tuần</option>
-                  <option value='1.725'>Năng động: 6-7 ngày/tuần</option>
-                  <option value='1.9'>Cực kỳ năng động, thể dục 2 lần/ngày</option>
+              <div>
+                <label className='text-gray-600 dark:text-gray-400 text-sm font-medium mb-1 block'>Mức độ hoạt động:</label>
+                <select {...register('activity')} className='select select-bordered w-full text-sm dark:bg-gray-700 dark:border-gray-600'>
+                  <option value='DEFAULT' disabled>Chọn mức độ hoạt động</option>
+                  <option value='1.2'>Không hoạt động (ngồi nhiều)</option>
+                  <option value='1.375'>Nhẹ: 1–3 ngày/tuần</option>
+                  <option value='1.55'>Vừa phải: 3–5 ngày/tuần</option>
+                  <option value='1.725'>Năng động: 6–7 ngày/tuần</option>
+                  <option value='1.9'>Cực kỳ năng động</option>
                 </select>
-
-                <div className='flex min-h-[1rem] font-medium text-orange-300  text-xs lg:text-red-600'>
-                  {errors.activity?.message}
-                </div>
+                {errors.activity && <p className='text-red-500 text-xs mt-1'>{errors.activity.message}</p>}
               </div>
-              <div className='flex justify-center'>
+              <div className='pt-1'>
                 {calculateTDEEMutation.isPending ? (
-                  <button disabled className='block btn btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                  <button disabled className='w-full py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-400 text-white font-semibold flex items-center justify-center gap-2 opacity-70'>
+                    <Loading classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
                   </button>
                 ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'> Tính toán</button>
+                  <button className='w-full py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-600 hover:to-emerald-500 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200'>
+                    Tính toán
+                  </button>
                 )}
               </div>
             </form>
-            <div>
-              {(profile?.TDEE || dataTDEE.TDEE) && (
-                <div className='flex mx-4 justify-center '>
-                  <div className='mt-5 w-full pb-10'>
-                    <div className=' text-gray-700 flex justify-center dark:text-gray-300 font-semibold '>
-                      Chỉ số BMR của bạn là: {profile?.TDEE || dataTDEE.TDEE} calories
-                    </div>
-                    <div className='text-red-700 flex justify-center dark:text-red-300 font-medium text-xs'>
-                      Lưu ý: Bạn muốn giảm cân, hãy ăn ít calo hơn TDEE, bạn muốn tăng cân, hãy ăn nhiều calo hơn TDEE.
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        {isModalOpen && (
-          <CalculatorModal
-            closeModal={handleCloseModal}
-            title='Chỉ số TDEE của bạn'
-            helptext='Lưu ý: khi bạn lưu kết quả, các chỉ số liên quan sẽ được cập nhật và lưu lại trong hồ sơ cá nhân của bạn.'
-            saveData={handleSaveTDEEData}
-            isPending={saveTDEEMutation.isPending}
-            data={calculateTDEEMutation.data}
-            unit='calo/ngày'
+          </CalculatorSidebar>
+          <AIAnalysisModal
+            isOpen={isAIModalOpen}
+            onClose={() => setIsAIModalOpen(false)}
+            calculationType='TDEE'
+            inputData={{ weight: dataTDEE.weight, height: dataTDEE.height, age: dataTDEE.age, gender: dataTDEE.gender, activity: dataTDEE.activity }}
+            calculatedResult={{ TDEE_kcal_per_day: profile?.TDEE || dataTDEE.TDEE }}
           />
-        )}
+        </div>
       </div>
     </>
   )
 }
+

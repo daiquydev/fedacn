@@ -20,7 +20,7 @@ export default function Cooking() {
       return getBlogsForUser({ limit: 4 })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data: recipesData, isLoading: isLoadingRecipe } = useQuery({
@@ -29,7 +29,7 @@ export default function Cooking() {
       return getRecipesForUser({ limit: 6 })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data: albumsData, isLoading: isLoadingAlbum } = useQuery({
@@ -38,7 +38,7 @@ export default function Cooking() {
       return getListAlbumForUser({ limit: 4 })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data: userData } = useQuery({
@@ -47,7 +47,7 @@ export default function Cooking() {
       return recommendUser()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
   return (
     <>

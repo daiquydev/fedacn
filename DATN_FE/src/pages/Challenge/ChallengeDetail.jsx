@@ -172,7 +172,7 @@ const mockChallenge3 = {
 // Modal xác nhận rời thử thách
 const LeaveConfirmModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6">
@@ -180,7 +180,7 @@ const LeaveConfirmModal = ({ isOpen, onClose, onConfirm }) => {
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           Bạn có chắc chắn muốn rời khỏi thử thách này? Mọi tiến độ và thành tích của bạn sẽ bị mất. Hành động này không thể hoàn tác.
         </p>
-        
+
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
@@ -216,7 +216,7 @@ export default function ChallengeDetail() {
     queryFn: () => {
       return currentAccount()
     },
-    staleTime: 1000 * 60 * 60
+    staleTime: 1000
   })
 
   const userProfile = userData?.data?.result?.[0] || { name: "Người dùng", avatar: "" }
@@ -225,7 +225,7 @@ export default function ChallengeDetail() {
     // Lựa chọn mockdata dựa vào id từ URL
     if (id === '0') {
       setChallenge(mockChallenge1)
-    } 
+    }
     else if (id === '1') {
       setChallenge(mockChallenge3)
     }
@@ -297,22 +297,22 @@ export default function ChallengeDetail() {
   const handleEvidenceUpload = (data) => {
     // Kiểm tra dữ liệu đầu vào
     if (!data.value || isNaN(data.value)) return;
-    
+
     // Cập nhật tiến độ và thông tin người dùng
     const newValue = (challenge.userProgress?.currentValue || 0) + data.value;
     const newProgress = Math.min(100, Math.round((newValue / challenge.targetValue) * 100));
-    
+
     // Tính toán streak
     const lastActivity = challenge.userProgress?.recentActivities?.[0];
     const lastActivityDate = lastActivity ? moment(lastActivity.date) : null;
     const today = moment();
-    const isConsecutiveDay = lastActivityDate && 
-                            today.diff(lastActivityDate, 'days') <= 1;
-    
-    const newStreak = isConsecutiveDay 
-                      ? (challenge.userProgress?.streak || 0) + 1 
-                      : 1;
-    
+    const isConsecutiveDay = lastActivityDate &&
+      today.diff(lastActivityDate, 'days') <= 1;
+
+    const newStreak = isConsecutiveDay
+      ? (challenge.userProgress?.streak || 0) + 1
+      : 1;
+
     // Cập nhật dữ liệu thử thách
     setChallenge(prev => ({
       ...prev,
@@ -334,7 +334,7 @@ export default function ChallengeDetail() {
         ]
       }
     }));
-    
+
     // Thông báo thành công
     toast.success(`Đã cập nhật tiến độ: +${data.value} ${challenge.targetUnit}`);
   }
@@ -445,40 +445,49 @@ export default function ChallengeDetail() {
                   <FaDoorOpen />
                 </button>
               </div>
+            ) : (challenge.endDate && moment().startOf('day').isAfter(moment(challenge.endDate).endOf('day'))) ? (
+              <button
+                onClick={() => { }}
+                className="px-6 py-2 rounded-lg font-medium bg-gray-200 text-gray-500 cursor-default transition-colors flex items-center justify-center dark:bg-gray-700 dark:text-gray-400"
+              >
+                Đã kết thúc
+              </button>
+            ) : (challenge.startDate && moment().startOf('day').isBefore(moment(challenge.startDate).startOf('day'))) ? (
+              <button
+                onClick={() => { }}
+                className="px-6 py-2 rounded-lg font-medium bg-gray-200 text-gray-500 cursor-default transition-colors flex items-center justify-center dark:bg-gray-700 dark:text-gray-400"
+              >
+                Chưa bắt đầu
+              </button>
             ) : (
               <button
                 onClick={handleJoinChallenge}
-                disabled={moment().isAfter(moment(challenge.endDate))}
-                className={`px-6 py-2 rounded-lg font-medium ${
-                  moment().isAfter(moment(challenge.endDate))
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
-                } text-white transition-colors`}
+                className="px-6 py-2 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center justify-center"
               >
-                {moment().isAfter(moment(challenge.endDate)) ? 'Đã kết thúc' : 'Tham gia ngay'}
+                Tham gia ngay
               </button>
             )}
           </div>
 
           {/* Hiển thị Component SmartWatchSync khi đã tham gia */}
-          {challenge.isJoined && <SmartWatchSync 
+          {challenge.isJoined && <SmartWatchSync
             challenge={challenge}
             onActivityComplete={(activityData) => {
               // Cập nhật tiến độ của thử thách với dữ liệu mới từ hoạt động
               const newValue = (challenge.userProgress?.currentValue || 0) + activityData.value;
               const newProgress = Math.min(100, Math.round((newValue / challenge.targetValue) * 100));
-              
+
               // Tính toán streak
               const lastActivity = challenge.userProgress?.recentActivities?.[0];
               const lastActivityDate = lastActivity ? moment(lastActivity.date) : null;
               const today = moment();
-              const isConsecutiveDay = lastActivityDate && 
-                                      today.diff(lastActivityDate, 'days') <= 1;
-              
-              const newStreak = isConsecutiveDay 
-                                ? (challenge.userProgress?.streak || 0) + 1 
-                                : 1;
-              
+              const isConsecutiveDay = lastActivityDate &&
+                today.diff(lastActivityDate, 'days') <= 1;
+
+              const newStreak = isConsecutiveDay
+                ? (challenge.userProgress?.streak || 0) + 1
+                : 1;
+
               // Cập nhật dữ liệu thử thách
               setChallenge(prev => ({
                 ...prev,
@@ -500,7 +509,7 @@ export default function ChallengeDetail() {
                   ]
                 }
               }));
-              
+
               // Thông báo thành công
               toast.success(`Đã cập nhật tiến độ: +${activityData.value} ${challenge.targetUnit}`);
             }}
@@ -513,12 +522,12 @@ export default function ChallengeDetail() {
                 <h2 className="text-xl font-bold text-green-800 dark:text-green-300">Tiến độ của bạn</h2>
                 <div className="flex items-center space-x-2">
                   <div className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                    <BsPersonBadge className="mr-1" /> 
+                    <BsPersonBadge className="mr-1" />
                     Xếp hạng #{challenge.userProgress.rank}
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
                   {/* Progress Bar */}
@@ -538,7 +547,7 @@ export default function ChallengeDetail() {
                       ></div>
                     </div>
                   </div>
-                  
+
                   {/* Recent Activities */}
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Hoạt động gần đây</h3>
@@ -547,8 +556,8 @@ export default function ChallengeDetail() {
                         <div key={activity.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
-                              <img 
-                                src={`/images/${activity.evidence}`} 
+                              <img
+                                src={`/images/${activity.evidence}`}
                                 alt="Evidence"
                                 onError={(e) => { e.target.src = 'https://via.placeholder.com/100'; }}
                                 className="w-full h-full object-cover"
@@ -568,7 +577,7 @@ export default function ChallengeDetail() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Stats and Achievements */}
                 <div className="space-y-6">
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
@@ -587,7 +596,7 @@ export default function ChallengeDetail() {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                     <h3 className="text-lg font-semibold mb-3">Thống kê</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -697,7 +706,7 @@ export default function ChallengeDetail() {
                       {challenge.targetValue} {challenge.targetUnit}
                     </div>
                   </div>
-                  
+
                   <div>
                     <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Thời gian còn lại</div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -740,7 +749,7 @@ export default function ChallengeDetail() {
                   )}
                 </div>
               </div>
-              
+
               {/* Nút nộp bằng chứng và xem tiến độ khi đã tham gia - phiên bản mobile */}
               {challenge.isJoined && (
                 <div className="md:hidden bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-800">
@@ -790,16 +799,16 @@ export default function ChallengeDetail() {
 
           {/* Leaderboard */}
           <div className="mb-8">
-            <ChallengeLeaderboard 
-              challengeId={id} 
-              userRank={challenge.isJoined ? challenge.userProgress?.rank : null} 
+            <ChallengeLeaderboard
+              challengeId={id}
+              userRank={challenge.isJoined ? challenge.userProgress?.rank : null}
             />
           </div>
 
           {/* Posts */}
           <div>
-            <ChallengePosts 
-              challengeId={id} 
+            <ChallengePosts
+              challengeId={id}
               canPost={challenge.isJoined}
               userProgress={challenge.isJoined ? challenge.userProgress : null}
             />
@@ -839,7 +848,7 @@ export default function ChallengeDetail() {
                 <FaTimes className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="mb-2 text-gray-700 dark:text-gray-300">
                 Chia sẻ thử thách này với bạn bè của bạn:
@@ -850,7 +859,7 @@ export default function ChallengeDetail() {
                 </p>
               </div>
             </div>
-            
+
             <div className="mb-4 flex space-x-2">
               <button className="flex-1 flex justify-center items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">
                 <FaFacebook />
@@ -861,8 +870,8 @@ export default function ChallengeDetail() {
                 <span>Twitter</span>
               </button>
             </div>
-            
-            <button 
+
+            <button
               className="w-full flex justify-center items-center space-x-2 bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded"
               onClick={() => {
                 navigator.clipboard.writeText('https://sharelink/test');

@@ -39,7 +39,7 @@ export default function WorkoutItem({ workout }) {
         <td className='px-6 py-4 whitespace-nowrap'>
           <div className='text-sm text-gray-500'>{cutString(workout.name, 20)}</div>
         </td>
-        <td className='px-6 py-4 whitespace-nowrap'>{workout.calo_target} cal</td>
+        <td className='px-6 py-4 whitespace-nowrap'>{workout.calo_target} kcal</td>
         <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
           {moment(workout.start_date).format('MM/DD/YYYY')}
         </td>

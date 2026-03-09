@@ -68,11 +68,17 @@ class Http {
       },
       (error) => {
         console.log(error)
-        // Chỉ toast lỗi không phải 422 và 401
-        if (![HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized].includes(error.response?.status)) {
+        const status = error.response?.status
+        const url = error.config?.url || ''
+
+        // Suppress toast for sport-event preview calls (404/410 = event deleted, handled gracefully by component)
+        const isSportEventPreview = /\/sport-events\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
+
+        // Chỉ toast lỗi không phải 422, 401, và không phải sport-event preview lỗi
+        if (!isSportEventPreview && ![HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized].includes(status)) {
           const data = error.response?.data
           console.log(data)
-          const message = data.message || error.message
+          const message = data?.message || error.message
           toast.error(message)
         }
         if (isAxiosUnauthorizedError(error)) {
@@ -86,11 +92,11 @@ class Http {
             this.refreshTokenRequest = this.refreshTokenRequest
               ? this.refreshTokenRequest
               : this.handleRefreshToken().finally(() => {
-                  // Giữ refreshTokenRequest trong 10s cho những request tiếp theo nếu có 401 thì dùng
-                  setTimeout(() => {
-                    this.refreshTokenRequest = null
-                  }, 5000)
-                })
+                // Giữ refreshTokenRequest trong 10s cho những request tiếp theo nếu có 401 thì dùng
+                setTimeout(() => {
+                  this.refreshTokenRequest = null
+                }, 5000)
+              })
             return this.refreshTokenRequest.then((access_token) => {
               // Nghĩa là chúng ta tiếp tục gọi lại request cũ vừa bị lỗi
               console.log(access_token)

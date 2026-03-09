@@ -62,7 +62,7 @@ export default function SearchInput() {
       })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 60,
+    staleTime: 1000,
     enabled: searchWatch !== ''
   })
 

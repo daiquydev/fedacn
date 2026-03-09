@@ -26,6 +26,9 @@ const IngredientList = lazy(() => import('./pages/IngredientList'))
 const RecipeWritterList = lazy(() => import('./pages/RecipeWritterList'))
 const EditRecipe = lazy(() => import('./pages/EditRecipe'))
 const AdminCenter = lazy(() => import('./pages/AdminCenter'))
+const AdminSportCategory = lazy(() => import('./pages/AdminSportCategory/AdminSportCategory'))
+const AdminSportEvent = lazy(() => import('./pages/AdminSportEvent/AdminSportEvent'))
+const WorkoutManagement = lazy(() => import('./pages/WorkoutManagement/WorkoutManagement'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -260,13 +263,43 @@ export default function useRouteElement() {
                   </Suspense>
                 </MainLayout>
               )
-            }
+            },
             {
               path: '/admin-center',
               element: (
                 <MainLayout>
                   <Suspense>
                     <AdminCenter />
+                  </Suspense>
+                </MainLayout>
+              )
+            },
+            {
+              path: '/sport-categories',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <AdminSportCategory />
+                  </Suspense>
+                </MainLayout>
+              )
+            },
+            {
+              path: '/sport-events',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <AdminSportEvent />
+                  </Suspense>
+                </MainLayout>
+              )
+            },
+            {
+              path: '/workout-management',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <WorkoutManagement />
                   </Suspense>
                 </MainLayout>
               )

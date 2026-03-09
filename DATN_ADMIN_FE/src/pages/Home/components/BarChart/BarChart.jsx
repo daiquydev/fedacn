@@ -3,72 +3,84 @@ import { Bar } from 'react-chartjs-2'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
+const LABEL_MAP = {
+  recipes: 'Công thức',
+  albums: 'Album',
+  blogs: 'Bài viết'
+}
+
 export default function BarChart({ food = {} }) {
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top'
-      },
-      title: {
-        display: true,
-        text: 'Biểu đồ lượng bài viết trong hệ thống'
-      }
-    }
-  }
-  // food là 1 object chứa các
-
-  //   "food": {
-  //     "recipes": {
-  //         "total": 18,
-  //         "pending": 0,
-  //         "reject": 1
-  //     },
-  //     "albums": {
-  //         "total": 4,
-  //         "pending": 0,
-  //         "reject": 0
-  //     },
-  //     "blogs": {
-  //         "total": 10,
-  //         "pending": 0,
-  //         "reject": 1
-  //     }
-  // },
-
-  const labels = Object.keys(food)
+  const labels = Object.keys(food).map((k) => LABEL_MAP[k] || k)
 
   const data = {
     labels,
     datasets: [
       {
-        label: 'Total',
-        data: labels.map((label) => food[label].total),
-        backgroundColor: 'rgba(255, 99, 132, 0.5)'
+        label: 'Đã duyệt',
+        data: Object.values(food).map((f) => f.total),
+        backgroundColor: 'rgba(34, 197, 94, 0.75)',
+        borderColor: 'rgba(34, 197, 94, 1)',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
       },
       {
-        label: 'Pending',
-        data: labels.map((label) => food[label].pending),
-        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+        label: 'Đang chờ',
+        data: Object.values(food).map((f) => f.pending),
+        backgroundColor: 'rgba(234, 179, 8, 0.75)',
+        borderColor: 'rgba(234, 179, 8, 1)',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
       },
       {
-        label: 'Reject',
-        data: labels.map((label) => food[label].reject),
-        backgroundColor: 'rgba(255, 206, 86, 0.5)'
+        label: 'Đã từ chối',
+        data: Object.values(food).map((f) => f.reject),
+        backgroundColor: 'rgba(239, 68, 68, 0.75)',
+        borderColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
       }
     ]
   }
 
-  console.log(food)
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          font: { size: 12, weight: '600' },
+          usePointStyle: true,
+          padding: 16
+        }
+      },
+      title: {
+        display: true,
+        text: 'Thống kê Nội dung (Công thức · Album · Bài viết)',
+        font: { size: 14, weight: '700' },
+        padding: { bottom: 12 }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 13, weight: '600' } }
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: 'rgba(0,0,0,0.06)' },
+        ticks: { stepSize: 1, font: { size: 11 } }
+      }
+    }
+  }
+
   return (
-    <div className='bg-white mx-2 scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 col-span-2 flex flex-col justify-center items-center   lg:h-[27rem] overflow-x-auto overflow-y-auto px-10 py-5 my-4 dark:border-none rounded-md dark:bg-color-primary border border-gray-300'>
-      <Bar options={options} data={data} />
-      <div>
-        {/* <h1 className='text-center text-gray-500 mt-5 font-semibold'>
-      {workout?.total_calo_burn === 0
-        ? 'Bạn chưa thực hiện bài tập nào'
-        : `Lượng calo đã đốt cháy: ${workout?.total_calo_burn}/${workout?.calo_target} calories`}
-    </h1> */}
+    <div className='bg-white mx-2 rounded-2xl border border-gray-200 shadow-sm px-6 py-5 my-4 dark:bg-gray-800 dark:border-gray-700'>
+      <div className='h-[260px]'>
+        <Bar options={options} data={data} />
       </div>
     </div>
   )

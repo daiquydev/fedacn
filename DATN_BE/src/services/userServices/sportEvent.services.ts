@@ -1,5 +1,7 @@
 import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
+import NotificationModel from '~/models/schemas/notification.schema'
+import { NotificationTypes } from '~/constants/enums'
 import { Types } from 'mongoose'
 
 class SportEventService {
@@ -19,7 +21,7 @@ class SportEventService {
     sortBy?: string
     userId?: string
   }) {
-    const condition: any = {}
+    const condition: any = { isDeleted: { $ne: true } }
 
     if (search) {
       condition.$text = { $search: search }
@@ -77,6 +79,12 @@ class SportEventService {
       throw new Error('Sport event not found')
     }
 
+    if (event.isDeleted) {
+      const err: any = new Error('Sport event has been deleted')
+      err.isDeleted = true
+      throw err
+    }
+
     const eventObj = event.toObject() as SportEvent
     if (userId && eventObj.participants_ids) {
       eventObj.isJoined = eventObj.participants_ids.some((participant: any) => {
@@ -94,6 +102,7 @@ class SportEventService {
   async createSportEventService({
     name,
     description,
+    detailedDescription,
     category,
     startDate,
     endDate,
@@ -101,10 +110,15 @@ class SportEventService {
     maxParticipants,
     image,
     createdBy,
-    eventType
+    eventType,
+    targetValue,
+    targetUnit,
+    requirements,
+    benefits
   }: {
     name: string
     description: string
+    detailedDescription?: string
     category: string
     startDate: Date
     endDate: Date
@@ -112,7 +126,11 @@ class SportEventService {
     maxParticipants: number
     image: string
     createdBy: string
-    eventType: 'online' | 'offline'
+    eventType: 'Ngoài trời' | 'Trong nhà'
+    targetValue?: number
+    targetUnit?: string
+    requirements?: string
+    benefits?: string
   }) {
     // Validate dates
     const start = new Date(startDate)
@@ -138,6 +156,7 @@ class SportEventService {
     const newEvent = new SportEventModel({
       name,
       description,
+      detailedDescription: detailedDescription || '',
       category,
       startDate: start,
       endDate: end,
@@ -146,6 +165,10 @@ class SportEventService {
       image,
       createdBy,
       eventType,
+      targetValue: targetValue !== undefined ? targetValue : undefined,
+      targetUnit: targetUnit || '',
+      requirements: requirements || '',
+      benefits: benefits || '',
       participants: 0,
       participants_ids: []
     })
@@ -153,9 +176,9 @@ class SportEventService {
     try {
       await newEvent.save()
 
-      // Auto-generate sessions for Online events
-      if (eventType === 'online') {
-        console.log('Creating Online Event - Generating Sessions...')
+      // Auto-generate sessions for Trong nhà events
+      if (eventType === 'Trong nhà') {
+        console.log('Creating Trong nhà Event - Generating Sessions...')
         const sessions = []
         let currentDate = new Date(start)
         // Reset time to start time for consistency if needed, or keep as is
@@ -165,7 +188,7 @@ class SportEventService {
           console.log(`Generating session ${sessionCount} for date ${currentDate}`)
           // Create a new date object for this session to avoid reference issues
           const sessionDate = new Date(currentDate)
-          
+
           sessions.push({
             eventId: newEvent._id,
             sessionNumber: sessionCount,
@@ -188,11 +211,11 @@ class SportEventService {
             await SportEventSessionModel.insertMany(sessions)
             console.log('Sessions saved successfully')
           } catch (sessionError: any) {
-             console.error('Error saving sessions (InsertMany):', sessionError)
-             
-             // Try fallback but still throw if that fails too, or just throw immediately to identify issue
-             // Let's throw immediately to alert the user
-             throw new Error(`Failed to generate sessions: ${sessionError.message || sessionError}`)
+            console.error('Error saving sessions (InsertMany):', sessionError)
+
+            // Try fallback but still throw if that fails too, or just throw immediately to identify issue
+            // Let's throw immediately to alert the user
+            throw new Error(`Failed to generate sessions: ${sessionError.message || sessionError}`)
           }
         }
       }
@@ -209,6 +232,11 @@ class SportEventService {
 
   // Update sport event
   async updateSportEventService(eventId: string, updateData: Partial<SportEvent>) {
+    // Prevent updating a soft-deleted event
+    const existing = await SportEventModel.findById(eventId)
+    if (!existing) throw new Error('Sport event not found')
+    if (existing.isDeleted) throw new Error('Cannot update a deleted sport event')
+
     const event = await SportEventModel.findByIdAndUpdate(eventId, updateData, { new: true })
       .populate('createdBy', 'name avatar')
       .populate('participants_ids', 'name avatar')
@@ -220,9 +248,13 @@ class SportEventService {
     return event
   }
 
-  // Delete sport event
+  // Soft delete sport event
   async deleteSportEventService(eventId: string) {
-    const event = await SportEventModel.findByIdAndDelete(eventId)
+    const event = await SportEventModel.findByIdAndUpdate(
+      eventId,
+      { isDeleted: true, deletedAt: new Date() },
+      { new: true }
+    )
 
     if (!event) {
       throw new Error('Sport event not found')
@@ -279,14 +311,14 @@ class SportEventService {
   async getMyEventsService(userId: string, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit
 
-    const events = await SportEventModel.find({ createdBy: userId })
+    const events = await SportEventModel.find({ createdBy: userId, isDeleted: { $ne: true } })
       .populate('createdBy', 'name avatar')
       .populate('participants_ids', 'name avatar')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
 
-    const total = await SportEventModel.countDocuments({ createdBy: userId })
+    const total = await SportEventModel.countDocuments({ createdBy: userId, isDeleted: { $ne: true } })
     const totalPage = Math.ceil(total / limit)
 
     return { events, totalPage, page, limit, total }
@@ -296,17 +328,39 @@ class SportEventService {
   async getJoinedEventsService(userId: string, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit
 
-    const events = await SportEventModel.find({ participants_ids: new Types.ObjectId(userId) })
+    const events = await SportEventModel.find({ participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } })
       .populate('createdBy', 'name avatar')
       .populate('participants_ids', 'name avatar')
       .skip(skip)
       .limit(limit)
       .sort({ startDate: 1 })
 
-    const total = await SportEventModel.countDocuments({ participants_ids: new Types.ObjectId(userId) })
+    const total = await SportEventModel.countDocuments({ participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } })
     const totalPage = Math.ceil(total / limit)
 
     return { events, totalPage, page, limit, total }
+  }
+
+  // Invite friend to sport event (creates a notification for the friend)
+  async inviteFriendToEventService(eventId: string, inviterId: string, friendId: string) {
+    const event = await SportEventModel.findById(eventId).populate('createdBy', 'name avatar')
+    if (!event) {
+      throw new Error('Sport event not found')
+    }
+
+    // Create notification for the friend
+    const notification = new NotificationModel({
+      sender_id: new Types.ObjectId(inviterId),
+      receiver_id: new Types.ObjectId(friendId),
+      content: `đã mời bạn tham gia sự kiện thể thao "${event.name}"`,
+      name_notification: `Lời mời tham gia: ${event.name}`,
+      link_id: eventId,
+      type: NotificationTypes.sportEventInvite,
+      is_read: false
+    })
+
+    await notification.save()
+    return { notificationId: notification._id, eventId, friendId }
   }
 }
 

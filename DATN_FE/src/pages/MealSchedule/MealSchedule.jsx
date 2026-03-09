@@ -33,7 +33,7 @@ export default function MealSchedule() {
       return getListMealSchedules(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   useEffect(() => {

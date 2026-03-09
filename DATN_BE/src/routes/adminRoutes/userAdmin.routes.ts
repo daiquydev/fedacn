@@ -26,19 +26,7 @@ userAdminRouter.get(
   wrapRequestHandler(getAllUserController)
 )
 
-userAdminRouter.get(
-  '/:id',
-  accessTokenValidator,
-  wrapRequestHandler(checkRole([UserRoles.admin])),
-  wrapRequestHandler(getUserByIdController)
-)
 
-userAdminRouter.delete(
-  '/:id',
-  accessTokenValidator,
-  wrapRequestHandler(checkRole([UserRoles.admin])),
-  wrapRequestHandler(deleteUserByIdController)
-)
 
 userAdminRouter.put(
   '/ban',
@@ -88,6 +76,20 @@ userAdminRouter.get(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin])),
   wrapRequestHandler(dashboardController)
+)
+
+userAdminRouter.get(
+  '/:id([0-9a-fA-F]{24})',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getUserByIdController)
+)
+
+userAdminRouter.delete(
+  '/:id([0-9a-fA-F]{24})',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(deleteUserByIdController)
 )
 
 export default userAdminRouter

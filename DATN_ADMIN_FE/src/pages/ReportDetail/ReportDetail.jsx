@@ -16,7 +16,7 @@ export default function ReportDetail() {
       return getReportPostDetail(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 20
+    staleTime: 1000
   })
 
   console.log(data)

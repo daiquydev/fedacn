@@ -16,8 +16,9 @@ import { MdFactCheck } from 'react-icons/md'
 import { FaBowlFood, FaCookieBite, FaPenToSquare, FaUserPen } from 'react-icons/fa6'
 import { AppContext } from '../../../contexts/app.context'
 import { IoMdAlbums } from 'react-icons/io'
-import { FaShareAlt } from 'react-icons/fa'
+import { FaShareAlt, FaRunning, FaDumbbell, FaCalendarAlt } from 'react-icons/fa'
 import { MdReport } from 'react-icons/md'
+import { GiMuscleUp } from 'react-icons/gi'
 
 export default function SideBar() {
   let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
@@ -114,19 +115,13 @@ export default function SideBar() {
                   </NavLink>
                 </li>
 
-                <li>
-                  <NavLink to={'/admin-center'} className='link-custom '>
-                    <MdDashboardCustomize size={25} className='min-w-max' />
-                    Trung tâm admin
-                  </NavLink>
-                </li>
-
-                <li>
-                  <NavLink to={'/request-list'} className='link-custom '>
-                    <RiUserReceived2Fill size={25} className='min-w-max' />
-                    Yêu cầu nâng cấp
-                  </NavLink>
-                </li>
+                {/* <li> */}
+                {/* <NavLink to={'/user'} className='link-custom '> */}
+                {/* <BsPeopleFill size={25} className='min-w-max' /> */}
+                {/* Người dùng */}
+                {/* </NavLink> */}
+                {/* </li> */}
+                {/*  */}
                 <li>
                   <NavLink to={'/reports'} className='link-custom '>
                     <MdReport size={25} className='min-w-max' />
@@ -148,59 +143,26 @@ export default function SideBar() {
             {profile?.role === 2 && (
               <>
                 <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí tài khoản</small>
+                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí sự kiện</small>
                   <li>
-                    <NavLink to={'/user'} className='link-custom '>
-                      <BsPeopleFill size={25} className='min-w-max' />
-                      Người dùng
+                    <NavLink to={'/sport-categories'} className='link-custom '>
+                      <FaRunning size={25} className='min-w-max' />
+                      Danh mục Thể thao
                     </NavLink>
                   </li>
                   <li>
-                    <NavLink to={'/inspector'} className='link-custom '>
-                      <MdFactCheck size={25} className='min-w-max' />
-                      Người kiểm duyệt
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to={'/writter'} className='link-custom '>
-                      <FaUserPen size={25} className='min-w-max' />
-                      Người viết bài
+                    <NavLink to={'/sport-events'} className='link-custom '>
+                      <FaCalendarAlt size={25} className='min-w-max' />
+                      Sự kiện Thể thao
                     </NavLink>
                   </li>
                 </div>
                 <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí món ăn</small>
+                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lý Tập luyện</small>
                   <li>
-                    <NavLink to={'/recipes'} className='link-custom '>
-                      <FaCookieBite size={25} className='min-w-max' />
-                      Quản lý món ăn
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to={'/albums'} className='link-custom '>
-                      <IoMdAlbums size={25} className='min-w-max' />
-                      Quản lý album
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to={'/blogs'} className='link-custom '>
-                      <FaShareAlt size={25} className='min-w-max' />
-                      Quản lý blog
-                    </NavLink>
-                  </li>
-                </div>
-                <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Bài viết nấu ăn</small>
-                  <li>
-                    <NavLink to={'/recipes-writter'} className='link-custom '>
-                      <FaPenToSquare size={25} className='min-w-max' />
-                      Tạo bài viết nấu ăn
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to={'/ingredients'} className='link-custom '>
-                      <FaBowlFood size={25} className='min-w-max' />
-                      Tạo nguyên liệu
+                    <NavLink to={'/workout-management'} className='link-custom '>
+                      <FaDumbbell size={25} className='min-w-max' />
+                      Quản lý tập luyện
                     </NavLink>
                   </li>
                 </div>
@@ -209,38 +171,11 @@ export default function SideBar() {
             {profile?.role === 4 && (
               <>
                 <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí món ăn</small>
-                  <li>
-                    <NavLink to={'/recipes'} className='link-custom '>
-                      <FaCookieBite size={25} className='min-w-max' />
-                      Quản lý món ăn
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to={'/albums'} className='link-custom '>
-                      <IoMdAlbums size={25} className='min-w-max' />
-                      Quản lý album
-                    </NavLink>
-                  </li>
+                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí nội dung</small>
                   <li>
                     <NavLink to={'/blogs'} className='link-custom '>
                       <FaShareAlt size={25} className='min-w-max' />
                       Quản lý blog
-                    </NavLink>
-                  </li>
-                </div>
-                <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Bài viết nấu ăn</small>
-                  <li>
-                    <NavLink to={'/recipes-writter'} className='link-custom '>
-                      <FaPenToSquare size={25} className='min-w-max' />
-                      Tạo bài viết nấu ăn
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to={'/ingredients'} className='link-custom '>
-                      <FaBowlFood size={25} className='min-w-max' />
-                      Tạo nguyên liệu
                     </NavLink>
                   </li>
                 </div>
@@ -254,12 +189,6 @@ export default function SideBar() {
                   <NavLink to={'/recipes-writter'} className='link-custom '>
                     <FaPenToSquare size={25} className='min-w-max' />
                     Tạo bài viết nấu ăn
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to={'/ingredients'} className='link-custom '>
-                    <FaBowlFood size={25} className='min-w-max' />
-                    Tạo nguyên liệu
                   </NavLink>
                 </li>
               </div>

@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { banUserAdmin, deleteUserAdmin, unbanUserAdmin } from '../../../../apis/adminApi'
 import { useState } from 'react'
-
+import { FaBan, FaLockOpen, FaTrash } from 'react-icons/fa'
 import { queryClient } from '../../../../main'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
 
@@ -11,157 +11,147 @@ export default function UserItem({ user }) {
   const [openDelete, setOpenDelete] = useState(false)
   const [openBan, setOpenBan] = useState(false)
 
-  const handleOpenDelete = () => {
-    setOpenDelete(true)
-  }
-  const handleCloseDelete = () => {
-    setOpenDelete(false)
-  }
-
-  const handleOpenBan = () => {
-    setOpenBan(true)
-  }
-
-  const handleCloseBan = () => {
-    setOpenBan(false)
-  }
-
   const deleteUserMutation = useMutation({
     mutationFn: () => deleteUserAdmin(user._id),
     onSuccess: () => {
       toast.success('Xóa người dùng thành công')
-      queryClient.invalidateQueries({
-        queryKey: 'user-list'
-      })
-      handleCloseDelete()
+      queryClient.invalidateQueries({ queryKey: ['user-list'] })
+      setOpenDelete(false)
     }
   })
-  const handleDelete = () => {
-    deleteUserMutation.mutate()
-  }
 
-  const banMutation = useMutation({
-    mutationFn: (body) => banUserAdmin(body)
-  })
-
-  const unbanMutation = useMutation({
-    mutationFn: (body) => unbanUserAdmin(body)
-  })
+  const banMutation = useMutation({ mutationFn: (body) => banUserAdmin(body) })
+  const unbanMutation = useMutation({ mutationFn: (body) => unbanUserAdmin(body) })
 
   const handleBan = () => {
     if (user?.status === 0) {
-      unbanMutation.mutate(
-        { user_id: user._id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries('user-list')
-            toast.success('Mở khóa thành công')
-          }
+      unbanMutation.mutate({ user_id: user._id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries(['user-list'])
+          toast.success('Mở khóa thành công')
+          setOpenBan(false)
         }
-      )
+      })
     } else {
-      banMutation.mutate(
-        { user_id: user._id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries('user-list')
-            toast.success('Khóa thành công')
-          }
+      banMutation.mutate({ user_id: user._id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries(['user-list'])
+          toast.success('Khóa tài khoản thành công')
+          setOpenBan(false)
         }
-      )
+      })
     }
   }
 
+  const isBanned = user?.status === 0
+  const isHighRisk = (user?.banned_count ?? 0) >= 3
+
   return (
     <>
-      <tr>
+      <tr className='hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors'>
+        {/* User info */}
         <td className='px-6 py-4 whitespace-nowrap'>
-          <div className='flex gap-2 items-center'>
-            <div className='inline-block'>
-              <img
-                className='rounded-full object-cover max-w-none w-8 h-8'
-                src={user.avatar === '' ? useravatar : user.avatar}
-              />
-            </div>
+          <div className='flex gap-3 items-center'>
+            <img
+              className='rounded-full object-cover w-9 h-9 ring-2 ring-gray-100 dark:ring-slate-600'
+              src={user.avatar === '' ? useravatar : user.avatar}
+              alt={user.name}
+            />
             <div>
-              <div className='text-sm text-gray-700 dark:text-gray-300'>{user.name}</div>
-              <div className='text-xs text-gray-500'>@{user.user_name}</div>
+              <div className='text-sm font-semibold text-gray-800 dark:text-white'>{user.name}</div>
+              <div className='text-xs text-gray-400'>@{user.user_name}</div>
             </div>
           </div>
         </td>
-        <td className='px-6 py-4 whitespace-nowrap'>
-          {user.status === 0 ? (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-300 text-black dark:bg-pink-200'>
-              Bị khóa
-            </span>
-          ) : (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
-              Đang hoạt động
-            </span>
-          )}
-        </td>
-        <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>{user.email}</td>
-        <td className='px-6 py-4 whitespace-nowrap'>
-          {user?.banned_count >= 5 ? (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold text-red-700 dark:text-red-300  '>
-              {user?.banned_count} lượt
-            </span>
-          ) : (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold text-gray-700 dark:text-gray-300'>
-              {user?.banned_count} lượt
-            </span>
-          )}
-        </td>
-        <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-          {user.role === 0 ? (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-black'>
-              Người dùng
-            </span>
-          ) : (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-green-800 dark:text-black '>
-              Đầu bếp
-            </span>
-          )}
-        </td>
-        <td className='px-6 py-4 mt-2 flex item-center whitespace-nowrap  text-sm font-medium'>
-          {user.status === 1 ? (
-            <div onClick={handleOpenBan} className='text-indigo-600 cursor-pointer hover:text-indigo-900'>
-              Khóa
-            </div>
-          ) : (
-            <div onClick={handleOpenBan} className='text-gray-500 cursor-pointer'>
-              Mở khóa
-            </div>
-          )}
 
-          <div onClick={handleOpenDelete} className='ml-2 cursor-pointer text-red-600 hover:text-red-900'>
-            Xóa
+        {/* Status */}
+        <td className='px-6 py-4 whitespace-nowrap'>
+          {isBanned ? (
+            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'>
+              🔒 Bị khóa
+            </span>
+          ) : (
+            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'>
+              ✅ Hoạt động
+            </span>
+          )}
+        </td>
+
+        {/* Email */}
+        <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400'>
+          {user.email}
+        </td>
+
+        {/* Violation count */}
+        <td className='px-6 py-4 whitespace-nowrap'>
+          {isHighRisk ? (
+            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'>
+              ⚠️ {user?.banned_count ?? 0} lần
+            </span>
+          ) : (
+            <span className='text-sm text-gray-500 dark:text-gray-400'>
+              {user?.banned_count ?? 0} lần
+            </span>
+          )}
+        </td>
+
+        {/* Role */}
+        <td className='px-6 py-4 whitespace-nowrap'>
+          {user.role === 1 ? (
+            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'>
+              👨‍🍳 Đầu bếp
+            </span>
+          ) : (
+            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'>
+              👤 Người dùng
+            </span>
+          )}
+        </td>
+
+        {/* Actions */}
+        <td className='px-6 py-4 whitespace-nowrap'>
+          <div className='flex items-center gap-2'>
+            {/* Ban / Unban */}
+            <button
+              onClick={() => setOpenBan(true)}
+              title={isBanned ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+              className={`p-1.5 rounded-lg transition-colors ${isBanned
+                  ? 'text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
+                  : 'text-amber-600 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30'
+                }`}
+            >
+              {isBanned ? <FaLockOpen size={14} /> : <FaBan size={14} />}
+            </button>
+
+            {/* Delete */}
+            <button
+              onClick={() => setOpenDelete(true)}
+              title='Xóa người dùng'
+              className='p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors'
+            >
+              <FaTrash size={14} />
+            </button>
           </div>
-          <span>
-            {openDelete && (
-              <ConfirmBox
-                closeModal={handleCloseDelete}
-                handleDelete={handleDelete}
-                isPending={deleteUserMutation.isPending}
-                title={'Xác nhận xóa'}
-                subtitle={'Bạn có chắc chắn muốn xóa người dùng chứ'}
-              />
-            )}
-            {openBan && (
-              <ConfirmBox
-                closeModal={handleCloseBan}
-                handleDelete={handleBan}
-                isPending={user.status === 1 ? banMutation.isPending : unbanMutation.isPending}
-                title={user.status === 1 ? 'Xác nhận khóa' : 'Xác nhận mở khóa'}
-                subtitle={
-                  user.status === 1
-                    ? 'Bạn có chắc chắn muốn khóa người dùng chứ'
-                    : 'Bạn có chắc chắn muốn mở khóa người dùng chứ'
-                }
-                tilteButton={user.status === 1 ? 'Khóa' : 'Mở khóa'}
-              />
-            )}
-          </span>
+
+          {openDelete && (
+            <ConfirmBox
+              closeModal={() => setOpenDelete(false)}
+              handleDelete={() => deleteUserMutation.mutate()}
+              isPending={deleteUserMutation.isPending}
+              title={'Xác nhận xóa'}
+              subtitle={'Bạn có chắc chắn muốn xóa người dùng này không?'}
+            />
+          )}
+          {openBan && (
+            <ConfirmBox
+              closeModal={() => setOpenBan(false)}
+              handleDelete={handleBan}
+              isPending={isBanned ? unbanMutation.isPending : banMutation.isPending}
+              title={isBanned ? 'Xác nhận mở khóa' : 'Xác nhận khóa'}
+              subtitle={isBanned ? 'Bạn có chắc chắn muốn mở khóa tài khoản này không?' : 'Bạn có chắc chắn muốn khóa tài khoản này không?'}
+              tilteButton={isBanned ? 'Mở khóa' : 'Khóa'}
+            />
+          )}
         </td>
       </tr>
     </>

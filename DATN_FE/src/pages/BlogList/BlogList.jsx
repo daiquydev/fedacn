@@ -20,7 +20,7 @@ export default function BlogList() {
       return getCategoryBlogs()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const { data, isLoading } = useQuery({

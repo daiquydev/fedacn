@@ -80,7 +80,7 @@ export default function Me() {
       return currentAccount()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000
   })
   
   const user = userData?.data?.result?.[0]

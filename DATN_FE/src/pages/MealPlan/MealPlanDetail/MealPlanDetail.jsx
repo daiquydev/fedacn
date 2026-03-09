@@ -77,7 +77,7 @@ export default function MealPlanDetail() {
   const [inviteLoading, setInviteLoading] = useState(null)
   const [userRating, setUserRating] = useState(0)
   const [ratingSubmitting, setRatingSubmitting] = useState(false)
-  
+
   // Thêm state để quản lý modal cách chế biến
   const [showCookingModal, setShowCookingModal] = useState(false)
   const [activeMeal, setActiveMeal] = useState(null)
@@ -370,9 +370,8 @@ export default function MealPlanDetail() {
     const items = steps
       .map((step, index) => {
         const safeStep = escapeHtml(step)
-        return `<li class="leading-relaxed"><span class="font-semibold text-green-700 dark:text-green-300 mr-2">Bước ${
-          index + 1
-        }:</span>${safeStep}</li>`
+        return `<li class="leading-relaxed"><span class="font-semibold text-green-700 dark:text-green-300 mr-2">Bước ${index + 1
+          }:</span>${safeStep}</li>`
       })
       .join('')
 
@@ -409,7 +408,7 @@ export default function MealPlanDetail() {
   const getMealTypeName = (mealType) => {
     const mealTypeMap = {
       1: 'Sáng',
-      2: 'Trưa', 
+      2: 'Trưa',
       3: 'Tối',
       4: 'Xế'
     }
@@ -674,10 +673,10 @@ export default function MealPlanDetail() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('vi-VN', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return new Intl.DateTimeFormat('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     }).format(date);
   };
 
@@ -710,7 +709,7 @@ export default function MealPlanDetail() {
       <div className="min-h-screen flex justify-center items-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
-          <button 
+          <button
             onClick={() => navigate('/meal-plan')}
             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
           >
@@ -724,22 +723,22 @@ export default function MealPlanDetail() {
   return (
     <div className="min-h-screen py-6 px-4 md:px-6 print:px-0">
       {/* Back button - hide when printing */}
-      <button 
+      <button
         onClick={() => navigate('/meal-plan')}
         className="mb-6 flex items-center text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 print:hidden"
       >
         <FaArrowLeft className="mr-2" /> Quay lại danh sách thực đơn
       </button>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content - 2/3 width on desktop */}
         <div className="lg:col-span-2">
           {/* Header with image */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-6">
             <div className="relative h-64 md:h-80">
-              <img 
-                src={mealPlan.image} 
-                alt={mealPlan.title} 
+              <img
+                src={mealPlan.image}
+                alt={mealPlan.title}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
@@ -750,7 +749,7 @@ export default function MealPlanDetail() {
                 <div className="flex items-center text-white mb-2">
                   <div className="flex mr-4">
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <FaStar 
+                      <FaStar
                         key={star}
                         className={`w-4 h-4 ${star <= Math.round(mealPlan.rating) ? 'text-yellow-400' : 'text-gray-400'}`}
                       />
@@ -765,9 +764,9 @@ export default function MealPlanDetail() {
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <img 
-                    src={mealPlan.author.avatar} 
-                    alt={mealPlan.author.name} 
+                  <img
+                    src={mealPlan.author.avatar}
+                    alt={mealPlan.author.name}
                     className="w-8 h-8 rounded-full mr-2"
                   />
                   <div>
@@ -784,7 +783,7 @@ export default function MealPlanDetail() {
                 </div>
               </div>
             </div>
-            
+
             {/* Description */}
             <div className="p-6">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
@@ -807,17 +806,16 @@ export default function MealPlanDetail() {
                   )}
                 </div>
               )}
-              
+
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3 print:hidden">
                 <button
                   type="button"
                   onClick={handleLike}
-                  className={`flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 transition-colors ${
-                    liked
+                  className={`flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 transition-colors ${liked
                       ? 'bg-red-50 border-red-200 text-red-600'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   {liked ? <FaHeart className="mr-1" /> : <FaRegHeart className="mr-1" />}
                   <span>Thích ({likesCount})</span>
@@ -916,24 +914,24 @@ export default function MealPlanDetail() {
               </div>
             </div>
           </div>
-          
+
           {/* Notes section */}
           {mealPlan.notes && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Ghi chú</h2>
-              <div 
-                className="prose max-w-none dark:prose-invert" 
+              <div
+                className="prose max-w-none dark:prose-invert"
                 dangerouslySetInnerHTML={{ __html: mealPlan.notes }}
               />
             </div>
           )}
-          
+
           {/* Daily meal plans */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
               <MdFastfood className="mr-2 text-green-600" /> Kế hoạch bữa ăn theo ngày
             </h2>
-            
+
             {/* Thay đổi từ nút ngày sang select dropdown */}
             <div className="mb-6">
               <div className="max-w-xs mx-auto">
@@ -976,19 +974,19 @@ export default function MealPlanDetail() {
                 </div> */}
               </div>
             </div>
-            
+
             {/* Active day meals */}
             {mealPlan.days.map((day) => (
               day.day === activeDay && (
-                <DayMealPlan 
-                  key={day.day} 
-                  day={day} 
-                  onViewCooking={handleOpenCookingModal} 
+                <DayMealPlan
+                  key={day.day}
+                  day={day}
+                  onViewCooking={handleOpenCookingModal}
                 />
               )
             ))}
           </div>
-          
+
           {/* Comments section */}
           <div ref={commentsRef} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
@@ -997,7 +995,7 @@ export default function MealPlanDetail() {
             <Comments mealPlanId={id} />
           </div>
         </div>
-        
+
         {/* Sidebar - 1/3 width on desktop */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
@@ -1017,9 +1015,8 @@ export default function MealPlanDetail() {
                     type="button"
                     onClick={() => handleRateMealPlan(star)}
                     disabled={ratingSubmitting}
-                    className={`text-xl transition-transform ${
-                      isFilled ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
-                    } ${ratingSubmitting ? 'cursor-not-allowed opacity-60' : 'hover:scale-110'}`}
+                    className={`text-xl transition-transform ${isFilled ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+                      } ${ratingSubmitting ? 'cursor-not-allowed opacity-60' : 'hover:scale-110'}`}
                     aria-label={`Đánh giá ${star} sao`}
                   >
                     <FaStar />
@@ -1040,11 +1037,11 @@ export default function MealPlanDetail() {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Trung bình mỗi ngày
             </p>
-            
+
             {/* Nutrition data */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Calories</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">kcal</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">{mealPlan.averageNutrition.calories}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">kcal/ngày</p>
               </div>
@@ -1064,9 +1061,9 @@ export default function MealPlanDetail() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">{Math.round(mealPlan.averageNutrition.fat * 9 / mealPlan.averageNutrition.calories * 100)}%</p>
               </div>
             </div>
-            
+
           </div>
-          
+
           {/* Friends applying & invites */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -1165,17 +1162,16 @@ export default function MealPlanDetail() {
                             type="button"
                             disabled={candidate.already_invited || inviteLoading === candidate.user_id}
                             onClick={() => handleInviteFriend(candidate.user_id)}
-                            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                              candidate.already_invited
+                            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${candidate.already_invited
                                 ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'border-green-300 text-green-700 hover:bg-green-50'
-                            } ${inviteLoading === candidate.user_id ? 'opacity-60' : ''}`}
+                              } ${inviteLoading === candidate.user_id ? 'opacity-60' : ''}`}
                           >
                             {candidate.already_invited
                               ? 'Đã mời'
                               : inviteLoading === candidate.user_id
-                              ? 'Đang gửi...'
-                              : 'Mời'}
+                                ? 'Đang gửi...'
+                                : 'Mời'}
                           </button>
                         </li>
                       ))}
@@ -1347,14 +1343,14 @@ export default function MealPlanDetail() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Áp dụng thực đơn</h3>
-              <button 
+              <button
                 onClick={() => setShowApplyModal(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <MdClose size={24} />
               </button>
             </div>
-            
+
             <div className="mb-6">
               <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MdSchedule className="text-blue-600 dark:text-blue-400 text-3xl" />
@@ -1417,7 +1413,7 @@ export default function MealPlanDetail() {
                   />
                 </div>
               )}
-              
+
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg mb-4">
                 <div className="flex items-start">
                   <FaBell className="text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" />
@@ -1427,9 +1423,9 @@ export default function MealPlanDetail() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex flex-col space-y-3">
-              <button 
+              <button
                 onClick={confirmApply}
                 disabled={applyLoading || (applyMode === 'schedule' && !startDate)}
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center disabled:opacity-60"
@@ -1437,7 +1433,7 @@ export default function MealPlanDetail() {
                 <FaCalendarAlt className="mr-2" />
                 {applyLoading ? 'Đang áp dụng...' : 'Áp dụng thực đơn'}
               </button>
-              <button 
+              <button
                 onClick={() => setShowApplyModal(false)}
                 className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
               >
@@ -1463,7 +1459,7 @@ export default function MealPlanDetail() {
                 Thực đơn "{mealPlan.title}" đã được áp dụng từ ngày {new Date(startDate).toLocaleDateString('vi-VN')}
               </p>
             </div>
-            
+
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
               <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center">
                 <FaClipboardList className="mr-2" /> Tiếp theo bạn có thể:
@@ -1487,16 +1483,16 @@ export default function MealPlanDetail() {
                 </li>
               </ul>
             </div>
-            
+
             <div className="flex flex-col space-y-3">
-              <button 
+              <button
                 onClick={goToMealSchedule}
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
               >
                 <MdDateRange className="mr-2" />
                 Xem thực đơn đang áp dụng
               </button>
-              <button 
+              <button
                 onClick={() => setShowSuccessModal(false)}
                 className="w-full py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
               >
@@ -1513,17 +1509,17 @@ export default function MealPlanDetail() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-auto">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 pb-2 border-b dark:border-gray-700">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                <FaUtensils className="text-green-600 mr-2" /> 
+                <FaUtensils className="text-green-600 mr-2" />
                 Cách chế biến: {activeMeal.type}
               </h3>
-              <button 
+              <button
                 onClick={handleCloseCookingModal}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <MdClose size={24} />
               </button>
             </div>
-            
+
             <div className="mb-4">
               <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Thành phần:</h4>
               <div className="bg-gray-50 dark:bg-gray-750 p-3 rounded-lg mb-4">
@@ -1546,12 +1542,12 @@ export default function MealPlanDetail() {
                 )}
               </div>
             </div>
-            
+
             <div className="mb-4">
               <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Thông tin dinh dưỡng:</h4>
               <div className="grid grid-cols-4 gap-2 mb-4">
                 <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Calories</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">kcal</p>
                   <p className="font-bold text-gray-800 dark:text-white">{activeMeal.calories}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded text-center">
@@ -1568,7 +1564,7 @@ export default function MealPlanDetail() {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Hướng dẫn chi tiết:</h4>
               {Array.isArray(activeMeal.cookingSteps) && activeMeal.cookingSteps.length > 0 ? (
@@ -1587,7 +1583,7 @@ export default function MealPlanDetail() {
                 />
               )}
             </div>
-            
+
             <div className="mt-6 flex justify-end">
               <button
                 onClick={handleCloseCookingModal}

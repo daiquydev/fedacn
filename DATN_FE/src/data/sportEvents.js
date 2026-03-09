@@ -125,7 +125,7 @@ export const allSportEvents = [
     organizers: [
       { name: "Trung tâm Wellness", contact: "wellness@center.com" }
     ],
-    videoCallUrl: "https://meet.jit.si/NutriCommunity-LiveYogaWorkshop",
+    videoCallUrl: "https://meet.jit.si/FitConnect-LiveYogaWorkshop",
     faqs: [
       { question: "Tôi có cần kinh nghiệm về yoga không?", answer: "Không, hội thảo này được thiết kế cho tất cả các cấp độ, bao gồm cả người mới bắt đầu." },
       { question: "Tôi cần những thiết bị gì?", answer: "Chỉ cần một thảm yoga và quần áo thoải mái. Tùy chọn, bạn có thể muốn có một khối yoga và dây đai gần đó." },
@@ -228,7 +228,7 @@ export const allSportEvents = [
     rules: ["Chuẩn bị không gian tập luyện", "Có sẵn khăn và nước", "Tham gia đúng giờ"],
     rewards: ["Video ghi lại buổi tập", "Kế hoạch tập luyện cá nhân"],
     organizers: [{ name: "FitOnline Club", contact: "support@fitonline.club" }],
-    videoCallUrl: "https://meet.jit.si/NutriCommunity-FitnessChallenge",
+    videoCallUrl: "https://meet.jit.si/FitConnect-FitnessChallenge",
     nextSessionTime: "2025-04-14T11:30:00Z",
     faqs: [
       { question: "Tôi có cần dụng cụ không?", answer: "Một số bài tập có thể cần tạ tay nhẹ hoặc dây kháng lực, nhưng hầu hết có thể thực hiện chỉ với trọng lượng cơ thể." }

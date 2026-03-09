@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 // * React icons
-import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie, FaTrophy } from 'react-icons/fa'
+import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie, FaTrophy, FaDumbbell, FaCalculator } from 'react-icons/fa'
 import { BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
 import { MdMenu, MdOutlineSpaceDashboard, MdSportsSoccer } from 'react-icons/md'
@@ -28,7 +28,7 @@ export default function SideBar() {
       return currentAccount()
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 60
+    staleTime: 1000
   })
 
   const [openMenus, setOpenMenus] = useState({})
@@ -109,18 +109,18 @@ export default function SideBar() {
 
   const subMenusList = checkSubmenu()
     ? [
-        {
-          name: 'Tạo nội dung',
-          icon: FaPenToSquare,
-          menus: [
-            { subName: 'Tạo món ăn', subPath: 'create-recipe' },
-            { subName: 'Quản lý món ăn', subPath: 'recipe-list' },
-            { subName: 'Tạo album món ăn', subPath: 'album-list' },
-            { subName: 'Tạo blog dinh dưỡng', subPath: 'blog-list' }
-          ],
-          path: 'chef'
-        }
-      ]
+      {
+        name: 'Tạo nội dung',
+        icon: FaPenToSquare,
+        menus: [
+          { subName: 'Tạo món ăn', subPath: 'create-recipe' },
+          { subName: 'Quản lý món ăn', subPath: 'recipe-list' },
+          { subName: 'Tạo album món ăn', subPath: 'album-list' },
+          { subName: 'Tạo blog dinh dưỡng', subPath: 'blog-list' }
+        ],
+        path: 'chef'
+      }
+    ]
     : []
 
   return (
@@ -153,12 +153,7 @@ export default function SideBar() {
                   Cộng đồng
                 </NavLink>
               </li>
-              <li>
-                <NavLink to={'/personal-dashboard'} className='link-custom '>
-                  <FaChartPie size={25} className='min-w-max' />
-                  Trang Cá Nhân
-                </NavLink>
-              </li>
+              {/* Trang Cá Nhân đã bị ẩn */}
               <li>
                 <NavLink to={'/friends'} className='link-custom '>
                   <FaUserFriends size={25} className='min-w-max' />
@@ -173,11 +168,11 @@ export default function SideBar() {
                   </NavLink>
                 </li>
               )}
-              {menuGroups.map((menu) => (
+              {/* {menuGroups.map((menu) => (
                 <li key={menu.name}>
                   <Submenu data={menu} />
                 </li>
-              ))}
+              ))} */}
               <li>
                 <NavLink to={'/user-calendar'} className='link-custom '>
                   <FaCalendarAlt size={25} className='min-w-max' />
@@ -185,13 +180,29 @@ export default function SideBar() {
                 </NavLink>
               </li>
               <li>
-                <NavLink 
-                  to={'/sport-event'} 
+                <NavLink to={'/fitness/fitness-calculator'} className='link-custom '>
+                  <FaCalculator size={25} className='min-w-max' />
+                  Công cụ tính toán
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to={'/sport-event'}
                   end
                   className='link-custom'
                 >
                   <MdSportsSoccer size={25} className='min-w-max' />
                   Sự kiện thể thao
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to={'/challenge'}
+                  end
+                  className='link-custom'
+                >
+                  <FaDumbbell size={25} className='min-w-max' />
+                  Tập luyện
                 </NavLink>
               </li>
               {(open || isTabletMid) && subMenusList.length > 0 && (
@@ -218,7 +229,7 @@ export default function SideBar() {
                 </div>
               )}
             </ul>
-           
+
           </div>
           {/* <motion.div
           onClick={() => {

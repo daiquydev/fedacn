@@ -9,14 +9,15 @@ import { useContext, useState } from 'react'
 import { calculateLBM, saveLBMData } from '../../apis/calculatorApi'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
 import { AppContext } from '../../contexts/app.context'
 import { setProfileToLS } from '../../utils/auth'
+import AIAnalysisModal from '../../components/GlobalComponents/AIAnalysisModal/AIAnalysisModal'
+import CalculatorSidebar from '../../components/GlobalComponents/CalculatorSidebar/CalculatorSidebar'
 
 export default function LBM() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [dataLBM, setDataLBM] = useState({})
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
   const { setProfile, profile } = useContext(AppContext)
   const {
     register,
@@ -30,13 +31,6 @@ export default function LBM() {
       gender: profile?.gender || 'male'
     }
   })
-  const handleOpenModal = () => {
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-  }
 
   const calculateLBMMutation = useMutation({
     mutationFn: (body) => calculateLBM(body)
@@ -50,30 +44,22 @@ export default function LBM() {
     console.log(data)
     setDataLBM(data)
     calculateLBMMutation.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
-        setDataLBM((prev) => ({ ...prev, LBM: data.data.result }))
-        handleOpenModal()
+      onSuccess: (res) => {
+        const lbmValue = res.data.result
+        setDataLBM((prev) => ({ ...prev, LBM: lbmValue }))
+        // Auto-save
+        saveLBMMutation.mutate({ ...data, LBM: lbmValue }, {
+          onSuccess: (saved) => {
+            toast.success('Đã tính và lưu chỉ số LBM')
+            setProfile(saved?.data.result)
+            setProfileToLS(saved?.data.result)
+          }
+        })
       },
-      onError: () => {
-        console.log('error')
-      }
+      onError: () => { console.log('error') }
     })
   })
 
-  const handleSaveLBMData = () => {
-    saveLBMMutation.mutate(dataLBM, {
-      onSuccess: (data) => {
-        toast.success('Lưu chỉ số LBM thành công')
-        setProfile(data?.data.result)
-        setProfileToLS(data?.data.result)
-        handleCloseModal()
-      },
-      onError: () => {
-        toast.error('Lưu chỉ số LBM thất bại')
-      }
-    })
-  }
   return (
     <>
       <div className='grid xl:mx-4  pt-2 xl:gap-3 xl:grid-cols-6'>
@@ -259,102 +245,54 @@ export default function LBM() {
           </main>
         </div>
         <div className='col-span-6 order-first xl:order-last my-3 xl:my-0 xl:col-span-2'>
-          <div className='shadow mb-6 bg-white rounded-lg dark:bg-color-primary dark:border-none'>
-            <div className='flex flex-col dark:text-gray-300 justify-center items-center pt-4 text-xl font-semibold text-red-700'>
-              Tính toán LBM <p className='text-base text-black dark:text-gray-300'>(Theo công thức Hume)</p>
-            </div>
-            <div className='border mt-2 mx-5 dark:border-gray-700 border-red-200 '></div>
-            <form onSubmit={onSubmit} className='p-3'>
-              <Input
-                title='Nhập cân nặng (kg)'
-                type='number'
-                name='weight'
-                register={register}
-                errors={errors.weight}
-                id='weight'
-                placeholder='Nhập cân nặng của bạn'
-              />
-              <Input
-                title='Nhập chiều cao (cm)'
-                type='number'
-                name='height'
-                register={register}
-                errors={errors.height}
-                id='height'
-                placeholder='Nhập chiều cao của bạn'
-              />
-              <div className='mb-3'>
-                <div className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
-                  Giới tính của bạn là:
-                </div>
-                <div className='flex items-center pb-2'>
+          <CalculatorSidebar
+            title='Tính toán LBM'
+            subtitle='(Khối lượng cơ nạc)'
+            gradient='from-violet-500 to-purple-400'
+            result={(profile?.LBM || dataLBM.LBM) ? {
+              value: profile?.LBM || dataLBM.LBM,
+              unit: 'kg',
+              label: 'Khối lượng cơ thể không tính mỡ'
+            } : null}
+            onAIClick={(profile?.LBM || dataLBM.LBM) ? () => setIsAIModalOpen(true) : null}
+          >
+            <form onSubmit={onSubmit} noValidate className='space-y-3'>
+              <Input title='Cân nặng (kg)' type='number' name='weight' register={register} errors={errors.weight} id='weight' placeholder='Nhập cân nặng' />
+              <Input title='Chiều cao (cm)' type='number' name='height' register={register} errors={errors.height} id='height' placeholder='Nhập chiều cao' />
+              <div>
+                <div className='text-gray-600 dark:text-gray-400 text-sm font-medium mb-2'>Giới tính:</div>
+                <div className='flex gap-4'>
                   <div className='flex items-center'>
-                    <input
-                      type='radio'
-                      defaultChecked
-                      name='default-radio'
-                      value='male'
-                      {...register('gender')}
-                      id='male'
-                      className='radio radio-success'
-                    />
-                    <label htmlFor='male' className='ms-2 text-sm w-20 font-medium text-gray-900 dark:text-gray-300'>
-                      Nam
-                    </label>
+                    <input type='radio' defaultChecked name='default-radio' value='male' {...register('gender')} id='male' className='radio radio-success' />
+                    <label htmlFor='male' className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>Nam</label>
                   </div>
                   <div className='flex items-center'>
-                    <input
-                      type='radio'
-                      name='default-radio'
-                      value='female'
-                      {...register('gender')}
-                      id='female'
-                      className='radio radio-success'
-                    />
-                    <label htmlFor='female' className='ms-2 text-sm w-20 font-medium text-gray-900 dark:text-gray-300'>
-                      Nữ
-                    </label>
+                    <input type='radio' name='default-radio' value='female' {...register('gender')} id='female' className='radio radio-success' />
+                    <label htmlFor='female' className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>Nữ</label>
                   </div>
                 </div>
               </div>
-
-              <div className='flex justify-center'>
+              <div className='pt-1'>
                 {calculateLBMMutation.isPending ? (
-                  <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                  <button disabled className='w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-400 text-white font-semibold flex items-center justify-center gap-2 opacity-70'>
+                    <Loading classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
                   </button>
                 ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'> Tính toán</button>
+                  <button className='w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-400 hover:from-violet-600 hover:to-purple-500 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200'>
+                    Tính toán
+                  </button>
                 )}
               </div>
             </form>
-            <div>
-              {(profile?.LBM || dataLBM.LBM) && (
-                <div className='flex mx-4 justify-center '>
-                  <div className='mt-5 w-full pb-10'>
-                    <div className=' text-gray-700 flex justify-center dark:text-gray-300 font-semibold '>
-                      Chỉ số LBM của bạn là: {profile?.LBM || dataLBM.LBM} kg
-                    </div>
-                    <div className='text-red-700 flex justify-center dark:text-red-300 font-medium text-xs'>
-                      Lưu ý: chỉ số LBM cần được cập nhật định kỳ để theo dõi sức khỏe của bạn
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        {isModalOpen && (
-          <CalculatorModal
-            closeModal={handleCloseModal}
-            title='Chỉ số LBM của bạn'
-            helptext='Lưu ý: khi bạn lưu kết quả, các chỉ số liên quan sẽ được cập nhật và lưu lại trong hồ sơ cá nhân của bạn.'
-            saveData={handleSaveLBMData}
-            isPending={saveLBMMutation.isPending}
-            data={calculateLBMMutation.data}
-            unit='kg'
+          </CalculatorSidebar>
+          <AIAnalysisModal
+            isOpen={isAIModalOpen}
+            onClose={() => setIsAIModalOpen(false)}
+            calculationType='LBM'
+            inputData={{ weight: dataLBM.weight, height: dataLBM.height, gender: dataLBM.gender }}
+            calculatedResult={{ LBM_kg: profile?.LBM || dataLBM.LBM }}
           />
-        )}
+        </div>
       </div>
     </>
   )

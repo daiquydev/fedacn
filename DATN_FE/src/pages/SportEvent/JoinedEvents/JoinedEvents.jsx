@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaFilter, FaCheckCircle, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import { MdSportsSoccer, MdDirectionsRun, MdFitnessCenter } from 'react-icons/md';
 import { IoIosFitness } from 'react-icons/io';
@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { getJoinedEvents } from '../../../apis/sportEventApi';
 
 const getCategoryIcon = (category) => {
-  switch(category?.toLowerCase()) {
+  switch (category?.toLowerCase()) {
     case 'chạy bộ':
       return <FaRunning className="text-green-500" />;
     case 'đạp xe':
@@ -28,7 +28,7 @@ const getCategoryIcon = (category) => {
 export default function JoinedEvents() {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [joinedEvents, setJoinedEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
@@ -52,8 +52,6 @@ export default function JoinedEvents() {
       setLoading(false);
     }
   }
-    }
-  }, [location.state, navigate]);
 
   const handleEventClick = (eventId) => {
     navigate(`/sport-event/${eventId}`);
@@ -86,7 +84,7 @@ export default function JoinedEvents() {
     setEventToLeave(null);
   };
 
-  const filteredEvents = joinedEvents.filter(event => 
+  const filteredEvents = joinedEvents.filter(event =>
     filterCategory === 'all' || event.category.toLowerCase() === filterCategory.toLowerCase()
   );
 
@@ -95,16 +93,16 @@ export default function JoinedEvents() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
-          <button onClick={() => navigate(-1)} className="mr-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-            <FaArrowLeft />
-          </button>
-          <h1 className="text-2xl font-bold">Sự kiện Đang Tham gia</h1> 
+        <button onClick={() => navigate(-1)} className="mr-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+          <FaArrowLeft />
+        </button>
+        <h1 className="text-2xl font-bold">Sự kiện Đang Tham gia</h1>
       </div>
 
       {joinedEvents.length === 0 ? (
         <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <p className="text-lg text-gray-600 dark:text-gray-400">Bạn chưa tham gia sự kiện nào.</p>
-          <button 
+          <button
             onClick={() => navigate('/sport-event')}
             className="mt-6 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
           >
@@ -142,12 +140,12 @@ export default function JoinedEvents() {
                   <div className="absolute top-3 right-3 bg-white dark:bg-gray-900 text-red-500 font-medium px-3 py-1 rounded-full text-sm">
                     {event.participants}/{event.maxParticipants} người
                   </div>
-                   <div className="absolute top-3 left-3 bg-white dark:bg-gray-900 text-green-500 font-medium px-3 py-1 rounded-full text-sm flex items-center">
-                      <FaCheckCircle className="mr-1" />
-                      Đang tham gia
-                    </div>
+                  <div className="absolute top-3 left-3 bg-white dark:bg-gray-900 text-green-500 font-medium px-3 py-1 rounded-full text-sm flex items-center">
+                    <FaCheckCircle className="mr-1" />
+                    Đang tham gia
+                  </div>
                 </div>
-                
+
                 <div className="p-4">
                   <div className="flex items-center mb-2">
                     <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium mr-2">
@@ -155,38 +153,38 @@ export default function JoinedEvents() {
                     </span>
                     {getCategoryIcon(event.category)}
                   </div>
-                  
+
                   <h3 className="text-lg font-semibold mb-2 truncate">{event.name}</h3>
-                  
+
                   <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
                     <FaCalendarAlt className="mr-2" />
                     <span>{moment(event.date).format('ddd, D/M/YYYY • HH:mm')}</span>
                   </div>
-                  
+
                   <div className="flex items-center text-gray-600 dark:text-gray-400 mb-3">
                     <FaMapMarkerAlt className="mr-2" />
                     <span className="truncate">{event.location}</span>
                   </div>
 
                   {event.progress !== undefined && (
-                     <div className="mb-4">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Tiến độ: {event.progress}%
-                          </span>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {Math.round(event.progress * event.targetValue / 100)}/{event.targetValue} {event.targetUnit}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                          <div 
-                            className="bg-green-500 h-2.5 rounded-full" 
-                            style={{ width: `${event.progress}%` }}
-                          ></div>
-                        </div>
+                    <div className="mb-4">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Tiến độ: {event.progress}%
+                        </span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {Math.round(event.progress * event.targetValue / 100)}/{event.targetValue} {event.targetUnit}
+                        </span>
                       </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div
+                          className="bg-green-500 h-2.5 rounded-full"
+                          style={{ width: `${event.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   )}
-                  
+
                   <button
                     className="w-full px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition font-medium"
                     onClick={(e) => confirmLeaveEvent(event, e)}
@@ -208,14 +206,14 @@ export default function JoinedEvents() {
               Bạn có chắc chắn muốn rời khỏi sự kiện "<span className="font-medium">{eventToLeave.name}</span>" không?
             </p>
             <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setShowConfirmLeave(false)} 
+              <button
+                onClick={() => setShowConfirmLeave(false)}
                 className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Hủy
               </button>
-              <button 
-                onClick={handleLeaveEvent} 
+              <button
+                onClick={handleLeaveEvent}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Xác nhận Rời

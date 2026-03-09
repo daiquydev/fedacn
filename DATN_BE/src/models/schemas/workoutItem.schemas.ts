@@ -4,7 +4,6 @@ export interface WorkoutItem {
   workout_schedule_id: Types.ObjectId
   activity_name: string
   time: number
-  met: number
   current_date: Date
   calo_burn?: number
   is_completed?: boolean
@@ -22,10 +21,6 @@ const WorkoutItemSchema = new mongoose.Schema<WorkoutItem>(
       required: true
     },
     time: {
-      type: Number,
-      required: true
-    },
-    met: {
       type: Number,
       required: true
     },

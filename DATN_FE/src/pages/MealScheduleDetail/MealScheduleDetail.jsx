@@ -38,7 +38,7 @@ export default function MealScheduleDetail() {
       return getMealSchedules(id)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const meal = data?.data.result
@@ -112,7 +112,7 @@ export default function MealScheduleDetail() {
     },
     enabled: !!meal?._id,
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const completeDateMealItemMutation = useMutation({
@@ -193,7 +193,7 @@ export default function MealScheduleDetail() {
             </div>
 
             <h3 className='text-lg font-semibold text-green-700 dark:text-green-500 '>
-              Tổng lượng dinh dưỡng đã nạp: {item.total_calories} cal - {item.total_protein} protein - {item.total_fat}{' '}
+              Tổng lượng dinh dưỡng đã nạp: {item.total_calories} kcal - {item.total_protein} protein - {item.total_fat}{' '}
               fat - {item.total_carb} carb
             </h3>
             <p className='mb-2 text-base font-normal whitespace-pre-line text-gray-500 dark:text-gray-400'>
@@ -203,10 +203,9 @@ export default function MealScheduleDetail() {
                 item.items
                   .map((mealItem) =>
                     mealItem.unit === 'gram'
-                      ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${
-                          mealItem.energy
-                        } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
-                      : `${mealItem.meal_name} (${mealItem.quantity} ${mealItem.unit}) : ${mealItem.energy} cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
+                      ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${mealItem.energy
+                      } kcal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
+                      : `${mealItem.meal_name} (${mealItem.quantity} ${mealItem.unit}) : ${mealItem.energy} kcal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                   )
                   .join('\n') // nối các bài tập bằng dấu enter
               }
@@ -237,7 +236,7 @@ export default function MealScheduleDetail() {
               </div>
             </div>
             <h3 className='text-lg font-semibold text-red-700 dark:text-red-500 '>
-              Tổng lượng dinh dưỡng đã nạp vào: {item.total_calories} cal - {item.total_protein} protein -{' '}
+              Tổng lượng dinh dưỡng đã nạp vào: {item.total_calories} kcal - {item.total_protein} protein -{' '}
               {item.total_fat} fat - {item.total_carb} carb
             </h3>
             <p className='mb-2 text-base font-normal whitespace-pre-line text-gray-500 dark:text-gray-400'>
@@ -247,9 +246,8 @@ export default function MealScheduleDetail() {
                 item.items
                   .map((mealItem) =>
                     mealItem.unit === 'gram'
-                      ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${
-                          mealItem.energy
-                        } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
+                      ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${mealItem.energy
+                      } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                       : `${mealItem.meal_name} (${mealItem.quantity} ${mealItem.unit}) : ${mealItem.energy} cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                   )
                   .join('\n') // nối các bài tập bằng dấu enter
@@ -283,7 +281,7 @@ export default function MealScheduleDetail() {
               <span className='m-3'>Đang tiến hành</span>
             </div>
             <h3 className='text-lg font-semibold text-blue-400 '>
-              Đang tiến hành nạp: {item.total_calories} cal - {item.total_protein} protein - {item.total_fat} fat -{' '}
+              Đang tiến hành nạp: {item.total_calories} kcal - {item.total_protein} protein - {item.total_fat} fat -{' '}
               {item.total_carb} carb
             </h3>
 
@@ -294,9 +292,8 @@ export default function MealScheduleDetail() {
                 item.items
                   .map((mealItem) =>
                     mealItem.unit === 'gram'
-                      ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${
-                          mealItem.energy
-                        } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
+                      ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${mealItem.energy
+                      } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                       : `${mealItem.meal_name} (${mealItem.quantity} ${mealItem.unit}) : ${mealItem.energy} cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                   )
                   .join('\n') // nối các bài tập bằng dấu enter
@@ -327,7 +324,7 @@ export default function MealScheduleDetail() {
             <span className='m-3'>Dự kiến</span>
           </div>
           <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
-            Tổng lượng dinh dưỡng nạp vào dự kiến: {item.total_calories} cal - {item.total_protein} protein -{' '}
+            Tổng lượng dinh dưỡng nạp vào dự kiến: {item.total_calories} kcal - {item.total_protein} protein -{' '}
             {item.total_fat} fat - {item.total_carb} carb
           </h3>
           <p className='mb-2 text-base whitespace-pre-line font-normal text-gray-500 dark:text-gray-400'>
@@ -337,9 +334,8 @@ export default function MealScheduleDetail() {
               item.items
                 .map((mealItem) =>
                   mealItem.unit === 'gram'
-                    ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${
-                        mealItem.energy
-                      } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
+                    ? `${mealItem.meal_name} (${parseFloat(mealItem.quantity * 100).toFixed(1)} ${mealItem.unit}) : ${mealItem.energy
+                    } cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                     : `${mealItem.meal_name} (${mealItem.quantity} ${mealItem.unit}) : ${mealItem.energy} cal - ${mealItem.protein} protein - ${mealItem.fat} fat - ${mealItem.carb} carb`
                 )
                 .join('\n') // nối các bài tập bằng dấu enter
@@ -379,7 +375,7 @@ export default function MealScheduleDetail() {
                 tăng {meal.weight_target - profile.weight}kg cân nặng{' '}
               </span>{' '}
               thì mỗi ngày bạn cần phải nạp lượng calories nhiều hơn so với chỉ số TDEE{' '}
-              <span className='font-medium text-blue-400'> khoảng 500 calories </span> và bạn sẽ mất{' '}
+              <span className='font-medium text-blue-400'> khoảng 500 kcal </span> và bạn sẽ mất{' '}
               <span className='font-medium text-blue-400'>
                 {' '}
                 khoảng {calculateDayExpected(meal?.weight_target, profile?.weight, meal?.purpose)} ngày
@@ -421,7 +417,7 @@ export default function MealScheduleDetail() {
                 giảm {profile.weight - meal.weight_target}kg cân nặng{' '}
               </span>{' '}
               thì mỗi ngày bạn cần phải nạp lượng calories ít hơn so với chỉ số TDEE{' '}
-              <span className='font-medium text-blue-400'> khoảng 500 calories </span> và bạn sẽ mất{' '}
+              <span className='font-medium text-blue-400'> khoảng 500 kcal </span> và bạn sẽ mất{' '}
               <span className='font-medium text-blue-400'>
                 {' '}
                 khoảng {calculateDayExpected(meal?.weight_target, profile?.weight, meal?.purpose)} ngày
@@ -501,8 +497,8 @@ export default function MealScheduleDetail() {
                   {meal?.purpose === 0
                     ? 'Mục tiêu: Tăng cân'
                     : meal?.purpose === 1
-                    ? 'Mục tiêu: Giảm cân'
-                    : 'Mục tiêu: Duy trì cân nặng'}
+                      ? 'Mục tiêu: Giảm cân'
+                      : 'Mục tiêu: Duy trì cân nặng'}
                 </p>
                 <span className='text-sm text-gray-400 dark:text-gray-500'>
                   {moment(meal?.start_date).format('MMM Do YY')} - {moment(meal?.end_date).format('MMM Do YY')}
@@ -597,12 +593,12 @@ export default function MealScheduleDetail() {
                         {profile.activity_level === 1.2
                           ? 'Không có hoặc ít vận động'
                           : profile.activity_level === 1.375
-                          ? 'Nhẹ: 1-3 ngày/tuần'
-                          : profile.activity_level === 1.55
-                          ? 'Vừa phải: 3-5 ngày/tuần'
-                          : profile.activity_level === 1.725
-                          ? 'Năng động: 6-7 ngày/tuần'
-                          : 'Cực kỳ năng động, thể dục 2 lần/ngày'}
+                            ? 'Nhẹ: 1-3 ngày/tuần'
+                            : profile.activity_level === 1.55
+                              ? 'Vừa phải: 3-5 ngày/tuần'
+                              : profile.activity_level === 1.725
+                                ? 'Năng động: 6-7 ngày/tuần'
+                                : 'Cực kỳ năng động, thể dục 2 lần/ngày'}
                       </p>
                     </div>
                   </div>
@@ -618,7 +614,7 @@ export default function MealScheduleDetail() {
                   </div>
                   <div className='my-2  min-w-[80px]'>
                     <p className='font-semibold text-base mb-2'>Kết quả</p>
-                    <Counup number={profile.TDEE} title='cal' />
+                    <Counup number={profile.TDEE} title='kcal' />
                   </div>
                 </div>
               </div>

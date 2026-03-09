@@ -126,7 +126,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
     if (file) {
       const formData = new FormData()
       formData.append('avatar', file)
-      
+
       updateAvatarMutation.mutate(formData, {
         onSuccess: (response) => {
           toast.success('Cập nhật ảnh đại diện thành công!')
@@ -146,7 +146,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
     if (file) {
       const formData = new FormData()
       formData.append('cover_avatar', file)
-      
+
       updateCoverMutation.mutate(formData, {
         onSuccess: (response) => {
           toast.success('Cập nhật ảnh bìa thành công!')
@@ -168,41 +168,29 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
         <button
           onClick={() => setActiveTab('basic')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 ${
-            activeTab === 'basic'
+          className={`px-4 py-2 font-medium text-sm border-b-2 ${activeTab === 'basic'
               ? 'border-green-500 text-green-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+            }`}
         >
           Thông tin cơ bản
         </button>
-        <button
-          onClick={() => setActiveTab('health')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 ${
-            activeTab === 'health'
-              ? 'border-green-500 text-green-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Thông tin sức khỏe
-        </button>
+        {/* Tab Thông tin sức khỏe đã ẩn - dùng phần HealthProfile riêng */}
         <button
           onClick={() => setActiveTab('avatar')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 ${
-            activeTab === 'avatar'
+          className={`px-4 py-2 font-medium text-sm border-b-2 ${activeTab === 'avatar'
               ? 'border-green-500 text-green-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+            }`}
         >
           Ảnh đại diện
         </button>
         <button
           onClick={() => setActiveTab('password')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 ${
-            activeTab === 'password'
+          className={`px-4 py-2 font-medium text-sm border-b-2 ${activeTab === 'password'
               ? 'border-green-500 text-green-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+            }`}
         >
           Đổi mật khẩu
         </button>
@@ -524,7 +512,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
               <div className="relative">
                 <input
                   type={showNewPassword ? 'text' : 'password'}
-                  {...registerPassword('new_password', { 
+                  {...registerPassword('new_password', {
                     required: 'Vui lòng nhập mật khẩu mới',
                     minLength: { value: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
                   })}
@@ -551,7 +539,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
               <div className="relative">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
-                  {...registerPassword('confirm_password', { 
+                  {...registerPassword('confirm_password', {
                     required: 'Vui lòng xác nhận mật khẩu mới',
                     validate: value => value === newPassword || 'Mật khẩu xác nhận không khớp'
                   })}

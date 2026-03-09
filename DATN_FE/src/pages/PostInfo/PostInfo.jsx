@@ -20,7 +20,7 @@ export default function PostInfo() {
       return getBlogsForUser({ limit: 2 })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
   const post = data?.data.result[0]
 

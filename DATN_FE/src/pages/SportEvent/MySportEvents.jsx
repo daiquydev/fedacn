@@ -1,20 +1,18 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  FaEdit, 
-  FaTrash, 
-  FaArrowLeft, 
-  FaCalendarAlt, 
-  FaMapMarkerAlt, 
-  FaUsers, 
-  FaPlus, 
+import {
+  FaEdit,
+  FaTrash,
+  FaArrowLeft,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaUsers,
+  FaPlus,
   FaTrophy,
-  FaUserFriends,
-  FaCheckCircle,
   FaEye
 } from 'react-icons/fa'
-import { MdVideocam, MdEventAvailable, MdEvent } from 'react-icons/md'
+import { MdVideocam } from 'react-icons/md'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { getMyEvents, getJoinedEvents, deleteSportEvent } from '../../apis/sportEventApi'
 import toast from 'react-hot-toast'
@@ -23,13 +21,13 @@ import moment from 'moment'
 const MySportEvents = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  
+
   const [activeTab, setActiveTab] = useState('created') // 'created' or 'joined'
 
   // Fetch created events
-  const { 
-    data: createdEventsData, 
-    isLoading: isLoadingCreated 
+  const {
+    data: createdEventsData,
+    isLoading: isLoadingCreated
   } = useQuery({
     queryKey: ['myCreatedEvents'],
     queryFn: () => getMyEvents({ page: 1, limit: 100 })
@@ -38,9 +36,9 @@ const MySportEvents = () => {
   const createdEvents = createdEventsData?.data?.result?.events || createdEventsData?.result?.events || []
 
   // Fetch joined events  
-  const { 
-    data: joinedEventsData, 
-    isLoading: isLoadingJoined 
+  const {
+    data: joinedEventsData,
+    isLoading: isLoadingJoined
   } = useQuery({
     queryKey: ['myJoinedEvents'],
     queryFn: () => getJoinedEvents({ page: 1, limit: 100 }),
@@ -70,36 +68,6 @@ const MySportEvents = () => {
   // Calculate stats
   const totalCreated = createdEvents.length
   const totalJoined = joinedEvents.length
-  const totalParticipants = createdEvents.reduce((sum, event) => sum + (event.participants || 0), 0)
-  const activeEvents = createdEvents.filter(event => moment().isBetween(event.startDate, event.endDate)).length
-
-  // Stats cards data
-  const stats = [
-    {
-      icon: <MdEvent className="text-3xl" />,
-      label: 'Sự kiện đã tạo',
-      value: totalCreated,
-      color: 'bg-blue-500'
-    },
-    {
-      icon: <FaUserFriends className="text-3xl" />,
-      label: 'Người tham gia',
-      value: totalParticipants,
-      color: 'bg-green-500'
-    },
-    {
-      icon: <MdEventAvailable className="text-3xl" />,
-      label: 'Đang diễn ra',
-      value: activeEvents,
-      color: 'bg-red-500'
-    },
-    {
-      icon: <FaTrophy className="text-3xl" />,
-      label: 'Đã tham gia',
-      value: totalJoined,
-      color: 'bg-yellow-500'
-    }
-  ]
 
   const EventCard = ({ event, isCreator = false }) => {
     const eventDate = moment(event.startDate)
@@ -120,9 +88,8 @@ const MySportEvents = () => {
               className="w-full h-48 md:h-full object-cover"
             />
             {/* Status Badge */}
-            <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold text-white ${
-              isOngoing ? 'bg-green-500' : isUpcoming ? 'bg-blue-500' : 'bg-gray-500'
-            }`}>
+            <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold text-white ${isOngoing ? 'bg-green-500' : isUpcoming ? 'bg-blue-500' : 'bg-gray-500'
+              }`}>
               {isOngoing ? '🟢 Đang diễn ra' : isUpcoming ? '⏰ Sắp diễn ra' : '✓ Đã kết thúc'}
             </div>
           </div>
@@ -149,13 +116,21 @@ const MySportEvents = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center">
                   <FaCalendarAlt className="mr-2 text-blue-500" />
-                  <span>{eventDate.format('DD/MM/YYYY HH:mm')}</span>
+                  <span>Bắt đầu: {eventDate.format('DD/MM/YYYY')}</span>
                 </div>
                 <div className="flex items-center">
-                  {event.eventType === 'online' ? (
+                  <FaCalendarAlt className="mr-2 text-red-400" />
+                  <span>Kết thúc: {eventEnd.format('DD/MM/YYYY')}</span>
+                </div>
+                <div className="flex items-center">
+                  <FaCalendarAlt className="mr-2 text-orange-400" />
+                  <span>Thời điểm: {eventDate.format('HH:mm')}</span>
+                </div>
+                <div className="flex items-center">
+                  {event.eventType === 'Trong nhà' ? (
                     <>
                       <MdVideocam className="mr-2 text-purple-500" />
-                      <span>Trực tuyến</span>
+                      <span>Trong nhà</span>
                     </>
                   ) : (
                     <>
@@ -168,12 +143,6 @@ const MySportEvents = () => {
                   <FaUsers className="mr-2 text-yellow-500" />
                   <span>{event.participants}/{event.maxParticipants} người tham gia</span>
                 </div>
-                {event.difficulty && (
-                  <div className="flex items-center">
-                    <FaTrophy className="mr-2 text-orange-500" />
-                    <span>{event.difficulty}</span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -186,7 +155,7 @@ const MySportEvents = () => {
                 <FaEye />
                 Xem chi tiết
               </button>
-              
+
               {isCreator && (
                 <>
                   <button
@@ -235,77 +204,55 @@ const MySportEvents = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white py-8">
-        <div className="container mx-auto px-4">
-          <button
-            onClick={() => navigate('/sport-event')}
-            className="flex items-center text-white hover:text-purple-100 mb-4 transition"
-          >
-            <FaArrowLeft className="mr-2" />
-            Quay lại danh sách
-          </button>
-          
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Quản lý Sự kiện</h1>
-              <p className="text-purple-100">
-                Theo dõi và quản lý các sự kiện của bạn
-              </p>
+      {/* Page Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-500 px-6 py-6">
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 container mx-auto">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <FaTrophy className="text-white text-2xl" />
             </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Quản lý Sự kiện</h1>
+              <p className="text-white/75 text-sm mt-0.5">Theo dõi và quản lý các sự kiện của bạn</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick={() => navigate('/sport-event')}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2 text-sm"
+            >
+              <FaArrowLeft /> Quay lại danh sách
+            </button>
             <Link
               to="/sport-event/create"
-              className="bg-white hover:bg-purple-50 text-purple-600 px-6 py-3 rounded-lg font-semibold transition shadow-md flex items-center gap-2"
+              className="bg-white hover:bg-gray-50 text-red-600 px-4 py-2 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
             >
-              <FaPlus />
-              Tạo sự kiện mới
+              <FaPlus /> Tạo sự kiện mới
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="container mx-auto px-4 -mt-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">
-                    {stat.label}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`${stat.color} p-3 rounded-lg text-white`}>
-                  {stat.icon}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="container mx-auto px-4 mt-6">
 
         {/* Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-t-lg border-b border-gray-200 dark:border-gray-700">
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('created')}
-              className={`flex-1 md:flex-none px-6 py-4 font-semibold transition ${
-                activeTab === 'created'
-                  ? 'text-purple-600 border-b-2 border-purple-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+              className={`flex-1 md:flex-none px-6 py-4 font-semibold transition ${activeTab === 'created'
+                ? 'text-red-600 border-b-2 border-red-600'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
             >
               Sự kiện đã tạo ({totalCreated})
             </button>
             <button
               onClick={() => setActiveTab('joined')}
-              className={`flex-1 md:flex-none px-6 py-4 font-semibold transition ${
-                activeTab === 'joined'
-                  ? 'text-purple-600 border-b-2 border-purple-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+              className={`flex-1 md:flex-none px-6 py-4 font-semibold transition ${activeTab === 'joined'
+                ? 'text-red-600 border-b-2 border-red-600'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
             >
               Đã tham gia ({totalJoined})
             </button>
@@ -336,7 +283,7 @@ const MySportEvents = () => {
                 </p>
                 <Link
                   to="/sport-event/create"
-                  className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition"
                 >
                   <FaPlus />
                   Tạo sự kiện mới
@@ -365,7 +312,7 @@ const MySportEvents = () => {
                 </p>
                 <Link
                   to="/sport-event"
-                  className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition"
                 >
                   Khám phá sự kiện
                 </Link>

@@ -25,7 +25,7 @@ export default function WorkoutSchedule() {
       return getListWorkoutSchedules(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   return (

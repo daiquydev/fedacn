@@ -23,7 +23,7 @@ laTex_report/
 *.acr
 *.alg
 *.glsdefs
-
+*.glsdefs
 # LaTeX temporary files
 *.bcf
 *.run.xml

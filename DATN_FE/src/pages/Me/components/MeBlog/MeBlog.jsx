@@ -17,7 +17,7 @@ export default function MeBlog() {
       return getMeBlog(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   console.log(queryConfig)

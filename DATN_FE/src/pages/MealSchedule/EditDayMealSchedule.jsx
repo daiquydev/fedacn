@@ -21,7 +21,7 @@ const EditDayMealSchedule = () => {
         { id: 2, name: 'Bữa trưa', type: 'Trưa', time: '12:00', calories: 600, nutrients: { protein: 30, carbs: 40, fat: 20 } },
         { id: 3, name: 'Bữa tối', type: 'Tối', time: '18:00', calories: 500, nutrients: { protein: 25, carbs: 35, fat: 15 } }
       ],
-      date : new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0]
     });
   }, []);
 
@@ -32,14 +32,14 @@ const EditDayMealSchedule = () => {
         toast.error('Dữ liệu không khả dụng, vui lòng tải lại trang');
         return;
       }
-      
+
       //Tìm meal và kiểm tra tồn tại
       const mealToEdit = dayData.meals.find(meal => meal.id === id);
       if (!mealToEdit) {
         toast.error('Không tìm thấy bữa ăn, vui lòng tải lại trang');
         return;
       }
-      
+
       // Set selected meal và mở modal
       setSelectedMeal(mealToEdit);
       setEditModalOpen(true);
@@ -64,17 +64,17 @@ const EditDayMealSchedule = () => {
         toast.error('Dữ liệu không khả dụng, vui lòng tải lại trang');
         return false;
       }
-      
+
       // Tạo ID đúng loại - sử dụng số nguyên thay vì string nếu các ID hiện tại là số
       const maxId = dayData.meals.reduce((max, meal) => Math.max(max, typeof meal.id === 'number' ? meal.id : 0), 0);
       const newId = maxId + 1;
-      
+
       // Tạo bữa ăn mới với cấu trúc phù hợp
       const newMeal = {
         id: newId,
         name: "Bữa ăn mới",
         type: "Khác",
-        time: "12:00", 
+        time: "12:00",
         calories: 0,
         nutrients: { // Đảm bảo cấu trúc giống với các bữa ăn hiện có
           protein: 0,
@@ -82,24 +82,24 @@ const EditDayMealSchedule = () => {
           fat: 0
         }
       };
-      
+
       // Cập nhật state
       setDayData(prevData => ({
         ...prevData,
         meals: [...prevData.meals, newMeal]
       }));
-      
+
       // Đánh dấu có thay đổi
       setUnsavedChanges(true);
-      
+
       // // Tự động chỉnh sửa bữa ăn mới tạo
       // setTimeout(() => {
       //   handleEditMeal(newId);
       // }, 100);
-      
+
       // Thông báo thành công
       toast.success('Đã thêm bữa ăn mới');
-      
+
       return true;
     } catch (error) {
       console.error('Lỗi khi thêm bữa ăn mới:', error);
@@ -146,12 +146,12 @@ const EditDayMealSchedule = () => {
     if (!dayData || !dayData.meals || dayData.meals.length === 0) {
       return { calories: 0, protein: 0, carbs: 0, fat: 0 };
     }
-    
+
     const totalCalories = dayData.meals.reduce((sum, meal) => sum + meal.calories, 0);
     const totalProtein = dayData.meals.reduce((sum, meal) => sum + meal.nutrients.protein, 0);
     const totalCarbs = dayData.meals.reduce((sum, meal) => sum + meal.nutrients.carbs, 0);
     const totalFat = dayData.meals.reduce((sum, meal) => sum + meal.nutrients.fat, 0);
-    
+
     return { calories: totalCalories, protein: totalProtein, carbs: totalCarbs, fat: totalFat };
   };
 
@@ -162,18 +162,18 @@ const EditDayMealSchedule = () => {
       </div>
     );
   }
-  
+
   const nutrition = calculateNutrition();
 
   return (
     <div className="min-h-screen py-6 px-4 md:px-6">
-      <button 
+      <button
         onClick={handleCancelChanges}
         className="mb-6 flex items-center text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400"
       >
         <FaArrowLeft className="mr-2" /> Quay lại chi tiết ngày
       </button>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -185,12 +185,12 @@ const EditDayMealSchedule = () => {
             </p>
           </div>
         </div>
-        
+
         <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Tổng quan dinh dưỡng</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center shadow-sm">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Tổng calo</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Tổng kcal</p>
               <p className="text-xl font-semibold text-gray-900 dark:text-white">{nutrition.calories}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">kcal</p>
             </div>
@@ -217,14 +217,14 @@ const EditDayMealSchedule = () => {
             </div>
           </div>
         </div>
-        
+
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
           Danh sách bữa ăn
         </h2>
-        
+
         <div className="space-y-4 mb-6">
           {dayData.meals.map((meal) => (
-            <div 
+            <div
               key={meal.id}
               className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
             >
@@ -238,16 +238,16 @@ const EditDayMealSchedule = () => {
                       {meal.time}
                     </span>
                   </div>
-                  
+
                   <h3 className="mt-2 font-medium text-gray-900 dark:text-white">
                     {meal.name}
                   </h3>
-                  
+
                   <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                     {meal.calories} kcal · {meal.nutrients.protein}g protein · {meal.nutrients.carbs}g carbs · {meal.nutrients.fat}g chất béo
                   </div>
                 </div>
-                
+
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleEditMeal(meal.id)}
@@ -268,22 +268,21 @@ const EditDayMealSchedule = () => {
             </div>
           ))}
         </div>
-        
+
         <button
           onClick={handleAddMeal}
           className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-green-500 hover:text-green-600 dark:hover:border-green-400 dark:hover:text-green-400 transition-colors flex items-center justify-center mb-6"
         >
           <FaPlus className="mr-2" /> Thêm bữa ăn mới
         </button>
-        
+
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleSaveChanges}
-            className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center ${
-              unsavedChanges
+            className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center ${unsavedChanges
                 ? 'bg-green-600 hover:bg-green-700 text-white'
                 : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-            }`}
+              }`}
             disabled={!unsavedChanges}
           >
             <FaSave className="mr-2" /> Lưu thay đổi
@@ -296,7 +295,7 @@ const EditDayMealSchedule = () => {
           </button>
         </div>
       </div>
-      
+
       {editModalOpen && selectedMeal && (
         <EditMealModal
           meal={selectedMeal}
@@ -309,7 +308,7 @@ const EditDayMealSchedule = () => {
               if (!updatedMeal || !updatedMeal.id) {
                 throw new Error('Dữ liệu không hợp lệ');
               }
-              
+
               if (dayData.meals.some(m => m.id === updatedMeal.id)) {
                 handleSaveEditedMeal(updatedMeal);
               } else {

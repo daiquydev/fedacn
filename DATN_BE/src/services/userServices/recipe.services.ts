@@ -54,14 +54,11 @@ class RecipeService {
       body: newImage?.buffer as Buffer
     })
     console.log(newImage)
-    let finalImageUrl = '';
-    if (uploadRes.Location) {
-  // Nếu uploadRes.Location tồn tại, thay thế địa chỉ
-  finalImageUrl = uploadRes.Location.replace('http://localhost/', 'http://localhost:9000/');
-}   else {
-  // Nếu uploadRes.Location không tồn tại, có thể throw lỗi hoặc trả về một URL mặc định
-      throw new Error('Failed to get the file location after upload.');
-}
+    const finalImageUrl = uploadRes.Location
+    if (!finalImageUrl) {
+      throw new Error('Failed to get the file location after upload.')
+    }
+
 
     // lấy tên ảnh từ newImage.originalname
 
@@ -76,7 +73,7 @@ class RecipeService {
       title,
       description,
       content,
-      image:finalImageUrl,
+      image: finalImageUrl,
       image_name: image_name,
       video,
       time,
@@ -1321,13 +1318,13 @@ class RecipeService {
         .jpeg()
         .toBuffer()
     }
-    
+
     const uploadResult = await uploadFileToS3({
       filename: `recipe/${processedImage.originalname}`,
       contentType: processedImage.mimetype,
       body: processedImage.buffer
     })
-    
+
     // Return the URL string directly
     return uploadResult.Location || ''
   }
@@ -1337,13 +1334,13 @@ class RecipeService {
       ...file,
       originalname: file.originalname.split('.')[0] + new Date().getTime() + '.' + file.originalname.split('.')[1]
     }
-    
+
     const uploadResult = await uploadFileToS3({
       filename: `recipe/${processedVideo.originalname}`,
       contentType: processedVideo.mimetype,
       body: processedVideo.buffer
     })
-    
+
     // Return the URL string directly
     return uploadResult.Location || ''
   }
@@ -1362,11 +1359,11 @@ class RecipeService {
 
   async getMyRecipesService({ user_id, page, limit, status, search }: any) {
     const query: any = { user_id: new ObjectId(user_id) }
-    
+
     if (status && status !== 'all') {
       query.status = Number(status)
     }
-    
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },

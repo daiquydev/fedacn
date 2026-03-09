@@ -1,57 +1,111 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
-import { 
-  FaArrowLeft, 
-  FaRunning, 
-  FaCalendarAlt, 
-  FaMapMarkerAlt, 
-  FaDumbbell, 
-  FaImage, 
-  FaUsers, 
+import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  FaArrowLeft,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaImage,
+  FaUsers,
   FaFileAlt,
   FaPlus,
   FaTrash,
   FaTrophy,
   FaBullseye,
-  FaQuestionCircle,
-  FaListUl,
   FaStar,
   FaCheckCircle,
-  FaInfoCircle
+  FaInfoCircle,
+  FaClock,
+  FaTree,
+  FaHome,
+  FaExclamationCircle,
+  FaTimes
 } from 'react-icons/fa'
-import { MdSportsSoccer, MdVideocam, MdHelpOutline, MdOutlineGavel } from 'react-icons/md'
+import { MdVideocam, MdAutoAwesome } from 'react-icons/md'
 import { createSportEvent } from '../../apis/sportEventApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
+import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
 import moment from 'moment'
 
+// ==================== AI FILL HELPERS ====================
+// Gọi qua backend proxy để tránh lỗi CORS khi gọi trực tiếp từ trình duyệt
+const AI_PROXY_ENDPOINT = 'http://localhost:5000/api/ai/generate'
+
+// ==================== DATE/TIME HELPERS ====================
+const isValidDateStr = (val) => {
+  if (!val || val.length !== 10) return false
+  const [d, m, y] = val.split('/').map(Number)
+  if (!d || !m || !y || y < 2000 || y > 2100) return false
+  const date = new Date(y, m - 1, d)
+  return date.getDate() === d && date.getMonth() === m - 1 && date.getFullYear() === y
+}
+
+const isValidTimeStr = (val) => {
+  if (!val || val.length !== 5) return false
+  const [h, min] = val.split(':').map(Number)
+  return h >= 0 && h <= 23 && min >= 0 && min <= 59
+}
+
+const isPastDate = (dateStr) => {
+  if (!isValidDateStr(dateStr)) return false
+  const [d, m, y] = dateStr.split('/').map(Number)
+  const date = new Date(y, m - 1, d)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return date < today
+}
+
+const parseDateToISO = (dateStr, timeStr = '00:00') => {
+  const [d, m, y] = dateStr.split('/')
+  return new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00`).toISOString()
+}
+
+// Format digits into DD/MM/YYYY
+const formatDateInput = (raw) => {
+  const digits = raw.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2)
+  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4)
+}
+
+// Format digits into HH:mm
+const formatTimeInput = (raw) => {
+  const digits = raw.replace(/\D/g, '').slice(0, 4)
+  if (digits.length <= 2) return digits
+  return digits.slice(0, 2) + ':' + digits.slice(2)
+}
+
+// ============================================================
+
 const CreateSportEvent = () => {
   const navigate = useNavigate()
-  
+
+  // AI modal state
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [aiDescription, setAiDescription] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+
   const [newEvent, setNewEvent] = useState({
     name: '',
-    startDate: '',
-    startTime: '',
-    endDate: '',
-    endTime: '',
+    startDate: '',    // DD/MM/YYYY text
+    endDate: '',      // DD/MM/YYYY text
+    eventTime: '',    // HH:mm text
     location: '',
-    category: 'Chạy bộ',
-    difficulty: 'Trung bình',
+    category: '',
     maxParticipants: 50,
     targetValue: 0,
     targetUnit: 'km',
     image: '',
     description: '',
     detailedDescription: '',
-    eventType: 'offline',
+    eventType: 'Ngoài trời',
     requirements: '',
-    benefits: '',
-    rules: [''],
-    rewards: [''],
-    faqs: [{ question: '', answer: '' }]
+    benefits: ''
   })
 
   const [errors, setErrors] = useState({})
+  const [locationSuggestions, setLocationSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Mutation for creating event
   const createMutation = useMutation({
@@ -67,77 +121,244 @@ const CreateSportEvent = () => {
     }
   })
 
-  const categories = [
-    { name: 'Chạy bộ', icon: <FaRunning /> },
-    { name: 'Đạp xe', icon: <MdSportsSoccer /> },
-    { name: 'Bơi lội', icon: <FaDumbbell /> },
-    { name: 'Fitness', icon: <FaDumbbell /> },
-    { name: 'Bóng rổ', icon: <MdSportsSoccer /> },
-    { name: 'Yoga', icon: <FaRunning /> },
-    { name: 'Cầu lông', icon: <MdSportsSoccer /> }
-  ]
+  const { data: categoriesData } = useQuery({
+    queryKey: ['sportCategories'],
+    queryFn: () => sportCategoryApi.getAll(),
+    staleTime: 1000
+  })
 
-  const difficulties = ['Dễ', 'Trung bình', 'Khó', 'Thử thách']
+  const categories = categoriesData?.data?.result || []
+  const filteredCategories = categories.filter(c => c.type === newEvent.eventType)
 
+  // set default category once loaded or eventType changed
+  React.useEffect(() => {
+    if (filteredCategories.length > 0) {
+      setNewEvent(prev => {
+        if (!filteredCategories.some(c => c.name === prev.category)) {
+          return { ...prev, category: filteredCategories[0].name }
+        }
+        return prev
+      })
+    }
+  }, [categoriesData, newEvent.eventType])
+
+  // ==================== AI FILL HANDLER ====================
+  const handleAIFill = async () => {
+    if (!aiDescription.trim()) {
+      toast.error('Vui lòng nhập mô tả sự kiện trước!')
+      return
+    }
+    setAiLoading(true)
+    try {
+      const today = '08/03/2026'
+      const allCategoryNames = categories.map(c => `${c.name} (${c.type})`).join(', ')
+      const outdoorCategories = categories.filter(c => c.type === 'Ngoài trời').map(c => c.name).join(', ')
+      const indoorCategories = categories.filter(c => c.type === 'Trong nhà').map(c => c.name).join(', ')
+
+      const prompt = `Hôm nay là ngày ${today}. Múi giờ Việt Nam (UTC+7).
+Người dùng muốn tạo một sự kiện thể thao. Dưới đây là mô tả sơ bộ của họ:
+
+"${aiDescription.trim()}"
+
+Hãy điền đầy đủ tất cả các trường sau thành một JSON object hợp lệ. Tuân thủ các quy tắc:
+1. Nếu mô tả đã có thông tin rõ ràng cho một trường → dùng thông tin đó.
+2. Nếu không có → tự suy luận hợp lý, thực tế, phù hợp văn hóa Việt Nam và ngữ cảnh thể thao.
+3. Ngày: định dạng DD/MM/YYYY. startDate phải >= ${today}. endDate phải >= startDate. Chọn ngày trong tương lai gần, hợp lý.
+4. eventType: chỉ được là "Ngoài trời" hoặc "Trong nhà".
+   - Hoạt động ngoài trời (category thuộc list: ${outdoorCategories}) → "Ngoài trời"
+   - Hoạt động trong nhà (category thuộc list: ${indoorCategories}) → "Trong nhà"
+5. category: phải là một trong các giá trị sau (chọn phù hợp nhất với mô tả): ${allCategoryNames}. Chỉ điền tên category (không kèm loại).
+6. targetUnit: chỉ được là một trong: "km", "kcal", "phút", "giờ". Chọn đơn vị phù hợp với loại hoạt động.
+7. image: Mặc định để ''
+8. description: tối đa 150 ký tự, ngắn gọn, hấp dẫn, tiếng Việt.
+9. detailedDescription: đoạn văn dài hơn, trình bày lịch trình, thông tin chi tiết, tiếng Việt.
+10. requirements: yêu cầu tham gia ngắn gọn (VD: Sức khỏe ổn định, có kinh nghiệm...).
+11. benefits: lợi ích khi tham gia ngắn gọn (VD: Voucher ưu đãi, huy chương, mạng lưới kết nối...).
+12. maxParticipants: số nguyên hợp lý (từ 20 đến 500).
+13. Vị trí địa lý: Nếu không nêu cụ thể, hãy chọn một địa điểm thực tế, ngẫu nhiên trong thành phố Hồ Chí Minh, phù hợp với loại sự kiện.
+14. Chỉ trả về JSON object, không có markdown, không có giải thích, không có ký tự thừa.
+
+JSON output (chỉ object, không gì khác):
+{
+  "name": string,
+  "eventType": "Ngoài trời" | "Trong nhà",
+  "category": string,
+  "startDate": "DD/MM/YYYY",
+  "endDate": "DD/MM/YYYY",
+  "eventTime": "HH:mm",
+  "location": string,
+  "maxParticipants": number,
+  "targetValue": number,
+  "targetUnit": "km" | "kcal" | "phút" | "giờ",
+  "image": string,
+  "description": string,
+  "detailedDescription": string,
+  "requirements": string,
+  "benefits": string
+}`
+
+      // Gọi backend proxy thay vì gọi thẳng Grok (tránh CORS)
+      const response = await fetch(AI_PROXY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+
+      if (!response.ok) {
+        const errData = await response.json()
+        throw new Error(errData?.message || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      const rawText = data?.text || ''
+
+      // Strip markdown code fences if present (though response_format json_object should prevent it, just to be sure)
+      const cleaned = rawText.replace(/```(?:json)?\n?/gi, '').replace(/```/g, '').trim()
+      const parsed = JSON.parse(cleaned)
+
+      // Validate and apply fields
+      setNewEvent(prev => {
+        const updated = { ...prev }
+        if (parsed.name) updated.name = parsed.name
+        if (parsed.eventType === 'Ngoài trời' || parsed.eventType === 'Trong nhà') {
+          updated.eventType = parsed.eventType
+        }
+        // Category: check if it exists in our list
+        if (parsed.category) {
+          const matchedCat = categories.find(c => c.name === parsed.category)
+          if (matchedCat) { updated.category = matchedCat.name }
+        }
+        if (parsed.startDate) updated.startDate = parsed.startDate
+        if (parsed.endDate) updated.endDate = parsed.endDate
+        if (parsed.eventTime) updated.eventTime = parsed.eventTime
+        if (parsed.location) updated.location = parsed.location
+        if (parsed.maxParticipants) updated.maxParticipants = Number(parsed.maxParticipants)
+        if (parsed.targetValue !== undefined) updated.targetValue = Number(parsed.targetValue)
+        if (['km', 'kcal', 'phút', 'giờ'].includes(parsed.targetUnit)) {
+          updated.targetUnit = parsed.targetUnit
+        }
+        if (parsed.image) updated.image = parsed.image
+        if (parsed.description) updated.description = parsed.description.slice(0, 150)
+        if (parsed.detailedDescription) updated.detailedDescription = parsed.detailedDescription
+        if (parsed.requirements) updated.requirements = parsed.requirements
+        if (parsed.benefits) updated.benefits = parsed.benefits
+        return updated
+      })
+
+      // Clear all errors after AI fill
+      setErrors({})
+      setShowAIModal(false)
+      setAiDescription('')
+      toast.success('✨ AI đã điền xong các trường!')
+    } catch (err) {
+      console.error('AI fill error:', err)
+      toast.error(`❌ AI gặp lỗi: ${err.message || 'Không thể xử lý. Thử lại sau.'}`)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  // ==================== REAL-TIME FIELD VALIDATOR ====================
+  const validateField = (name, value, currentState = newEvent) => {
+    let error = null
+    switch (name) {
+      case 'name':
+        if (!value?.trim()) error = 'Vui lòng nhập tên sự kiện'
+        break
+      case 'startDate':
+        if (!value) error = 'Vui lòng nhập ngày bắt đầu'
+        else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
+        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+        else if (currentState.endDate && isValidDateStr(currentState.endDate)) {
+          const [sd, sm, sy] = value.split('/').map(Number)
+          const [ed, em, ey] = currentState.endDate.split('/').map(Number)
+          if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd))
+            setErrors(prev => ({ ...prev, endDate: 'Ngày kết thúc phải sau ngày bắt đầu' }))
+          else
+            setErrors(prev => ({ ...prev, endDate: null }))
+        }
+        break
+      case 'endDate':
+        if (!value) error = 'Vui lòng nhập ngày kết thúc'
+        else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
+        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+        else if (currentState.startDate && isValidDateStr(currentState.startDate)) {
+          const [sd, sm, sy] = currentState.startDate.split('/').map(Number)
+          const [ed, em, ey] = value.split('/').map(Number)
+          if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd))
+            error = 'Ngày kết thúc phải sau ngày bắt đầu'
+        }
+        break
+      case 'eventTime':
+        if (!value) error = 'Vui lòng nhập thời điểm'
+        else if (!isValidTimeStr(value)) error = 'Thời điểm không hợp lệ — định dạng HH:mm'
+        break
+      case 'location':
+        if (!value?.trim()) error = 'Vui lòng nhập địa điểm'
+        break
+      case 'description':
+        if (!value?.trim()) error = 'Vui lòng nhập mô tả ngắn'
+        break
+      case 'image':
+        if (!value?.trim()) error = 'Vui lòng tải lên ảnh bìa'
+        break
+      default:
+        break
+    }
+    setErrors(prev => ({ ...prev, [name]: error }))
+    return error
+  }
+
+  // ==================== HANDLERS ====================
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setNewEvent(prev => ({ ...prev, [name]: value }))
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
-  }
 
-  const handleArrayChange = (index, value, field) => {
-    const newArr = [...newEvent[field]]
-    newArr[index] = value
-    setNewEvent(prev => ({ ...prev, [field]: newArr }))
-  }
-
-  const addArrayItem = (field) => {
-    setNewEvent(prev => ({ ...prev, [field]: [...prev[field], ''] }))
-  }
-
-  const removeArrayItem = (index, field) => {
-    const newArr = [...newEvent[field]]
-    if (newArr.length > 1) {
-      newArr.splice(index, 1)
-      setNewEvent(prev => ({ ...prev, [field]: newArr }))
+    if (name === 'location') {
+      if (value.length > 2) {
+        fetch(`https://rsapi.goong.io/Place/AutoComplete?api_key=UMRiT4CiOH9UU9Ju9L1YJLSYZM5EQberRoSsyfDW&input=${encodeURIComponent(value)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.predictions) {
+              setLocationSuggestions(data.predictions)
+              setShowSuggestions(true)
+            }
+          })
+          .catch(console.error)
+      } else {
+        setShowSuggestions(false)
+      }
     }
   }
 
-  const handleFaqChange = (index, field, value) => {
-    const newFaqs = [...newEvent.faqs]
-    newFaqs[index][field] = value
-    setNewEvent(prev => ({ ...prev, faqs: newFaqs }))
+  const handleDateChange = (e) => {
+    const { name, value } = e.target
+    const formatted = formatDateInput(value)
+    setNewEvent(prev => ({ ...prev, [name]: formatted }))
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
   }
 
-  const addFaq = () => {
-    setNewEvent(prev => ({ ...prev, faqs: [...prev.faqs, { question: '', answer: '' }] }))
+  const handleTimeChange = (e) => {
+    const { name, value } = e.target
+    const formatted = formatTimeInput(value)
+    setNewEvent(prev => ({ ...prev, [name]: formatted }))
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
   }
 
-  const removeFaq = (index) => {
-    const newFaqs = [...newEvent.faqs]
-    if (newFaqs.length > 1) {
-      newFaqs.splice(index, 1)
-      setNewEvent(prev => ({ ...prev, faqs: newFaqs }))
-    }
+  const handleSelectLocation = (address) => {
+    setNewEvent(prev => ({ ...prev, location: address }))
+    setShowSuggestions(false)
+    setErrors(prev => ({ ...prev, location: null }))
   }
 
   const validateForm = () => {
+    const fields = ['name', 'startDate', 'endDate', 'eventTime', 'location', 'description', 'image']
     const sErr = {}
-    if (!newEvent.name.trim()) sErr.name = 'Yêu cầu tên sự kiện'
-    if (!newEvent.startDate) sErr.startDate = 'Yêu cầu ngày bắt đầu'
-    if (!newEvent.startTime) sErr.startTime = 'Yêu cầu giờ bắt đầu'
-    if (!newEvent.endDate) sErr.endDate = 'Yêu cầu ngày kết thúc'
-    if (!newEvent.endTime) sErr.endTime = 'Yêu cầu giờ kết thúc'
-    if (!newEvent.location.trim()) sErr.location = 'Yêu cầu địa điểm'
-    if (!newEvent.description.trim()) sErr.description = 'Yêu cầu mô tả ngắn'
-    if (!newEvent.image.trim()) sErr.image = 'Yêu cầu URL ảnh'
-
-    if (newEvent.startDate && newEvent.endDate) {
-      const start = new Date(`${newEvent.startDate}T${newEvent.startTime}`)
-      const end = new Date(`${newEvent.endDate}T${newEvent.endTime}`)
-      if (end <= start) sErr.endDate = 'Thời gian kết thúc phải sau bắt đầu'
-    }
-
+    fields.forEach(f => {
+      const e = validateField(f, newEvent[f])
+      if (e) sErr[f] = e
+    })
     setErrors(sErr)
     return Object.keys(sErr).length === 0
   }
@@ -145,123 +366,233 @@ const CreateSportEvent = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!validateForm()) {
-      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc')
-      // Scroll to first error
-      const firstError = Object.keys(errors)[0]
-      const el = document.getElementsByName(firstError)[0]
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      toast.error('Vui lòng kiểm tra lại các thông tin bắt buộc')
+      setTimeout(() => {
+        const firstErrEl = document.querySelector('[data-error="true"]')
+        if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 50)
       return
     }
 
-    const start = new Date(`${newEvent.startDate}T${newEvent.startTime}`).toISOString()
-    const end = new Date(`${newEvent.endDate}T${newEvent.endTime}`).toISOString()
+    const timeStr = newEvent.eventTime || '00:00'
+    const startISO = parseDateToISO(newEvent.startDate, timeStr)
+    const endISO = parseDateToISO(newEvent.endDate, '23:59')
 
     const finalData = {
-      ...newEvent,
-      startDate: start,
-      endDate: end,
+      name: newEvent.name,
+      startDate: startISO,
+      endDate: endISO,
+      location: newEvent.location,
+      category: newEvent.category,
       maxParticipants: Number(newEvent.maxParticipants),
       targetValue: Number(newEvent.targetValue),
-      rules: newEvent.rules.filter(r => r.trim()),
-      rewards: newEvent.rewards.filter(r => r.trim()),
-      faqs: newEvent.faqs.filter(f => f.question.trim() && f.answer.trim())
+      targetUnit: (newEvent.eventType === 'Trong nhà' && newEvent.targetUnit === 'km') ? 'kcal' : newEvent.targetUnit,
+      image: newEvent.image,
+      description: newEvent.description,
+      detailedDescription: newEvent.detailedDescription,
+      eventType: newEvent.eventType,
+      requirements: newEvent.requirements,
+      benefits: newEvent.benefits
     }
 
     createMutation.mutate(finalData)
   }
 
+  // ==================== INPUT CLASSES ====================
+  const inputCls = (name) =>
+    `w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white focus:ring-4 transition outline-none ${errors[name]
+      ? 'border-red-400 focus:ring-red-500/10'
+      : 'border-gray-100 dark:border-gray-600 focus:border-green-400 focus:ring-green-500/10'
+    }`
+
+  const ErrorMsg = ({ name }) => errors[name]
+    ? <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+      <FaExclamationCircle className="shrink-0" /> {errors[name]}
+    </p>
+    : null
+
+  // ==================== RENDER ====================
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+      {/* ====== AI MODAL ====== */}
+      {showAIModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.55)' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
+            {/* Modal Header */}
+            <div className="relative bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                  <MdAutoAwesome className="text-2xl" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg">AI Điền Tự Động</h3>
+                  <p className="text-purple-100 text-xs">Mô tả sự kiện → AI tự điền toàn bộ form</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowAIModal(false); setAiDescription('') }}
+                className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition"
+              >
+                <FaTimes className="text-sm" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
+                  Mô tả sơ bộ về sự kiện của bạn
+                </label>
+                <textarea
+                  value={aiDescription}
+                  onChange={e => setAiDescription(e.target.value)}
+                  rows={5}
+                  placeholder={`Ví dụ: "Giải chạy bộ bán marathon buổi sáng tại công viên Tao Đàn, TP.HCM, dành cho cộng đồng yêu thể thao, khoảng 100 người, chạy 21km, tổ chức vào cuối tháng 3/2026..."`}
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-purple-100 dark:border-purple-900 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none resize-none transition text-sm leading-relaxed"
+                />
+                <p className="text-xs text-gray-400 mt-1">Càng chi tiết, AI càng điền chính xác hơn. Có thể dùng tiếng Việt.</p>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl p-4 border border-purple-100 dark:border-purple-800">
+                <p className="text-xs font-bold text-purple-700 dark:text-purple-300 mb-2">💡 Gợi ý mô tả:</p>
+                <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
+                  <li>• Loại thể thao (chạy bộ, đạp xe, yoga...)</li>
+                  <li>• Địa điểm tổ chức</li>
+                  <li>• Số người tham gia mong muốn</li>
+                  <li>• Thời gian / ngày dự kiến</li>
+                  <li>• Mục tiêu (5km, 100 kcal...)</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleAIFill}
+                disabled={aiLoading || !aiDescription.trim()}
+                className="w-full py-3.5 rounded-2xl font-black text-white flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                style={{ background: aiLoading || !aiDescription.trim() ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #4338ca)' }}
+              >
+                {aiLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    AI đang phân tích và điền form...
+                  </>
+                ) : (
+                  <>
+                    <MdAutoAwesome className="text-lg" />
+                    Tạo với AI
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white py-10 mb-8">
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white py-8 mb-8">
         <div className="container mx-auto px-4">
+          {/* Back button */}
           <button
             onClick={() => navigate('/sport-event')}
-            className="flex items-center text-green-50 hover:text-white mb-4 transition"
+            className="flex items-center text-green-50 hover:text-white mb-5 transition text-sm"
           >
             <FaArrowLeft className="mr-2" /> Quay lại
           </button>
-          <h1 className="text-3xl font-extrabold">Tạo Sự Kiện Thể Thao</h1>
-          <p className="opacity-90">Hoàn thiện thông tin bên trái để xem trước thẻ sự kiện bên phải</p>
+          {/* Title row + AI button */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-extrabold">Tạo Sự Kiện Thể Thao</h1>
+              <p className="opacity-80 mt-1 text-sm">Điền đầy đủ thông tin để tạo sự kiện và xem trước kết quả bên phải</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAIModal(true)}
+              className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 hover:shadow-xl hover:shadow-purple-500/40 hover:-translate-y-0.5"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }}
+            >
+              <MdAutoAwesome className="text-lg shrink-0" />
+              <span className="hidden sm:inline">AI Điền Tự Động</span>
+              <span className="sm:hidden">AI</span>
+            </button>
+          </div>
         </div>
       </div>
 
+
       <div className="container mx-auto px-4">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Form Content - Left Side */}
+
+          {/* ========== LEFT FORM ========== */}
           <div className="lg:col-span-8 space-y-8">
-            
+
             {/* 1. Thông tin chung */}
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaFileAlt className="text-green-500 text-xl" />
                 <h2 className="text-xl font-bold dark:text-white">1. Thông tin chung</h2>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tên sự kiện *</label>
+
+              <div className="space-y-6">
+                {/* Tên */}
+                <div data-error={!!errors.name}>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    Tên sự kiện <span className="text-red-500">*</span>
+                  </label>
                   <input
                     name="name"
                     value={newEvent.name}
                     onChange={handleInputChange}
+                    onBlur={e => validateField('name', e.target.value)}
                     placeholder="VD: Marathon Sài Gòn Night Run 2026"
-                    className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white focus:ring-4 focus:ring-green-500/10 transition outline-none ${
-                        errors.name ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                    }`}
+                    className={inputCls('name')}
                   />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  <ErrorMsg name="name" />
                 </div>
 
+                {/* Danh mục */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Danh mục</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Danh mục thể thao</label>
                   <select
                     name="category"
                     value={newEvent.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-green-400"
                   >
-                    {categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    {filteredCategories.map(c => <option key={c._id || c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
 
+                {/* Hình thức tổ chức */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Độ khó</label>
-                  <select
-                    name="difficulty"
-                    value={newEvent.difficulty}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none"
-                  >
-                    {difficulties.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Hình thức tổ chức</label>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'offline' }))}
-                      className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition ${
-                        newEvent.eventType === 'offline' 
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' 
-                        : 'border-gray-100 dark:border-gray-700 text-gray-500'
-                      }`}
+                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Ngoài trời' }))}
+                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Ngoài trời'
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 shadow-md shadow-green-100'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-green-300'
+                        }`}
                     >
-                      <FaMapMarkerAlt /> <b>Trực tiếp</b>
+                      <div className={`text-3xl ${newEvent.eventType === 'Ngoài trời' ? 'text-green-500' : 'text-gray-400'}`}>
+                        🌿
+                      </div>
+                      <span className="font-bold text-sm">Ngoài trời</span>
+                      <span className="text-xs text-gray-400">Chạy bộ, đạp xe, leo núi...</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'online' }))}
-                      className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition ${
-                        newEvent.eventType === 'online' 
-                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400' 
-                        : 'border-gray-100 dark:border-gray-700 text-gray-500'
-                      }`}
+                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Trong nhà', targetUnit: p.targetUnit === 'km' ? 'kcal' : p.targetUnit }))}
+                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Trong nhà'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 shadow-md shadow-blue-100'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-blue-300'
+                        }`}
                     >
-                      <MdVideocam size={20} /> <b>Trực tuyến</b>
+                      <div className={`text-3xl ${newEvent.eventType === 'Trong nhà' ? 'text-blue-500' : 'text-gray-400'}`}>
+                        🏠
+                      </div>
+                      <span className="font-bold text-sm">Trong nhà</span>
+                      <span className="text-xs text-gray-400">Gym, yoga, bơi lội...</span>
                     </button>
                   </div>
                 </div>
@@ -272,98 +603,117 @@ const CreateSportEvent = () => {
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaCalendarAlt className="text-blue-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">2. Thời gian & Địa điểm</h2>
+                <h2 className="text-xl font-bold dark:text-white">2. Thời gian &amp; Địa điểm</h2>
               </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                  {/* Start Date & Time */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
-                       Bắt đầu
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500">Ngày bắt đầu</label>
-                        <input 
-                          type="date" 
-                          name="startDate" 
-                          value={newEvent.startDate} 
-                          onChange={handleInputChange} 
-                          className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                            errors.startDate ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                          }`} 
-                        />
-                         {errors.startDate && <p className="text-red-500 text-xs">{errors.startDate}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500">Giờ bắt đầu</label>
-                        <input 
-                          type="time" 
-                          name="startTime" 
-                          value={newEvent.startTime} 
-                          onChange={handleInputChange} 
-                          className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                            errors.startTime ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                          }`} 
-                        />
-                         {errors.startTime && <p className="text-red-500 text-xs">{errors.startTime}</p>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* End Date & Time */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
-                       Kết thúc
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                         <label className="text-xs font-bold text-gray-500">Ngày kết thúc</label>
-                         <input 
-                           type="date" 
-                           name="endDate" 
-                           value={newEvent.endDate} 
-                           onChange={handleInputChange} 
-                           className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                             errors.endDate ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                           }`} 
-                         />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500">Giờ kết thúc</label>
-                        <input 
-                          type="time" 
-                          name="endTime" 
-                          value={newEvent.endTime} 
-                          onChange={handleInputChange} 
-                          className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none ${
-                             errors.endTime ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                          }`} 
-                        />
-                         {errors.endTime && <p className="text-red-500 text-xs">{errors.endTime}</p>}
-                      </div>
-                    </div>
-                    {errors.endDate && <p className="text-red-500 text-xs">{errors.endDate}</p>}
-                  </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    {newEvent.eventType === 'offline' ? 'Địa điểm cụ thể *' : 'Nền tảng / Link tham gia'}
-                  </label>
-                  <div className="relative">
-                    <FaMapMarkerAlt className="absolute left-4 top-4 text-gray-400" />
+              <div className="space-y-6">
+                {/* 3 cột: ngày bắt đầu | ngày kết thúc | thời điểm */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Ngày bắt đầu */}
+                  <div data-error={!!errors.startDate}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaCalendarAlt className="inline mr-1 text-green-500" />
+                      Ngày bắt đầu <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      name="location"
-                      value={newEvent.location}
-                      onChange={handleInputChange}
-                      placeholder={newEvent.eventType === 'offline' ? 'Công viên Thống Nhất, Hai Bà Trưng, Hà Nội' : 'Zoom, Google Meet, Facebook Live...'}
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white focus:ring-4 focus:ring-blue-500/10 transition outline-none ${
-                        errors.location ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                      }`}
+                      type="text"
+                      name="startDate"
+                      value={newEvent.startDate}
+                      onChange={handleDateChange}
+                      onBlur={e => validateField('startDate', e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                      className={inputCls('startDate')}
                     />
+                    <ErrorMsg name="startDate" />
                   </div>
-                  {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+
+                  {/* Ngày kết thúc */}
+                  <div data-error={!!errors.endDate}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaCalendarAlt className="inline mr-1 text-red-400" />
+                      Ngày kết thúc <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="endDate"
+                      value={newEvent.endDate}
+                      onChange={handleDateChange}
+                      onBlur={e => validateField('endDate', e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                      className={inputCls('endDate')}
+                    />
+                    <ErrorMsg name="endDate" />
+                  </div>
+
+                  {/* Thời điểm */}
+                  <div data-error={!!errors.eventTime}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaClock className="inline mr-1 text-orange-400" />
+                      Thời điểm <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="eventTime"
+                      value={newEvent.eventTime}
+                      onChange={handleTimeChange}
+                      onBlur={e => validateField('eventTime', e.target.value)}
+                      placeholder="HH:mm"
+                      maxLength={5}
+                      className={inputCls('eventTime')}
+                    />
+                    <ErrorMsg name="eventTime" />
+                  </div>
                 </div>
+
+                {/* Gợi ý định dạng */}
+                <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
+                  <FaInfoCircle className="mt-0.5 shrink-0" />
+                  <span>Nhập ngày theo định dạng <strong>DD/MM/YYYY</strong> (VD: 15/06/2026) và giờ theo <strong>HH:mm</strong> (VD: 07:30). Không thể chọn ngày trong quá khứ.</span>
+                </div>
+
+                {/* Địa điểm — chỉ hiện khi là sự kiện ngoài trời */}
+                {newEvent.eventType === 'Ngoài trời' && (
+                  <div data-error={!!errors.location}>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                      <FaMapMarkerAlt className="inline mr-1 text-green-500" />
+                      Địa điểm cụ thể
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaMapMarkerAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        name="location"
+                        value={newEvent.location}
+                        onChange={handleInputChange}
+                        onBlur={(e) => {
+                          setTimeout(() => setShowSuggestions(false), 200)
+                          validateField('location', e.target.value)
+                        }}
+                        placeholder="Công viên Thống Nhất, Hai Bà Trưng, Hà Nội"
+                        className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white transition outline-none ${errors.location
+                          ? 'border-red-400 focus:ring-2 focus:ring-red-500/10'
+                          : 'border-gray-100 dark:border-gray-600 focus:border-green-400 focus:ring-4 focus:ring-green-500/10'
+                          }`}
+                      />
+                      {showSuggestions && locationSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                          {locationSuggestions.map((sl, index) => (
+                            <div
+                              key={index}
+                              className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                              onClick={() => handleSelectLocation(sl.description)}
+                            >
+                              📍 {sl.description}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <ErrorMsg name="location" />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -371,50 +721,68 @@ const CreateSportEvent = () => {
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaBullseye className="text-orange-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">3. Mục tiêu & Sức chứa</h2>
+                <h2 className="text-xl font-bold dark:text-white">3. Mục tiêu &amp; Sức chứa</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Số người tối đa */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Số lượng người tối đa</label>
-                  <div className="flex items-center border-2 border-gray-100 dark:border-gray-600 rounded-xl px-4 dark:bg-gray-700">
-                    <FaUsers className="text-gray-400 mr-2" />
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    <FaUsers className="inline mr-1 text-blue-500" />
+                    Số người tối đa
+                  </label>
+                  <div className="flex items-center border-2 border-gray-100 dark:border-gray-600 rounded-xl overflow-hidden dark:bg-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => setNewEvent(p => ({ ...p, maxParticipants: Math.max(1, Number(p.maxParticipants) - 10) }))}
+                      className="px-4 py-3 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-500 transition font-bold text-lg"
+                    >−</button>
                     <input
                       type="number"
                       name="maxParticipants"
                       value={newEvent.maxParticipants}
                       onChange={handleInputChange}
-                      className="w-full py-3 bg-transparent dark:text-white focus:outline-none"
+                      min={1}
+                      className="flex-1 py-3 bg-transparent dark:text-white text-center font-bold text-lg focus:outline-none"
                     />
-                    <span className="text-xs font-bold text-gray-400 ml-2 whitespace-nowrap">NGƯỜI</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewEvent(p => ({ ...p, maxParticipants: Number(p.maxParticipants) + 10 }))}
+                      className="px-4 py-3 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-500 transition font-bold text-lg"
+                    >+</button>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Tối đa người tham gia</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="col-span-1">
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mục tiêu</label>
+                {/* Mục tiêu */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    <FaBullseye className="inline mr-1 text-orange-500" />
+                    Mục tiêu sự kiện
+                  </label>
+                  <div className="flex gap-2">
                     <input
                       type="number"
                       name="targetValue"
                       value={newEvent.targetValue}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none"
+                      min={0}
+                      placeholder="0"
+                      className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-orange-400 font-bold text-lg text-center"
                     />
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Đơn vị</label>
                     <select
                       name="targetUnit"
                       value={newEvent.targetUnit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none"
+                      className="w-24 px-3 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-orange-400 font-bold"
                     >
-                      <option value="km">km</option>
-                      <option value="calo">calo</option>
-                      <option value="bước">bước</option>
+                      {newEvent.eventType === 'Ngoài trời' && <option value="km">km</option>}
+                      <option value="kcal">kcal</option>
                       <option value="phút">phút</option>
+                      <option value="giờ">giờ</option>
                     </select>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Mục tiêu cần hoàn thành để nhận phần thưởng</p>
                 </div>
               </div>
             </section>
@@ -423,184 +791,96 @@ const CreateSportEvent = () => {
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <FaImage className="text-purple-500 text-xl" />
-                <h2 className="text-xl font-bold dark:text-white">4. Hình ảnh & Mô tả</h2>
+                <h2 className="text-xl font-bold dark:text-white">4. Hình ảnh &amp; Mô tả</h2>
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Ảnh bìa (URL) *</label>
-                  <input
-                    name="image"
+                <div data-error={!!errors.image}>
+                  <CloudinaryImageUploader
+                    label="Ảnh bìa"
+                    required
                     value={newEvent.image}
-                    onChange={handleInputChange}
-                    placeholder="Dán link ảnh tại đây (Unsplash, Pexels...)"
-                    className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white focus:ring-4 focus:ring-purple-500/10 transition outline-none ${
-                        errors.image ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                    }`}
+                    onChange={(url) => {
+                      setNewEvent(prev => ({ ...prev, image: url }))
+                      if (errors.image) setErrors(prev => ({ ...prev, image: null }))
+                    }}
+                    error={errors.image}
+                    folder="sport-events"
                   />
-                  {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mô tả ngắn (Hiển thị ngoài card) *</label>
+                <div data-error={!!errors.description}>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    Mô tả ngắn (hiển thị ngoài card) <span className="text-red-500">*</span>
+                  </label>
                   <textarea
                     name="description"
                     value={newEvent.description}
                     onChange={handleInputChange}
+                    onBlur={e => validateField('description', e.target.value)}
                     rows={2}
                     maxLength={150}
                     placeholder="Mô tả ngắn gọn trong 150 ký tự..."
-                    className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white resize-none focus:ring-4 focus:ring-purple-500/10 transition outline-none ${
-                        errors.description ? 'border-red-500' : 'border-gray-100 dark:border-gray-600'
-                    }`}
+                    className={inputCls('description') + ' resize-none'}
                   />
-                  <div className="text-[10px] text-right text-gray-400 font-bold">{newEvent.description.length}/150</div>
+                  <div className="flex justify-between items-center mt-1">
+                    <ErrorMsg name="description" />
+                    <span className="text-[10px] text-gray-400 font-bold ml-auto">{newEvent.description.length}/150</span>
+                  </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mô tả chi tiết</label>
-                    <textarea
-                      name="detailedDescription"
-                      value={newEvent.detailedDescription}
-                      onChange={handleInputChange}
-                      rows={5}
-                      placeholder="Thông tin chi tiết, lịch trình, lưu ý đặc biệt..."
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none"
-                    />
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mô tả chi tiết</label>
+                  <textarea
+                    name="detailedDescription"
+                    value={newEvent.detailedDescription}
+                    onChange={handleInputChange}
+                    rows={5}
+                    placeholder="Thông tin chi tiết, lịch trình, lưu ý đặc biệt..."
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/10 transition"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Yêu cầu tham gia</label>
-                      <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="VD: Sức khỏe ổn định" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Lợi ích</label>
-                      <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="VD: Voucher quà tặng" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Yêu cầu tham gia</label>
+                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="VD: Sức khỏe ổn định, có kinh nghiệm" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Lợi ích khi tham gia</label>
+                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="VD: Voucher, huy chương, kinh nghiệm..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* 5. Quy định & FAQ */}
-            <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
-                <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
-                  <MdOutlineGavel className="text-red-500 text-xl" />
-                  <h2 className="text-xl font-bold dark:text-white">5. Quy định & FAQ</h2>
-                </div>
-
-                <div className="space-y-10">
-                  {/* Rules */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <label className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 uppercase text-xs tracking-widest">
-                        Quy định sự kiện
-                      </label>
-                      <button type="button" onClick={() => addArrayItem('rules')} className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1">
-                        <FaPlus /> THÊM QUY ĐỊNH
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {newEvent.rules.map((rule, i) => (
-                        <div key={i} className="flex gap-2">
-                          <input
-                            value={rule}
-                            onChange={(e) => handleArrayChange(i, e.target.value, 'rules')}
-                            placeholder={`Quy định #${i + 1}`}
-                            className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 dark:text-white border border-gray-100 dark:border-gray-600 rounded-xl outline-none focus:border-green-500"
-                          />
-                          <button type="button" onClick={() => removeArrayItem(i, 'rules')} className="p-2 text-gray-300 hover:text-red-500 transition"><FaTrash size={14} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Rewards */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <label className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 uppercase text-xs tracking-widest">
-                        <FaTrophy className="text-yellow-500" /> Phần thưởng
-                      </label>
-                      <button type="button" onClick={() => addArrayItem('rewards')} className="text-xs font-bold text-yellow-600 hover:text-yellow-700 flex items-center gap-1">
-                        <FaPlus /> THÊM PHẦN THƯỞNG
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {newEvent.rewards.map((reward, i) => (
-                        <div key={i} className="flex gap-2">
-                          <input
-                            value={reward}
-                            onChange={(e) => handleArrayChange(i, e.target.value, 'rewards')}
-                            placeholder={`Phần thưởng #${i + 1}`}
-                            className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 dark:text-white border border-gray-100 dark:border-gray-600 rounded-xl outline-none focus:border-yellow-500"
-                          />
-                          <button type="button" onClick={() => removeArrayItem(i, 'rewards')} className="p-2 text-gray-300 hover:text-red-500 transition"><FaTrash size={14} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* FAQ */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <label className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 uppercase text-xs tracking-widest">
-                        Câu hỏi thường gặp
-                      </label>
-                      <button type="button" onClick={addFaq} className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                        <FaPlus /> THÊM FAQ
-                      </button>
-                    </div>
-                    <div className="space-y-4">
-                      {newEvent.faqs.map((faq, i) => (
-                        <div key={i} className="group relative p-5 bg-gray-50 dark:bg-gray-700 rounded-2xl border border-gray-100 dark:border-gray-600 space-y-3">
-                          <button type="button" onClick={() => removeFaq(i)} className="absolute top-4 right-4 p-1 text-gray-300 hover:text-red-500 transition"><FaTrash size={12} /></button>
-                          <input
-                            value={faq.question}
-                            onChange={(e) => handleFaqChange(i, 'question', e.target.value)}
-                            placeholder="Nhập câu hỏi..."
-                            className="w-full px-0 bg-transparent font-bold dark:text-white border-b border-gray-200 dark:border-gray-500 focus:border-blue-500 outline-none pb-2 transition"
-                          />
-                          <textarea
-                            value={faq.answer}
-                            onChange={(e) => handleFaqChange(i, 'answer', e.target.value)}
-                            placeholder="Nhập câu trả lời..."
-                            rows={2}
-                            className="w-full px-0 bg-transparent dark:text-gray-300 border-none outline-none resize-none pt-1"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-            </section>
-
-            {/* Sticky Submit Bar - Mobile Only */}
+            {/* Sticky Submit - Mobile */}
             <div className="lg:hidden sticky bottom-4 z-50">
-                <button
-                   type="submit"
-                   disabled={createMutation.isPending}
-                   className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition"
-                >
-                    {createMutation.isPending ? 'ĐANG TẠO...' : '✨ TẠO SỰ KIỆN NGAY'}
-                </button>
+              <button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition disabled:opacity-50"
+              >
+                {createMutation.isPending ? 'ĐANG TẠO...' : '✨ TẠO SỰ KIỆN NGAY'}
+              </button>
             </div>
           </div>
 
-          {/* Preview Sidebar - Right Side */}
+          {/* ========== RIGHT PREVIEW ========== */}
           <div className="lg:col-span-4 lg:sticky lg:top-8 h-fit space-y-6 pb-20 lg:pb-0">
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2">
-                    <FaStar className="text-yellow-400" /> BẢN XEM TRƯỚC
+                  <FaStar className="text-yellow-400" /> BẢN XEM TRƯỚC
                 </h3>
                 <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full bg-red-400 shadow-sm" />
-                    <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-sm" />
-                    <div className="w-2 h-2 rounded-full bg-green-400 shadow-sm" />
+                  <div className="w-2 h-2 rounded-full bg-red-400" />
+                  <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                  <div className="w-2 h-2 rounded-full bg-green-400" />
                 </div>
               </div>
 
-              {/* Event Card Preview */}
+              {/* Preview Card */}
               <div className="group rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-2xl transition hover:shadow-green-500/10 mb-8">
                 <div className="relative h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
                   {newEvent.image ? (
@@ -609,54 +889,70 @@ const CreateSportEvent = () => {
                     <FaImage className="text-gray-300 text-6xl opacity-20" />
                   )}
                   <div className="absolute top-4 left-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black text-green-600 shadow-xl tracking-tighter">
-                    {newEvent.category.toUpperCase()}
+                    {(newEvent.category || 'THỂ THAO').toUpperCase()}
                   </div>
-                  <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black text-white shadow-xl tracking-tighter">
-                    {newEvent.difficulty.toUpperCase()}
+                  <div className="absolute top-4 right-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black shadow-xl tracking-tighter">
+                    {newEvent.eventType === 'Ngoài trời' ? (
+                      <span className="text-green-600">🌿 Ngoài trời</span>
+                    ) : (
+                      <span className="text-blue-600">🏠 Trong nhà</span>
+                    )}
                   </div>
                 </div>
                 <div className="p-6 bg-white dark:bg-gray-800">
                   <h4 className="font-black text-gray-800 dark:text-white text-lg leading-tight mb-4 min-h-[3.5rem] line-clamp-2">
                     {newEvent.name || 'Tên Sự Kiện Của Bạn'}
                   </h4>
-                  <div className="grid grid-cols-2 gap-y-3 mb-6">
+                  <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
-                      <FaCalendarAlt className="text-green-500" /> 
-                      {newEvent.startDate ? moment(newEvent.startDate).format('DD/MM/YYYY') : '--/--/----'}
+                      <FaCalendarAlt className="text-green-500" />
+                      <span>Bắt đầu: {newEvent.startDate || '--/--/----'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
-                      <FaUsers className="text-blue-500" /> 
-                      {newEvent.maxParticipants} NGƯỜI
+                      <FaCalendarAlt className="text-red-400" />
+                      <span>Kết thúc: {newEvent.endDate || '--/--/----'}</span>
                     </div>
-                    <div className="col-span-2 flex items-center gap-2 text-[11px] font-bold text-green-600">
-                      <FaBullseye /> 
-                      MỤC TIÊU: {newEvent.targetValue || 0} {newEvent.targetUnit.toUpperCase()}
+                    {newEvent.eventTime && (
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
+                        <FaClock className="text-orange-400" />
+                        <span>Thời điểm: {newEvent.eventTime}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
+                      <FaUsers className="text-blue-500" />
+                      <span>{newEvent.maxParticipants} NGƯỜI</span>
                     </div>
+                    {newEvent.targetValue > 0 && (
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-green-600">
+                        <FaBullseye />
+                        <span>MỤC TIÊU: {newEvent.targetValue} {newEvent.targetUnit.toUpperCase()}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="w-full py-4 bg-green-500 text-white text-xs font-black text-center rounded-2xl shadow-lg shadow-green-500/20 opacity-80 decoration-white">
+                  <div className="w-full py-4 bg-green-500 text-white text-xs font-black text-center rounded-2xl shadow-lg shadow-green-500/20 opacity-80">
                     XEM CHI TIẾT
                   </div>
                 </div>
               </div>
 
-              {/* Summary Checklist */}
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/50">
-                    <div className="p-2 bg-white dark:bg-gray-800 rounded-lg text-green-500 shadow-sm"><FaCheckCircle /></div>
-                    <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Kiểu sự kiện</p>
-                        <p className="text-sm font-black dark:text-white">{newEvent.eventType === 'offline' ? 'TRỰC TIẾP' : 'TRỰC TUYẾN'}</p>
-                    </div>
+              {/* Summary checklist */}
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                  <FaCheckCircle className={newEvent.name ? 'text-green-500' : 'text-gray-300'} />
+                  <span className="text-sm dark:text-gray-300">Tên sự kiện</span>
                 </div>
-                {newEvent.location && (
-                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/50">
-                      <div className="p-2 bg-white dark:bg-gray-800 rounded-lg text-blue-500 shadow-sm"><FaMapMarkerAlt /></div>
-                      <div className="overflow-hidden">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Điểm hẹn</p>
-                        <p className="text-sm font-black dark:text-white truncate">{newEvent.location}</p>
-                      </div>
-                  </div>
-                )}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                  <FaCheckCircle className={newEvent.startDate && newEvent.endDate && newEvent.eventTime ? 'text-green-500' : 'text-gray-300'} />
+                  <span className="text-sm dark:text-gray-300">Thời gian sự kiện</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                  <FaCheckCircle className={newEvent.location ? 'text-green-500' : 'text-gray-300'} />
+                  <span className="text-sm dark:text-gray-300">Địa điểm</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                  <FaCheckCircle className={newEvent.image ? 'text-green-500' : 'text-gray-300'} />
+                  <span className="text-sm dark:text-gray-300">Ảnh bìa</span>
+                </div>
               </div>
 
               <button
@@ -665,16 +961,14 @@ const CreateSportEvent = () => {
                 className="hidden lg:flex w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-green-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50"
               >
                 {createMutation.isPending ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                    <>✨ TẠO SỰ KIỆN</>
-                )}
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : <>✨ TẠO SỰ KIỆN</>}
               </button>
-              
+
               <div className="mt-6 flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-2xl">
                 <FaInfoCircle className="text-yellow-600 shrink-0" />
                 <p className="text-[11px] text-yellow-800 dark:text-yellow-400 font-bold leading-relaxed">
-                    Đảm bảo tất cả thông tin là chính xác trước khi đăng công khai.
+                  Đảm bảo tất cả thông tin chính xác trước khi đăng công khai.
                 </p>
               </div>
             </div>

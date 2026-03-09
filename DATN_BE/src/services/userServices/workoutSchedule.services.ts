@@ -10,11 +10,6 @@ import WorkoutItemModel from '~/models/schemas/workoutItem.schemas'
 import WorkoutScheduleModel from '~/models/schemas/workoutSchedule.schema'
 
 class WorkoutScheduleService {
-  private CalorieBurnedCalculator(weight: number, time: number, met: number) {
-    // (MET x 3.5 x cân nặng(kg)) / 200 x thời gian tập luyện (phút) = lượng calo tiêu hao
-    const caloriePerMinutes = (met * 3.5 * weight) / 200
-    return parseFloat((caloriePerMinutes * time).toFixed(1))
-  }
   async createWorkoutScheduleService({
     user_id,
     name,
@@ -85,10 +80,8 @@ class WorkoutScheduleService {
       // chuyển workoutItems từ document sang mảng
 
       console.log(workoutItems)
-      const newWorkoutItems = workoutItems.map((item) => {
-        const calo_burn = user.weight ? this.CalorieBurnedCalculator(user.weight, item.time, item.met) : 0
-
-        return { calo_burn }
+      const newWorkoutItems = workoutItems.map(() => {
+        return { calo_burn: 0 }
       })
       console.log(newWorkoutItems)
 
@@ -175,8 +168,7 @@ class WorkoutScheduleService {
     if (workoutSchedule) {
       // tính calo tiêu hao trong từng item và lưu vào db
       const arrayWorkoutItemsWithCaloBurn = arrayWorkoutItems.map((item) => {
-        const calo_burn = this.CalorieBurnedCalculator(workoutSchedule.weight, item.time, item.met)
-        return { ...item, calo_burn, current_date: moment.utc(item.current_date).startOf('day').toDate() }
+        return { ...item, calo_burn: 0, current_date: moment.utc(item.current_date).startOf('day').toDate() }
       })
       console.log(arrayWorkoutItemsWithCaloBurn)
 

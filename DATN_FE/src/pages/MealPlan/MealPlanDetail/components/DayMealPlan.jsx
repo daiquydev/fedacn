@@ -24,7 +24,7 @@ export default function DayMealPlan({ day, onViewCooking }) {
       'Tối': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       'Snack': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
     };
-    
+
     return typeColors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   };
 
@@ -39,7 +39,7 @@ export default function DayMealPlan({ day, onViewCooking }) {
           <div className="flex items-center">
             <FaFireAlt className="text-red-500 mr-2" />
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Calories</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">kcal</p>
               <p className="font-medium text-gray-800 dark:text-white">{totalNutrition.calories} kcal</p>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function DayMealPlan({ day, onViewCooking }) {
                 {meal.type === 'Snack' && '10:00 or 16:00'}
               </div>
             </div>
-            
+
             {/* Meal content */}
             <div className="p-4">
               {/* Thêm layout với hình ảnh */}
@@ -90,9 +90,9 @@ export default function DayMealPlan({ day, onViewCooking }) {
                 {/* Hiển thị hình ảnh nếu có */}
                 {meal.image && (
                   <div className="w-full md:w-1/3 h-48 rounded-lg overflow-hidden">
-                    <img 
-                      src={getImageUrl(meal.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
-                      alt={meal.content} 
+                    <img
+                      src={getImageUrl(meal.image) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'}
+                      alt={meal.content}
                       className="w-full h-full object-cover transition-transform hover:scale-105"
                       onError={(e) => {
                         e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
@@ -100,16 +100,16 @@ export default function DayMealPlan({ day, onViewCooking }) {
                     />
                   </div>
                 )}
-                
+
                 <div className="w-full md:w-2/3">
                   <p className="text-gray-800 dark:text-gray-200 mb-3">
                     {meal.content}
                   </p>
-                  
+
                   {/* Nutrition info */}
                   <div className="grid grid-cols-4 gap-2 mt-2 mb-3">
                     <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Calories</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">kcal</span>
                       <span className="font-medium text-gray-700 dark:text-gray-300">{meal.calories} kcal</span>
                     </div>
                     <div className="flex flex-col text-center p-1 rounded-md bg-gray-50 dark:bg-gray-800">
@@ -125,7 +125,7 @@ export default function DayMealPlan({ day, onViewCooking }) {
                       <span className="font-medium text-gray-700 dark:text-gray-300">{meal.fat}g</span>
                     </div>
                   </div>
-                  
+
                   {/* Thêm nút xem cách chế biến nhỏ hơn */}
                   {meal.hasCooking && (
                     <button

@@ -22,10 +22,10 @@ export default function PieChart({ workout }) {
   }
 
   const data = {
-    labels: ['Lượng calo còn lại của mục tiêu', 'Lượng calo đã hoàn thành'],
+    labels: ['Lượng kcal còn lại của mục tiêu', 'Lượng kcal đã hoàn thành'],
     datasets: [
       {
-        label: 'Biểu đồ lượng calo',
+        label: 'Biểu đồ kcal',
         data: [checkDataCalo(), workout?.total_calo_burn],
         backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)'],
         borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
@@ -43,7 +43,7 @@ export default function PieChart({ workout }) {
       },
       title: {
         display: true,
-        text: 'Biểu đồ lượng calo đã đốt cháy / lượng calo còn lại của mục tiêu'
+        text: 'Biểu đồ kcal đã đốt cháy / kcal còn lại của mục tiêu'
       }
     }
   }
@@ -54,7 +54,7 @@ export default function PieChart({ workout }) {
         <h1 className='text-center text-gray-500 mt-5 font-semibold'>
           {workout?.total_calo_burn === 0
             ? 'Bạn chưa thực hiện bài tập nào'
-            : `Lượng calo đã đốt cháy: ${workout?.total_calo_burn}/${workout?.calo_target} calories`}
+            : `Lượng kcal đã đốt cháy: ${workout?.total_calo_burn}/${workout?.calo_target} kcal`}
         </h1>
       </div>
     </div>

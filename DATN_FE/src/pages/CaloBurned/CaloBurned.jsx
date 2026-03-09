@@ -13,13 +13,13 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { calculateCaloriesBurned } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
 import { schemaCaloriesBurned } from '../../utils/rules'
-import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import PaginationNotUrl from '../../components/GlobalComponents/PaginationNotUrl'
 import { AppContext } from '../../contexts/app.context'
+import AIAnalysisModal from '../../components/GlobalComponents/AIAnalysisModal/AIAnalysisModal'
 
 export default function CaloBurned() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const { profile } = useContext(AppContext)
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
   const [query, setQuery] = useState({
     page: '1'
   })
@@ -30,7 +30,7 @@ export default function CaloBurned() {
       return getActivities(query)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
   const { register: registerActivity, handleSubmit: handleSubmitActivity } = useForm({
     defaultValues: {
@@ -96,7 +96,7 @@ export default function CaloBurned() {
         console.log(data)
         handleOpenModal()
         setDataCaloBurned((prev) => ({ ...prev, calo_burned: data.data.result }))
-        toast.success('Tính toán chỉ số calo đốt cháy thành công')
+        toast.success('Tính toán chỉ số kcal đốt cháy thành công')
       },
       onError: () => {
         console.log('error')
@@ -113,7 +113,7 @@ export default function CaloBurned() {
               <article className='mx-auto w-full '>
                 <header className='mb-3 not-format'>
                   <h1 className='mb-1 text-3xl font-extrabold dark:text-gray-300 leading-tight text-red-700 '>
-                    Công thức tính lượng calo đốt cháy trong 1 hoạt động nào đó
+                    Công thức tính lượng kcal đốt cháy trong 1 hoạt động nào đó
                   </h1>
                   <div className='flex items-center'>
                     Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Cook</span>
@@ -350,7 +350,7 @@ export default function CaloBurned() {
                   đủ giấc sẽ mệt mỏi hơn và do đó có thể tập thể dục ít hơn bình thường. Ngoài ra, nếu một người không
                   ngủ đủ giấc, quá trình trao đổi chất của họ có thể giảm, làm giảm tổng lượng calo đốt cháy.
                 </p>
-                <h2 className='font-bold text-xl my-3 dark:text-gray-300'>2. Công thức Lượng calo đốt cháy</h2>
+                <h2 className='font-bold text-xl my-3 dark:text-gray-300'>2. Công thức Lượng kcal đốt cháy</h2>
 
                 <p className='mt-2'>Máy tính này ước tính lượng calo được đốt cháy bằng phương trình sau.</p>
                 <ul className='list-disc mt-3 mb-4'>
@@ -379,7 +379,7 @@ export default function CaloBurned() {
         <div className='col-span-6 order-first xl:order-last my-3 xl:my-0 xl:col-span-2'>
           <div className='shadow mb-6 bg-white rounded-lg dark:bg-color-primary dark:border-none'>
             <div className='flex flex-col dark:text-gray-300 justify-center items-center pt-4 text-xl font-semibold text-red-700'>
-              Tính toán lượng calo đốt cháy <p className='text-base text-black dark:text-gray-300'></p>
+              Tính toán lượng kcal đốt cháy <p className='text-base text-black dark:text-gray-300'></p>
             </div>
             <div className='border mt-2 mx-5 dark:border-gray-700 border-red-200 '></div>
             <form noValidate onSubmit={onSubmit} className='p-3'>
@@ -424,12 +424,17 @@ export default function CaloBurned() {
             <div>
               {dataCaloBurned.calo_burned && (
                 <div className='flex mx-4 justify-center '>
-                  <div className='mt-5 w-full pb-10'>
+                  <div className='mt-5 w-full pb-5'>
                     <div className=' text-gray-700 flex justify-center dark:text-gray-300 font-semibold '>
-                      Bạn đã tiêu thụ: {dataCaloBurned.calo_burned} calories
+                      Bạn đã tiêu thụ: {dataCaloBurned.calo_burned} kcal
                     </div>
-                    <div className='text-red-700 flex justify-center dark:text-red-300 font-medium text-xs'>
-                      Lưu ý: Đây chỉ là ước lượng, không phải là con số chính xác
+                    <div className='flex justify-center mt-3'>
+                      <button
+                        onClick={() => setIsAIModalOpen(true)}
+                        className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 shadow-md transition-all duration-200'
+                      >
+                        🤖 AI Phân tích
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -438,16 +443,13 @@ export default function CaloBurned() {
           </div>
         </div>
       </div>
-      {isModalOpen && (
-        <CalculatorModal
-          closeModal={handleCloseModal}
-          title='Lượng calo đốt cháy'
-          helptext='Lượng calo mà cơ thể đốt cháy trong các hoạt động thường ngày hoặc tập thể dục phụ thuộc vào nhiều yếu tố khác nhau nên đây là 1 phép tính để tham khảo thôi bạn nhé!'
-          isPending={calculateCaloriesBurnedMutation.isLoading}
-          data={calculateCaloriesBurnedMutation.data}
-          unit='calo'
-        />
-      )}
+      <AIAnalysisModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        calculationType='Calo Burned'
+        inputData={{ weight: dataCaloBurned.weight, time: dataCaloBurned.time, met: dataCaloBurned.met }}
+        calculatedResult={{ calories_burned_kcal: dataCaloBurned.calo_burned }}
+      />
     </>
   )
 }

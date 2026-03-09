@@ -30,7 +30,7 @@ export default function RecipeListLowdb() {
       return getRecipesForChef(queryConfig)
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000
   })
 
   const deleteRecipeMutation = useMutation({

@@ -19,7 +19,7 @@ const NutritionInfo = ({ nutrition, showDetails = true }) => {
         <div className="flex items-center space-x-2">
           <FaFire className="text-orange-500 text-xl" />
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Calories</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">kcal</p>
             <p className="font-semibold text-gray-900 dark:text-white">{calories} kcal</p>
           </div>
         </div>
@@ -67,19 +67,19 @@ const NutritionInfo = ({ nutrition, showDetails = true }) => {
           <div className="space-y-2">
             {/* Calories breakdown */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400">% Calories từ protein</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">% kcal từ protein</span>
               <span className="font-medium text-gray-900 dark:text-white">
                 {Math.round((protein * 4 / calories) * 100)}%
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400">% Calories từ carbs</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">% kcal từ carbs</span>
               <span className="font-medium text-gray-900 dark:text-white">
                 {Math.round((carbs * 4 / calories) * 100)}%
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400">% Calories từ chất béo</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">% kcal từ chất béo</span>
               <span className="font-medium text-gray-900 dark:text-white">
                 {Math.round((fat * 9 / calories) * 100)}%
               </span>
@@ -93,8 +93,8 @@ const NutritionInfo = ({ nutrition, showDetails = true }) => {
                   <span className="text-gray-900 dark:text-white">{protein}g / {Math.round(calories * 0.3 / 4)}g</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-red-500 h-2 rounded-full" 
+                  <div
+                    className="bg-red-500 h-2 rounded-full"
                     style={{ width: `${Math.min(100, (protein / (calories * 0.3 / 4)) * 100)}%` }}
                   ></div>
                 </div>
@@ -105,8 +105,8 @@ const NutritionInfo = ({ nutrition, showDetails = true }) => {
                   <span className="text-gray-900 dark:text-white">{carbs}g / {Math.round(calories * 0.5 / 4)}g</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-yellow-500 h-2 rounded-full" 
+                  <div
+                    className="bg-yellow-500 h-2 rounded-full"
                     style={{ width: `${Math.min(100, (carbs / (calories * 0.5 / 4)) * 100)}%` }}
                   ></div>
                 </div>
@@ -117,8 +117,8 @@ const NutritionInfo = ({ nutrition, showDetails = true }) => {
                   <span className="text-gray-900 dark:text-white">{fat}g / {Math.round(calories * 0.2 / 9)}g</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full" 
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
                     style={{ width: `${Math.min(100, (fat / (calories * 0.2 / 9)) * 100)}%` }}
                   ></div>
                 </div>

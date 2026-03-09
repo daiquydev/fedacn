@@ -27,6 +27,11 @@ export const getMyEvents = (params) => http.get('/sport-events/user/my-events', 
 // Get joined events
 export const getJoinedEvents = (params) => http.get('/sport-events/user/joined-events', { params })
 
+// Get all joined events for calendar display (higher limit, no pagination)
+export const getJoinedEventsForCalendar = () => http.get('/sport-events/user/joined-events', { params: { limit: 200, page: 1 } })
+
+
+
 // ==================== SESSION APIs ====================
 // Get all sessions for an event
 export const getEventSessions = (eventId) => http.get(`/sport-events/${eventId}/sessions`)
@@ -114,3 +119,45 @@ export const getSessionAttendance = (eventId, sessionId) => http.get(`/sport-eve
 // Get attendance summary
 export const getAttendanceSummary = (eventId, sessionId) => http.get(`/sport-events/${eventId}/sessions/${sessionId}/summary`)
 
+// Invite friends to event
+export const inviteFriendToEvent = (eventId, friendId) => http.post(`/sport-events/${eventId}/invite`, { friendId })
+
+// ==================== ACTIVITY TRACKING APIs ====================
+// Start a new activity
+export const startActivity = (eventId, data) => http.post(`/sport-events/${eventId}/activities`, data)
+
+// Update activity (auto-save GPS data)
+export const updateActivity = (eventId, activityId, data) => http.put(`/sport-events/${eventId}/activities/${activityId}`, data)
+
+// Complete activity
+export const completeActivity = (eventId, activityId, data) => http.post(`/sport-events/${eventId}/activities/${activityId}/complete`, data)
+
+// Discard activity
+export const discardActivity = (eventId, activityId) => http.post(`/sport-events/${eventId}/activities/${activityId}/discard`)
+
+// Get single activity
+export const getActivity = (eventId, activityId) => http.get(`/sport-events/${eventId}/activities/${activityId}`)
+
+// Get user's activities for an event
+export const getUserActivities = (eventId) => http.get(`/sport-events/${eventId}/activities`)
+
+// ==================== VIDEO SESSION APIs (Trong nhà) ====================
+// Join a video call session — creates an active IndoorVideoSession record
+export const joinVideoSession = (eventId, data = {}) =>
+    http.post(`/sport-events/${eventId}/video-sessions/join`, data)
+
+// End the video call and save activeSeconds / caloriesBurned → auto-creates progress entry
+export const endVideoSession = (eventId, vsId, data) =>
+    http.post(`/sport-events/${eventId}/video-sessions/${vsId}/end`, data)
+
+// Get all video sessions (history) for the current user in an event
+export const getVideoSessions = (eventId) =>
+    http.get(`/sport-events/${eventId}/video-sessions`)
+
+// Get currently active video session (for resume after page reload)
+export const getActiveVideoSession = (eventId) =>
+    http.get(`/sport-events/${eventId}/video-sessions/active`)
+
+// Get aggregate stats (totalSessions, totalActiveSeconds, totalCalories)
+export const getVideoSessionStats = (eventId) =>
+    http.get(`/sport-events/${eventId}/video-sessions/stats`)
