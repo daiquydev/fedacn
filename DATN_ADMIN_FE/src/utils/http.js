@@ -5,9 +5,7 @@ import { clearLS, getAccessTokenFromLS, setAccessTokenToLS, setProfileToLS } fro
 import { isAxiosUnauthorizedError } from './utils'
 
 const URL = {
-  BASE_URL: 'http://localhost:5000/api'
-  // DEPLOY_URL: 'https://datn-be-kwjk.onrender.com/api',
-  // VPS_URL: 'https://cookhealthydatn.io.vn/api'
+  BASE_URL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api'
 }
 class Http {
   constructor() {
