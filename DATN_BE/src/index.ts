@@ -77,7 +77,32 @@ app.set('trust proxy', 1) // Trust first proxy
 app.use(limiter)
 app.use(morgan('combined'))
 app.use(helmet())
-app.use(cors())
+
+// Cấu hình CORS để cho phép các URL từ Vercel và localhost
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:4000',
+  'http://localhost:5173',
+  envConfig.CLIENT_URL,
+  envConfig.ADMIN_URL
+].filter(Boolean)
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Cho phép các request không có origin (ví dụ: mobile apps, curl)
+      if (!origin) return callback(null, true)
+
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+    credentials: true
+  })
+)
+
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb' }))
 app.use(bodyParser.urlencoded({ extended: false, limit: '50mb', parameterLimit: 50000 }))
