@@ -4,8 +4,9 @@
  */
 
 const mongoose = require('mongoose')
+require('dotenv').config()
 
-const MONGODB_URL = 'mongodb+srv://daiquy:10102003@cluster0.cxzaocf.mongodb.net/?appName=Cluster0'
+const MONGODB_URL = process.env.MONGODB_URL
 
 async function migrate() {
     try {
