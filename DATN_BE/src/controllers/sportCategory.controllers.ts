@@ -36,7 +36,7 @@ export const getAllSportCategoriesAdminController = async (req: Request, res: Re
 
 export const createSportCategoryController = async (req: Request, res: Response) => {
     try {
-        const { name, type } = req.body
+        const { name, type, kcal_per_unit } = req.body
         if (!name || !name.trim()) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 message: 'Tên danh mục không được để trống'
@@ -47,7 +47,12 @@ export const createSportCategoryController = async (req: Request, res: Response)
                 message: 'Loại hình không hợp lệ. Chỉ chấp nhận "Ngoài trời" hoặc "Trong nhà"'
             })
         }
-        const category = await sportCategoryService.createSportCategory({ name: name.trim(), type })
+        if (kcal_per_unit === undefined || kcal_per_unit === null || Number(kcal_per_unit) < 0) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                message: 'Số kcal/đơn vị không hợp lệ'
+            })
+        }
+        const category = await sportCategoryService.createSportCategory({ name: name.trim(), type, kcal_per_unit: Number(kcal_per_unit) })
         return res.status(HTTP_STATUS.CREATED).json({
             message: 'Thêm danh mục thể thao thành công',
             result: category
@@ -64,7 +69,7 @@ export const createSportCategoryController = async (req: Request, res: Response)
 export const updateSportCategoryController = async (req: Request, res: Response) => {
     const { id } = req.params
     try {
-        const { name, type } = req.body
+        const { name, type, kcal_per_unit } = req.body
         if (!name || !name.trim()) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 message: 'Tên danh mục không được để trống'
@@ -75,7 +80,12 @@ export const updateSportCategoryController = async (req: Request, res: Response)
                 message: 'Loại hình không hợp lệ. Chỉ chấp nhận "Ngoài trời" hoặc "Trong nhà"'
             })
         }
-        const category = await sportCategoryService.updateSportCategory(id, { name: name.trim(), type })
+        if (kcal_per_unit === undefined || kcal_per_unit === null || Number(kcal_per_unit) < 0) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                message: 'Số kcal/đơn vị không hợp lệ'
+            })
+        }
+        const category = await sportCategoryService.updateSportCategory(id, { name: name.trim(), type, kcal_per_unit: Number(kcal_per_unit) })
         return res.status(HTTP_STATUS.OK).json({
             message: 'Cập nhật danh mục thể thao thành công',
             result: category

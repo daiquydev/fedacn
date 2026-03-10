@@ -20,7 +20,8 @@ export class SportCategoryService {
         }
         const newCategory = new SportCategoryModel({
             name: body.name,
-            type: body.type
+            type: body.type,
+            kcal_per_unit: body.kcal_per_unit
         })
         await newCategory.save()
         return newCategory
@@ -32,7 +33,7 @@ export class SportCategoryService {
         }
         const category = await SportCategoryModel.findByIdAndUpdate(
             id,
-            { name: body.name, type: body.type },
+            { name: body.name, type: body.type, kcal_per_unit: body.kcal_per_unit },
             { new: true, runValidators: true }
         )
         if (!category) {

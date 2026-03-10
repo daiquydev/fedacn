@@ -2,38 +2,22 @@ import SportEventVideoSessionModel from '~/models/schemas/sportEventVideoSession
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
+import SportCategoryModel from '~/models/schemas/sportCategory.schema'
 import { Types } from 'mongoose'
 
-// ==================== CALORIE TABLE (kcal / hour for ~70kg person) ====================
-const CALORIE_TABLE: Record<string, number> = {
-    'Yoga': 200,
-    'Pilates': 200,
-    'Thiền': 120,
-    'Zumba': 400,
-    'Nhảy': 380,
-    'Khiêu vũ': 380,
-    'Gym / Fitness': 350,
-    'Thể dục thể hình': 350,
-    'Cầu lông': 450,
-    'Tennis': 450,
-    'Bóng bàn': 300,
-    'Bóng rổ': 450,
-    'Bóng đá': 450,
-    'Bóng chuyền': 350,
-    'Bơi lội': 500,
-    'Kickboxing': 550,
-    'Võ thuật': 500,
-    'Taekwondo': 500,
-    'Boxing': 550,
-    'Chạy bộ': 600,
-    'Đạp xe': 400,
-    'Leo núi': 450,
-    'default': 250
+// ==================== CALORIE CALCULATION ====================
+// Lấy kcal_per_unit từ SportCategory (kcal/phút cho Trong nhà)
+// Fallback 4 kcal/phút nếu không tìm thấy danh mục
+const DEFAULT_KCAL_PER_MINUTE = 4
+
+async function getKcalPerMinute(category: string): Promise<number> {
+    const cat = await SportCategoryModel.findOne({ name: category, isDeleted: { $ne: true } })
+    if (cat && cat.kcal_per_unit > 0) return cat.kcal_per_unit
+    return DEFAULT_KCAL_PER_MINUTE
 }
 
-function calcCalories(category: string, activeSeconds: number): number {
-    const kcalPerHour = CALORIE_TABLE[category] ?? CALORIE_TABLE['default']
-    return Math.round((activeSeconds / 3600) * kcalPerHour)
+function calcCalories(kcalPerMinute: number, activeSeconds: number): number {
+    return Math.round((activeSeconds / 60) * kcalPerMinute)
 }
 
 // Derive progress value based on event's targetUnit
@@ -135,7 +119,8 @@ class SportEventVideoSessionService {
         // 3. Calculate derived values
         const safeTotalSeconds = Math.max(totalSeconds, activeSeconds, 0)
         const safeActiveSeconds = Math.min(activeSeconds, safeTotalSeconds)
-        const caloriesBurned = calcCalories(event.category || '', safeActiveSeconds)
+        const kcalPerMinute = await getKcalPerMinute(event.category || '')
+        const caloriesBurned = calcCalories(kcalPerMinute, safeActiveSeconds)
         const progressValue = calcProgressValue(event.targetUnit || '', safeActiveSeconds, caloriesBurned)
 
         // 4. Auto-create progress entry (chỉ chạy khi lock thành công)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FaPlus, FaEdit, FaTrash, FaDumbbell, FaRunning, FaHome, FaSync, FaTimes, FaUndo } from 'react-icons/fa'
 import toast from 'react-hot-toast'
@@ -27,7 +27,8 @@ export default function AdminSportCategory() {
     const [modalOpen, setModalOpen] = useState(false)
     const [editingCategory, setEditingCategory] = useState(null)
     const [showDeleted, setShowDeleted] = useState(false)
-    const { register, handleSubmit, reset, formState: { errors } } = useForm()
+    const { register, handleSubmit, reset, watch, formState: { errors } } = useForm()
+    const watchedType = watch('type', 'Ngoài trời')
 
     const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
         queryKey: ['adminSportCategories'],
@@ -86,7 +87,7 @@ export default function AdminSportCategory() {
 
     const openModalConfig = (category = null) => {
         setEditingCategory(category)
-        reset(category ? { name: category.name, type: category.type } : { name: '', type: 'Ngoài trời' })
+        reset(category ? { name: category.name, type: category.type, kcal_per_unit: category.kcal_per_unit || '' } : { name: '', type: 'Ngoài trời', kcal_per_unit: '' })
         setModalOpen(true)
     }
 
@@ -209,7 +210,7 @@ export default function AdminSportCategory() {
                         <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                             <thead className='bg-gray-50 dark:bg-slate-900'>
                                 <tr>
-                                    {['STT', 'Tên danh mục', 'Loại hình', 'Trạng thái', 'Hành động'].map(h => (
+                                    {['STT', 'Tên danh mục', 'Loại hình', 'kcal/đơn vị', 'Trạng thái', 'Hành động'].map(h => (
                                         <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                                             {h}
                                         </th>
@@ -219,7 +220,7 @@ export default function AdminSportCategory() {
                             <tbody className='divide-y divide-gray-50 dark:divide-slate-700'>
                                 {displayCategories.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className='text-center py-16'>
+                                        <td colSpan={6} className='text-center py-16'>
                                             <FaDumbbell className='mx-auto text-4xl text-gray-300 mb-3' />
                                             <p className='text-gray-400 text-sm'>
                                                 {showDeleted ? 'Không có danh mục nào đã xóa' : 'Chưa có danh mục nào'}
@@ -258,6 +259,16 @@ export default function AdminSportCategory() {
                                                 ) : (
                                                     <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'>
                                                         🏠 Trong nhà
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap'>
+                                                <span className='text-sm font-semibold text-gray-800 dark:text-white'>
+                                                    {category.kcal_per_unit || '—'}
+                                                </span>
+                                                {category.kcal_per_unit > 0 && (
+                                                    <span className='text-xs text-gray-400 ml-1'>
+                                                        {category.type === 'Ngoài trời' ? 'kcal/km' : 'kcal/phút'}
                                                     </span>
                                                 )}
                                             </td>
@@ -358,6 +369,29 @@ export default function AdminSportCategory() {
                                     <option value='Trong nhà'>🏠 Trong nhà</option>
                                 </select>
                                 {errors.type && <p className='text-red-500 text-xs mt-1'>{errors.type.message}</p>}
+                            </div>
+
+                            <div>
+                                <label className='block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5 uppercase tracking-wide'>
+                                    {watchedType === 'Ngoài trời' ? 'Số kcal/km' : 'Số kcal/phút'} <span className='text-red-500'>*</span>
+                                </label>
+                                <input
+                                    type='number'
+                                    step='0.1'
+                                    min='0'
+                                    placeholder={watchedType === 'Ngoài trời' ? 'Ví dụ: 60 (kcal mỗi km)' : 'Ví dụ: 5 (kcal mỗi phút)'}
+                                    className='w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all'
+                                    {...register('kcal_per_unit', {
+                                        required: 'Vui lòng nhập số kcal',
+                                        min: { value: 0.1, message: 'Giá trị phải lớn hơn 0' }
+                                    })}
+                                />
+                                <p className='text-gray-400 text-[11px] mt-1'>
+                                    {watchedType === 'Ngoài trời'
+                                        ? '💡 Số kcal tiêu thụ mỗi km (dùng để tính kcal khi tracking GPS)'
+                                        : '💡 Số kcal tiêu thụ mỗi phút (dùng để tính kcal khi tham gia video call)'}
+                                </p>
+                                {errors.kcal_per_unit && <p className='text-red-500 text-xs mt-1'>{errors.kcal_per_unit.message}</p>}
                             </div>
 
                             <div className='flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-slate-700'>

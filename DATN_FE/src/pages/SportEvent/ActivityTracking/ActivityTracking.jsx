@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
 import { startActivity, updateActivity, completeActivity, discardActivity, getSportEvent } from '../../../apis/sportEventApi'
+import sportCategoryApi from '../../../apis/sportCategoryApi'
 import useActivityTracking, { formatDuration, formatPace } from '../../../hooks/useActivityTracking'
 import toast from 'react-hot-toast'
 import '@goongmaps/goong-js/dist/goong-js.css'
@@ -37,15 +38,20 @@ export default function ActivityTracking() {
 
     // Use event.category directly as label (from database)
     const activityLabel = event?.category || 'Hoạt động'
-    // Determine activity type for calorie calculation
-    const activityType = event?.category
-        ? (() => {
-            const cat = event.category.toLowerCase()
-            if (cat.includes('đạp xe') || cat.includes('cycling') || cat.includes('xe đạp')) return 'cycling'
-            if (cat.includes('đi bộ') || cat.includes('walking') || cat.includes('leo núi')) return 'walking'
-            return 'running'
-        })()
-        : 'running'
+
+    // Fetch sport categories to get kcal_per_unit
+    const { data: categoriesData } = useQuery({
+        queryKey: ['sportCategories'],
+        queryFn: () => sportCategoryApi.getAll(),
+        staleTime: 60000
+    })
+
+    // Lookup kcal_per_unit by event's category name
+    const kcalPerKm = (() => {
+        const categories = categoriesData?.data?.result || []
+        const matched = categories.find(c => c.name === event?.category)
+        return matched?.kcal_per_unit || 0
+    })()
 
     // Start activity mutation
     const startMutation = useMutation({
@@ -141,23 +147,16 @@ export default function ActivityTracking() {
         if (startedRef.current || !event) return
         startedRef.current = true
 
-        const type = (() => {
-            const cat = (event.category || '').toLowerCase()
-            if (cat.includes('đạp xe') || cat.includes('cycling') || cat.includes('xe đạp')) return 'cycling'
-            if (cat.includes('đi bộ') || cat.includes('walking') || cat.includes('leo núi')) return 'walking'
-            return 'running'
-        })()
-
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude } = pos.coords
                     startMutation.mutate({
-                        activityType: type,
+                        activityType: 'running',
                         startLat: latitude,
                         startLng: longitude
                     })
-                    tracker.start(type)
+                    tracker.start('running', { kcalPerKm })
                     // Center map on actual position
                     if (mapRef.current) {
                         mapRef.current.setCenter([longitude, latitude])
@@ -166,14 +165,14 @@ export default function ActivityTracking() {
                 },
                 () => {
                     toast.error('Không thể truy cập GPS. Vui lòng cho phép quyền truy cập vị trí.')
-                    startMutation.mutate({ activityType: type })
-                    tracker.start(type)
+                    startMutation.mutate({ activityType: 'running' })
+                    tracker.start('running', { kcalPerKm })
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             )
         } else {
-            startMutation.mutate({ activityType: type })
-            tracker.start(type)
+            startMutation.mutate({ activityType: 'running' })
+            tracker.start('running', { kcalPerKm })
         }
 
         return () => {

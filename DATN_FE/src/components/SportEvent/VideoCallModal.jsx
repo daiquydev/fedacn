@@ -13,7 +13,9 @@ import {
 import { FaEye, FaEyeSlash, FaCrown } from 'react-icons/fa'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { joinVideoSession, endVideoSession } from '../../apis/sportEventApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getAccessTokenFromLS, getProfileFromLS } from '../../utils/auth'
+import { useQuery } from '@tanstack/react-query'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -563,6 +565,24 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
         return result
     }, [mainEntry, peerEntries, creatorId, creatorPeerEntry])
 
+    // ── Fetch kcal_per_unit from SportCategory for realtime calorie display
+    const { data: categoriesData } = useQuery({
+        queryKey: ['sportCategories'],
+        queryFn: () => sportCategoryApi.getAll(),
+        staleTime: 60000
+    })
+
+    const kcalPerMinute = useMemo(() => {
+        const categories = categoriesData?.data?.result || []
+        const matched = categories.find(c => c.name === event?.category)
+        return matched?.kcal_per_unit || 0
+    }, [categoriesData, event?.category])
+
+    const realtimeKcal = useMemo(() => {
+        if (!kcalPerMinute || kcalPerMinute <= 0) return 0
+        return Math.round(kcalPerMinute * (activeSecs / 60))
+    }, [kcalPerMinute, activeSecs])
+
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER
     // ─────────────────────────────────────────────────────────────────────────
@@ -598,6 +618,11 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                         <p className={`font-mono text-xs tabular-nums font-semibold ${isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
                             {fmtTime(activeSecs)} thực tế
                         </p>
+                        {kcalPerMinute > 0 && (
+                            <p className="font-mono text-xs tabular-nums font-semibold text-orange-400">
+                                🔥 {realtimeKcal} kcal
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -670,6 +695,14 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                                 </p>
                             </div>
                         </div>
+                        {kcalPerMinute > 0 && (
+                            <div className="mt-1.5 rounded-xl p-2.5 text-center bg-orange-500/10 border border-orange-500/20">
+                                <p className="text-white/40 text-[9px] mb-0.5 uppercase tracking-wide">kcal tiêu thụ</p>
+                                <p className="font-mono text-orange-300 text-sm font-bold tabular-nums">
+                                    🔥 {realtimeKcal} kcal
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* ── Participants ──────────────────────────────── */}

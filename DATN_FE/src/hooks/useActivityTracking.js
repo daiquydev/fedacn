@@ -28,14 +28,12 @@ export function formatPace(secondsPerKm) {
     return `${minutes}'${String(seconds).padStart(2, '0')}"`
 }
 
-// Estimate calories burned
-function estimateCalories(distanceMetres, durationSeconds, activityType) {
-    // MET values: running ~10, walking ~3.5, cycling ~7.5
-    const metValues = { running: 10, walking: 3.5, cycling: 7.5 }
-    const met = metValues[activityType] || 7
-    const weightKg = 65 // average weight assumption
-    const hours = durationSeconds / 3600
-    return Math.round(met * weightKg * hours)
+// Estimate calories burned using kcal_per_unit from SportCategory
+// Ngoài trời: kcalPerKm × distance(km)
+function estimateCalories(distanceMetres, kcalPerKm) {
+    if (!kcalPerKm || kcalPerKm <= 0) return 0
+    const distanceKm = distanceMetres / 1000
+    return Math.round(kcalPerKm * distanceKm)
 }
 
 export default function useActivityTracking() {
@@ -53,6 +51,7 @@ export default function useActivityTracking() {
     const [gpsAccuracy, setGpsAccuracy] = useState(null)
     const [activityType, setActivityType] = useState('running')
     const [gpsError, setGpsError] = useState(null)
+    const [kcalPerKm, setKcalPerKm] = useState(0)
 
     const timerRef = useRef(null)
     const watchIdRef = useRef(null)
@@ -62,6 +61,7 @@ export default function useActivityTracking() {
     const distanceRef = useRef(0)
     const durationRef = useRef(0)
     const isPausedRef = useRef(false)
+    const kcalPerKmRef = useRef(0)
 
     // Keep refs in sync
     useEffect(() => {
@@ -158,8 +158,11 @@ export default function useActivityTracking() {
 
     // Start tracking
     const start = useCallback(
-        (type = 'running') => {
+        (type = 'running', options = {}) => {
             setActivityType(type)
+            const kcalVal = options.kcalPerKm || 0
+            setKcalPerKm(kcalVal)
+            kcalPerKmRef.current = kcalVal
             setIsTracking(true)
             setIsPaused(false)
             distanceRef.current = 0
@@ -249,8 +252,8 @@ export default function useActivityTracking() {
             const pace = 1000 / avg
             setAvgPace(pace)
         }
-        setCalories(estimateCalories(distance, duration, activityType))
-    }, [distance, duration, activityType])
+        setCalories(estimateCalories(distance, kcalPerKm))
+    }, [distance, kcalPerKm])
 
     // Cleanup on unmount
     useEffect(() => {
