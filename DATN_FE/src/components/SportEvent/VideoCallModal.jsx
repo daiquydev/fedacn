@@ -16,7 +16,7 @@ import { joinVideoSession, endVideoSession } from '../../apis/sportEventApi'
 import { getAccessTokenFromLS, getProfileFromLS } from '../../utils/auth'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const SOCKET_URL = 'http://localhost:5000'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const ICE_SERVERS = {
     iceServers: [

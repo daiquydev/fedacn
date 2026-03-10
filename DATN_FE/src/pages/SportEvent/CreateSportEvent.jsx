@@ -30,7 +30,7 @@ import moment from 'moment'
 
 // ==================== AI FILL HELPERS ====================
 // Gọi qua backend proxy để tránh lỗi CORS khi gọi trực tiếp từ trình duyệt
-const AI_PROXY_ENDPOINT = 'http://localhost:5000/api/ai/generate'
+const AI_PROXY_ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`
 
 // ==================== DATE/TIME HELPERS ====================
 const isValidDateStr = (val) => {
@@ -416,7 +416,7 @@ JSON output (chỉ object, không gì khác):
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* ====== AI MODAL ====== */}
       {showAIModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.55)' }}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.55)' }}>
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
             {/* Modal Header */}
             <div className="relative bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 text-white">
