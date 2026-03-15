@@ -132,3 +132,20 @@ export const deleteProgressController = async (req: Request, res: Response) => {
     })
   }
 }
+
+export const getEventOverallProgressController = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params
+
+    const data = await sportEventProgressService.getEventOverallProgressService(eventId)
+
+    return res.json({
+      result: data,
+      message: 'Get event overall progress successfully'
+    })
+  } catch (error) {
+    return res.status(500).json({
+      message: (error as Error).message
+    })
+  }
+}

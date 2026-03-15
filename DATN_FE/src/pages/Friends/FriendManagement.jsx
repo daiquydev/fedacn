@@ -19,13 +19,14 @@ const StatTile = ({ label, value, description, accent = 'emerald' }) => {
     emerald: 'text-emerald-600 dark:text-emerald-400',
     blue: 'text-blue-600 dark:text-blue-400',
     rose: 'text-rose-600 dark:text-rose-400',
-    amber: 'text-amber-600 dark:text-amber-400'
+    amber: 'text-amber-600 dark:text-amber-400',
+    violet: 'text-violet-600 dark:text-violet-400'
   }
   return (
-    <div className='bg-white dark:bg-gray-800 shadow rounded-xl p-4 flex flex-col gap-1'>
-      <p className='text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400'>{label}</p>
-      <p className={`text-3xl font-bold ${colors[accent]}`}>{value}</p>
-      <p className='text-xs text-gray-500 dark:text-gray-400'>{description}</p>
+    <div className='bg-white dark:bg-gray-800 shadow rounded-xl p-3 flex flex-col gap-0.5'>
+      <p className='text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400'>{label}</p>
+      <p className={`text-2xl font-bold ${colors[accent]}`}>{value}</p>
+      <p className='text-[10px] text-gray-500 dark:text-gray-400'>{description}</p>
     </div>
   )
 }
@@ -51,7 +52,7 @@ const ActionButton = ({ label, variant = 'primary', onClick, disabled, icon: Ico
 
 // Generic card row used in sections
 const PersonRow = ({ person, badge, actions, navigate }) => (
-  <li className='flex items-center justify-between gap-3 border border-gray-100 dark:border-gray-700 rounded-xl p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors'>
+  <li className='flex items-center justify-between gap-2 border border-gray-100 dark:border-gray-700 rounded-lg p-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors'>
     <div
       className='flex items-center gap-3 cursor-pointer min-w-0 flex-1'
       role='button'
@@ -63,7 +64,7 @@ const PersonRow = ({ person, badge, actions, navigate }) => (
       <img
         src={person.avatar || defaultAvatar}
         alt={person.name}
-        className='w-11 h-11 flex-shrink-0 rounded-full object-cover border border-gray-200 dark:border-gray-600 hover:ring-2 hover:ring-emerald-400 transition-all'
+        className='w-9 h-9 flex-shrink-0 rounded-full object-cover border border-gray-200 dark:border-gray-600 hover:ring-2 hover:ring-emerald-400 transition-all'
       />
       <div className='min-w-0'>
         <p className='font-medium text-gray-900 dark:text-white truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-sm'>
@@ -107,7 +108,7 @@ const PeopleSection = ({ title, subtitle, people, badge, renderActions, emptyMes
   }, [filter, people])
 
   return (
-    <section className='bg-white dark:bg-gray-800 shadow rounded-2xl p-5 flex flex-col gap-4'>
+    <section className='bg-white dark:bg-gray-800 shadow rounded-2xl p-4 flex flex-col gap-3'>
       <div>
         <h2 className='text-base font-semibold text-gray-900 dark:text-white'>
           {title}{' '}
@@ -130,7 +131,7 @@ const PeopleSection = ({ title, subtitle, people, badge, renderActions, emptyMes
       {!filtered.length ? (
         <EmptyState message={emptyMessage} />
       ) : (
-        <ul className='space-y-2 max-h-[28rem] overflow-y-auto pr-1'>
+        <ul className='space-y-1.5 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent'>
           {filtered.map((person) => (
             <PersonRow
               key={person._id}
@@ -209,7 +210,6 @@ export default function FriendManagement() {
   const followMutation = useMutation({
     mutationFn: followUser,
     onSuccess: () => {
-      toast.success('Đã chấp nhận lời mời kết bạn')
       queryClient.invalidateQueries({ queryKey: ['me'] })
       queryClient.invalidateQueries({ queryKey: ['friend-recommendations'] })
     },
@@ -227,7 +227,10 @@ export default function FriendManagement() {
 
   // Chấp nhận lời mời = follow lại họ
   const handleAccept = (userId) => {
-    followMutation.mutate({ follow_id: userId })
+    followMutation.mutate(
+      { follow_id: userId },
+      { onSuccess: () => toast.success('Đã chấp nhận lời mời kết bạn') }
+    )
   }
 
   // Từ chối lời mời = KHÔNG gọi API (họ vẫn follow mình, chỉ ẩn khỏi "Lời mời kết bạn")
@@ -317,30 +320,31 @@ export default function FriendManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-6">
-        <div className="relative flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-            <FaUserFriends className="text-white text-2xl" />
+      <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4">
+        <div className="relative flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+            <FaUserFriends className="text-white text-xl" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Bạn bè</h1>
-            <p className="text-white/75 text-sm mt-0.5">Gửi lời mời kết bạn, chấp nhận lời mời và khám phá những người bạn mới.</p>
+            <h1 className="text-xl font-bold text-white">Bạn bè</h1>
+            <p className="text-white/75 text-xs mt-0.5">Gửi lời mời kết bạn, chấp nhận lời mời và khám phá những người bạn mới.</p>
           </div>
         </div>
       </div>
 
-      <div className="py-8 px-6 space-y-8">
+      <div className="py-4 px-6 space-y-4">
 
         {/* Thống kê */}
-        <section className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+        <section className='grid grid-cols-2 md:grid-cols-5 gap-3'>
           <StatTile accent='emerald' label='Bạn bè' value={friends.length} description='Đang kết nối' />
           <StatTile accent='rose' label='Lời mời đến' value={incomingRequests.length} description='Chờ chấp nhận' />
           <StatTile accent='blue' label='Đã gửi' value={sentRequests.length} description='Chờ xác nhận' />
+          <StatTile accent='violet' label='Đang theo dõi' value={followings.length} description='Bạn đang follow' />
           <StatTile accent='amber' label='Người theo dõi' value={allFollowers.length} description='Đang follow bạn' />
         </section>
 
         {/* Hàng 1: Bạn bè + Lời mời kết bạn */}
-        <section className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <section className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
           {/* Bạn bè (mutual follow) */}
           <PeopleSection
             title='Bạn bè'
@@ -390,31 +394,45 @@ export default function FriendManagement() {
           />
         </section>
 
-        {/* Hàng 2: Đã gửi lời mời + Người theo dõi bạn */}
-        <section className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-          {/* Đã gửi lời mời (mình follow họ, họ chưa follow lại) */}
+        {/* Hàng 2: Người bạn theo dõi + Người theo dõi bạn */}
+        <section className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+          {/* Người bạn theo dõi (tất cả người mình đang follow) */}
           <PeopleSection
-            title='Đã gửi lời mời'
-            subtitle='Đang chờ người kia chấp nhận'
-            people={sentRequests}
-            badge='Đang chờ xác nhận'
-            emptyMessage='Bạn chưa gửi lời mời kết bạn nào.'
+            title='Người bạn theo dõi'
+            subtitle='Tất cả người bạn đang follow'
+            people={followings}
+            badge={(person) => {
+              if (followerIds.has(String(person._id))) return 'Bạn bè'
+              return 'Đang chờ xác nhận'
+            }}
+            emptyMessage='Bạn chưa theo dõi ai.'
             disabled={actionDisabled}
-            renderActions={(person) => (
-              <ActionButton
-                label='Hủy lời mời'
-                variant='danger'
-                disabled={actionDisabled}
-                icon={FaUserMinus}
-                onClick={() => handleCancelRequest(person._id)}
-              />
-            )}
+            renderActions={(person) => {
+              const isFriend = followerIds.has(String(person._id))
+              return isFriend ? (
+                <ActionButton
+                  label='Hủy kết bạn'
+                  variant='danger'
+                  disabled={actionDisabled}
+                  icon={FaUserMinus}
+                  onClick={() => handleUnfriend(person._id)}
+                />
+              ) : (
+                <ActionButton
+                  label='Hủy lời mời'
+                  variant='danger'
+                  disabled={actionDisabled}
+                  icon={FaUserMinus}
+                  onClick={() => handleCancelRequest(person._id)}
+                />
+              )
+            }}
           />
 
-          {/* Người theo dõi bạn — field theo dõi (tất cả người follow mình, kể cả đã từ chối) */}
+          {/* Người theo dõi bạn — tất cả người follow mình */}
           <PeopleSection
             title='Người theo dõi bạn'
-            subtitle='Tất cả người đang follow bạn — field theo dõi'
+            subtitle='Tất cả người đang follow bạn'
             people={allFollowers}
             badge={(person) => {
               if (followingIds.has(String(person._id))) return 'Bạn bè'

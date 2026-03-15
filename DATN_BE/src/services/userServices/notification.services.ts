@@ -61,11 +61,14 @@ class NotificationService {
     await NotificationModel.deleteOne({ _id: new ObjectId(notification_id), receiver_id: new ObjectId(user_id) })
     return true
   }
+  async readAllNotificationService({ user_id }: { user_id: string }) {
+    await NotificationModel.updateMany({ receiver_id: new ObjectId(user_id), is_read: false }, { is_read: true })
+    return true
+  }
   async checkReadNotificationService({ user_id }: { user_id: string }) {
-    // đếm số thông báo chưa đọc của user nếu > 0 thì trả về true còn không thì trả về false
-
+    // trả về số lượng thông báo chưa đọc
     const count = await NotificationModel.countDocuments({ receiver_id: new ObjectId(user_id), is_read: false })
-    return count > 0
+    return count
   }
 }
 

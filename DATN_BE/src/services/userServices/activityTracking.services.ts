@@ -56,7 +56,7 @@ class ActivityTrackingService {
         const newActivity = new ActivityTrackingModel({
             eventId,
             userId,
-            activityType: activityType || 'running',
+            activityType: activityType || 'Chạy bộ',
             status: 'active',
             startTime: new Date(),
             totalDuration: 0,

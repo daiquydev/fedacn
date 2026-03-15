@@ -40,4 +40,7 @@ const NotificationSchema = new mongoose.Schema<Notification>(
 
 const NotificationModel = mongoose.model('notifications', NotificationSchema)
 
+// Index for fast query by receiver + read status
+NotificationSchema.index({ receiver_id: 1, is_read: 1, createdAt: -1 })
+
 export default NotificationModel

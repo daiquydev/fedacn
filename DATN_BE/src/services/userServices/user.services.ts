@@ -22,6 +22,11 @@ import NotificationModel from '~/models/schemas/notification.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 
 import UserModel from '~/models/schemas/user.schema'
+import SportEventModel from '~/models/schemas/sportEvent.schema'
+import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
+import WorkoutScheduleModel from '~/models/schemas/workoutSchedule.schema'
+import HabitChallengeParticipantModel from '~/models/schemas/habitChallengeParticipant.schema'
+import HabitChallengeModel from '~/models/schemas/habitChallenge.schema'
 import { comparePassword, hashPassword } from '~/utils/crypto'
 
 import { ErrorWithStatus } from '~/utils/error'
@@ -482,8 +487,19 @@ class UsersService {
       {
         $match: { is_following: false }
       },
-      // kiếm ngẫu nhiên 5 người mà user_id chưa follow
-      { $sample: { size: 5 } }
+      // ưu tiên người mới tạo tài khoản gần nhất, lấy 6 người
+      { $sort: { createdAt: -1 } },
+      { $limit: 6 },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          user_name: 1,
+          avatar: 1,
+          role: 1,
+          createdAt: 1
+        }
+      }
     ])
     return recommendUsers
   }
@@ -657,9 +673,9 @@ class UsersService {
 
     return omit(user.toObject(), ['password', 'upgrade_request'])
   }
-  async updateUserService({ user_id, name, user_name, birthday, address }: UpdateUserBody) {
+  async updateUserService({ user_id, name, user_name, birthday, address, gender }: UpdateUserBody) {
     // check xem db có tồn tại user_name không, có thì không cho update
-    const newBirthday = moment.utc(birthday).startOf('day').toDate()
+    const newBirthday = birthday ? moment.utc(birthday).startOf('day').toDate() : undefined
 
     const objectData = {} as UpdateUserBody
 
@@ -669,11 +685,14 @@ class UsersService {
     if (user_name) {
       objectData['user_name'] = user_name
     }
-    if (birthday) {
+    if (newBirthday) {
       objectData['birthday'] = newBirthday
     }
     if (address) {
       objectData['address'] = address
+    }
+    if (gender) {
+      objectData['gender'] = gender
     }
 
     console.log(objectData)
@@ -919,6 +938,83 @@ class UsersService {
     }
     const newUser = await UserModel.findOneAndUpdate({ _id: new ObjectId(user_id) }, { upgrade_request }, { new: true })
     return newUser
+  }
+  async getMeStats({ user_id }: { user_id: string }) {
+    const userId = new ObjectId(user_id)
+
+    const [
+      joinedEventsCount,
+      recentEvents,
+      workoutSchedules,
+      totalKcalResult,
+      challengeParticipations,
+      recentChallenges
+    ] = await Promise.all([
+      // Count sport events user has joined
+      SportEventModel.countDocuments({
+        participants_ids: userId,
+        isDeleted: { $ne: true }
+      }),
+      // Recent 3 sport events
+      SportEventModel.find({
+        participants_ids: userId,
+        isDeleted: { $ne: true }
+      })
+        .sort({ startDate: -1 })
+        .limit(3)
+        .select('name category startDate endDate image eventType participants')
+        .lean(),
+      // Workout schedules count
+      WorkoutScheduleModel.countDocuments({ user_id: userId }),
+      // Total kcal burned from sport event progress
+      SportEventProgressModel.aggregate([
+        { $match: { userId: userId } },
+        { $group: { _id: null, totalKcal: { $sum: '$calories' } } }
+      ]),
+      // Active habit challenge participations count
+      HabitChallengeParticipantModel.countDocuments({
+        user_id: userId,
+        status: 'in_progress'
+      }),
+      // Recent 3 habit challenges user is participating in
+      HabitChallengeParticipantModel.find({ user_id: userId })
+        .sort({ joined_at: -1 })
+        .limit(3)
+        .select('challenge_id')
+        .lean()
+        .then(async (participants) => {
+          if (!participants.length) return []
+          const challengeIds = participants.map((p) => p.challenge_id)
+          return HabitChallengeModel.find({ _id: { $in: challengeIds } })
+            .select('title description habitType frequency startDate endDate')
+            .lean()
+        })
+    ])
+
+    // Sum kcal from workout schedules total_calo_burn
+    const workoutKcalResult = await WorkoutScheduleModel.aggregate([
+      { $match: { user_id: userId } },
+      { $group: { _id: null, totalKcal: { $sum: '$total_calo_burn' } } }
+    ])
+
+    const sportKcal = totalKcalResult[0]?.totalKcal || 0
+    const workoutKcal = workoutKcalResult[0]?.totalKcal || 0
+
+    return {
+      sportEvents: {
+        joined_count: joinedEventsCount,
+        recent: recentEvents
+      },
+      workouts: {
+        schedules_count: workoutSchedules,
+        total_kcal: workoutKcal
+      },
+      challenges: {
+        active_count: challengeParticipations,
+        recent: recentChallenges
+      },
+      total_kcal_burned: sportKcal + workoutKcal
+    }
   }
 }
 

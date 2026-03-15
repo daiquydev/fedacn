@@ -123,29 +123,31 @@ export default function PostItem({ post }) {
               <FaTrash size={14} />
             </button>
           </div>
-
-          {openAccept && (
-            <ConfirmBox
-              closeModal={() => setOpenAccept(false)}
-              handleDelete={handleAccept}
-              isPending={acceptPostsMutation.isPending}
-              title={'Xác nhận duyệt'}
-              subtitle={'Bạn có chắc chắn muốn giữ bài viết này không?'}
-              tilteButton={'Giữ bài viết'}
-            />
-          )}
-          {openReject && (
-            <ConfirmBox
-              closeModal={() => setOpenReject(false)}
-              handleDelete={handleReject}
-              isPending={rejectPostsMutation.isPending}
-              title={'Xác nhận xóa'}
-              subtitle={'Bạn có chắc chắn muốn xóa bài viết này không?'}
-              tilteButton={'Xóa bài viết'}
-            />
-          )}
         </td>
       </tr>
+
+      {/* Confirm dialogs rendered outside table row */}
+      {openAccept && (
+        <ConfirmBox
+          closeModal={() => setOpenAccept(false)}
+          handleDelete={handleAccept}
+          isPending={acceptPostsMutation.isPending}
+          title={'Xác nhận duyệt'}
+          subtitle={'Bạn có chắc chắn muốn giữ bài viết này không? Bài viết sẽ được giữ lại trên hệ thống.'}
+          tilteButton={'Giữ bài viết'}
+          danger={false}
+        />
+      )}
+      {openReject && (
+        <ConfirmBox
+          closeModal={() => setOpenReject(false)}
+          handleDelete={handleReject}
+          isPending={rejectPostsMutation.isPending}
+          title={'Xác nhận xóa'}
+          subtitle={'Bạn có chắc chắn muốn xóa bài viết này không? Bài viết sẽ bị ẩn khỏi hệ thống.'}
+          tilteButton={'Xóa bài viết'}
+        />
+      )}
     </>
   )
 }

@@ -102,6 +102,7 @@ export const BLOG_MESSAGE = {
 export const NOTIFICATION_MESSAGE = {
   GET_LIST_NOTIFICATION_SUCCESS: 'Lấy danh sách thông báo thành công',
   READ_NOTIFICATION_SUCCESS: 'Đọc thông báo thành công',
+  READ_ALL_NOTIFICATION_SUCCESS: 'Đánh dấu tất cả thông báo đã đọc thành công',
   DELETE_NOTIFICATION_SUCCESS: 'Xóa thông báo thành công',
   CHECK_READ_NOTIFICATION_SUCCESS: 'Kiểm tra thông báo đã đọc thành công'
 } as const

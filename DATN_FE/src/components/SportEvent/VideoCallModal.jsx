@@ -440,13 +440,30 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
     // AI + TIMERS
     // ─────────────────────────────────────────────────────────────────────────
     async function loadFaceApi() {
-        try {
-            const faceapi = await import('face-api.js')
-            faceApiRef.current = faceapi
-            await faceapi.nets.tinyFaceDetector.loadFromUri('/models')
-            setAiReady(true)
-        } catch {
-            setAiError('Không tải được AI model')
+        const MAX_RETRIES = 3
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                console.log(`[AI] Loading face-api model (attempt ${attempt}/${MAX_RETRIES})...`)
+                const faceapi = await import('face-api.js')
+                faceApiRef.current = faceapi
+                await faceapi.nets.tinyFaceDetector.loadFromUri('/models')
+                setAiReady(true)
+                setAiError(null)
+                console.log('[AI] Face detection model loaded successfully')
+                return
+            } catch (err) {
+                console.warn(`[AI] Attempt ${attempt} failed:`, err?.message || err)
+                if (attempt < MAX_RETRIES) {
+                    // Exponential backoff: 1s, 2s, 4s
+                    const delay = Math.pow(2, attempt - 1) * 1000
+                    await new Promise(r => setTimeout(r, delay))
+                } else {
+                    const msg = 'AI không khả dụng — thời gian sẽ được tính trọn (không phát hiện vắng mặt)'
+                    setAiError(msg)
+                    console.error(`[AI] All ${MAX_RETRIES} attempts failed. Falling back to full-time counting.`)
+                    toast.error(msg, { duration: 5000, icon: '🤖' })
+                }
+            }
         }
     }
 
@@ -588,41 +605,57 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="fixed inset-0 z-[9999] flex flex-col select-none"
-            style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #1e3a5f 50%, #0f2744 100%)' }}>
+            style={{ background: 'linear-gradient(135deg, #fef2f2 0%, #fce7f3 30%, #ede9fe 60%, #e0f2fe 100%)' }}>
 
             {/* ── Top Bar ──────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-5 py-2.5 flex-shrink-0"
-                style={{ background: 'rgba(15,23,60,0.7)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/40 rounded-full px-2.5 py-1">
-                        <MdFiberManualRecord className="text-red-400 animate-pulse text-xs" />
-                        <span className="text-red-300 text-[11px] font-medium">LIVE</span>
+                    <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-2.5 py-1">
+                        <MdFiberManualRecord className="text-red-500 animate-pulse text-xs" />
+                        <span className="text-red-600 text-[11px] font-medium">LIVE</span>
                     </div>
                     <div>
-                        <h2 className="text-white font-bold text-sm leading-tight">{event?.name}</h2>
-                        <p className="text-indigo-300/60 text-[11px]">{event?.category}</p>
+                        <h2 className="text-gray-800 font-bold text-sm leading-tight">{event?.name}</h2>
+                        <p className="text-gray-400 text-[11px]">{event?.category}</p>
                     </div>
                     {!isReady && <AiOutlineLoading3Quarters className="animate-spin text-indigo-400 text-sm ml-1" />}
                 </div>
 
                 <div className="flex items-center gap-3">
                     {socketError && (
-                        <div className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/40
-                                        text-red-300 text-xs px-2.5 py-1 rounded-full">
+                        <div className="flex items-center gap-1.5 bg-red-50 border border-red-200
+                                        text-red-600 text-xs px-2.5 py-1 rounded-full">
                             <MdWarning className="flex-shrink-0" />
                             <span className="truncate max-w-[180px]">{socketError}</span>
                         </div>
                     )}
-                    <div className="text-right">
-                        <p className="font-mono text-white/80 text-xs tabular-nums">{fmtTime(totalSecs)} tham gia</p>
-                        <p className={`font-mono text-xs tabular-nums font-semibold ${isPaused ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                            {fmtTime(activeSecs)} thực tế
-                        </p>
-                        {kcalPerMinute > 0 && (
-                            <p className="font-mono text-xs tabular-nums font-semibold text-orange-400">
-                                🔥 {realtimeKcal} kcal
+                    <div className="flex items-center gap-3 bg-white/60 rounded-full px-4 py-1.5 border border-gray-200">
+                        <div className="text-center">
+                            <p className="font-mono text-gray-800 text-sm font-bold tabular-nums">{fmtTime(totalSecs)}</p>
+                            <p className="text-gray-400 text-[9px] uppercase">Tham gia</p>
+                        </div>
+                        <div className="w-px h-6 bg-gray-200" />
+                        <div className="text-center">
+                            <p className={`font-mono text-sm font-bold tabular-nums ${isPaused ? 'text-yellow-600' : 'text-emerald-600'}`}>
+                                {fmtTime(activeSecs)}
                             </p>
+                            <p className="text-gray-400 text-[9px] uppercase">Thực tế</p>
+                        </div>
+                        {kcalPerMinute > 0 && (
+                            <>
+                                <div className="w-px h-6 bg-gray-200" />
+                                <div className="text-center">
+                                    <p className="font-mono text-orange-600 text-sm font-bold tabular-nums">🔥 {realtimeKcal}</p>
+                                    <p className="text-gray-400 text-[9px] uppercase">Kcal</p>
+                                </div>
+                            </>
                         )}
+                        <div className="w-px h-6 bg-gray-200" />
+                        <div className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full
+                            ${isPaused ? 'bg-yellow-100 text-yellow-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {isPaused ? '⏸ Tạm dừng' : '▶ Đang tập'}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -630,24 +663,13 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
             {/* ── Body ─────────────────────────────────────────────────────── */}
             <div className="flex-1 flex overflow-hidden min-h-0 gap-0">
 
-                {/* ═══ LEFT PANEL ═══════════════════════════════════ */}
-                <div className="w-64 flex-shrink-0 flex flex-col overflow-y-auto"
-                    style={{ background: 'rgba(15,23,60,0.6)', backdropFilter: 'blur(8px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+                {/* ═══ LEFT PANEL — PARTICIPANTS ONLY ═══════════════ */}
+                <div className="w-56 flex-shrink-0 flex flex-col overflow-y-auto"
+                    style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)', borderRight: '1px solid rgba(0,0,0,0.06)' }}>
 
-                    {/* ── AI + Timer block ──────────────────────────── */}
-                    <div className="p-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-2.5">
-                            <p className="text-indigo-300/70 text-[10px] uppercase font-bold tracking-widest">AI Hiện diện</p>
-                            <div className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full
-                                ${isPaused ? 'bg-yellow-500/15 text-yellow-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
-                                {isPaused ? '⏸' : '▶'} {isPaused ? 'Tạm dừng' : 'Tính giờ'}
-                            </div>
-                        </div>
-
-                        {/* AI Camera + face status */}
-                        <div className="relative rounded-xl overflow-hidden bg-black/30 aspect-video mb-2.5">
+                    {/* ── AI Camera (compact) ──────────────────────── */}
+                    <div className="p-2.5 border-b" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+                        <div className="relative rounded-xl overflow-hidden bg-black/30 aspect-video">
                             <video ref={localVideoRef} autoPlay playsInline muted
                                 className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
                             {!camOn && (
@@ -656,51 +678,32 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                                 </div>
                             )}
                             {/* Face status badge */}
-                            <div className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 text-[10px] font-medium
+                            <div className={`absolute bottom-1 left-1 flex items-center gap-1 text-[9px] font-medium
                                 px-1.5 py-0.5 rounded-full backdrop-blur-sm
                                 ${faceDetected ? 'bg-emerald-500/80 text-white' : 'bg-red-500/80 text-white'}`}>
                                 {faceDetected
-                                    ? <><FaEye className="text-[9px]" /> Nhận diện</>
-                                    : <><FaEyeSlash className="text-[9px]" /> Không thấy {absenceSecs > 0 ? `(${absenceSecs}s)` : ''}</>
+                                    ? <><FaEye className="text-[9px]" /> Có mặt</>
+                                    : <><FaEyeSlash className="text-[9px]" /> Vắng {absenceSecs > 0 ? `(${absenceSecs}s)` : ''}</>
                                 }
                             </div>
-                            {aiReady && (
-                                <div className="absolute top-1.5 right-1.5 bg-indigo-600/80 text-[9px] text-white px-1.5 py-0.5 rounded-full backdrop-blur-sm">AI</div>
-                            )}
-                        </div>
-
-                        {(!aiReady && !aiError) && (
-                            <div className="flex items-center gap-1.5 text-indigo-300/50 text-[10px] mb-2">
-                                <AiOutlineLoading3Quarters className="animate-spin" /> Đang tải AI...
+                            {/* AI Status badge */}
+                            <div className={`absolute top-1 right-1 flex items-center gap-1 text-[8px] font-semibold px-1.5 py-0.5 rounded-full backdrop-blur-sm ${
+                                aiReady ? 'bg-emerald-600/80 text-white' 
+                                : aiError ? 'bg-red-600/80 text-white'
+                                : 'bg-amber-500/80 text-white'
+                            }`}>
+                                {aiReady ? (
+                                    <><span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" /> AI</>
+                                ) : aiError ? (
+                                    <><MdWarning className="text-[8px]" /> AI ✗</>
+                                ) : (
+                                    <><AiOutlineLoading3Quarters className="animate-spin text-[7px]" /> AI</>
+                                )}
                             </div>
-                        )}
+                        </div>
                         {aiError && (
-                            <div className="flex items-center gap-1 text-yellow-400/70 text-[10px] bg-yellow-500/10 rounded-lg px-2 py-1 mb-2">
-                                <MdWarning className="flex-shrink-0" /> {aiError}
-                            </div>
-                        )}
-
-                        {/* Timer cards */}
-                        <div className="grid grid-cols-2 gap-1.5">
-                            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                <p className="text-white/40 text-[9px] mb-0.5 uppercase tracking-wide">Tham gia</p>
-                                <p className="font-mono text-white text-sm font-bold tabular-nums">{fmtTime(totalSecs)}</p>
-                            </div>
-                            <div className={`rounded-xl p-2.5 text-center ${isPaused
-                                ? 'bg-yellow-500/10 border border-yellow-500/20'
-                                : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
-                                <p className="text-white/40 text-[9px] mb-0.5 uppercase tracking-wide">Thực tế</p>
-                                <p className={`font-mono text-sm font-bold tabular-nums ${isPaused ? 'text-yellow-300' : 'text-emerald-300'}`}>
-                                    {fmtTime(activeSecs)}
-                                </p>
-                            </div>
-                        </div>
-                        {kcalPerMinute > 0 && (
-                            <div className="mt-1.5 rounded-xl p-2.5 text-center bg-orange-500/10 border border-orange-500/20">
-                                <p className="text-white/40 text-[9px] mb-0.5 uppercase tracking-wide">kcal tiêu thụ</p>
-                                <p className="font-mono text-orange-300 text-sm font-bold tabular-nums">
-                                    🔥 {realtimeKcal} kcal
-                                </p>
+                            <div className="flex items-center gap-1 text-yellow-400/70 text-[9px] bg-yellow-500/10 rounded-lg px-2 py-1 mt-1.5">
+                                <MdWarning className="flex-shrink-0 text-[9px]" /> {aiError}
                             </div>
                         )}
                     </div>
@@ -708,14 +711,14 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                     {/* ── Participants ──────────────────────────────── */}
                     <div className="flex-1 p-3 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-indigo-300/70 text-[10px] uppercase font-bold tracking-widest">
+                            <p className="text-indigo-600 text-[10px] uppercase font-bold tracking-widest">
                                 Người tham gia
                             </p>
-                            <span className="text-indigo-300/50 text-[10px] bg-white/5 rounded-full px-1.5 py-0.5">
+                            <span className="text-indigo-400 text-[10px] bg-indigo-50 rounded-full px-1.5 py-0.5">
                                 {peerEntries.length + 1}
                             </span>
                         </div>
-                        <p className="text-white/25 text-[10px] mb-2">Nhấn để đưa lên màn hình chính</p>
+                        <p className="text-gray-400 text-[10px] mb-2">Nhấn để đưa lên màn hình chính</p>
 
                         {sidebarEntries.map(entry => {
                             const isPinned = pinnedSocketId === entry.socketId
@@ -769,12 +772,12 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                         })}
 
                         {peerEntries.length === 0 && (
-                            <p className="text-white/20 text-[10px] text-center py-4">Chưa có ai tham gia</p>
+                            <p className="text-gray-400 text-[10px] text-center py-4">Chưa có ai tham gia</p>
                         )}
                     </div>
                 </div>
 
-                {/* ═══ MAIN AREA ═════════════════════════════════════ */}
+                {/* ═══ MAIN AREA WITH OVERLAY HUD ═════════════════════ */}
                 <div className="flex-1 relative p-3 flex items-center justify-center">
                     {mainEntry?.type === 'self' ? (
                         <div className="w-full h-full relative rounded-2xl overflow-hidden shadow-2xl"
@@ -790,13 +793,13 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                                 {!micOn && <MdMicOff className="text-red-400 text-xs" />}
                             </div>
                             {isSharing && (
-                                <div className="absolute top-4 left-4 bg-emerald-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-medium">
+                                <div className="absolute top-16 left-4 bg-emerald-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-medium">
                                     🖥️ Đang chia sẻ màn hình
                                 </div>
                             )}
                             {pinnedSocketId === 'self' && (
                                 <button onClick={() => setPinnedSocketId(null)}
-                                    className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
+                                    className="absolute top-16 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
                                                 px-3 py-1 rounded-full border border-white/10 hover:bg-white/10 transition">
                                     📌 Bỏ ghim
                                 </button>
@@ -827,7 +830,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                             </div>
                             {pinnedSocketId && pinnedSocketId !== 'self' && (
                                 <button onClick={() => setPinnedSocketId(null)}
-                                    className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
+                                    className="absolute top-16 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
                                                 px-3 py-1 rounded-full border border-white/10 hover:bg-white/10 transition">
                                     📌 Bỏ ghim
                                 </button>
@@ -860,12 +863,30 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                             </div>
                         </div>
                     )}
+
+                    {/* ═══ OVERLAY HUD — Only AI status (timer/kcal moved to top bar) ═══ */}
+                    {/* Top-right: AI Status overlay */}
+                    <div className="absolute top-5 right-5 z-10">
+                        <div className={`flex items-center gap-2 text-xs font-semibold rounded-full px-4 py-2 border ${
+                            aiReady ? 'text-emerald-700 border-emerald-200 bg-emerald-50/80'
+                            : aiError ? 'text-red-700 border-red-200 bg-red-50/80'
+                            : 'text-amber-700 border-amber-200 bg-amber-50/80'
+                        }`} style={{ backdropFilter: 'blur(8px)' }}>
+                            {aiReady ? (
+                                <><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> ✅ AI đang theo dõi</>
+                            ) : aiError ? (
+                                <><MdWarning /> ❌ AI lỗi</>
+                            ) : (
+                                <><AiOutlineLoading3Quarters className="animate-spin" /> ⏳ AI đang tải...</>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* ── Control Bar ─────────────────────────────────────────────── */}
             <div className="flex items-center justify-center gap-4 py-3 flex-shrink-0"
-                style={{ background: 'rgba(15,23,60,0.7)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <CtrlBtn active={micOn} onIcon={<MdMic />} offIcon={<MdMicOff />}
                     label={micOn ? 'Tắt mic' : 'Bật mic'} onClick={toggleMic} />
                 <CtrlBtn active={camOn} onIcon={<MdVideocam />} offIcon={<MdVideocamOff />}
@@ -874,7 +895,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                     label={isSharing ? 'Dừng chia sẻ' : 'Chia sẻ màn hình'} onClick={toggleScreenShare}
                     greenWhenActive={isSharing} />
 
-                <div className="w-px h-8 bg-white/10 mx-1" />
+                <div className="w-px h-8 bg-gray-300 mx-1" />
 
                 <button onClick={() => setShowEndConfirm(true)} disabled={isEnding}
                     className="flex flex-col items-center gap-1 group">
@@ -884,34 +905,49 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                                     disabled:opacity-50">
                         {isEnding ? <AiOutlineLoading3Quarters className="animate-spin" /> : <MdCallEnd />}
                     </div>
-                    <span className="text-white/40 text-[10px] group-hover:text-white/70 transition-colors">Kết thúc</span>
+                    <span className="text-gray-500 text-[10px] group-hover:text-gray-700 transition-colors">Kết thúc</span>
                 </button>
             </div>
 
-            {/* ── End Confirm ──────────────────────────────────────────────── */}
+            {/* ── End Confirm — Glassmorphism Modal ───────────────────── */}
             {showEndConfirm && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="border border-white/10 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl"
-                        style={{ background: 'rgba(15,23,60,0.95)' }}>
-                        <h3 className="text-white text-xl font-bold mb-4">Rời khỏi cuộc gọi?</h3>
-                        <div className="grid grid-cols-2 gap-3 bg-white/5 rounded-xl p-4 mb-5 border border-white/5">
-                            <div className="text-center">
-                                <p className="font-mono text-2xl font-bold text-white">{fmtTime(totalSecs)}</p>
-                                <p className="text-white/35 text-xs mt-1">Thời gian tham gia</p>
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 backdrop-blur-md">
+                    <div className="rounded-3xl p-7 max-w-sm w-full mx-4 shadow-2xl text-center"
+                        style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)' }}>
+                        <div className="text-4xl mb-3">👋</div>
+                        <h3 className="text-gray-800 text-xl font-bold mb-2">Rời khỏi cuộc gọi?</h3>
+                        <p className="text-gray-400 text-sm mb-5">Kết quả sẽ được ghi nhận vào tiến độ sự kiện.</p>
+                        
+                        <div className="flex gap-3 mb-5 p-3 rounded-2xl border border-gray-100" style={{ background: '#f8fafc' }}>
+                            <div className="flex-1 text-center">
+                                <p className="font-mono text-2xl font-bold text-gray-800">{fmtTime(totalSecs)}</p>
+                                <p className="text-gray-400 text-[10px] mt-1 uppercase tracking-wide">Tham gia</p>
                             </div>
-                            <div className="text-center border-l border-white/10">
-                                <p className="font-mono text-2xl font-bold text-emerald-400">{fmtTime(activeSecs)}</p>
-                                <p className="text-white/35 text-xs mt-1">Thời gian thực tế</p>
+                            <div style={{ width: 1, background: '#e2e8f0' }} />
+                            <div className="flex-1 text-center">
+                                <p className="font-mono text-2xl font-bold text-emerald-600">{fmtTime(activeSecs)}</p>
+                                <p className="text-gray-400 text-[10px] mt-1 uppercase tracking-wide">Thực tế</p>
                             </div>
+                            {kcalPerMinute > 0 && (
+                                <>
+                                    <div style={{ width: 1, background: '#e2e8f0' }} />
+                                    <div className="flex-1 text-center">
+                                        <p className="font-mono text-2xl font-bold text-orange-500">{realtimeKcal}</p>
+                                        <p className="text-gray-400 text-[10px] mt-1 uppercase tracking-wide">🔥 Kcal</p>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                        <p className="text-white/50 text-sm mb-6">Kết quả sẽ được ghi nhận vào tiến độ sự kiện.</p>
+
                         <div className="flex gap-3">
                             <button onClick={() => setShowEndConfirm(false)}
-                                className="flex-1 py-3 rounded-xl bg-white/8 hover:bg-white/15 text-white font-medium transition-colors border border-white/10">
+                                className="flex-1 py-3 rounded-2xl font-medium transition-all active:scale-[0.97]"
+                                style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', color: '#475569' }}>
                                 Tiếp tục
                             </button>
                             <button onClick={handleEndCall} disabled={isEnding}
-                                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition-colors disabled:opacity-50">
+                                className="flex-1 py-3 rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50"
+                                style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff' }}>
                                 {isEnding ? <AiOutlineLoading3Quarters className="animate-spin mx-auto" /> : 'Rời khỏi'}
                             </button>
                         </div>
@@ -928,14 +964,14 @@ function CtrlBtn({ active, onIcon, offIcon, label, onClick, greenWhenActive = fa
     return (
         <button onClick={onClick} className="flex flex-col items-center gap-1 group">
             <div className={`w-11 h-11 rounded-full flex items-center justify-center
-                             text-white text-lg transition-all active:scale-95 shadow-md
-                             ${!active ? 'bg-red-600/90 hover:bg-red-600'
+                             text-lg transition-all active:scale-95 shadow-md
+                             ${!active ? 'bg-red-600 hover:bg-red-500 text-white'
                     : greenWhenActive
-                        ? 'bg-emerald-600 hover:bg-emerald-500'
-                        : 'bg-white/15 hover:bg-white/25'}`}>
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-200'}`}>
                 {active ? onIcon : offIcon}
             </div>
-            <span className="text-white/40 text-[10px] group-hover:text-white/70 transition-colors whitespace-nowrap">
+            <span className="text-gray-500 text-[10px] group-hover:text-gray-700 transition-colors whitespace-nowrap">
                 {label}
             </span>
         </button>

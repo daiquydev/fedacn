@@ -11,6 +11,7 @@ import { isAxiosUnprocessableEntityError } from '../../utils/utils'
 import { useContext } from 'react'
 import { AppContext } from '../../contexts/app.context'
 import Loading from '../../components/GlobalComponents/Loading'
+import { FaShieldAlt } from 'react-icons/fa'
 
 export default function Login() {
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
@@ -65,14 +66,23 @@ export default function Login() {
   })
 
   return (
-    <div className='sm:w-2/3 w-full px-4 lg:px-5 lg:py-20 rounded-lg mx-auto lg:bg-white'>
-      <h1 className='my-6'>
-        <div className='w-auto h-3 sm:h-4 inline-flex text-4xl lg:text-red-700 font-bold'>Đăng nhập quản trị</div>
-      </h1>
-      <form onSubmit={onSubmit} noValidate>
+    <div className='sm:w-2/3 w-full px-4 lg:px-8 lg:py-12 rounded-2xl mx-auto lg:bg-white lg:shadow-sm' style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Header with icon */}
+      <div className='flex items-center gap-3 mb-2'>
+        <div className='w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center'>
+          <FaShieldAlt className='text-emerald-600 text-lg' />
+        </div>
+        <div>
+          <h1 className='text-2xl font-bold text-gray-900'>Đăng nhập quản trị</h1>
+          <p className='text-gray-400 text-sm'>Admin Panel — FitConnect</p>
+        </div>
+      </div>
+
+      <form onSubmit={onSubmit} noValidate className='mt-6'>
         <Input
-          title='Tên tài khoản của bạn'
-          className='block bg-white w-full placeholder:text-sm px-3 py-2 text-black text-lg border border-gray-300 rounded-lg'
+          title='Tên tài khoản'
+          className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+          classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
           placeholder='Nhập tên tài khoản của bạn'
           register={register}
           errors={errors.user_name}
@@ -81,34 +91,31 @@ export default function Login() {
           id='user_name'
         />
         <InputPass
-          title='Mật khẩu của bạn'
+          title='Mật khẩu'
+          className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+          classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
           placeholder='Nhập mật khẩu của bạn'
           register={register}
           errors={errors.password}
           name='password'
         />
-        {/* <div className='text-right text-sm'>
-          <Link className='ml-1 text-blue-400 hover:underline hover:text-red-700' to='/login'>
-            Trở lại trang đăng nhập người dùng
-          </Link>
-        </div> */}
-        <div className='px-4 rounded-full pt-4'>
+        <div className='pt-4'>
           {loginAccountAdminMutation.isPending ? (
-            <div className='block w-full p-2 transition-all duration-500 mt-3 text-lg rounded-full bg-gray-500 first-letter:focus:outline-none'>
-              <div className='flex justify-center items-center'>
+            <div className='block w-full p-3 text-base rounded-xl bg-gray-300 cursor-not-allowed'>
+              <div className='flex justify-center items-center text-gray-500'>
                 <Loading
                   className='w-10 mx-1 flex justify-center items-center'
-                  classNameSpin='inline w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-red-600'
+                  classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-emerald-600'
                 />
-                Loading...
+                Đang xử lý...
               </div>
             </div>
           ) : (
             <button
               type='submit'
-              className='uppercase block w-full p-2 transition-all duration-500 mt-3 text-lg rounded-full bg-orange-500 hover:bg-orange-600 focus:outline-none'
+              className='block w-full p-3 transition-all duration-300 text-base font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 hover:shadow-lg hover:shadow-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2'
             >
-              Đăng nhập
+              ĐĂNG NHẬP
             </button>
           )}
         </div>

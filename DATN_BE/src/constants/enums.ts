@@ -25,7 +25,12 @@ export enum NotificationTypes {
   shareMealPlan,
   mealPlanInvite,
   system,
-  sportEventInvite
+  sportEventInvite,
+  reportPost,
+  habitChallengeInvite,
+  habitBuddyReminder,
+  habitCheckinLike,
+  habitStreakMilestone
 }
 
 // có 2 kiểu type là đủ 5000 follow hoặc gửi minh chứng
@@ -55,7 +60,8 @@ export enum PostTypes {
 export enum PostStatus {
   publish,
   following,
-  private
+  private,
+  friends
 }
 export enum BlogStatus {
   pending,
@@ -222,3 +228,79 @@ export enum MealItemStatus {
   skipped,
   substituted
 }
+
+// Habit Challenge
+export enum HabitChallengeCategory {
+  exercise = 'exercise',
+  nutrition = 'nutrition',
+  sleep = 'sleep',
+  mental = 'mental',
+  hydration = 'hydration',
+  other = 'other'
+}
+
+export enum HabitChallengeStatus {
+  active = 'active',
+  completed = 'completed',
+  cancelled = 'cancelled'
+}
+
+export enum HabitParticipantStatus {
+  in_progress = 'in_progress',
+  completed = 'completed',
+  quit = 'quit'
+}
+
+// Challenge Type
+export enum ChallengeType {
+  solo = 'solo',
+  team = 'team',
+  global = 'global'
+}
+
+// Challenge Difficulty
+export enum ChallengeDifficulty {
+  easy = 'easy',
+  medium = 'medium',
+  hard = 'hard'
+}
+
+// Check-in Frequency
+export enum CheckinFrequency {
+  daily = 'daily',
+  weekly_3 = 'weekly_3',
+  weekly_5 = 'weekly_5',
+  free = 'free'
+}
+
+// Badge Tier
+export enum BadgeTier {
+  bronze = 'bronze',
+  silver = 'silver',
+  gold = 'gold'
+}
+
+// XP thresholds per level
+export const CHALLENGE_LEVEL_THRESHOLDS = [
+  { level: 1, xp: 0, title: 'Người mới 🌱' },
+  { level: 2, xp: 100, title: 'Chiến binh 💪' },
+  { level: 3, xp: 300, title: 'Kiên trì ⚡' },
+  { level: 4, xp: 600, title: 'Bền bỉ 🔥' },
+  { level: 5, xp: 1000, title: 'Huyền thoại 👑' }
+]
+
+// XP rewards table
+export const XP_REWARDS = {
+  checkin: 10,
+  streak_3: 5,
+  streak_7: 15,
+  streak_14: 30,
+  challenge_complete: 50,
+  perfect_streak: 100,
+  team_win: 75,
+  creator_bonus: 25,
+  hard_multiplier: 1.5,
+  medium_multiplier: 1.0,
+  easy_multiplier: 0.8
+}
+

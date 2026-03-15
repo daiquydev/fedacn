@@ -34,6 +34,12 @@ export interface User {
   body_fat?: number
   IBW?: number
   LBM?: number
+  pre_BMI?: { value: number; date: Date }[]
+  pre_BMR?: { value: number; date: Date }[]
+  pre_TDEE?: { value: number; date: Date }[]
+  pre_body_fat?: { value: number; date: Date }[]
+  pre_LBM?: { value: number; date: Date }[]
+  pre_IBW?: { value: number; date: Date }[]
   role?: UserRoles
   banned_count?: number
   status?: UserStatus
@@ -149,6 +155,24 @@ const UserSchema = new mongoose.Schema<User>(
       type: Number,
       default: null
     },
+    pre_BMI: [
+      { value: { type: Number }, date: { type: Date, default: Date.now } }
+    ],
+    pre_BMR: [
+      { value: { type: Number }, date: { type: Date, default: Date.now } }
+    ],
+    pre_TDEE: [
+      { value: { type: Number }, date: { type: Date, default: Date.now } }
+    ],
+    pre_body_fat: [
+      { value: { type: Number }, date: { type: Date, default: Date.now } }
+    ],
+    pre_LBM: [
+      { value: { type: Number }, date: { type: Date, default: Date.now } }
+    ],
+    pre_IBW: [
+      { value: { type: Number }, date: { type: Date, default: Date.now } }
+    ],
     role: {
       type: Number,
       default: UserRoles.user

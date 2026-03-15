@@ -38,7 +38,7 @@ const SportEventSchema = new mongoose.Schema<SportEvent>(
     category: { type: String, required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    location: { type: String, required: true },
+    location: { type: String, required: false, default: 'Online' },
     address: { type: String, default: '' },
     distance: { type: String, default: '' },
     maxParticipants: { type: Number, required: true },

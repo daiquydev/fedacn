@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
 import { AppContext } from '../../contexts/app.context'
+import CalculatorSidebar from '../../components/GlobalComponents/CalculatorSidebar/CalculatorSidebar'
 
 export default function WaterPerDay() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -67,8 +68,8 @@ export default function WaterPerDay() {
                     Cách tính lượng nước cần uống mỗi ngày của cơ thể và lưu ý khi uống
                   </h1>
                   <div className='flex items-center'>
-                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Cook</span>
-                    <span className='font-semibold'>Healthy</span>
+                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Fit</span>
+                    <span className='font-semibold'>Connect</span>
                     <IoTimeOutline className='mr-1 ml-2' /> 02/04/2024
                   </div>
                 </header>
@@ -255,13 +256,17 @@ export default function WaterPerDay() {
           </main>
         </div>
         <div className='col-span-6 order-first xl:order-last my-3 xl:my-0 xl:col-span-2'>
-          <div className='shadow mb-6 bg-white rounded-lg dark:bg-color-primary dark:border-none'>
-            <div className='flex flex-col dark:text-gray-300 justify-center items-center pt-4 text-xl font-semibold text-red-700'>
-              Tính toán lượng nước uống
-              <p className='text-base text-black dark:text-gray-300'></p>
-            </div>
-            <div className='border mt-2 mx-5 dark:border-gray-700 border-red-200 '></div>
-            <form noValidate onSubmit={onSubmit} className='p-3'>
+          <CalculatorSidebar
+            title='Tính toán lượng nước uống'
+            subtitle='(Water Intake)'
+            gradient='from-cyan-500 to-blue-500'
+            result={dataWater.water ? {
+              value: dataWater.water,
+              unit: 'lít / ngày',
+              label: 'Lưu ý: Đây chỉ là con số ước lượng'
+            } : null}
+          >
+            <form noValidate onSubmit={onSubmit} className='space-y-3'>
               <Input
                 title='Nhập cân nặng (kg)'
                 type='number'
@@ -280,33 +285,19 @@ export default function WaterPerDay() {
                 id='time'
                 placeholder='Nhập thời gian tập luyện của bạn'
               />
-
-              <div className='flex justify-center'>
+              <div className='pt-1'>
                 {calculateWaterMutation.isPending ? (
-                  <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                  <button disabled className='w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold flex items-center justify-center gap-2 opacity-70'>
+                    <Loading classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
                   </button>
                 ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'> Tính toán</button>
+                  <button className='w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200'>
+                    Tính toán
+                  </button>
                 )}
               </div>
             </form>
-            <div>
-              {dataWater.water && (
-                <div className='flex mx-4 justify-center '>
-                  <div className='mt-5 w-full pb-10'>
-                    <div className=' text-gray-700 flex justify-center dark:text-gray-300 font-semibold '>
-                      Bạn cần tiêu thụ: {dataWater.water} lít nước mỗi ngày
-                    </div>
-                    <div className='text-red-700 flex justify-center dark:text-red-300 font-medium text-xs'>
-                      Lưu ý: Đây chỉ là một con số ước lượng, bạn cần tư vấn thêm từ chuyên gia dinh dưỡng để có lượng
-                      nước cần uống chính xác.
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          </CalculatorSidebar>
         </div>
         {isModalOpen && (
           <CalculatorModal

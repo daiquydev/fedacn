@@ -11,7 +11,8 @@ const CloudinaryImageUploader = ({
     error = null,
     label = 'Ảnh bìa',
     required = false,
-    folder = 'sport-events'
+    folder = 'sport-events',
+    square = false
 }) => {
     const [uploading, setUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
@@ -60,7 +61,7 @@ const CloudinaryImageUploader = ({
                     <img
                         src={value}
                         alt="preview"
-                        style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }}
+                        style={{ width: '100%', ...(square ? { aspectRatio: '1', height: 'auto' } : { height: 120 }), objectFit: 'cover', display: 'block' }}
                         onError={(e) => { e.target.src = 'https://placehold.co/600x300?text=Lỗi+ảnh' }}
                     />
                     <div
@@ -101,7 +102,7 @@ const CloudinaryImageUploader = ({
                     onDragLeave={() => setDragOver(false)}
                     onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) uploadToCloudinary(f) }}
                     style={{
-                        width: '100%', height: 112,
+                        width: '100%', ...(square ? { aspectRatio: '1', height: 'auto' } : { height: 112 }),
                         border: `2px dashed ${zoneBorderColor}`,
                         borderRadius: 8, backgroundColor: zoneBg,
                         display: 'flex', flexDirection: 'column',

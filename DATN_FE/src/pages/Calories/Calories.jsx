@@ -74,8 +74,8 @@ export default function Calories() {
                     Tính kcal tiêu thụ trong một ngày
                   </h1>
                   <div className='flex items-center'>
-                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Nutri</span>
-                    <span className='font-semibold'>Community</span>
+                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Fit</span>
+                    <span className='font-semibold'>Connect</span>
                     <IoTimeOutline className='mr-1 ml-2' /> 02/03/2025
                   </div>
                 </header>

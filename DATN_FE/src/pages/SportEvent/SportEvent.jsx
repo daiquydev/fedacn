@@ -1,25 +1,91 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  FaRunning,
   FaCalendarAlt,
   FaMapMarkerAlt,
-  FaUserFriends,
   FaSearch,
   FaTrophy,
-  FaBiking,
-  FaSwimmer,
-  FaDumbbell,
-  FaPlus
+  FaPlus,
+  FaTimes,
+  FaFilter,
+  FaChevronDown,
+  FaSortAmountDown
 } from 'react-icons/fa'
-import { MdSportsSoccer, MdDirectionsWalk } from 'react-icons/md'
+import { MdSportsSoccer } from 'react-icons/md'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import SportEventCard from './components/SportEventCard'
 import { getAllSportEvents, joinSportEvent } from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { currentAccount } from '../../apis/userApi'
+import { getSportIcon } from '../../utils/sportIcons'
 import toast from 'react-hot-toast'
+
+// Featured Events Carousel Banner
+function FeaturedBanner({ events, navigate }) {
+  const [activeIdx, setActiveIdx] = useState(0)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    if (events.length <= 1) return
+    timerRef.current = setInterval(() => setActiveIdx(i => (i + 1) % events.length), 5000)
+    return () => clearInterval(timerRef.current)
+  }, [events.length])
+
+  const ev = events[activeIdx]
+  if (!ev) return null
+
+  const isOngoing = new Date(ev.startDate) <= new Date() && new Date(ev.endDate) > new Date()
+
+  return (
+    <div className="container mx-auto px-4 pt-4">
+      <div
+        className="relative rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
+        style={{ height: 200 }}
+        onClick={() => navigate(`/sport-event/${ev._id}`)}
+      >
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+          style={{ backgroundImage: `url(${ev.image || 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200'})` }}
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+
+        {/* Content */}
+        <div className="relative h-full flex items-center px-8 z-10">
+          <div className="text-white max-w-lg">
+            {isOngoing && (
+              <span className="inline-flex items-center gap-1 bg-green-500/90 backdrop-blur text-xs font-bold px-2.5 py-1 rounded-full mb-2">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> Đang diễn ra
+              </span>
+            )}
+            <h2 className="text-2xl font-black mb-1 drop-shadow-lg">{ev.name}</h2>
+            <p className="text-white/70 text-sm mb-3">
+              {ev.category} • {ev.participants || 0} người tham gia
+            </p>
+            <span className="inline-block bg-white/20 backdrop-blur-md hover:bg-white/30 transition px-5 py-2 rounded-xl text-sm font-bold">
+              Xem chi tiết →
+            </span>
+          </div>
+        </div>
+
+        {/* Dot indicators */}
+        {events.length > 1 && (
+          <div className="absolute bottom-3 right-6 flex gap-1.5 z-10">
+            {events.map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setActiveIdx(i) }}
+                className={`w-2 h-2 rounded-full transition-all ${i === activeIdx ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 const SportEvent = () => {
   const navigate = useNavigate()
@@ -29,6 +95,11 @@ const SportEvent = () => {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [eventType, setEventType] = useState('all') // all, Ngoài trời, Trong nhà
   const [sortBy, setSortBy] = useState('popular')
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
+  const [page, setPage] = useState(1)
+  const ITEMS_PER_PAGE = 9
 
   // Fetch sport events with React Query
   const {
@@ -101,17 +172,63 @@ const SportEvent = () => {
       filtered = filtered.filter((event) => event.eventType === eventType)
     }
 
+    // Filter by date range
+    if (filterDateFrom) {
+      const from = new Date(filterDateFrom)
+      filtered = filtered.filter((event) => new Date(event.startDate) >= from)
+    }
+    if (filterDateTo) {
+      const to = new Date(filterDateTo + 'T23:59:59')
+      filtered = filtered.filter((event) => new Date(event.startDate) <= to)
+    }
+
+    // Filter: Đã tham gia (joined by current user)
+    if (sortBy === 'joined') {
+      filtered = filtered.filter((event) => event.isJoined === true)
+    }
+
+    // Filter: Đang diễn ra (ongoing)
+    if (sortBy === 'ongoing') {
+      const now = new Date()
+      filtered = filtered.filter((event) => {
+        const start = new Date(event.startDate)
+        const end = new Date(event.endDate)
+        return start <= now && now <= end
+      })
+    }
+
+    // Filter: Đã kết thúc
+    if (sortBy === 'ended') {
+      const now = new Date()
+      filtered = filtered.filter((event) => new Date(event.endDate) < now)
+    }
+
     // Sort events
     if (sortBy === 'popular') {
       filtered.sort((a, b) => (b.participants || 0) - (a.participants || 0))
     } else if (sortBy === 'newest') {
       filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    } else if (sortBy === 'oldest') {
+      filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     } else if (sortBy === 'soonest') {
       filtered.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+    } else if (sortBy === 'ongoing') {
+      filtered.sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
+    } else if (sortBy === 'ended') {
+      filtered.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))
     }
 
     return filtered
-  }, [sportEvents, searchTerm, selectedCategory, eventType, sortBy])
+  }, [sportEvents, searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, me])
+
+  // Reset page to 1 when any filter changes
+  useEffect(() => {
+    setPage(1)
+  }, [searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo])
+
+  // Pagination calculations
+  const totalPage = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1
+  const paginatedEvents = filteredEvents.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   // Fetch sport categories
   const { data: categoriesData } = useQuery({
@@ -123,17 +240,20 @@ const SportEvent = () => {
   // Dynamic categories from DB
   const dbCategories = categoriesData?.data?.result || []
 
-  // Custom Icon Mapping if needed (optional)
-  const getIconForCategory = (name) => {
-    switch (name?.toLowerCase()) {
-      case 'chạy bộ': return <FaRunning />
-      case 'đạp xe': return <FaBiking />
-      case 'bơi lội': return <FaSwimmer />
-      case 'fitness': return <FaDumbbell />
-      case 'yoga': return <MdDirectionsWalk />
-      default: return <MdSportsSoccer />
-    }
+  // Lấy icon component từ DB field `icon` của category
+  const renderCategoryIcon = (category) => {
+    const IconComp = getSportIcon(category.icon)
+    return <IconComp />
   }
+
+  // Lookup map: tên category => icon component (dùng cho SportEventCard)
+  const categoryIconLookup = useMemo(() => {
+    const map = {}
+    dbCategories.forEach(cat => {
+      map[cat.name] = getSportIcon(cat.icon)
+    })
+    return map
+  }, [dbCategories])
 
   // Filter categories based on selected eventType ('Ngoài trời' or 'Trong nhà')
   const availableCategories = useMemo(() => {
@@ -165,18 +285,18 @@ const SportEvent = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-500 px-6 py-6">
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-500 px-6 py-4">
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 container mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-              <MdSportsSoccer className="text-white text-2xl" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <MdSportsSoccer className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Sự kiện Thể thao</h1>
-              <p className="text-white/75 text-sm mt-0.5">Khám phá và đăng ký tham gia các sự kiện phù hợp với bạn</p>
+              <h1 className="text-xl font-bold text-white">Sự kiện Thể thao</h1>
+              <p className="text-white/75 text-xs mt-0.5">Khám phá và đăng ký tham gia các sự kiện phù hợp với bạn</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
             <Link
               to="/sport-event/my-events"
               className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2 text-sm"
@@ -193,19 +313,119 @@ const SportEvent = () => {
         </div>
       </div>
 
-      {/* Modern Search & Filters Section */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20 shadow-sm transition-all">
-        <div className="container mx-auto px-4 py-6">
+      {/* Featured Events Banner Carousel */}
+      {(() => {
+        const featuredEvents = [...sportEvents]
+          .filter(e => new Date(e.endDate) > new Date()) // only active/upcoming
+          .sort((a, b) => (b.participants || 0) - (a.participants || 0))
+          .slice(0, 3)
 
-          {/* Top Row: Main Tabs & Search Engine */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
+        if (featuredEvents.length === 0) return null
 
-            {/* Event Type Tabs */}
+        return <FeaturedBanner events={featuredEvents} navigate={navigate} />
+      })()}
+
+      {/* Modern Search & Filters Section — Admin-inspired card design */}
+      <div className="container mx-auto px-4 pt-6 pb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+          {/* Row 1: Search bar + Bộ lọc button */}
+          <div className="p-4">
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <FaTimes size={12} />
+                  </button>
+                )}
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên sự kiện, danh mục, địa điểm..."
+                  className="w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 dark:text-white outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                  showAdvanced || sortBy !== 'popular' || filterDateFrom || filterDateTo
+                    ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                }`}
+              >
+                <FaFilter size={12} />
+                Bộ lọc
+                {([sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length > 0) && (
+                  <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+                    {[sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length}
+                  </span>
+                )}
+                <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Active filter chips */}
+            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || filterDateFrom || filterDateTo) && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {eventType !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                    {eventType === 'Ngoài trời' ? '🌿' : '🏠'} {eventType}
+                    <button onClick={() => { setEventType('all'); setSelectedCategory('all') }} className="hover:text-emerald-900 dark:hover:text-emerald-100"><FaTimes size={9} /></button>
+                  </span>
+                )}
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    🏅 {selectedCategory}
+                    <button onClick={() => setSelectedCategory('all')} className="hover:text-blue-900 dark:hover:text-blue-100"><FaTimes size={9} /></button>
+                  </span>
+                )}
+                {sortBy !== 'popular' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                    ↕️ {{ newest: 'Mới nhất', oldest: 'Cũ nhất', soonest: 'Sắp diễn ra', ongoing: 'Đang diễn ra', joined: 'Đã tham gia', ended: 'Đã kết thúc' }[sortBy] || sortBy}
+                    <button onClick={() => setSortBy('popular')} className="hover:text-purple-900 dark:hover:text-purple-100"><FaTimes size={9} /></button>
+                  </span>
+                )}
+                {filterDateFrom && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                    📅 Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
+                    <button onClick={() => setFilterDateFrom('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
+                  </span>
+                )}
+                {filterDateTo && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                    📅 Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
+                    <button onClick={() => setFilterDateTo('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setSelectedCategory('all')
+                    setEventType('all')
+                    setSortBy('popular')
+                    setFilterDateFrom('')
+                    setFilterDateTo('')
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                >
+                  <FaTimes size={9} /> Xóa tất cả
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Row 2: Event Type Tabs — always visible */}
+          <div className="px-4 pb-3">
             <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar">
               <button
                 onClick={() => { setEventType('all'); setSelectedCategory('all') }}
                 className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${eventType === 'all'
-                  ? 'bg-white text-red-600 shadow-md transform scale-100'
+                  ? 'bg-white text-red-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
               >
@@ -214,7 +434,7 @@ const SportEvent = () => {
               <button
                 onClick={() => { setEventType('Ngoài trời'); setSelectedCategory('all') }}
                 className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${eventType === 'Ngoài trời'
-                  ? 'bg-white text-green-600 shadow-md transform scale-100'
+                  ? 'bg-white text-green-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
               >
@@ -223,68 +443,103 @@ const SportEvent = () => {
               <button
                 onClick={() => { setEventType('Trong nhà'); setSelectedCategory('all') }}
                 className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${eventType === 'Trong nhà'
-                  ? 'bg-white text-blue-600 shadow-md transform scale-100'
+                  ? 'bg-white text-blue-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
               >
                 🏠 Trong nhà
               </button>
             </div>
-
-            {/* Search and Sort */}
-            <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 flex-1 lg:flex-none justify-end">
-              <div className="relative group flex-1 sm:max-w-xs">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Tìm tên, địa điểm..."
-                  className="w-full pl-11 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full sm:w-48 px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 font-medium dark:text-white focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none cursor-pointer appearance-none"
-              >
-                <option value="popular">📊 Nổi bật nhất</option>
-                <option value="newest">🆕 Mới cập nhật</option>
-                <option value="soonest">📅 Sắp diễn ra</option>
-              </select>
-            </div>
-
           </div>
 
-          {/* Bottom Row: Dynamic Category Pills */}
+          {/* Row 3: Dynamic Category Pills — always visible */}
           {availableCategories.length > 0 && (
-            <div className="flex flex-wrap gap-2.5">
-              <button
-                className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === 'all'
-                  ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
-                  : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
-                  }`}
-                onClick={() => setSelectedCategory('all')}
-              >
-                <MdSportsSoccer className={`mr-2 ${selectedCategory === 'all' ? 'text-red-500' : 'text-gray-400'}`} />
-                Tất cả môn
-              </button>
-
-              {availableCategories.map((category) => (
+            <div className="px-4 pb-4">
+              <div className="flex flex-wrap gap-2.5">
                 <button
-                  key={category._id}
-                  className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === category.name
+                  className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === 'all'
                     ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
                     : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
                     }`}
-                  onClick={() => setSelectedCategory(category.name)}
+                  onClick={() => setSelectedCategory('all')}
                 >
-                  <span className={`mr-2 ${selectedCategory === category.name ? 'text-red-500' : 'text-gray-400'}`}>
-                    {getIconForCategory(category.name)}
-                  </span>
-                  {category.name}
+                  <MdSportsSoccer className={`mr-2 ${selectedCategory === 'all' ? 'text-red-500' : 'text-gray-400'}`} />
+                  Tất cả môn
                 </button>
-              ))}
+
+                {availableCategories.map((category) => {
+                  const CatIcon = getSportIcon(category.icon)
+                  return (
+                    <button
+                      key={category._id}
+                      className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === category.name
+                        ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
+                        : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
+                        }`}
+                      onClick={() => setSelectedCategory(category.name)}
+                    >
+                      <CatIcon className={`mr-2 ${selectedCategory === category.name ? 'text-red-500' : 'text-gray-400'}`} />
+                      {category.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Collapsible Advanced Filter Panel */}
+          {showAdvanced && (
+            <div className="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700">
+              {/* Date range filters */}
+              <div className="grid grid-cols-2 gap-3 pt-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Từ ngày</label>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={e => setFilterDateFrom(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Đến ngày</label>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={e => setFilterDateTo(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Sort row */}
+              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <FaSortAmountDown className="text-gray-400 text-sm shrink-0" />
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase shrink-0">Sắp xếp:</span>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { value: 'popular', label: 'Phổ biến nhất' },
+                    { value: 'newest', label: 'Mới nhất' },
+                    { value: 'oldest', label: 'Cũ nhất' },
+                    { value: 'soonest', label: 'Sắp diễn ra' },
+                    { value: 'ongoing', label: 'Đang diễn ra' },
+                    { value: 'joined', label: 'Đã tham gia' },
+                    { value: 'ended', label: 'Đã kết thúc' }
+                  ].map(s => (
+                    <button
+                      key={s.value}
+                      onClick={() => setSortBy(s.value)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                        sortBy === s.value
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 ring-1 ring-red-300 dark:ring-red-700'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -294,8 +549,11 @@ const SportEvent = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Results Count */}
         {!isLoading && (
-          <div className="mb-6 text-gray-600 dark:text-gray-400">
-            Tìm thấy <span className="font-semibold text-gray-900 dark:text-white">{filteredEvents.length}</span> sự kiện
+          <div className="mb-6 flex items-center justify-between">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{paginatedEvents.length}</span> / {filteredEvents.length} sự kiện
+              {totalPage > 1 && <span className="text-gray-400 ml-2">(trang {page}/{totalPage})</span>}
+            </p>
           </div>
         )}
 
@@ -325,8 +583,9 @@ const SportEvent = () => {
           </div>
         ) : filteredEvents.length > 0 ? (
           /* Events Grid */
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
+            {paginatedEvents.map((event) => (
               <SportEventCard
                 key={event._id || event.id}
                 event={event}
@@ -334,9 +593,52 @@ const SportEvent = () => {
                 isJoining={joinEventMutation.isPending && joinEventMutation.variables === (event._id || event.id)}
                 friendIds={friendIds}
                 connectedIds={connectedIds}
+                CategoryIcon={categoryIconLookup[event.category]}
               />
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPage > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                disabled={page <= 1}
+                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                ← Trước
+              </button>
+              {Array.from({ length: totalPage }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map(p =>
+                  typeof p === 'number' ? (
+                    <button
+                      key={p}
+                      onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                      className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                    >
+                      {p}
+                    </button>
+                  ) : (
+                    <span key={p} className="px-1 text-gray-400">...</span>
+                  )
+                )
+              }
+              <button
+                disabled={page >= totalPage}
+                onClick={() => { setPage(p => Math.min(totalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+          </>
         ) : (
           /* Empty State */
           <div className="text-center py-16">

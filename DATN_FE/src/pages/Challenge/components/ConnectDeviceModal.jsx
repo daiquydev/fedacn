@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BsSmartwatch, BsApple, BsFillCheckCircleFill } from 'react-icons/bs';
-import { FaAndroid, FaBluetoothB, FaBluetooth, FaWifi, FaCheck, FaSync } from 'react-icons/fa';
+import { FaAndroid, FaBluetoothB, FaBluetooth, FaWifi, FaCheck, FaSync, FaTimes } from 'react-icons/fa';
 import { BiLinkAlt } from 'react-icons/bi';
 
 const ConnectDeviceModal = ({ isOpen, onClose, onConnect, challengeType }) => {
@@ -55,21 +55,19 @@ const ConnectDeviceModal = ({ isOpen, onClose, onConnect, challengeType }) => {
   
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white flex items-center">
-              <BsSmartwatch className="mr-2 text-blue-500" />
-              Kết nối thiết bị đeo thông minh
-            </h3>
-            <button 
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-white"
-            >
-              <span className="text-2xl">&times;</span>
-            </button>
-          </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2.5">
+            <BsSmartwatch className="text-emerald-600 dark:text-emerald-400 text-xl" />
+            Kết nối thiết bị đeo thông minh
+          </h3>
+          <button 
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <FaTimes size={16} />
+          </button>
         </div>
         
         {/* Body */}

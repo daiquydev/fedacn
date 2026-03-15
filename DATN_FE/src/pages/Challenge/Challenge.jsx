@@ -2002,6 +2002,10 @@ export default function Challenge() {
 
   // Reminder: khi mở app, kiểm tra hôm nay có lịch tập không (dùng cache localStorage cho offline)
   useEffect(() => {
+    // Prevent duplicate reminder per session
+    const reminderKey = `workout_reminder_${new Date().toISOString().slice(0, 10)}`
+    if (sessionStorage.getItem(reminderKey)) return
+
     const today = new Date().getDay()
     const todayStr = new Date().toISOString().slice(0, 10)
     const cached = _getCachedWorkouts()
@@ -2015,9 +2019,10 @@ export default function Challenge() {
     })
     if (workoutsWithSchedule.length > 0) {
       const names = workoutsWithSchedule.map(w => w.name).join(', ')
+      sessionStorage.setItem(reminderKey, '1')
       setTimeout(() => {
         toast(`📅 Hôm nay bạn có lịch tập: ${names} — lúc ${workoutsWithSchedule[0].schedule.time_of_day || ''}`, {
-          duration: 6000, icon: '💪'
+          duration: 6000, icon: '💪', id: 'workout-reminder'
         })
       }, 1500)
     }
@@ -2222,15 +2227,15 @@ export default function Challenge() {
   return (
     <div>
       {/* Page Header - full width */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-6">
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-              <GiWeightLiftingUp className="text-white text-2xl" />
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <GiWeightLiftingUp className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Tập luyện</h1>
-              <p className="text-white/75 text-sm mt-0.5">Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn</p>
+              <h1 className="text-xl font-bold text-white">Tập luyện</h1>
+              <p className="text-white/75 text-xs mt-0.5">Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">

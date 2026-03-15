@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { BsFillImageFill, BsLockFill, BsPeopleFill } from 'react-icons/bs'
 import { MdEmojiEmotions } from 'react-icons/md'
-import { FaTimes, FaGlobeAsia, FaPen } from 'react-icons/fa'
+import { FaTimes, FaGlobeAsia, FaPen, FaUserFriends } from 'react-icons/fa'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
@@ -16,7 +16,8 @@ import * as nsfwjs from 'nsfwjs'
 
 const PRIVACY_OPTIONS = [
   { value: 0, label: 'Công khai', icon: <FaGlobeAsia className="text-green-500" /> },
-  { value: 1, label: 'Người theo dõi', icon: <BsPeopleFill className="text-blue-500" /> },
+  { value: 3, label: 'Bạn bè', icon: <FaUserFriends className="text-blue-500" /> },
+  { value: 1, label: 'Người theo dõi', icon: <BsPeopleFill className="text-purple-500" /> },
   { value: 2, label: 'Chỉ mình tôi', icon: <BsLockFill className="text-gray-500" /> }
 ]
 
@@ -24,6 +25,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   const theme = localStorage.getItem('theme')
   const inputRef = useRef(null)
   const dropdownRef = useRef(null)
+  const isSubmittingRef = useRef(false)
   const [play] = useSound(postSfx)
   const [image, setImage] = useState([])
   const [privacy, setPrivacy] = useState(0)
@@ -99,6 +101,10 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   }
 
   const handleUpload = async () => {
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current || uploadMutation.isPending) return
+    isSubmittingRef.current = true
+
     if (image.length > 0) {
       const result = await classifyImages(image)
       const flagged = result
@@ -111,10 +117,14 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
         )
         .some((f) => f)
 
-      if (flagged) return toast.error('Ảnh của bạn có chứa nội dung nhạy cảm')
+      if (flagged) {
+        isSubmittingRef.current = false
+        return toast.error('Ảnh của bạn có chứa nội dung nhạy cảm')
+      }
     }
 
     if (content === '' && image.length === 0) {
+      isSubmittingRef.current = false
       return toast.error('Nội dung hoặc ảnh không được để trống')
     }
 
@@ -130,8 +140,12 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
         setImage([])
         play()
         closeModalPost()
+        isSubmittingRef.current = false
       },
-      onError: (error) => console.log(error)
+      onError: (error) => {
+        console.log(error)
+        isSubmittingRef.current = false
+      }
     })
   }
 
@@ -140,7 +154,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
       onClick={closeModalPost}
     >
       <div

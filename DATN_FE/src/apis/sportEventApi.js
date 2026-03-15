@@ -73,6 +73,9 @@ export const getLeaderboard = (eventId, params) => http.get(`/sport-events/${eve
 // Get participants with progress
 export const getParticipants = (eventId, params) => http.get(`/sport-events/${eventId}/progress/participants`, { params })
 
+// Get event overall progress (total group progress)
+export const getEventOverallProgress = (eventId) => http.get(`/sport-events/${eventId}/progress/overall`)
+
 // ==================== POST APIs ====================
 // Create event post
 export const createEventPost = (eventId, data) => http.post(`/sport-events/${eventId}/posts`, data)

@@ -164,15 +164,15 @@ export default function MealPlan() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-6">
+      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-4">
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 max-w-6xl mx-auto">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-              <FaUtensils className="text-white text-2xl" />
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <FaUtensils className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Thực Đơn Cộng Đồng</h1>
-              <p className="text-white/75 text-sm mt-0.5">Khám phá và chia sẻ các thực đơn dinh dưỡng từ cộng đồng</p>
+              <h1 className="text-xl font-bold text-white">Thực Đơn Cộng Đồng</h1>
+              <p className="text-white/75 text-xs mt-0.5">Khám phá và chia sẻ các thực đơn dinh dưỡng từ cộng đồng</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2.5">

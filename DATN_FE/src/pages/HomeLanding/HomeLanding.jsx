@@ -1,241 +1,367 @@
-import { FaAppleAlt, FaUtensils, FaUsers, FaCalculator, FaLeaf, FaFacebook, FaInstagram, FaTwitter } from 'react-icons/fa'
+import { useEffect, useRef, useState } from 'react'
+import {
+  FaLeaf,
+  FaUsers,
+  FaCalculator,
+  FaRunning,
+  FaDumbbell,
+  FaChartLine,
+  FaFacebook,
+  FaInstagram,
+  FaTwitter,
+  FaBars,
+  FaTimes,
+  FaRobot,
+  FaCamera
+} from 'react-icons/fa'
 import { Link } from 'react-router-dom'
+import heroImg from '../../assets/images/hero_fitness.png'
+
+function AnimatedCounter({ target, suffix = '' }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef(null)
+  const hasAnimated = useRef(false)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated.current) {
+          hasAnimated.current = true
+          let start = 0
+          const duration = 2000
+          const step = target / (duration / 16)
+          const timer = setInterval(() => {
+            start += step
+            if (start >= target) {
+              setCount(target)
+              clearInterval(timer)
+            } else {
+              setCount(Math.floor(start))
+            }
+          }, 16)
+        }
+      },
+      { threshold: 0.3 }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [target])
+
+  return (
+    <span ref={ref}>
+      {count.toLocaleString()}
+      {suffix}
+    </span>
+  )
+}
+
+const features = [
+  {
+    icon: FaRobot,
+    title: 'AI Gợi ý bài tập',
+    desc: 'Trí tuệ nhân tạo phân tích thể trạng và đề xuất bài tập phù hợp nhất cho bạn.',
+    color: 'bg-emerald-100 text-emerald-600'
+  },
+  {
+    icon: FaRobot,
+    title: 'AI Lập kế hoạch dinh dưỡng',
+    desc: 'AI tự động tạo thực đơn ăn uống cá nhân hóa dựa trên mục tiêu sức khỏe.',
+    color: 'bg-amber-100 text-amber-600'
+  },
+  {
+    icon: FaCamera,
+    title: 'AI Nhận diện thực phẩm',
+    desc: 'Chụp ảnh món ăn, AI phân tích thành phần dinh dưỡng và calo ngay lập tức.',
+    color: 'bg-teal-100 text-teal-600'
+  },
+  {
+    icon: FaRunning,
+    title: 'Sự kiện thể thao',
+    desc: 'Tham gia sự kiện thể dục, theo dõi tiến trình cùng nhóm.',
+    color: 'bg-emerald-100 text-emerald-600'
+  },
+  {
+    icon: FaDumbbell,
+    title: 'Lịch tập luyện thông minh',
+    desc: 'Tạo và quản lý lịch tập luyện cá nhân với AI hỗ trợ tối ưu.',
+    color: 'bg-amber-100 text-amber-600'
+  },
+  {
+    icon: FaChartLine,
+    title: 'Thống kê & Phân tích AI',
+    desc: 'Dashboard thông minh phân tích dữ liệu sức khỏe và đưa ra khuyến nghị.',
+    color: 'bg-teal-100 text-teal-600'
+  }
+]
+
+const stats = [
+  { value: 10000, suffix: '+', label: 'Thành viên' },
+  { value: 500, suffix: '+', label: 'Sự kiện' },
+  { value: 1000, suffix: '+', label: 'Bài tập AI' },
+  { value: 50, suffix: '+', label: 'Chuyên gia' }
+]
 
 export default function HomeLanding() {
+  const [scrolled, setScrolled] = useState(false)
+  const [mobileMenu, setMobileMenu] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow-md fixed w-full z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <FaLeaf className="h-8 w-8 text-green-500" />
-                <span className="ml-2 text-xl font-bold text-green-600 dark:text-green-400">FitConnect</span>
+    <div className='min-h-screen bg-white font-Inter'>
+      {/* ─── Navbar ─── */}
+      <nav
+        className={`fixed w-full z-50 transition-all duration-300 ${
+          scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-white'
+        }`}
+      >
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='flex justify-between h-16 items-center'>
+            {/* Logo */}
+            <Link to='/' className='flex items-center gap-2'>
+              <div className='w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center'>
+                <FaLeaf className='text-white text-sm' />
               </div>
-              <div className="hidden md:ml-6 md:flex md:space-x-8">
-                <Link to="/" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
-                  Trang Chủ
-                </Link>
-                <Link to="/explore" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
-                  Khám Phá
-                </Link>
-                <Link to="/about" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
-                  Thông tin
-                </Link>
-                <Link to="/get-started" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
-                  Bắt đầu
-                </Link>
-                <Link to="/contact" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
-                  Liên hệ
-                </Link>
-              </div>
+              <span className='text-xl font-bold text-gray-900'>
+                Fit<span className='text-emerald-600'>Connect</span>
+              </span>
+            </Link>
+
+            {/* Desktop nav */}
+            <div className='hidden md:flex items-center gap-1'>
+              <Link
+                to='/'
+                className='text-gray-600 hover:text-emerald-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors'
+              >
+                Trang Chủ
+              </Link>
             </div>
-            <div className="flex items-center">
-              <Link to="/login" className="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 px-3 py-2 rounded-md text-sm font-medium">
+
+            {/* Auth buttons */}
+            <div className='hidden md:flex items-center gap-3'>
+              <Link
+                to='/login'
+                className='text-gray-700 hover:text-emerald-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors'
+              >
                 Đăng nhập
               </Link>
-              <Link to="/register" className="ml-4 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium">
+              <Link
+                to='/register'
+                className='bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md shadow-amber-200 hover:shadow-lg hover:shadow-amber-300'
+              >
+                Đăng ký
+              </Link>
+            </div>
+
+            {/* Mobile menu button */}
+            <button
+              className='md:hidden text-gray-600 p-2'
+              onClick={() => setMobileMenu(!mobileMenu)}
+            >
+              {mobileMenu ? <FaTimes className='text-xl' /> : <FaBars className='text-xl' />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileMenu && (
+          <div className='md:hidden bg-white border-t px-4 py-4 space-y-2'>
+            <Link
+              to='/'
+              className='block text-gray-600 hover:text-emerald-600 px-4 py-2 rounded-lg text-sm'
+            >
+              Trang Chủ
+            </Link>
+            <div className='flex gap-2 pt-2'>
+              <Link to='/login' className='flex-1 text-center text-emerald-600 border border-emerald-600 py-2 rounded-lg text-sm font-medium'>
+                Đăng nhập
+              </Link>
+              <Link to='/register' className='flex-1 text-center bg-amber-500 text-white py-2 rounded-lg text-sm font-medium'>
                 Đăng ký
               </Link>
             </div>
           </div>
-        </div>
+        )}
       </nav>
 
-      {/* Hero Section */}
-      <div className="pt-16">
-        <div className="relative bg-green-50 dark:bg-gray-800 overflow-hidden">
-          <div className="max-w-7xl mx-auto">
-            <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-              <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
-                <div className="sm:text-center lg:text-left">
-                  <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-                    <span className="block">Khỏe Mạnh và</span>
-                    <span className="block text-green-600 dark:text-green-400">Kết Nối</span>
-                  </h1>
-                  <p className="mt-3 text-base text-gray-500 dark:text-gray-400 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                    Chào mừng đến với FitConnect - Nơi bạn có thể kết nối với cộng đồng yêu thích thể dục thể thao và rèn luyện sức khỏe một cách an toàn và tin cậy.
-                  </p>
-                  <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                    <div className="rounded-md shadow">
-                      <Link to="/register" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 md:py-4 md:text-lg md:px-10">
-                        Đăng ký ngay!
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </main>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="py-12 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center">
-            <h2 className="text-base text-green-600 dark:text-green-400 font-semibold tracking-wide uppercase">Tính năng</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Với FitConnect, bạn có thể làm gì?
-            </p>
-          </div>
-
-          <div className="mt-10">
-            <div className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
-              {/* Feature 1 */}
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
-                  <FaUsers className="h-6 w-6" />
-                </div>
-                <div className="ml-16">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Tham gia diễn đàn</h3>
-                  <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                    Tham gia các cuộc thảo luận sôi nổi về dinh dưỡng, chia sẻ mẹo hay, và kết bạn với những người có cùng đam mê.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
-                  <FaUtensils className="h-6 w-6" />
-                </div>
-                <div className="ml-16">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Chia sẻ thực đơn</h3>
-                  <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                    Chia sẻ thực đơn ăn uống lành mạnh của bạn và khám phá những công thức mới từ các thành viên khác.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
-                  <FaCalculator className="h-6 w-6" />
-                </div>
-                <div className="ml-16">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Tính toán chỉ số sức khỏe</h3>
-                  <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                    Sử dụng các công cụ chuyên nghiệp để tính toán BMI, BMR, và các chỉ số sức khỏe khác.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
-                  <FaAppleAlt className="h-6 w-6" />
-                </div>
-                <div className="ml-16">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Tham gia sự kiện</h3>
-                  <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                    Tham gia các sự kiện thể dục, lớp học nấu ăn lành mạnh, và hội thảo sức khỏe.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Community Section */}
-      <div className="bg-green-50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
-          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-            <span className="block">Bắt đầu hành trình của bạn ngay hôm nay!</span>
-          </h2>
-          <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-            <div className="inline-flex rounded-md shadow">
-              <Link to="/register" className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-                Tham gia ngay
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Contact Info */}
+      {/* ─── Hero Section ─── */}
+      <section className='pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='grid lg:grid-cols-2 gap-12 items-center'>
+            {/* Text */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Liên hệ</h3>
-              <ul className="mt-4 space-y-4">
-                <li>
-                  <a href="#" className="text-base text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400">
-                    Email: contact@fitconnect.com
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-base text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400">
-                    SĐT: (123) 456-7890
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Liên kết nhanh</h3>
-              <ul className="mt-4 space-y-4">
-                <li>
-                  <Link to="/about" className="text-base text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400">
-                    Về chúng tôi
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blog" className="text-base text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="text-base text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400">
-                    Liên hệ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Social Links */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Mạng xã hội</h3>
-              <div className="mt-4 flex space-x-6">
-                <a href="#" className="text-gray-400 hover:text-green-500">
-                  <FaFacebook className="h-6 w-6" />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-green-500">
-                  <FaInstagram className="h-6 w-6" />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-green-500">
-                  <FaTwitter className="h-6 w-6" />
-                </a>
+              <div className='inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-sm font-medium mb-6'>
+                <span className='w-2 h-2 bg-emerald-500 rounded-full animate-pulse' />
+                Nền tảng sức khỏe cộng đồng #1
               </div>
-            </div>
-
-            {/* Newsletter */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Đăng ký nhận tin</h3>
-              <form className="mt-4">
-                <input
-                  type="email"
-                  placeholder="Email của bạn"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                />
-                <button
-                  type="submit"
-                  className="mt-2 w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+              <h1 className='text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight'>
+                Khỏe Mạnh và{' '}
+                <span className='text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500'>
+                  Kết Nối
+                </span>
+              </h1>
+              <p className='mt-6 text-lg text-gray-500 leading-relaxed max-w-lg'>
+                Chào mừng đến với FitConnect — Nơi bạn kết nối với cộng đồng yêu thích thể dục thể thao
+                và rèn luyện sức khỏe một cách an toàn và tin cậy.
+              </p>
+              <div className='mt-8 flex flex-wrap gap-4'>
+                <Link
+                  to='/register'
+                  className='bg-amber-500 hover:bg-amber-600 text-white px-8 py-3.5 rounded-xl text-base font-semibold transition-all shadow-lg shadow-amber-200 hover:shadow-xl hover:shadow-amber-300 hover:-translate-y-0.5'
                 >
-                  Đăng ký
-                </button>
-              </form>
+                  Bắt đầu miễn phí
+                </Link>
+                <Link
+                  to='/login'
+                  className='border-2 border-gray-200 hover:border-emerald-300 text-gray-700 hover:text-emerald-600 px-8 py-3.5 rounded-xl text-base font-semibold transition-all hover:-translate-y-0.5'
+                >
+                  Đăng nhập
+                </Link>
+              </div>
+            </div>
+
+            {/* Hero Image */}
+            <div className='relative'>
+              <div className='absolute -top-10 -right-10 w-72 h-72 bg-emerald-200/40 rounded-full blur-3xl' />
+              <div className='absolute -bottom-10 -left-10 w-60 h-60 bg-amber-200/30 rounded-full blur-3xl' />
+              <img
+                src={heroImg}
+                alt='FitConnect - Cộng đồng sức khỏe'
+                className='relative z-10 w-full max-w-lg mx-auto drop-shadow-2xl'
+              />
             </div>
           </div>
-          <div className="mt-8 border-t border-gray-200 pt-8">
-            <p className="text-base text-gray-400 text-center">
-              © 2024 FitConnect. All rights reserved.
+        </div>
+      </section>
+
+      {/* ─── Features Section ─── */}
+      <section className='py-20 bg-gray-50'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='text-center max-w-2xl mx-auto mb-16'>
+            <span className='text-emerald-600 font-semibold text-sm uppercase tracking-wider'>Tính năng</span>
+            <h2 className='mt-3 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight'>
+              Với FitConnect, bạn có thể làm gì?
+            </h2>
+            <p className='mt-4 text-gray-500 text-lg'>
+              Mọi công cụ bạn cần cho hành trình sức khỏe, tất cả trong một nền tảng.
             </p>
+          </div>
+
+          <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className='group bg-white rounded-2xl p-7 border border-gray-100 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-50 transition-all duration-300 hover:-translate-y-1 cursor-default'
+              >
+                <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
+                  <f.icon className='text-xl' />
+                </div>
+                <h3 className='text-lg font-bold text-gray-900 mb-2'>{f.title}</h3>
+                <p className='text-gray-500 text-sm leading-relaxed'>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Stats Section ─── */}
+      <section className='py-16 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='grid grid-cols-2 lg:grid-cols-4 gap-8'>
+            {stats.map((s, i) => (
+              <div key={i} className='text-center'>
+                <div className='text-4xl lg:text-5xl font-extrabold text-white mb-2'>
+                  <AnimatedCounter target={s.value} suffix={s.suffix} />
+                </div>
+                <div className='text-emerald-200 font-medium'>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CTA Section ─── */}
+      <section className='py-20'>
+        <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center'>
+          <h2 className='text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight'>
+            Bắt đầu hành trình của bạn ngay hôm nay!
+          </h2>
+          <p className='mt-4 text-gray-500 text-lg max-w-2xl mx-auto'>
+            Gia nhập cộng đồng FitConnect để cùng nhau tập luyện, chia sẻ kinh nghiệm và đạt được mục tiêu sức khỏe.
+          </p>
+          <div className='mt-8'>
+            <Link
+              to='/register'
+              className='inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white px-10 py-4 rounded-xl text-lg font-semibold transition-all shadow-lg shadow-amber-200 hover:shadow-xl hover:shadow-amber-300 hover:-translate-y-0.5'
+            >
+              Tham gia ngay
+              <svg className='ml-2 w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 8l4 4m0 0l-4 4m4-4H3' />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className='bg-gray-900 text-gray-400 pt-16 pb-8'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-gray-800'>
+            {/* Brand */}
+            <div>
+              <div className='flex items-center gap-2 mb-4'>
+                <div className='w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center'>
+                  <FaLeaf className='text-white text-xs' />
+                </div>
+                <span className='text-white text-lg font-bold'>FitConnect</span>
+              </div>
+              <p className='text-sm leading-relaxed'>
+                Nền tảng kết nối cộng đồng sức khỏe và thể thao hàng đầu Việt Nam.
+              </p>
+            </div>
+
+            {/* Links */}
+            <div>
+              <h4 className='text-white text-sm font-semibold uppercase tracking-wider mb-4'>Liên kết</h4>
+              <ul className='space-y-3'>
+                <li><Link to='/' className='hover:text-emerald-400 transition-colors text-sm'>Trang chủ</Link></li>
+                <li><Link to='/blog' className='hover:text-emerald-400 transition-colors text-sm'>Blog</Link></li>
+                <li><Link to='/contact' className='hover:text-emerald-400 transition-colors text-sm'>Liên hệ</Link></li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className='text-white text-sm font-semibold uppercase tracking-wider mb-4'>Liên hệ</h4>
+              <ul className='space-y-3 text-sm'>
+                <li>Email: contact@fitconnect.com</li>
+                <li>SĐT: (123) 456-7890</li>
+              </ul>
+            </div>
+
+            {/* Social */}
+            <div>
+              <h4 className='text-white text-sm font-semibold uppercase tracking-wider mb-4'>Mạng xã hội</h4>
+              <div className='flex gap-4'>
+                <a href='#' className='w-10 h-10 bg-gray-800 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-colors'>
+                  <FaFacebook />
+                </a>
+                <a href='#' className='w-10 h-10 bg-gray-800 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-colors'>
+                  <FaInstagram />
+                </a>
+                <a href='#' className='w-10 h-10 bg-gray-800 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-colors'>
+                  <FaTwitter />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className='pt-8 text-center text-sm text-gray-500'>
+            © {new Date().getFullYear()} FitConnect. All rights reserved.
           </div>
         </div>
       </footer>

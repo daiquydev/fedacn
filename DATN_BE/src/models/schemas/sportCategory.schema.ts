@@ -3,6 +3,7 @@ import mongoose, { Types } from 'mongoose'
 export interface SportCategory {
     _id?: Types.ObjectId
     name: string
+    icon: string
     type: 'Ngoài trời' | 'Trong nhà'
     kcal_per_unit: number // kcal/km (Ngoài trời) hoặc kcal/phút (Trong nhà)
     isDeleted?: boolean
@@ -14,6 +15,7 @@ export interface SportCategory {
 const SportCategorySchema = new mongoose.Schema<SportCategory>(
     {
         name: { type: String, required: true },
+        icon: { type: String, default: 'sport' },
         type: { type: String, enum: ['Ngoài trời', 'Trong nhà'], required: true },
         kcal_per_unit: { type: Number, default: 0, min: 0 },
         isDeleted: { type: Boolean, default: false },

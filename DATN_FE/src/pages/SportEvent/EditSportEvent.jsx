@@ -303,7 +303,7 @@ const EditSportEvent = () => {
   const inputCls = (name) =>
     `w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white focus:ring-4 transition outline-none ${errors[name]
       ? 'border-red-400 focus:ring-red-500/10'
-      : 'border-gray-100 dark:border-gray-600 focus:border-blue-400 focus:ring-blue-500/10'
+      : 'border-gray-100 dark:border-gray-600 focus:border-emerald-400 focus:ring-emerald-500/10'
     }`
 
   const ErrorMsg = ({ name }) => errors[name]
@@ -322,11 +322,11 @@ const EditSportEvent = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-10 mb-8">
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-10 mb-8">
         <div className="container mx-auto px-4">
           <button
             onClick={() => navigate('/sport-event/my-events')}
-            className="flex items-center text-blue-50 hover:text-white mb-4 transition"
+            className="flex items-center text-emerald-50 hover:text-white mb-4 transition"
           >
             <FaArrowLeft className="mr-2" /> Quay lại dashboard
           </button>
@@ -344,7 +344,7 @@ const EditSportEvent = () => {
             {/* 1. Thông tin chung */}
             <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
               <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
-                <FaFileAlt className="text-blue-500 text-xl" />
+                <FaFileAlt className="text-green-500 text-xl" />
                 <h2 className="text-xl font-bold dark:text-white">1. Thông tin chung</h2>
               </div>
 
@@ -371,7 +371,7 @@ const EditSportEvent = () => {
                     name="category"
                     value={newEvent.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-blue-400"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400"
                   >
                     {filteredCategories.map(c => <option key={c._id || c.name} value={c.name}>{c.name}</option>)}
                   </select>
@@ -505,7 +505,7 @@ const EditSportEvent = () => {
                         placeholder="Tìm địa điểm..."
                         className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white transition outline-none ${errors.location
                           ? 'border-red-400'
-                          : 'border-gray-100 dark:border-gray-600 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10'
+                          : 'border-gray-100 dark:border-gray-600 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10'
                           }`}
                       />
                       {showSuggestions && locationSuggestions.length > 0 && (
@@ -641,17 +641,17 @@ const EditSportEvent = () => {
                     value={newEvent.detailedDescription}
                     onChange={handleInputChange}
                     rows={5}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none focus:border-purple-400 transition"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none focus:border-emerald-400 transition"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Yêu cầu tham gia</label>
-                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="Yêu cầu..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
+                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="Yêu cầu..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Lợi ích khi tham gia</label>
-                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="Lợi ích..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
+                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="Lợi ích..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
                   </div>
                 </div>
               </div>
@@ -710,7 +710,7 @@ const EditSportEvent = () => {
                       </div>
                     )}
                   </div>
-                  <div className="w-full py-3 bg-blue-600 text-white text-[10px] font-black text-center rounded-xl opacity-80 cursor-default">XEM CHI TIẾT</div>
+                  <div className="w-full py-3 bg-green-500 text-white text-[10px] font-black text-center rounded-xl opacity-80 cursor-default">XEM CHI TIẾT</div>
                 </div>
               </div>
 
@@ -732,16 +732,16 @@ const EditSportEvent = () => {
               <button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-blue-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50 flex"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-emerald-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50 flex"
               >
                 {updateMutation.isPending ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : 'CẬP NHẬT THAY ĐỔI'}
               </button>
 
-              <div className="mt-6 flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl">
-                <FaInfoCircle className="text-blue-600 shrink-0" />
-                <p className="text-[10px] text-blue-800 dark:text-blue-400 font-bold leading-relaxed">
+              <div className="mt-6 flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl">
+                <FaInfoCircle className="text-emerald-600 shrink-0" />
+                <p className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold leading-relaxed">
                   Bạn có thể tiếp tục chỉnh sửa sau này nếu cần thiết.
                 </p>
               </div>

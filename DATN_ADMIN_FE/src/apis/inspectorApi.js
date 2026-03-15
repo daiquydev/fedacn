@@ -5,6 +5,8 @@ export const getReportPost = (params) => http.get('/inspectors/post-reports', { 
 export const getReportPostDetail = (id) => http.get(`/inspectors/post-reports/${id}`)
 export const acceptReportPost = (id) => http.put(`/inspectors/post-accept/${id}`)
 export const rejectReportPost = (id, body) => http.put(`/inspectors/post-reject/${id}`, body)
+export const getDeletedPosts = (params) => http.get('/inspectors/deleted-posts', { params })
+export const restorePost = (id) => http.put(`/inspectors/restore-post/${id}`)
 
 export const getBlogsForInspector = (params) => http.get('/inspectors/blogs', { params })
 export const getBlogDetailForInspector = (id) => http.get(`/inspectors/blogs/${id}`)

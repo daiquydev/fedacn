@@ -44,6 +44,28 @@ export const deletePostReportController = async (req: Request, res: Response) =>
   })
 }
 
+export const getDeletedPostsController = async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query
+  const result = await inspectorService.getDeletedPostsService({
+    page: Number(page),
+    limit: Number(limit),
+    search: search as string
+  })
+  return res.json({
+    result,
+    message: 'Lấy danh sách bài viết đã xóa thành công'
+  })
+}
+
+export const restorePostController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await inspectorService.restorePostService({ post_id: id })
+  return res.json({
+    result,
+    message: 'Khôi phục bài viết thành công'
+  })
+}
+
 export const getListBlogForInspectorController = async (req: Request, res: Response) => {
   const { page, limit, search, sort, category_blog_id } = req.query
   const result = await inspectorService.getListBlogForInspectorService({

@@ -1,27 +1,26 @@
 import { useEffect, useState, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 // * React icons
 import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie, FaTrophy, FaDumbbell, FaCalculator } from 'react-icons/fa'
 import { BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
-import { MdMenu, MdOutlineSpaceDashboard, MdSportsSoccer } from 'react-icons/md'
+import { MdMenu, MdClose, MdOutlineSpaceDashboard, MdSportsSoccer } from 'react-icons/md'
 import { NavLink, useLocation } from 'react-router-dom'
 import Submenu from './SubMenu'
 import { FaPenToSquare } from 'react-icons/fa6'
 import Logo from '../Logo'
-// import { AppContext } from '../../../contexts/app.context'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { currentAccount, updateRequest } from '../../../apis/userApi'
 import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
 
 export default function SideBar() {
-  let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
-  const [open, setOpen] = useState(isTabletMid ? false : true)
+  const isMobile = useMediaQuery({ query: '(max-width: 1023px)' })
+  const [open, setOpen] = useState(false)
   const [openModalRequest, setOpenModalRequest] = useState(false)
   const sidebarRef = useRef()
   const { pathname } = useLocation()
-  // const { profile } = useContext(AppContext)
+
   const { data: userData } = useQuery({
     queryKey: ['me'],
     queryFn: () => {
@@ -63,49 +62,12 @@ export default function SideBar() {
     setOpenModalRequest(false)
   }
 
+  // Close mobile drawer when navigating
   useEffect(() => {
-    if (isTabletMid) {
+    if (isMobile) {
       setOpen(false)
-    } else {
-      setOpen(true)
     }
-  }, [isTabletMid])
-
-  useEffect(() => {
-    isTabletMid && setOpen(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
-
-  const Nav_animation = {
-    open: {
-      x: 0,
-      width: '16rem',
-      transition: {
-        damping: 40
-      }
-    },
-    closed: {
-      x: -250,
-      width: 0,
-      transition: {
-        damping: 40,
-        delay: 0.15
-      }
-    }
-  }
-
-  const menuGroups = [
-    {
-      name: 'Thực đơn',
-      icon: FaUtensils,
-      path: 'meal-plan',
-      menus: [
-        { subName: 'Tất cả thực đơn', subPath: '' },
-        { subName: 'Thực đơn của tôi', subPath: 'my' },
-        { subName: 'Thực đơn đang áp dụng', subPath: 'active' }
-      ]
-    }
-  ]
+  }, [pathname, isMobile])
 
   const subMenusList = checkSubmenu()
     ? [
@@ -123,144 +85,154 @@ export default function SideBar() {
     ]
     : []
 
+  const navItems = (
+    <ul className='whitespace-pre px-2.5 pt-4 pb-4 flex flex-col gap-1.5 font-medium overflow-y-auto overflow-x-hidden scrollbar-thin flex-1'>
+      <li>
+        <NavLink to={'/home'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <BsPeopleFill size={22} className='min-w-max' />
+          Cộng đồng
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to={'/friends'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <FaUserFriends size={22} className='min-w-max' />
+          Bạn bè
+        </NavLink>
+      </li>
+      {isAdmin && (
+        <li>
+          <NavLink to={'/admin'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+            <MdOutlineSpaceDashboard size={22} className='min-w-max' />
+            Trang quản trị
+          </NavLink>
+        </li>
+      )}
+      <li>
+        <NavLink to={'/user-calendar'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <FaCalendarAlt size={22} className='min-w-max' />
+          Lịch Cá Nhân
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to={'/fitness/fitness-calculator'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <FaCalculator size={22} className='min-w-max' />
+          Công cụ tính toán
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to={'/sport-event'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <MdSportsSoccer size={22} className='min-w-max' />
+          Sự kiện thể thao
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to={'/challenge'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <FaDumbbell size={22} className='min-w-max' />
+          Tập luyện
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to={'/habit-challenge'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+          <FaTrophy size={22} className='min-w-max' />
+          Thử thách
+        </NavLink>
+      </li>
+      {subMenusList.length > 0 && (
+        <div className='border-y py-3 border-slate-300 dark:border-slate-700'>
+          <small className='pl-3 text-slate-500 dark:text-slate-400 font-medium inline-block mb-2'>
+            Người dùng
+          </small>
+          <div className='flex flex-col'>
+            {subMenusList?.map((menu) => (
+              <div key={menu.name} className='mb-1 last:mb-0'>
+                <Submenu
+                  data={menu}
+                  isOpen={openMenus[menu.name]}
+                  onToggle={() => {
+                    setOpenMenus((prev) => ({
+                      ...prev,
+                      [menu.name]: !prev[menu.name]
+                    }))
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </ul>
+  )
+
+  // ===================== DESKTOP SIDEBAR =====================
+  if (!isMobile) {
+    return (
+      <>
+        <aside className='fixed top-14 left-0 bottom-0 w-60 bg-white dark:bg-color-primary-dark dark:text-gray-300 
+          shadow-sm dark:shadow-green-900/30 z-40 flex flex-col overflow-hidden'>
+          <Logo />
+          {navItems}
+        </aside>
+        {openModalRequest && (
+          <ModalRequest handleCloseModalRequest={handleCloseModalRequest} updateRequest={updateRequestMutation} />
+        )}
+      </>
+    )
+  }
+
+  // ===================== MOBILE SIDEBAR (Drawer) =====================
   return (
     <>
-      <div className='fixed z-[100]'>
-        <div
-          onClick={() => setOpen(false)}
-          className={`md:hidden fixed inset-0 max-h-screen z-[80] bg-black/50 ${open ? 'block' : 'hidden'} `}
-        ></div>
-        <motion.div
-          ref={sidebarRef}
-          variants={Nav_animation}
-          initial={{ x: isTabletMid ? -250 : 0 }}
-          animate={open ? 'open' : 'closed'}
-          className=' bg-white dark:bg-color-primary-dark dark:text-gray-300 text-gray shadow-md dark:shadow-green-800 max-w-[16rem] w-[16rem] overflow-hidden z-[999] h-screen relative'
-        >
-          <Logo />
+      {/* Hamburger button - fixed position on mobile */}
+      <button
+        className='fixed top-3.5 left-3 z-[60] p-1.5 rounded-lg bg-white dark:bg-gray-800 shadow-md 
+          hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden'
+        onClick={() => setOpen(true)}
+        aria-label='Mở menu'
+      >
+        <MdMenu size={22} />
+      </button>
 
-          <div className='flex flex-col h-full'>
-            <ul
-              className={
-                userData?.data.result[0]?.role === 1
-                  ? 'whitespace-pre  px-2.5 pt-4 pb-4 flex flex-col gap-3 font-medium overflow-x-hidden scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 md:h-[80%] h-[70%] '
-                  : 'whitespace-pre  px-2.5 pt-4 pb-4 flex flex-col gap-3 font-medium overflow-x-hidden scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 md:h-[72%] h-[70%]  '
-              }
+      {/* Overlay + Drawer */}
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className='fixed inset-0 bg-black/50 z-[70] lg:hidden'
+              onClick={() => setOpen(false)}
+            />
+
+            {/* Drawer */}
+            <motion.aside
+              ref={sidebarRef}
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className='fixed top-0 left-0 bottom-0 w-[17rem] bg-white dark:bg-color-primary-dark dark:text-gray-300 
+                shadow-xl z-[80] flex flex-col overflow-hidden'
             >
-              <li>
-                <NavLink to={'/home'} className='link-custom '>
-                  <BsPeopleFill size={25} className='min-w-max' />
-                  Cộng đồng
-                </NavLink>
-              </li>
-              {/* Trang Cá Nhân đã bị ẩn */}
-              <li>
-                <NavLink to={'/friends'} className='link-custom '>
-                  <FaUserFriends size={25} className='min-w-max' />
-                  Bạn bè
-                </NavLink>
-              </li>
-              {isAdmin && (
-                <li>
-                  <NavLink to={'/admin'} className='link-custom '>
-                    <MdOutlineSpaceDashboard size={25} className='min-w-max' />
-                    Trang quản trị
-                  </NavLink>
-                </li>
-              )}
-              {/* {menuGroups.map((menu) => (
-                <li key={menu.name}>
-                  <Submenu data={menu} />
-                </li>
-              ))} */}
-              <li>
-                <NavLink to={'/user-calendar'} className='link-custom '>
-                  <FaCalendarAlt size={25} className='min-w-max' />
-                  Lịch Cá Nhân
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to={'/fitness/fitness-calculator'} className='link-custom '>
-                  <FaCalculator size={25} className='min-w-max' />
-                  Công cụ tính toán
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to={'/sport-event'}
-                  end
-                  className='link-custom'
+              {/* Drawer header */}
+              <div className='flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700'>
+                <Logo />
+                <button
+                  onClick={() => setOpen(false)}
+                  className='p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                  aria-label='Đóng menu'
                 >
-                  <MdSportsSoccer size={25} className='min-w-max' />
-                  Sự kiện thể thao
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to={'/challenge'}
-                  end
-                  className='link-custom'
-                >
-                  <FaDumbbell size={25} className='min-w-max' />
-                  Tập luyện
-                </NavLink>
-              </li>
-              {(open || isTabletMid) && subMenusList.length > 0 && (
-                <div className='border-y py-4 border-slate-300 dark:border-slate-700'>
-                  <small className='pl-3 text-slate-500 dark:text-slate-400 font-medium inline-block mb-2'>
-                    Người dùng
-                  </small>
-                  <div className='flex flex-col'>
-                    {subMenusList?.map((menu) => (
-                      <div key={menu.name} className='mb-1 last:mb-0'>
-                        <Submenu
-                          data={menu}
-                          isOpen={openMenus[menu.name]}
-                          onToggle={() => {
-                            setOpenMenus((prev) => ({
-                              ...prev,
-                              [menu.name]: !prev[menu.name]
-                            }))
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </ul>
+                  <MdClose size={20} />
+                </button>
+              </div>
+              {navItems}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
-          </div>
-          {/* <motion.div
-          onClick={() => {
-            setOpen(!open)
-          }}
-          animate={
-            open
-              ? {
-                  x: 0,
-                  y: 0,
-                  rotate: 0
-                }
-              : {
-                  x: -10,
-                  y: -200,
-                  rotate: 180
-                }
-          }
-          transition={{ duration: 0 }}
-          className='absolute w-fit h-fit md:block border border-black rounded-full dark:border-gray-200 hover:bg-red-600 transition-all z-50 hidden right-2 bottom-3 cursor-pointer'
-        >
-          <IoIosArrowBack size={25} />
-        </motion.div> */}
-        </motion.div>
-        <div
-          className='my-3 cursor-pointer hover:text-red-600 transition-all ml-4 mr-3 md:hidden absolute top-2 z-50'
-          onClick={() => setOpen(true)}
-        >
-          <MdMenu size={25} />
-        </div>
-      </div>
       {openModalRequest && (
         <ModalRequest handleCloseModalRequest={handleCloseModalRequest} updateRequest={updateRequestMutation} />
       )}

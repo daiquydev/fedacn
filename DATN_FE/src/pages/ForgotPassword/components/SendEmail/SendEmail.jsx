@@ -9,6 +9,7 @@ import { useMutation } from '@tanstack/react-query'
 import { schemaSendOtp } from '../../../../utils/rules'
 import toast from 'react-hot-toast'
 import Loading from '../../../../components/GlobalComponents/Loading'
+import { HiOutlineMail } from 'react-icons/hi'
 
 export default function SendEmail() {
   const navigate = useNavigate()
@@ -60,19 +61,25 @@ export default function SendEmail() {
         }
       }}
     >
-      <main className='w-full  max-w-md mx-auto p-6'>
-        <div className='mt-7 bg-white  rounded-xl shadow-lg  border-2 border-indigo-300'>
-          <div className='p-4 sm:p-7'>
+      <main className='w-full max-w-md mx-auto p-6'>
+        <div className='bg-white rounded-2xl shadow-xl border border-white/20 overflow-hidden'>
+          <div className='p-6 sm:p-8'>
+            {/* Icon */}
+            <div className='flex justify-center mb-5'>
+              <div className='w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center'>
+                <HiOutlineMail className='text-emerald-600 text-2xl' />
+              </div>
+            </div>
             <div className='text-center'>
-              <h1 className='block text-2xl font-bold text-gray-800 '>Quên mật khẩu ?</h1>
-              <p className='mt-2 text-sm text-gray-600 '>
-                Bạn nhớ mật khẩu ?
-                <Link to='/login' className='text-blue-600 ml-2 decoration-2 hover:underline font-medium' href='#'>
-                  Đăng nhập ở đây
+              <h1 className='block text-2xl font-bold text-gray-900'>Quên mật khẩu?</h1>
+              <p className='mt-2 text-sm text-gray-500'>
+                Nhập email để nhận mã xác nhận.{' '}
+                <Link to='/login' className='text-emerald-600 font-medium hover:underline'>
+                  Quay lại đăng nhập
                 </Link>
               </p>
             </div>
-            <div className='mt-5'>
+            <div className='mt-6'>
               <form onSubmit={onSubmit}>
                 <div className='grid gap-y-4'>
                   <div>
@@ -84,26 +91,26 @@ export default function SendEmail() {
                       register={register}
                       errors={errors?.email}
                       placeholder='Nhập email của bạn'
-                      className='block bg-white  w-full placeholder:text-sm px-3 py-2  text-black  text-lg border border-gray-300 rounded-lg'
-                      classNameLabel='text-gray-400 lg:text-red-900 text-sm font-medium mb-1  text-left'
+                      className='block bg-gray-50 w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+                      classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
                     />
                   </div>
                   {sendOtpMutation.isPending ? (
-                    <div className='uppercase text-white block w-full p-2 transition-all duration-500 text-lg rounded-full  focus:outline-none  bg-gray-500 first-letter:focus:outline-none'>
-                      <div className='flex justify-center items-center'>
+                    <div className='block w-full p-3 text-base rounded-xl bg-gray-300 cursor-not-allowed'>
+                      <div className='flex justify-center items-center text-gray-500'>
                         <Loading
                           className='w-10 mx-1 flex justify-center items-center'
-                          classNameSpin='inline w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-red-600'
+                          classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-emerald-600'
                         />
-                        Loading...
+                        Đang xử lý...
                       </div>
                     </div>
                   ) : (
                     <button
                       type='submit'
-                      className='uppercase text-white block w-full p-2 transition-all duration-500 text-lg rounded-full bg-orange-700 hover:bg-orange-600 focus:outline-none'
+                      className='block w-full p-3 text-base font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 hover:shadow-lg transition-all'
                     >
-                      Gửi email
+                      GỬI MÃ XÁC NHẬN
                     </button>
                   )}
                 </div>

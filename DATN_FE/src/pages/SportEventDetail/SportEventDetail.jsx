@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -40,7 +40,8 @@ import {
   getParticipants,
   checkInSession,
   checkOutSession,
-  inviteFriendToEvent
+  inviteFriendToEvent,
+  getEventOverallProgress
 } from '../../apis/sportEventApi'
 import { currentAccount } from '../../apis/userApi'
 
@@ -51,6 +52,7 @@ import SportEventProgress from './components/SportEventProgress'
 import SportEventLeaderboard from './components/SportEventLeaderboard'
 import SportEventShareModal from '../../components/SportEvent/SportEventShareModal'
 import IndoorEventProgress from './components/IndoorEventProgress'
+import ProgressRing from '../../components/SportEvent/ProgressRing'
 
 export default function SportEventDetail() {
 
@@ -171,6 +173,18 @@ export default function SportEventDetail() {
   })
 
   const participants = participantsData?.data?.result?.participants || participantsData?.result?.participants || []
+
+  // Fetch Overall Event Progress (group total)
+  const {
+    data: overallProgressData
+  } = useQuery({
+    queryKey: ['eventOverallProgress', id],
+    queryFn: () => getEventOverallProgress(id),
+    enabled: !!id,
+    staleTime: 1000
+  })
+
+  const overallProgress = overallProgressData?.data?.result || { totalGroupProgress: 0, participantCount: 0 }
 
   // Removed: Fetch Posts (community posts moved to /home page)
 
@@ -309,15 +323,62 @@ export default function SportEventDetail() {
   }
 
 
-  // Calculate progress percentage
-  // Tiến độ tối đa mỗi người = Mục tiêu sự kiện / Số người tối đa
+  // Calculate progress percentage — with NaN/zero guards
   const calculateProgress = () => {
-    if (!userProgress || !event?.targetValue) return 0
+    if (!userProgress || !event?.targetValue || event.targetValue <= 0) return 0
     const total = userProgress.totalProgress || 0
     const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
     const perPersonTarget = event.targetValue / maxParticipants
-    return Math.min(Math.round((total / perPersonTarget) * 100), 100)
+    if (perPersonTarget <= 0) return 0
+    const pct = Math.round((total / perPersonTarget) * 100)
+    return isNaN(pct) ? 0 : Math.min(pct, 100)
   }
+
+  // ===== Countdown Timer (hooks MUST be before any early returns) =====
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  useEffect(() => {
+    if (!event?.startDate) return
+    const startDt = moment(event.startDate)
+    if (!moment().isBefore(startDt)) return
+    const tick = () => {
+      const now = moment()
+      const diff = startDt.diff(now)
+      if (diff <= 0) { setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 }); return }
+      const dur = moment.duration(diff)
+      setCountdown({ days: Math.floor(dur.asDays()), hours: dur.hours(), minutes: dur.minutes(), seconds: dur.seconds() })
+    }
+    tick()
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
+  }, [event?.startDate])
+
+  // ===== Achievement Milestone Popup =====
+  const myPercentForMilestone = useMemo(() => {
+    if (!userProgress || !event?.targetValue || event.targetValue <= 0) return 0
+    const maxP = event?.maxParticipants > 0 ? event.maxParticipants : 1
+    const perPerson = event.targetValue / maxP
+    if (perPerson <= 0) return 0
+    return Math.min(Math.round(((userProgress.totalProgress || 0) / perPerson) * 100), 100)
+  }, [userProgress, event])
+
+  useEffect(() => {
+    if (!id || myPercentForMilestone <= 0) return
+    const milestones = [
+      { pct: 25, medal: '🥉', msg: 'Khởi động! Bạn đã hoàn thành 25% mục tiêu' },
+      { pct: 50, medal: '🥈', msg: 'Nửa chặng đường! 50% mục tiêu đã đạt!' },
+      { pct: 75, medal: '🥇', msg: 'Gần đích! 75% — cố lên nào!' },
+      { pct: 100, medal: '🏆', msg: '🎉 HOÀN THÀNH! Bạn đã chinh phục mục tiêu!' }
+    ]
+    const key = `milestone_${id}`
+    const shown = JSON.parse(localStorage.getItem(key) || '[]')
+    milestones.forEach(m => {
+      if (myPercentForMilestone >= m.pct && !shown.includes(m.pct)) {
+        toast(`${m.medal} ${m.msg}`, { duration: 5000, icon: m.medal, style: { fontWeight: 600 } })
+        shown.push(m.pct)
+      }
+    })
+    localStorage.setItem(key, JSON.stringify(shown))
+  }, [myPercentForMilestone, id])
 
   // ==================== LOADING & ERROR STATES ====================
 
@@ -356,6 +417,10 @@ export default function SportEventDetail() {
   const isOnline = event.eventType === 'Trong nhà'
   const eventStartDate = moment(event.startDate)
   const eventEndDate = moment(event.endDate)
+
+  const isEnded = moment().isAfter(eventEndDate)
+  const isNotStarted = moment().isBefore(eventStartDate)
+  const isOngoing = !isEnded && !isNotStarted
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -424,23 +489,83 @@ export default function SportEventDetail() {
         {/* Event Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
           <div className="container mx-auto max-w-6xl">
-            <div className="flex items-center gap-3 mb-4">
-              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${isOnline ? 'bg-blue-500' : 'bg-green-500'
-                }`}>
-                {isOnline ? (
-                  <span className="flex items-center gap-1">
-                    <MdVideocam /> Trong nhà
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <FaMapMarkerAlt /> Ngoài trời
-                  </span>
-                )}
-              </span>
-              <span className="px-4 py-1.5 bg-red-500 rounded-full text-sm font-medium">
-                {event.category}
-              </span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${isOnline ? 'bg-blue-500' : 'bg-green-500'
+                  }`}>
+                  {isOnline ? (
+                    <span className="flex items-center gap-1">
+                      <MdVideocam /> Trong nhà
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <FaMapMarkerAlt /> Ngoài trời
+                    </span>
+                  )}
+                </span>
+                <span className="px-4 py-1.5 bg-red-500 rounded-full text-sm font-medium">
+                  {event.category}
+                </span>
+                {event.difficulty && (() => {
+                  const map = { easy: '😊 Dễ', medium: '💪 Trung bình', hard: '🔥 Khó', expert: '🏆 Chuyên gia' }
+                  const colors = { easy: 'bg-green-500', medium: 'bg-yellow-500', hard: 'bg-orange-500', expert: 'bg-red-600' }
+                  return (
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${colors[event.difficulty] || 'bg-gray-500'}`}>
+                      {map[event.difficulty] || event.difficulty}
+                    </span>
+                  )
+                })()}
+              </div>
+              {/* Người tổ chức - trong hero */}
+              {event.createdBy && (
+                <div
+                  className="flex items-center gap-3 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition group"
+                  onClick={(e) => { e.stopPropagation(); event.createdBy?._id && navigate(`/user/${event.createdBy._id}`) }}
+                >
+                  <img
+                    src={getImageUrl(event.createdBy?.avatar) || useravatar}
+                    alt={event.createdBy?.name || 'Người tổ chức'}
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-white/40 group-hover:ring-white/80 transition"
+                    onError={e => { e.target.src = useravatar }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-white/60 uppercase font-semibold leading-tight">Người tổ chức</p>
+                    <p className="text-sm font-semibold text-white truncate max-w-[150px] group-hover:text-red-300 transition">{event.createdBy?.name}</p>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Status + Countdown */}
+            {isNotStarted && (
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-amber-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+                  <BsCalendarCheck className="text-[10px]" /> Sắp diễn ra
+                </span>
+                <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+                  {[{ v: countdown.days, l: 'ngày' }, { v: countdown.hours, l: 'giờ' }, { v: countdown.minutes, l: 'phút' }, { v: countdown.seconds, l: 'giây' }].map((u, i) => (
+                    <span key={i} className="flex items-center gap-0.5">
+                      <span className="bg-white/20 text-white font-mono font-bold text-sm px-1.5 py-0.5 rounded">{String(u.v).padStart(2, '0')}</span>
+                      <span className="text-white/50 text-[10px]">{u.l}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {isOngoing && (
+              <div className="mb-3">
+                <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Đang diễn ra
+                </span>
+              </div>
+            )}
+            {isEnded && (
+              <div className="mb-3">
+                <span className="bg-gray-600/80 text-gray-300 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
+                  <BsClockHistory className="text-[10px]" /> Đã kết thúc
+                </span>
+              </div>
+            )}
 
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{event.name}</h1>
 
@@ -459,27 +584,27 @@ export default function SportEventDetail() {
               </div>
             </div>
 
-            {/* Join/Leave Button */}
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            {/* Action Buttons */}
+            <div className="mt-6 flex flex-wrap items-center gap-2.5">
               {!event.isJoined ? (
                 (event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))) ? (
                   <button
                     onClick={() => { }}
-                    className="px-8 py-3 bg-white/10 text-white/70 border border-white/20 rounded-lg font-bold text-lg flex items-center gap-2 cursor-default"
+                    className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default"
                   >
                     Sự kiện đã kết thúc
                   </button>
                 ) : (event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))) ? (
                   <button
                     onClick={() => { }}
-                    className="px-8 py-3 bg-white/10 text-white/70 border border-white/20 rounded-lg font-bold text-lg flex items-center gap-2 cursor-default"
+                    className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default"
                   >
                     Sự kiện chưa bắt đầu
                   </button>
                 ) : (event.maxParticipants > 0 && event.participants >= event.maxParticipants) ? (
                   <button
                     onClick={() => { }}
-                    className="px-8 py-3 bg-white/10 text-white/70 border border-white/20 rounded-lg font-bold text-lg flex items-center gap-2 cursor-default"
+                    className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default"
                   >
                     Đã đầy chỗ
                   </button>
@@ -487,23 +612,23 @@ export default function SportEventDetail() {
                   <button
                     onClick={handleJoinEvent}
                     disabled={joinEventMutation.isPending}
-                    className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-lg transition shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold text-sm transition shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {joinEventMutation.isPending ? (
                       <AiOutlineLoading3Quarters className="animate-spin" />
-                    ) : <FaPlus className="text-sm" />}
+                    ) : <FaPlus className="text-xs" />}
                     Tham gia ngay
                   </button>
                 )
               ) : (
                 <>
-                  <div className="px-6 py-3 bg-green-500 text-white rounded-lg font-bold text-lg flex items-center gap-2 shadow-lg shadow-green-500/20">
-                    <MdCheckCircle className="text-xl" />
+                  <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
+                    <MdCheckCircle className="text-base" />
                     Đã tham gia
                   </div>
                   <button
                     onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
                   >
                     <FaInvite className="text-sm" />
                     Mời bạn bè
@@ -511,7 +636,7 @@ export default function SportEventDetail() {
                   <button
                     onClick={() => setShowLeaveModal(true)}
                     disabled={leaveEventMutation.isPending}
-                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg font-medium text-sm transition backdrop-blur-sm flex items-center gap-2"
+                    className="px-5 py-2.5 bg-white/10 hover:bg-red-500/30 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-400/40 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
                   >
                     {leaveEventMutation.isPending ? (
                       <AiOutlineLoading3Quarters className="animate-spin" />
@@ -520,10 +645,10 @@ export default function SportEventDetail() {
                   </button>
                 </>
               )}
-              {/* Share Event Button - always visible, same row */}
+              {/* Share Event Button */}
               <button
                 onClick={handleShareEvent}
-                className="flex items-center gap-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 rounded-lg backdrop-blur-sm transition text-sm font-medium"
+                className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
               >
                 <FaShare className="text-sm" />
                 Chia sẻ lên cộng đồng
@@ -602,49 +727,59 @@ export default function SportEventDetail() {
 
             {/* Event Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Time Section */}
+              {/* Time Section — 1 dòng gọn */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <FaCalendarAlt className="text-red-500 text-2xl shrink-0" />
                   <h3 className="font-semibold text-gray-800 dark:text-white">Thời gian</h3>
                 </div>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-bold">Ngày bắt đầu</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {eventStartDate.format('DD/MM/YYYY')}
-                    </p>
-                  </div>
-                  <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
-                    <p className="text-xs text-gray-500 uppercase font-bold">Ngày kết thúc</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {eventEndDate.format('DD/MM/YYYY')}
-                    </p>
-                  </div>
-                  <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
-                    <p className="text-xs text-gray-500 uppercase font-bold">Thời điểm</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {eventStartDate.format('HH:mm')}
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-lg text-sm font-bold">
+                    <BsClockHistory className="text-xs" />
+                    {eventStartDate.format('HH:mm')}
+                  </span>
+                  <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">
+                    {eventStartDate.format('DD/MM/YYYY')}
+                  </span>
+                  <span className="text-gray-300 dark:text-gray-600">→</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-sm font-semibold">
+                    {eventEndDate.format('DD/MM/YYYY')}
+                  </span>
                 </div>
               </div>
 
-              {/* Location/Online Section — chỉ hiện cho sự kiện ngoài trời */}
-              {!isOnline && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FaMapMarkerAlt className="text-green-500 text-2xl shrink-0" />
-                    <h3 className="font-semibold text-gray-800 dark:text-white">Địa điểm</h3>
-                  </div>
-                  <p
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mb-2 cursor-pointer inline-flex items-center gap-1 border-b border-transparent hover:border-blue-600 dark:hover:border-blue-300 transition"
-                    onClick={() => setShowMapPopup(true)}
-                  >
-                    {event.location}
-                  </p>
+              {/* Location / Format Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  {isOnline
+                    ? <MdVideocam className="text-blue-500 text-2xl shrink-0" />
+                    : <FaMapMarkerAlt className="text-green-500 text-2xl shrink-0" />
+                  }
+                  <h3 className="font-semibold text-gray-800 dark:text-white">
+                    {isOnline ? 'Hình thức tham gia' : 'Địa điểm'}
+                  </h3>
                 </div>
-              )}
+                {isOnline ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full text-sm font-semibold">
+                      <MdVideocam className="text-base" />
+                      Video call trực tuyến
+                    </span>
+                  </div>
+                ) : (
+                  event.location ? (
+                    <p
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer inline-flex items-center gap-1 border-b border-transparent hover:border-blue-600 dark:hover:border-blue-300 transition"
+                      onClick={() => setShowMapPopup(true)}
+                    >
+                      <FaMapMarkerAlt className="text-xs shrink-0" />
+                      {event.location}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 dark:text-gray-500 italic text-sm">Chưa có địa điểm</p>
+                  )
+                )}
+              </div>
 
               {/* Target Section */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
@@ -719,6 +854,187 @@ export default function SportEventDetail() {
               </div>
             )}
 
+            {/* Progress Overview — Circular Rings */}
+            {(() => {
+              const effectiveTarget = event.targetValue || 0
+              const groupTotal = overallProgress.totalGroupProgress || 0
+              const groupPercent = effectiveTarget > 0 ? Math.min(Math.round((groupTotal / effectiveTarget) * 100), 100) : 0
+              const perPersonTarget = effectiveTarget > 0 ? effectiveTarget / (event.maxParticipants || 1) : 0
+              const myTotal = userProgress?.totalProgress || 0
+              const myPercent = perPersonTarget > 0 ? Math.min(Math.round((myTotal / perPersonTarget) * 100), 100) : 0
+              const hasTarget = effectiveTarget > 0
+
+              return (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-6 py-5">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      🎯 Tiến độ tổng quan
+                    </h2>
+                    <p className="text-white/60 text-sm mt-1">
+                      {hasTarget ? `Mục tiêu: ${effectiveTarget} ${event.targetUnit}` : 'Chưa thiết lập mục tiêu'}
+                    </p>
+                  </div>
+
+                  {!hasTarget ? (
+                    <div className="p-8 text-center">
+                      <div className="text-4xl mb-3">🎯</div>
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">Sự kiện chưa thiết lập mục tiêu</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Người tổ chức sẽ cập nhật mục tiêu sớm</p>
+                    </div>
+                  ) : (
+                    <div className="p-6">
+                      {/* Rings Row */}
+                      <div className={`grid gap-6 ${event.isJoined ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                        {/* Group Progress Ring */}
+                        <div className="flex flex-col items-center gap-4 p-5 bg-gradient-to-b from-blue-50 to-transparent dark:from-blue-900/10 dark:to-transparent rounded-2xl">
+                          <div className="relative">
+                            <ProgressRing
+                              percent={groupPercent}
+                              size={140}
+                              strokeWidth={12}
+                              color="#3b82f6"
+                              colorEnd={groupPercent >= 100 ? '#22c55e' : '#6366f1'}
+                              label={`${groupPercent}%`}
+                              sublabel="cả nhóm"
+                            />
+                            {groupPercent >= 100 && (
+                              <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎉</div>
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center gap-2 justify-center mb-1">
+                              <FaUsers className="text-blue-500 text-sm" />
+                              <span className="font-bold text-gray-800 dark:text-white">Tiến độ cả nhóm</span>
+                            </div>
+                            <p className="text-sm">
+                              <span className="font-black text-blue-600 dark:text-blue-400">{groupTotal.toFixed(1)}</span>
+                              <span className="text-gray-400 mx-1">/</span>
+                              <span className="text-gray-600 dark:text-gray-300 font-semibold">{effectiveTarget} {event.targetUnit}</span>
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                              {overallProgress.participantCount || 0} người đóng góp
+                              {groupPercent >= 100 && <span className="text-green-500 font-semibold ml-1">✅ Hoàn thành!</span>}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* My Progress Ring (only for participants) */}
+                        {event.isJoined && (
+                          <div className="flex flex-col items-center gap-4 p-5 bg-gradient-to-b from-emerald-50 to-transparent dark:from-emerald-900/10 dark:to-transparent rounded-2xl">
+                            <div className="relative">
+                              <ProgressRing
+                                percent={myPercent}
+                                size={140}
+                                strokeWidth={12}
+                                color="#10b981"
+                                colorEnd={myPercent >= 100 ? '#22c55e' : '#06b6d4'}
+                                label={`${myPercent}%`}
+                                sublabel="hoàn thành"
+                              />
+                              {myPercent >= 100 && (
+                                <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🏆</div>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center gap-2 justify-center mb-1">
+                                <FaTrophy className="text-yellow-500 text-sm" />
+                                <span className="font-bold text-gray-800 dark:text-white">Mục tiêu cá nhân</span>
+                              </div>
+                              <p className="text-sm">
+                                <span className="font-black text-emerald-600 dark:text-emerald-400">{myTotal.toFixed(1)}</span>
+                                <span className="text-gray-400 mx-1">/</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-semibold">{perPersonTarget.toFixed(1)} {event.targetUnit}</span>
+                              </p>
+                              {myPercent >= 100 && (
+                                <p className="text-xs text-green-500 font-semibold mt-1">🎉 Bạn đã hoàn thành mục tiêu!</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Virtual Medal Milestones */}
+                      {event.isJoined && (
+                        <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
+                          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">🏅 Huy chương cá nhân</p>
+                          <div className="flex items-center gap-2">
+                            {[
+                              { pct: 25, medal: '🥉', label: 'Khởi động', color: 'amber' },
+                              { pct: 50, medal: '🥈', label: 'Nửa chặng', color: 'slate' },
+                              { pct: 75, medal: '🥇', label: 'Gần đích', color: 'yellow' },
+                              { pct: 100, medal: '🏆', label: 'Hoàn thành', color: 'emerald' }
+                            ].map(m => {
+                              const reached = myPercent >= m.pct
+                              return (
+                                <div
+                                  key={m.pct}
+                                  className={`flex-1 flex flex-col items-center py-3 px-1 rounded-xl text-xs font-bold transition-all ${
+                                    reached
+                                      ? `bg-${m.color}-100 dark:bg-${m.color}-900/30 text-${m.color}-700 dark:text-${m.color}-300 ring-1 ring-${m.color}-200 dark:ring-${m.color}-800`
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 opacity-50'
+                                  }`}
+                                >
+                                  <span className={`text-xl mb-1 ${reached ? '' : 'grayscale opacity-40'}`}>{m.medal}</span>
+                                  <span>{m.pct}%</span>
+                                  <span className="text-[9px] font-medium mt-0.5">{m.label}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CTA for non-participants */}
+                      {!event.isJoined && (
+                        <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
+                          <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
+                            Tham gia sự kiện để theo dõi tiến độ cá nhân
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+            {/* Event Stats Summary */}
+            {(() => {
+              const targetVal = event.targetValue || 0
+              const groupTotal = overallProgress.totalGroupProgress || 0
+              const partCount = overallProgress.participantCount || 0
+              const groupPct = targetVal > 0 ? Math.min(Math.round((groupTotal / targetVal) * 100), 100) : 0
+              return targetVal > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-4">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      📊 Thống kê sự kiện
+                    </h2>
+                  </div>
+                  <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                      <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{groupTotal.toFixed(1)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tổng {event.targetUnit}</p>
+                    </div>
+                    <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                      <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{groupPct}%</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hoàn thành</p>
+                    </div>
+                    <div className="text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                      <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{partCount}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Đóng góp</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                      <p className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                        {partCount > 0 ? (groupTotal / partCount).toFixed(1) : '0'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">TB/{event.targetUnit}/người</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Leaderboard Preview */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
               <div className="flex items-center mb-6">
@@ -741,37 +1057,7 @@ export default function SportEventDetail() {
               )}
             </div>
 
-            {/* Event Creator Info */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
-                Người tổ chức
-              </h2>
-              <div
-                className="flex items-center gap-4 cursor-pointer group"
-                onClick={() => event.creator?._id && navigate(`/user/${event.creator._id}`)}
-              >
-                <div className="relative">
-                  <img
-                    src={getImageUrl(event.creator?.avatar)}
-                    alt={event.creator?.name}
-                    className="w-16 h-16 rounded-full object-cover ring-2 ring-transparent group-hover:ring-red-400 transition"
-                  />
-                  {event.creator?._id && friendIds.has(String(event.creator._id)) && (
-                    <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                      <FaCheck className="text-white" style={{ fontSize: 8 }} />
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-red-500 transition">
-                    {event.creator?.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Đã tạo {moment(event.createdAt).fromNow()}
-                  </p>
-                </div>
-              </div>
-            </div>
+
           </div>
         )}
 

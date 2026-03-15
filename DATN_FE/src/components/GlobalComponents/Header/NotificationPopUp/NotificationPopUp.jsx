@@ -8,6 +8,7 @@ import {
   checkReadNotification,
   deleteNotification,
   getListNotifications,
+  readAllNotifications,
   readNotification
 } from '../../../../apis/notificationApi'
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
@@ -34,7 +35,36 @@ const NotificationTypes = {
   shareMealPlan: 10,
   mealPlanInvite: 11,
   system: 12,
-  sportEventInvite: 14
+  sportEventInvite: 13,
+  reportPost: 14,
+  habitChallengeInvite: 15,
+  habitBuddyReminder: 16,
+  habitCheckinLike: 17,
+  habitStreakMilestone: 18
+}
+
+// Route map: NotificationType → path builder function
+// Returns null for types that don't navigate (modal-based or system)
+const NOTIFICATION_ROUTES = {
+  [NotificationTypes.follow]: (n) => `/user/${n.link_id}`,
+  [NotificationTypes.likePost]: (n) => `/post/${n.link_id}`,
+  [NotificationTypes.commentPost]: (n) => `/post/${n.link_id}`,
+  [NotificationTypes.commentChildPost]: (n) => `/post/${n.link_id}`,
+  [NotificationTypes.sharePost]: (n) => `/post/${n.link_id}`,
+  [NotificationTypes.likeRecipe]: (n) => `/cooking/recipe/${n.link_id}`,
+  [NotificationTypes.commentRecipe]: (n) => `/cooking/recipe/${n.link_id}`,
+  [NotificationTypes.bookmarkRecipe]: (n) => `/cooking/recipe/${n.link_id}`,
+  [NotificationTypes.commentBlog]: (n) => `/blog/${n.link_id}`,
+  [NotificationTypes.bookmarkAlbum]: (n) => `/album/${n.link_id}`,
+  [NotificationTypes.shareMealPlan]: null,
+  [NotificationTypes.mealPlanInvite]: null, // opens modal
+  [NotificationTypes.system]: null,
+  [NotificationTypes.sportEventInvite]: (n) => `/sport-event/${n.link_id}`,
+  [NotificationTypes.reportPost]: (n) => `/post/${n.link_id}`,
+  [NotificationTypes.habitChallengeInvite]: (n) => `/habit-challenge/${n.link_id}`,
+  [NotificationTypes.habitBuddyReminder]: (n) => `/habit-challenge/${n.link_id}`,
+  [NotificationTypes.habitCheckinLike]: (n) => `/habit-challenge/${n.link_id}`,
+  [NotificationTypes.habitStreakMilestone]: (n) => `/habit-challenge/${n.link_id}`
 }
 
 export default function NotificationPopUp() {
@@ -57,14 +87,12 @@ export default function NotificationPopUp() {
     staleTime: 1000
   })
 
+  // result is now a number (unread count)
+  const unreadCount = dataCheck?.data?.result ?? 0
+
   useEffect(() => {
-    if (dataCheck?.data.result === true) {
-      setNotification(true)
-    }
-    if (dataCheck?.data.result === false) {
-      setNotification(false)
-    }
-  }, [dataCheck, setNotification])
+    setNotification(unreadCount > 0)
+  }, [unreadCount, setNotification])
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside)
@@ -91,11 +119,30 @@ export default function NotificationPopUp() {
     enabled: isMenu
   })
 
+  const readAllMutation = useMutation({
+    mutationFn: () => readAllNotifications()
+  })
+
+  const handleReadAll = () => {
+    readAllMutation.mutate(null, {
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['notification'] }),
+          queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        ])
+        toast.success('Đã đánh dấu tất cả đã đọc')
+      }
+    })
+  }
+
   const handleOpenInvite = (payload) => {
     setInvitePreview(payload)
   }
 
   const handleCloseInvite = () => setInvitePreview(null)
+
+  // Format badge text
+  const badgeText = unreadCount > 99 ? '99+' : unreadCount
 
   return (
     <div ref={ref}>
@@ -104,7 +151,11 @@ export default function NotificationPopUp() {
         className='dark:bg-slate-600 relative dark:hover:bg-slate-500 dark:border-none text-2xl hover:bg-yellow-200 transition-all duration-300 cursor-pointer border text-red-600 dark:text-white shadow-md font-normal h-8 w-8 md:h-10 md:w-10 flex items-center justify-center align-center rounded-full outline-none focus:outline-none mr-1'
       >
         <IoMdNotifications />
-        {notification && <div className='absolute h-3 w-3 top-[-5px] right-0 rounded-full bg-red-500'></div>}
+        {notification && unreadCount > 0 && (
+          <div className='absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none'>
+            {badgeText}
+          </div>
+        )}
       </div>
       <AnimatePresence>
         {isMenu && (
@@ -123,6 +174,16 @@ export default function NotificationPopUp() {
               >
                 <div className='flex items-center mb-3'>
                   <span className='mb-1 text-sm font-semibold text-gray-900 dark:text-white'>Thông báo mới</span>
+                  {unreadCount > 0 && (
+                    <button
+                      type='button'
+                      onClick={handleReadAll}
+                      disabled={readAllMutation.isPending}
+                      className='ms-2 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium disabled:opacity-50'
+                    >
+                      Đánh dấu tất cả đã đọc
+                    </button>
+                  )}
                   <button
                     type='button'
                     onClick={() => setIsMenu(false)}
@@ -188,20 +249,6 @@ export default function NotificationPopUp() {
   )
 }
 
-// export enum NotificationTypes {
-//   follow,
-//   likePost,
-//   commentPost,
-//   commentChildPost,
-//   sharePost,
-//   likeRecipe,
-//   commentRecipe,
-//   bookmarkRecipe,
-//   commentBlog,
-//   bookmarkAlbum,
-//   system
-// }
-
 const NotificationItem = ({ notification, onOpenInvite }) => {
   const navigate = useNavigate()
 
@@ -216,37 +263,26 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
   }
 
   const checkNavigate = () => {
-    if (notification.type === NotificationTypes.follow) {
-      return navigate(`/user/${notification.link_id}`)
-    }
-    if (
-      notification.type === NotificationTypes.likePost ||
-      notification.type === NotificationTypes.commentPost ||
-      notification.type === NotificationTypes.commentChildPost ||
-      notification.type === NotificationTypes.sharePost
-    ) {
-      return navigate(`/post/${notification.link_id}`)
-    }
-    if (
-      notification.type === NotificationTypes.likeRecipe ||
-      notification.type === NotificationTypes.commentRecipe ||
-      notification.type === NotificationTypes.bookmarkRecipe
-    ) {
-      return navigate(`/cooking/recipe/${notification.link_id}`)
-    }
-    if (notification.type === NotificationTypes.commentBlog) {
-      return navigate(`/blog/${notification.link_id}`)
-    }
-    if (notification.type === NotificationTypes.bookmarkAlbum) {
-      return navigate(`/album/${notification.link_id}`)
-    }
+    // mealPlanInvite → open modal
     if (notification.type === NotificationTypes.mealPlanInvite) {
       return openInviteModal()
     }
-    if (notification.type === NotificationTypes.sportEventInvite) {
-      return navigate(`/sport-event/${notification.link_id}`)
+
+    const routeBuilder = NOTIFICATION_ROUTES[notification.type]
+
+    // No route defined for this type (system, shareMealPlan, etc.)
+    if (!routeBuilder) return
+
+    // Fallback: link_id is empty or missing
+    if (!notification.link_id) {
+      toast.error('Nội dung không còn tồn tại')
+      return
     }
-    return undefined
+
+    const path = routeBuilder(notification)
+    if (path) {
+      navigate(path)
+    }
   }
 
   const readMutation = useMutation({

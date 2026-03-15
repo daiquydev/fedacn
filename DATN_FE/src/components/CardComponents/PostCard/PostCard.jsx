@@ -5,8 +5,35 @@ import { CiHeart } from 'react-icons/ci'
 import { PiShareFatLight } from 'react-icons/pi'
 import { LiaComments } from 'react-icons/lia'
 import moment from 'moment'
-import { FaCheckCircle, FaUserFriends } from 'react-icons/fa'
 import 'moment/locale/vi'
+import { FaCheckCircle, FaUserFriends } from 'react-icons/fa'
+
+// Vietnamese relative time — no locale dependency
+function fromNowVi(date) {
+  const now = moment()
+  const target = moment(date)
+  const diffMs = target.diff(now)
+  const absSec = Math.abs(diffMs) / 1000
+  const absMin = absSec / 60
+  const absHour = absMin / 60
+  const absDay = absHour / 24
+  const absMonth = absDay / 30
+  const absYear = absDay / 365
+  const future = diffMs > 0
+  let str
+  if (absSec < 45) str = 'vài giây'
+  else if (absSec < 90) str = '1 phút'
+  else if (absMin < 45) str = `${Math.round(absMin)} phút`
+  else if (absMin < 90) str = '1 giờ'
+  else if (absHour < 22) str = `${Math.round(absHour)} giờ`
+  else if (absHour < 36) str = '1 ngày'
+  else if (absDay < 25) str = `${Math.round(absDay)} ngày`
+  else if (absDay < 45) str = '1 tháng'
+  else if (absDay < 345) str = `${Math.round(absMonth)} tháng`
+  else if (absDay < 545) str = '1 năm'
+  else str = `${Math.round(absYear)} năm`
+  return future ? `trong ${str}` : `${str} trước`
+}
 import { deletePostForEachUser, likePost, unlikePost } from '../../../apis/postApi'
 import { useMutation } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
@@ -240,7 +267,7 @@ function CheckTypeOfPost({
                   </div>
                 </div>
                 <div className='flex gap-2 items-center'>
-                  <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                  <div className='text-slate-500 dark:text-slate-300'>{fromNowVi(data.createdAt)}</div>
                   {data.status === 0 && (
                     <div>
                       <MdPublic />
@@ -311,7 +338,7 @@ function CheckTypeOfPost({
                   </div>
                 </div>
                 <div className='flex gap-2 items-center'>
-                  <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                  <div className='text-slate-500 dark:text-slate-300'>{fromNowVi(data.createdAt)}</div>
                   {data.status === 0 && (
                     <div>
                       <MdPublic />
@@ -374,7 +401,7 @@ function CheckTypeOfPost({
                 </div>
               </div>
               <div className='flex gap-2 items-center'>
-                <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                <div className='text-slate-500 dark:text-slate-300'>{fromNowVi(data.createdAt)}</div>
                 {data.status === 0 && (
                   <div>
                     <MdPublic />
@@ -426,7 +453,7 @@ function CheckTypeOfPost({
                   </div>
                   <div className='flex gap-2 items-center'>
                     <div className='text-slate-500 dark:text-slate-300'>
-                      {data.parent_post.createdAt ? moment(data.parent_post.createdAt).fromNow() : ''}
+                      {data.parent_post.createdAt ? fromNowVi(data.parent_post.createdAt) : ''}
                     </div>
                     {data.parent_post.status === 0 && (
                       <div>
@@ -464,11 +491,11 @@ function CheckTypeOfPost({
 
 function CheckLengthOfImages({ images, navigate, data }) {
   if (images.length === 0) {
-    return <div className='pt-10' onClick={() => navigate(`/post/${data._id}`)}></div>
+    return <div className='pt-10'></div>
   }
   if (images.length === 1) {
     return (
-      <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
+      <div className='py-4'>
         <div className='flex'>
           <img loading='lazy' className='max-w-full rounded-lg' src={getImageUrl(images[0])} />
         </div>
@@ -477,7 +504,7 @@ function CheckLengthOfImages({ images, navigate, data }) {
   }
   if (images.length === 2) {
     return (
-      <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
+      <div className='py-4'>
         <div className='flex justify-between gap-1'>
           <div className='flex'>
             <img loading='lazy' className='max-w-full object-cover rounded-tl-lg' src={getImageUrl(images[0])} />
@@ -491,7 +518,7 @@ function CheckLengthOfImages({ images, navigate, data }) {
   }
   if (images.length === 3) {
     return (
-      <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
+      <div className='py-4'>
         <div className='flex justify-between gap-1 mb-1'>
           <div className='flex'>
             <img
@@ -516,7 +543,7 @@ function CheckLengthOfImages({ images, navigate, data }) {
   }
   if (images.length === 4) {
     return (
-      <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
+      <div className='py-4'>
         <div className='flex justify-between gap-1'>
           <div className='flex'>
             <img
@@ -552,7 +579,7 @@ function CheckLengthOfImages({ images, navigate, data }) {
     )
   }
   return (
-    <div className='py-4' onClick={() => navigate(`/post/${data._id}`)}>
+    <div className='py-4'>
       <div className='flex justify-between gap-1 mb-1'>
         <div className='flex'>
           <img

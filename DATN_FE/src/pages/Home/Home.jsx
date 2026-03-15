@@ -1,7 +1,7 @@
 import { BsFillImageFill, BsFillSunFill } from 'react-icons/bs'
 import useravatar from '../../assets/images/useravatar.jpg'
 import { MdNightlight } from 'react-icons/md'
-import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaUserPlus } from 'react-icons/fa'
+import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaUserPlus, FaArrowRight } from 'react-icons/fa'
 import { PiClockAfternoonFill } from 'react-icons/pi'
 import PostCard from '../../components/CardComponents/PostCard'
 import { useContext, useEffect, useState } from 'react'
@@ -97,16 +97,16 @@ export default function Home() {
     )
   }
   return (
-    <div className='space-y-8 w-full'>
+    <div className='space-y-4 w-full'>
       {/* Thông báo lịch cá nhân - Đặt ở trên cùng, toàn màn hình */}
       <div className='w-full'>
         <CalendarNotifications />
       </div>
 
       {/* Main content grid */}
-      <div className='grid gap-6 lg:grid-cols-[minmax(0,2.4fr),minmax(280px,1fr)]'>
-        {/* Main column - tăng kích thước lên */}
-        <div className='space-y-5'>
+      <div className='grid gap-4 lg:grid-cols-[minmax(0,2.4fr),minmax(280px,1fr)]'>
+        {/* Main column */}
+        <div className='space-y-5 order-2 lg:order-1'>
           {/* Create Post Card */}
           <div className="bg-white py-4 px-6 shadow-md rounded-xl dark:bg-color-primary mb-6">
             <div>{checkTime(profile)}</div>
@@ -128,15 +128,16 @@ export default function Home() {
             </div>
             <div className='border-t pt-4 mt-2 dark:border-gray-700 border-gray-200'></div>
             <div className='flex items-center justify-between'>
-              <div className='flex items-center'>
-                <div onClick={openModalPost} className='flex items-center space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 py-2 px-3 rounded-lg transition-all'>
-                  <BsFillImageFill className='text-2xl text-blue-600 dark:text-blue-400' />
-                  <span className='font-medium text-gray-700 dark:text-gray-300'>Hình ảnh</span>
-                </div>
+              <div
+                onClick={openModalPost}
+                className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all'
+              >
+                <BsFillImageFill className='text-blue-500' size={14} />
+                <span>Hình ảnh</span>
               </div>
               <button
                 onClick={openModalPost}
-                className='px-5 py-2 bg-green-600 hover:bg-green-700 text-sm font-medium text-white rounded-lg shadow-sm hover:shadow-md transition duration-150 ease-in-out'
+                className='flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-sm font-bold text-white rounded-xl shadow-lg shadow-red-500/20 transition-all'
               >
                 Đăng bài viết
               </button>
@@ -156,23 +157,35 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Sidebar Content - không bao gồm Dashboard nữa */}
-        <div className='space-y-6'>
-          {/* People You May Know - TỐI ƯU */}
+        {/* Sidebar Content - Mobile: trên feed, Desktop: bên phải sticky */}
+        <div className='space-y-4 order-1 lg:order-2 lg:sticky lg:top-20 self-start'>
+          {/* People You May Know */}
           {userData?.data?.result.length === 0 ? null : (
             <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
-              <div className="bg-gradient-to-r from-red-600 to-pink-500 dark:from-red-800 dark:to-pink-700 py-3.5 px-5">
-                <h3 className="text-lg font-semibold text-white flex items-center">
-                  <FaUsers className="mr-2 text-xl" /> Gợi ý kết nối
+              <div className="bg-gradient-to-r from-red-600 to-pink-500 dark:from-red-800 dark:to-pink-700 py-2.5 px-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center">
+                  <FaUsers className="mr-2 text-base" /> Gợi ý kết nối
                 </h3>
+                <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">
+                  {userData?.data?.result.length}
+                </span>
               </div>
-              <div className="p-4">
-                <div className="space-y-3">
-                  {userData?.data?.result.map((user) => (
+              {/* User list — hidden on mobile */}
+              <div className="hidden lg:block p-3">
+                <div className="space-y-1">
+                  {userData?.data?.result.slice(0, 6).map((user) => (
                     <ItemUser key={user._id} user={user} />
                   ))}
                 </div>
-
+              </div>
+              {/* Footer — always visible */}
+              <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-2.5">
+                <button
+                  onClick={() => navigate('/friends')}
+                  className="w-full text-center text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors flex items-center justify-center gap-1"
+                >
+                  Xem thêm gợi ý <FaArrowRight className="text-[10px]" />
+                </button>
               </div>
             </div>
           )}
@@ -187,12 +200,13 @@ export default function Home() {
 const checkTime = (profile) => {
   var day = new Date()
   var hr = day.getHours()
+  const firstName = profile?.name?.split(' ')?.slice(-1)?.join('') || 'bạn'
   if (hr >= 0 && hr < 12) {
     return (
       <>
         <h2 className='text-xl font-medium text-green-700 dark:text-green-400'>
           <div className='flex gap-2 items-center'>
-            {`Chào buổi sáng, ${profile.name.split(' ').slice(-1).join('')}`}
+            {`Chào buổi sáng, ${firstName}`}
             <FaCloudSun className="text-yellow-500" />
           </div>
         </h2>
@@ -203,7 +217,7 @@ const checkTime = (profile) => {
       <>
         <h2 className='text-xl font-medium text-green-700 dark:text-green-400'>
           <div className='flex gap-2 items-center '>
-            {`Chúc bạn ăn trưa ngon miệng, ${profile.name.split(' ').slice(-1).join('')}`}
+            {`Chúc bạn ăn trưa ngon miệng, ${firstName}`}
             <BsFillSunFill className="text-yellow-500" />
           </div>
         </h2>
@@ -214,7 +228,7 @@ const checkTime = (profile) => {
       <>
         <h2 className='text-xl font-medium text-green-700 dark:text-green-400'>
           <div className='flex gap-2 items-center'>
-            {`Chúc bạn buổi chiều vui vẻ, ${profile.name.split(' ').slice(-1).join('')}`}
+            {`Chúc bạn buổi chiều vui vẻ, ${firstName}`}
             <PiClockAfternoonFill className="text-orange-400" />
           </div>
         </h2>
@@ -225,7 +239,7 @@ const checkTime = (profile) => {
       <>
         <h2 className='text-xl font-medium text-green-700 dark:text-green-400'>
           <div className='flex gap-2 items-center'>
-            {`Chúc bạn buổi tối an lành, ${profile.name.split(' ').slice(-1).join('')}`}
+            {`Chúc bạn buổi tối an lành, ${firstName}`}
             <MdNightlight className="text-blue-400" />
           </div>
         </h2>

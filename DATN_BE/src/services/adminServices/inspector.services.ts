@@ -317,46 +317,25 @@ class InspectorService {
     return post
   }
   async deletePostReportService({ post_id, user_id }: { post_id: string; user_id: string }) {
-    await Promise.all([
-      PostModel.findOneAndDelete({
-        _id: post_id
-      }),
-      ImagePostModel.deleteMany({
-        post_id: post_id
-      }),
-      LikePostModel.deleteMany({
-        post_id: post_id
-      }),
-      CommentPostModel.deleteMany({
-        post_id: post_id
-      })
-    ])
-    const share_post = await PostModel.find({
-      parent_id: post_id
-    })
-    await Promise.all(
-      share_post.map(async (sp) => {
-        await Promise.all([
-          PostModel.findOneAndDelete({
-            _id: sp._id
-          }),
-          ImagePostModel.deleteMany({
-            post_id: sp._id
-          }),
-          LikePostModel.deleteMany({
-            post_id: sp._id
-          }),
-          CommentPostModel.deleteMany({
-            post_id: sp._id
-          })
-        ])
-      })
+    // Soft delete: đánh dấu is_banned = true thay vì xóa cứng
+    await PostModel.findOneAndUpdate(
+      { _id: new ObjectId(post_id) },
+      {
+        $set: {
+          is_banned: true,
+          report_post: []
+        }
+      }
+    )
+
+    // Soft delete các bài share của post này
+    await PostModel.updateMany(
+      { parent_id: new ObjectId(post_id) },
+      { $set: { is_banned: true } }
     )
 
     // tăng banned_count của user  = banned_count + 1
     const user = await UserModel.findById(user_id)
-    console.log(user_id)
-    console.log(user)
 
     if (user) {
       await UserModel.updateOne(
@@ -374,6 +353,65 @@ class InspectorService {
         type: NotificationTypes.system
       })
     }
+    return true
+  }
+  async getDeletedPostsService({ page, limit, search }: { page: number; limit: number; search: string }) {
+    if (!page) page = 1
+    if (!limit) limit = 10
+
+    const condition: any = {
+      is_banned: true
+    }
+    if (search) {
+      condition.$text = { $search: search }
+    }
+
+    const posts = await PostModel.aggregate([
+      { $match: condition },
+      {
+        $lookup: {
+          from: 'image_posts',
+          localField: '_id',
+          foreignField: 'post_id',
+          as: 'images'
+        }
+      },
+      {
+        $addFields: {
+          images: {
+            $map: { input: '$images', as: 'image', in: '$$image.url' }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0 } },
+      { $sort: { updatedAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ])
+
+    const total = await PostModel.countDocuments(condition)
+    const totalPage = Math.ceil(total / limit)
+    return { posts, totalPage, page, limit }
+  }
+  async restorePostService({ post_id }: { post_id: string }) {
+    await PostModel.findOneAndUpdate(
+      { _id: new ObjectId(post_id) },
+      { $set: { is_banned: false } }
+    )
+    // Khôi phục các bài share
+    await PostModel.updateMany(
+      { parent_id: new ObjectId(post_id) },
+      { $set: { is_banned: false } }
+    )
     return true
   }
   async getListBlogForInspectorService({ page, limit, sort, search, category_blog_id }: GetListBlogForInspectorQuery) {

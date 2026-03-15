@@ -17,7 +17,7 @@ export interface ActivityTracking {
     _id?: Types.ObjectId
     eventId: Types.ObjectId
     userId: Types.ObjectId
-    activityType: 'running' | 'walking' | 'cycling'
+    activityType: string
     status: 'active' | 'paused' | 'completed' | 'discarded'
     startTime: Date
     endTime?: Date
@@ -58,8 +58,7 @@ const ActivityTrackingSchema = new mongoose.Schema<ActivityTracking>(
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
         activityType: {
             type: String,
-            enum: ['running', 'walking', 'cycling'],
-            default: 'running'
+            default: 'Chạy bộ'
         },
         status: {
             type: String,

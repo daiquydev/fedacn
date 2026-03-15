@@ -205,15 +205,15 @@ const MySportEvents = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-500 px-6 py-6">
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-500 px-6 py-4">
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 container mx-auto">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-              <FaTrophy className="text-white text-2xl" />
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <FaTrophy className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Quản lý Sự kiện</h1>
-              <p className="text-white/75 text-sm mt-0.5">Theo dõi và quản lý các sự kiện của bạn</p>
+              <h1 className="text-xl font-bold text-white">Quản lý Sự kiện</h1>
+              <p className="text-white/75 text-xs mt-0.5">Theo dõi và quản lý các sự kiện của bạn</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2.5">

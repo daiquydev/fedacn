@@ -9,6 +9,7 @@ import {
   getAlbumDetailForInspectorController,
   getAllPostReportController,
   getBlogDetailForInspectorController,
+  getDeletedPostsController,
   getListAlbumForInspectorController,
   getListBlogForInspectorController,
   getListRecipeForInspectorController,
@@ -18,6 +19,7 @@ import {
   rejectAlbumController,
   rejectBlogController,
   rejectRecipeController,
+  restorePostController,
   getMealPlanReportsController
 } from '~/controllers/adminControllers/inspector.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
@@ -52,6 +54,20 @@ inspectorRouter.put(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
   wrapRequestHandler(deletePostReportController)
+)
+
+inspectorRouter.get(
+  '/deleted-posts',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(getDeletedPostsController)
+)
+
+inspectorRouter.put(
+  '/restore-post/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(restorePostController)
 )
 
 inspectorRouter.get(

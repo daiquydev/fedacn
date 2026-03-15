@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { FaMedal, FaSearch, FaTrophy, FaCheck } from 'react-icons/fa'
+import React, { useState, useMemo } from 'react'
+import { FaMedal, FaSearch, FaTrophy, FaCheck, FaUserFriends } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { getImageUrl } from '../../../utils/imageUrl'
 import useravatar from '../../../assets/images/useravatar.jpg'
@@ -14,7 +14,7 @@ const getRingStyle = (isFriend, isConnected) => {
 }
 
 // ─── Podium Step ─────────────────────────────────────────────────────────────
-const PodiumStep = ({ participant, rank, connectedIds = new Set(), friendIds = new Set() }) => {
+const PodiumStep = ({ participant, rank, connectedIds = new Set(), friendIds = new Set(), isMe = false }) => {
   const navigate = useNavigate()
   if (!participant) return <div className="flex-1" />
 
@@ -54,7 +54,7 @@ const PodiumStep = ({ participant, rank, connectedIds = new Set(), friendIds = n
           title={`Xem trang cá nhân ${participant.name}`}
         >
           <div
-            className={`relative ${isFirst ? 'w-24 h-24' : 'w-20 h-20'} rounded-full border-4 border-white shadow-md overflow-hidden`}
+            className={`relative ${isFirst ? 'w-24 h-24' : 'w-20 h-20'} rounded-full border-4 ${isMe ? 'border-blue-400' : 'border-white'} shadow-md overflow-hidden`}
             style={ringStyle ? { boxShadow: `0 0 0 4px white, ${ringStyle}` } : {}}
           >
             <img
@@ -77,7 +77,9 @@ const PodiumStep = ({ participant, rank, connectedIds = new Set(), friendIds = n
       </div>
 
       <div className="text-center mb-2">
-        <p className="font-bold text-gray-900 dark:text-white truncate max-w-[120px]">{participant.name}</p>
+        <p className={`font-bold truncate max-w-[120px] ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+          {participant.name} {isMe && '(Bạn)'}
+        </p>
         <p className="text-sm font-semibold text-red-500">{participant.totalProgress}</p>
       </div>
 
@@ -98,24 +100,37 @@ export default function SportEventLeaderboard({
   setSearchTerm,
   event,
   connectedIds = new Set(),
-  friendIds = new Set()
+  friendIds = new Set(),
+  currentUserId = null
 }) {
   const navigate = useNavigate()
-  const top3 = participants.slice(0, 3)
-  const rest = participants.slice(3)
+  const [filterMode, setFilterMode] = useState('all') // 'all' | 'friends'
+
+  const filteredParticipants = useMemo(() => {
+    let list = participants
+    if (filterMode === 'friends') {
+      list = list.filter(p => {
+        const uid = p.userId || p._id
+        return uid && (friendIds.has(String(uid)) || String(uid) === String(currentUserId))
+      })
+    }
+    return list
+  }, [participants, filterMode, friendIds, currentUserId])
+
+  const top3 = filteredParticipants.slice(0, 3)
 
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* 1. Podium Section */}
-      {participants.length > 0 && (
+      {filteredParticipants.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm mb-8">
           <h3 className="text-center text-2xl font-black text-gray-800 dark:text-white mb-8 uppercase tracking-wider">
             Top Xuất Sắc Nhất
           </h3>
           <div className="flex items-end justify-center max-w-2xl mx-auto gap-4">
-            <PodiumStep participant={top3[1]} rank={2} connectedIds={connectedIds} friendIds={friendIds} />
-            <PodiumStep participant={top3[0]} rank={1} connectedIds={connectedIds} friendIds={friendIds} />
-            <PodiumStep participant={top3[2]} rank={3} connectedIds={connectedIds} friendIds={friendIds} />
+            <PodiumStep participant={top3[1]} rank={2} connectedIds={connectedIds} friendIds={friendIds} isMe={top3[1] && String(top3[1].userId || top3[1]._id) === String(currentUserId)} />
+            <PodiumStep participant={top3[0]} rank={1} connectedIds={connectedIds} friendIds={friendIds} isMe={top3[0] && String(top3[0].userId || top3[0]._id) === String(currentUserId)} />
+            <PodiumStep participant={top3[2]} rank={3} connectedIds={connectedIds} friendIds={friendIds} isMe={top3[2] && String(top3[2].userId || top3[2]._id) === String(currentUserId)} />
           </div>
         </div>
       )}
@@ -125,16 +140,27 @@ export default function SportEventLeaderboard({
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Người tham gia</h3>
-            {/* Legend */}
-            <div className="flex items-center gap-4 mt-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-3 h-3 rounded-full inline-block" style={{ boxShadow: '0 0 0 2px #22c55e' }} />
+            {/* Filter Toggle */}
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => setFilterMode('all')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filterMode === 'all'
+                  ? 'bg-red-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+              >
+                Tất cả ({participants.length})
+              </button>
+              <button
+                onClick={() => setFilterMode('friends')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${filterMode === 'friends'
+                  ? 'bg-green-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+              >
+                <FaUserFriends className="text-xs" />
                 Bạn bè
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-3 h-3 rounded-full inline-block" style={{ boxShadow: '0 0 0 2px #60a5fa' }} />
-                Đang theo dõi
-              </span>
+              </button>
             </div>
           </div>
 
@@ -171,13 +197,13 @@ export default function SportEventLeaderboard({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {participants.map((user, idx) => {
+              {filteredParticipants.map((user, idx) => {
                 const userId = user.userId || user._id
                 const isFriend = userId && friendIds.has(String(userId))
                 const isConnected = userId && connectedIds.has(String(userId))
                 const ringStyle = getRingStyle(isFriend, isConnected)
+                const isMe = String(userId) === String(currentUserId)
 
-                // Tính tiến độ cá nhân = totalProgress / (targetValue / maxParticipants)
                 const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
                 const perPersonTarget = event?.targetValue > 0 ? event.targetValue / maxParticipants : 1
                 const correctedPct = Math.min(Math.round((user.totalProgress / perPersonTarget) * 100), 100)
@@ -185,7 +211,10 @@ export default function SportEventLeaderboard({
                 return (
                   <tr
                     key={userId || idx}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-750 transition"
+                    className={`transition ${isMe
+                      ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-750'
+                      }`}
                   >
                     <td className="px-6 py-4">
                       <span className={`font-bold ${user.rank <= 3 ? 'text-red-500 text-lg' : 'text-gray-500'}`}>
@@ -194,7 +223,6 @@ export default function SportEventLeaderboard({
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {/* Clickable avatar with ring */}
                         <button
                           onClick={() => userId && navigate(`/user/${userId}`)}
                           className="relative flex-shrink-0 focus:outline-none"
@@ -203,8 +231,8 @@ export default function SportEventLeaderboard({
                           <img
                             src={user.avatar ? getImageUrl(user.avatar) : useravatar}
                             alt={user.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                            style={ringStyle ? { boxShadow: ringStyle } : { border: '2px solid #e5e7eb' }}
+                            className={`w-10 h-10 rounded-full object-cover ${isMe ? 'ring-2 ring-blue-500' : ''}`}
+                            style={!isMe && ringStyle ? { boxShadow: ringStyle } : !isMe ? { border: '2px solid #e5e7eb' } : {}}
                             onError={(e) => { e.target.onerror = null; e.target.src = useravatar }}
                           />
                           {isFriend && (
@@ -213,12 +241,14 @@ export default function SportEventLeaderboard({
                             </span>
                           )}
                         </button>
-                        <button
-                          onClick={() => userId && navigate(`/user/${userId}`)}
-                          className="font-semibold text-gray-900 dark:text-white hover:text-red-500 dark:hover:text-red-400 transition-colors text-left"
-                        >
-                          {user.name}
-                        </button>
+                        <div>
+                          <button
+                            onClick={() => userId && navigate(`/user/${userId}`)}
+                            className={`font-semibold hover:text-red-500 dark:hover:text-red-400 transition-colors text-left ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}
+                          >
+                            {user.name} {isMe && <span className="text-xs font-normal text-blue-400">(Bạn)</span>}
+                          </button>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -240,10 +270,10 @@ export default function SportEventLeaderboard({
                   </tr>
                 )
               })}
-              {participants.length === 0 && (
+              {filteredParticipants.length === 0 && (
                 <tr>
                   <td colSpan="4" className="text-center py-12 text-gray-500">
-                    Chưa có dữ liệu xếp hạng
+                    {filterMode === 'friends' ? 'Chưa có bạn bè nào tham gia sự kiện này' : 'Chưa có dữ liệu xếp hạng'}
                   </td>
                 </tr>
               )}

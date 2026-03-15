@@ -4,6 +4,7 @@ export interface UpdateUserBody {
   user_name?: string
   birthday?: Date
   address?: string
+  gender?: string
 }
 
 export interface RequestUserBody {

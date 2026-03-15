@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { format, subMonths, parseISO } from 'date-fns';
+import { format, subDays, subMonths, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
-// Tạo component WeightChart đơn giản hơn, không sử dụng Recharts
+const TIME_RANGES = [
+  { key: '7d', label: '7 ngày' },
+  { key: '14d', label: '14 ngày' },
+  { key: '30d', label: '30 ngày' },
+  { key: '1m', label: '1 tháng' },
+  { key: '3m', label: '3 tháng' },
+  { key: '6m', label: '6 tháng' },
+  { key: 'all', label: 'Tất cả' },
+];
+
 const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
-  const [timeRange, setTimeRange] = useState('all');
+  const [timeRange, setTimeRange] = useState('30d');
   const [chartData, setChartData] = useState([]);
   const [error, setError] = useState(null);
 
@@ -15,7 +24,6 @@ const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
     }
 
     try {
-      // Xử lý dữ liệu và chuyển đổi ngày
       const processedData = healthMetricsHistory.map(item => {
         try {
           const date = parseISO(item.date);
@@ -34,7 +42,6 @@ const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
         }
       }).filter(item => item !== null);
 
-      // Sắp xếp dữ liệu theo thứ tự thời gian
       const sortedData = processedData.sort((a, b) => a.parsedDate - b.parsedDate);
       setChartData(sortedData);
       setError(null);
@@ -45,7 +52,7 @@ const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
     }
   }, [healthMetricsHistory]);
 
-  // Lọc dữ liệu theo khoảng thời gian
+  // Filter data by time range
   const filteredData = (() => {
     if (timeRange === 'all' || !chartData || chartData.length === 0) {
       return chartData;
@@ -55,6 +62,15 @@ const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
     let startDate;
     
     switch (timeRange) {
+      case '7d':
+        startDate = subDays(now, 7);
+        break;
+      case '14d':
+        startDate = subDays(now, 14);
+        break;
+      case '30d':
+        startDate = subDays(now, 30);
+        break;
       case '1m':
         startDate = subMonths(now, 1);
         break;
@@ -71,57 +87,53 @@ const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
     return chartData.filter(item => item.parsedDate >= startDate);
   })();
 
-  // Kiểm tra lỗi
   if (error) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
         <h3 className="text-lg font-semibold dark:text-white">Tiến Trình Cân Nặng</h3>
-        <div className="h-80 flex items-center justify-center">
+        <div className="h-40 flex items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">{error}</p>
         </div>
       </div>
     );
   }
 
-  // Kiểm tra không có dữ liệu
   if (!healthMetricsHistory || healthMetricsHistory.length === 0 || chartData.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
         <h3 className="text-lg font-semibold dark:text-white">Tiến Trình Cân Nặng</h3>
-        <div className="h-80 flex items-center justify-center">
+        <div className="h-40 flex items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">Không có dữ liệu cân nặng</p>
         </div>
       </div>
     );
   }
 
-  // Kiểm tra dữ liệu lọc
   if (!filteredData || filteredData.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <h3 className="text-lg font-semibold dark:text-white">Tiến Trình Cân Nặng</h3>
           <RenderTimeRangeButtons timeRange={timeRange} setTimeRange={setTimeRange} />
         </div>
-        <div className="h-80 flex items-center justify-center">
+        <div className="h-40 flex items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">Không có dữ liệu trong khoảng thời gian đã chọn</p>
         </div>
       </div>
     );
   }
 
-  // Tìm min và max để hiển thị trên bảng
   const minWeight = Math.min(...filteredData.map(item => item.weightKg));
   const maxWeight = Math.max(...filteredData.map(item => item.weightKg));
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h3 className="text-lg font-semibold dark:text-white">Tiến Trình Cân Nặng</h3>
         <RenderTimeRangeButtons timeRange={timeRange} setTimeRange={setTimeRange} />
       </div>
       
-      <div className="h-80 overflow-auto">
+      <div className="overflow-auto" style={{ maxHeight: '400px' }}>
         <SimpleWeightChart 
           data={filteredData} 
           targetWeight={targetWeight}
@@ -133,74 +145,55 @@ const WeightChart = ({ healthMetricsHistory, targetWeight }) => {
   );
 };
 
-// Component nút chọn khoảng thời gian
+// Time range selector with horizontal scroll on mobile
 const RenderTimeRangeButtons = ({ timeRange, setTimeRange }) => (
-  <div className="flex space-x-2">
-    <button 
-      onClick={() => setTimeRange('1m')}
-      className={`px-3 py-1 text-sm rounded ${timeRange === '1m' 
-        ? 'bg-green-500 text-white' 
-        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-    >
-      1 tháng
-    </button>
-    <button 
-      onClick={() => setTimeRange('3m')}
-      className={`px-3 py-1 text-sm rounded ${timeRange === '3m' 
-        ? 'bg-green-500 text-white' 
-        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-    >
-      3 tháng
-    </button>
-    <button 
-      onClick={() => setTimeRange('6m')}
-      className={`px-3 py-1 text-sm rounded ${timeRange === '6m' 
-        ? 'bg-green-500 text-white' 
-        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-    >
-      6 tháng
-    </button>
-    <button 
-      onClick={() => setTimeRange('all')}
-      className={`px-3 py-1 text-sm rounded ${timeRange === 'all' 
-        ? 'bg-green-500 text-white' 
-        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-    >
-      Tất cả
-    </button>
+  <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-1 flex-shrink-0">
+    {TIME_RANGES.map(({ key, label }) => (
+      <button
+        key={key}
+        onClick={() => setTimeRange(key)}
+        className={`px-2.5 py-1 text-xs rounded-md whitespace-nowrap transition-colors ${
+          timeRange === key 
+            ? 'bg-green-500 text-white shadow-sm' 
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        {label}
+      </button>
+    ))}
   </div>
 );
 
-// Component bảng dữ liệu đơn giản thay thế biểu đồ
+// Simple table-based weight display
 const SimpleWeightChart = ({ data, targetWeight, minWeight, maxWeight }) => {
   if (!data || data.length === 0) return <p>Không có dữ liệu</p>;
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full">
-        <thead className="bg-gray-50 dark:bg-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Ngày
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Cân nặng (kg)
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Tình trạng
             </th>
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           {data.map((item, index) => (
-            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700' : ''}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700/50' : ''}>
+              <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                 {item.formattedDate}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+              <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
                 {item.weightKg}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-4 py-2.5 whitespace-nowrap">
                 {targetWeight && (
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     item.weightKg > targetWeight 
@@ -220,22 +213,22 @@ const SimpleWeightChart = ({ data, targetWeight, minWeight, maxWeight }) => {
         </tbody>
       </table>
       
-      {/* Hiển thị tóm tắt */}
-      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+      {/* Summary */}
+      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tóm tắt:</h4>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Cân nặng thấp nhất</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{minWeight} kg</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm">
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Cân nặng thấp nhất</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">{minWeight} kg</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Cân nặng cao nhất</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{maxWeight} kg</p>
+          <div className="bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm">
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Cân nặng cao nhất</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">{maxWeight} kg</p>
           </div>
           {targetWeight && (
-            <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Mục tiêu</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{targetWeight} kg</p>
+            <div className="bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Mục tiêu</p>
+              <p className="text-base font-bold text-gray-900 dark:text-white">{targetWeight} kg</p>
             </div>
           )}
         </div>

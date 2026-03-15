@@ -20,6 +20,7 @@ export default function ActivityTracking() {
     const [showConfirmComplete, setShowConfirmComplete] = useState(false)
     const autoSaveTimerRef = useRef(null)
     const startedRef = useRef(false)
+    const activityIdRef = useRef(null)
 
     // Goong Map refs
     const mapContainerRef = useRef(null)
@@ -59,6 +60,7 @@ export default function ActivityTracking() {
         onSuccess: (res) => {
             const activity = res.data.result
             setActivityId(activity._id)
+            activityIdRef.current = activity._id
         },
         onError: (err) => {
             toast.error(err.response?.data?.message || 'Không thể bắt đầu hoạt động')
@@ -147,16 +149,19 @@ export default function ActivityTracking() {
         if (startedRef.current || !event) return
         startedRef.current = true
 
+        // Use event category as activity type (fallback to 'running')
+        const actType = event?.category || 'Chạy bộ'
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude } = pos.coords
                     startMutation.mutate({
-                        activityType: 'running',
+                        activityType: actType,
                         startLat: latitude,
                         startLng: longitude
                     })
-                    tracker.start('running', { kcalPerKm })
+                    tracker.start(actType, { kcalPerKm })
                     // Center map on actual position
                     if (mapRef.current) {
                         mapRef.current.setCenter([longitude, latitude])
@@ -165,14 +170,14 @@ export default function ActivityTracking() {
                 },
                 () => {
                     toast.error('Không thể truy cập GPS. Vui lòng cho phép quyền truy cập vị trí.')
-                    startMutation.mutate({ activityType: 'running' })
-                    tracker.start('running', { kcalPerKm })
+                    startMutation.mutate({ activityType: actType })
+                    tracker.start(actType, { kcalPerKm })
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             )
         } else {
-            startMutation.mutate({ activityType: 'running' })
-            tracker.start('running', { kcalPerKm })
+            startMutation.mutate({ activityType: actType })
+            tracker.start(actType, { kcalPerKm })
         }
 
         return () => {
@@ -213,7 +218,7 @@ export default function ActivityTracking() {
     useEffect(() => {
         if (activityId && tracker.isTracking) {
             autoSaveTimerRef.current = setInterval(() => {
-                if (activityId) {
+                if (activityIdRef.current) {
                     const snapshot = tracker.getSnapshot()
                     updateMutation.mutate({
                         ...snapshot,
@@ -243,8 +248,13 @@ export default function ActivityTracking() {
 
     const confirmComplete = () => {
         tracker.stop()
-        const snapshot = tracker.getSnapshot()
-        completeMutation.mutate(snapshot)
+        if (activityIdRef.current) {
+            const snapshot = tracker.getSnapshot()
+            completeMutation.mutate(snapshot)
+        } else {
+            toast.error('Chưa khởi tạo được hoạt động. Vui lòng thử lại.')
+            navigate(`/sport-event/${eventId}`)
+        }
         setShowConfirmComplete(false)
     }
 
@@ -252,7 +262,11 @@ export default function ActivityTracking() {
 
     const confirmDiscard = () => {
         tracker.discard()
-        discardMutation.mutate()
+        if (activityIdRef.current) {
+            discardMutation.mutate()
+        } else {
+            navigate(`/sport-event/${eventId}`)
+        }
         setShowConfirmDiscard(false)
     }
 
@@ -274,145 +288,173 @@ export default function ActivityTracking() {
     const progressPercent = targetValue > 0 ? Math.min(Math.round((parseFloat(distanceKm) / targetValue) * 100), 100) : 0
 
     return (
-        <div className='activity-tracking-page'>
-            {/* Header */}
-            <div className='tracking-header'>
-                <button className='tracking-close-btn' onClick={handleClose}>
-                    <svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                        <line x1='18' y1='6' x2='6' y2='18'></line>
-                        <line x1='6' y1='6' x2='18' y2='18'></line>
-                    </svg>
-                </button>
-                <h2 className='tracking-title'>{activityLabel}</h2>
-                <div style={{ width: 24 }}></div>
+        <div className='tracking-hud'>
+            {/* ═══ MAP FILLS ENTIRE SCREEN ═══ */}
+            <div className='tracking-map-fullscreen'>
+                <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
             </div>
 
-            {/* Progress toward target */}
-            {targetValue > 0 && (
-                <div className='tracking-progress-bar-wrap'>
-                    <div className='tracking-progress-info'>
-                        <span>Tiến độ mục tiêu</span>
-                        <span>{distanceKm} / {targetValue} {targetUnit} ({progressPercent}%)</span>
-                    </div>
-                    <div className='tracking-progress-bar'>
-                        <div className='tracking-progress-fill' style={{ width: `${progressPercent}%` }}></div>
+            {/* ═══ HEADER OVERLAY ═══ */}
+            <div className='hud-header'>
+                <button className='hud-close' onClick={handleClose}>✕</button>
+                <div className='hud-header-center'>
+                    <span className='hud-event-name'>{event?.name || activityLabel}</span>
+                </div>
+                <div className='hud-gps-badge'>
+                    <span className={`hud-gps-dot ${tracker.gpsError ? 'err' : tracker.gpsAccuracy && tracker.gpsAccuracy < 20 ? 'good' : 'mid'}`} />
+                    <span>GPS {tracker.gpsError ? 'Lỗi' : tracker.gpsAccuracy ? `${Math.round(tracker.gpsAccuracy)}m` : 'Đang tìm...'}</span>
+                </div>
+            </div>
+
+            {/* ═══ GPS ANTI-CHEAT WARNING ═══ */}
+            {tracker.gpsFlags.length > 0 && (
+                <div className='hud-warning'>
+                    <span>⚠️</span>
+                    <div>
+                        <p className='hud-warning-title'>GPS bất thường ({tracker.gpsFlags.length})</p>
+                        <p className='hud-warning-desc'>
+                            {tracker.gpsFlags.filter(f => f.type === 'teleport').length > 0 && 'Dịch chuyển đột ngột • '}
+                            {tracker.gpsFlags.filter(f => f.type === 'speed').length > 0 && 'Tốc độ vượt ngưỡng'}
+                        </p>
                     </div>
                 </div>
             )}
 
-            {/* Stats Panel */}
-            <div className='tracking-stats'>
-                <div className='tracking-stat-row tracking-stat-primary'>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value tracking-distance'>{distanceKm}</div>
-                        <div className='tracking-stat-label'>Quãng đường (km)</div>
-                    </div>
-                    <div className='tracking-stat-divider'></div>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value tracking-time'>{formatDuration(tracker.duration)}</div>
-                        <div className='tracking-stat-label'>Tổng thời gian</div>
-                    </div>
+            {/* ═══ STATS OVERLAY — 4 GLASS CARDS ═══ */}
+            <div className='hud-stats-grid'>
+                <div className='hud-stat-card primary'>
+                    <div className='hud-stat-val big'>{distanceKm}</div>
+                    <div className='hud-stat-lbl'>Quãng đường (km)</div>
                 </div>
-                <div className='tracking-stat-row tracking-stat-secondary'>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value'>{formatPace(currentPace)}</div>
-                        <div className='tracking-stat-label'>Pace hiện tại (/km)</div>
-                    </div>
-                    <div className='tracking-stat-divider'></div>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value'>{formatPace(tracker.avgPace)}</div>
-                        <div className='tracking-stat-label'>Pace TB (/km)</div>
-                    </div>
+                <div className='hud-stat-card'>
+                    <div className='hud-stat-val'>{formatDuration(tracker.duration)}</div>
+                    <div className='hud-stat-lbl'>Thời gian</div>
                 </div>
-                <div className='tracking-stat-row tracking-stat-secondary'>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value'>{speedKmH}</div>
-                        <div className='tracking-stat-label'>Vận tốc (km/h)</div>
-                    </div>
-                    <div className='tracking-stat-divider'></div>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value'>{avgSpeedKmH}</div>
-                        <div className='tracking-stat-label'>V.tốc TB (km/h)</div>
-                    </div>
+                <div className='hud-stat-card'>
+                    <div className='hud-stat-val'>{formatPace(currentPace)}</div>
+                    <div className='hud-stat-lbl'>Tốc độ (/km)</div>
                 </div>
-                <div className='tracking-stat-row tracking-stat-extra'>
-                    <div className='tracking-stat'>
-                        <div className='tracking-stat-value tracking-calories'>{tracker.calories}</div>
-                        <div className='tracking-stat-label'>kcal tiêu thụ</div>
-                    </div>
+                <div className='hud-stat-card accent'>
+                    <div className='hud-stat-val'>{tracker.calories}</div>
+                    <div className='hud-stat-lbl'>🔥 Kcal</div>
                 </div>
             </div>
 
-            {/* Goong Map */}
-            <div className='tracking-map-container'>
-                <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }}></div>
+            {/* ═══ PROGRESS BAR OVERLAY ═══ */}
+            {targetValue > 0 && (
+                <div className='hud-progress'>
+                    <div className='hud-progress-info'>
+                        <span>Tiến độ</span>
+                        <span>{distanceKm} / {targetValue} {targetUnit} ({progressPercent}%)</span>
+                    </div>
+                    <div className='hud-progress-track'>
+                        <div className='hud-progress-fill' style={{ width: `${progressPercent}%` }} />
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ SECONDARY STATS ROW ═══ */}
+            <div className='hud-secondary'>
+                <div className='hud-sec-item'>
+                    <span className='hud-sec-val'>{speedKmH}</span>
+                    <span className='hud-sec-lbl'>km/h</span>
+                </div>
+                <div className='hud-sec-divider' />
+                <div className='hud-sec-item'>
+                    <span className='hud-sec-val'>{avgSpeedKmH}</span>
+                    <span className='hud-sec-lbl'>TB km/h</span>
+                </div>
+                <div className='hud-sec-divider' />
+                <div className='hud-sec-item'>
+                    <span className='hud-sec-val'>{formatPace(tracker.avgPace)}</span>
+                    <span className='hud-sec-lbl'>TB /km</span>
+                </div>
             </div>
 
-            {/* GPS Status */}
-            <div className='tracking-gps-status'>
-                <span className={`gps-dot ${tracker.gpsError ? 'gps-error' : tracker.gpsAccuracy && tracker.gpsAccuracy < 20 ? 'gps-good' : 'gps-medium'}`}></span>
-                <span className='gps-text'>
-                    GPS {tracker.gpsError ? 'Lỗi' : tracker.gpsAccuracy ? `${Math.round(tracker.gpsAccuracy)}m` : 'Đang tìm...'}
-                </span>
-            </div>
+            {/* ═══ SPLITS OVERLAY ═══ */}
+            {tracker.splits.length > 0 && (
+                <div className='hud-splits'>
+                    <p className='hud-splits-title'>🏃 Splits ({tracker.splits.length} km)</p>
+                    <div className='hud-splits-list'>
+                        {tracker.splits.map((s, i) => (
+                            <div key={i} className='hud-split-chip'>
+                                <span className='hud-split-km'>km {s.km}</span>
+                                <span className='hud-split-pace'>{s.pace}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-            {/* Controls */}
-            <div className='tracking-controls'>
+            {/* ═══ CONTROLS ═══ */}
+            <div className='hud-controls'>
                 {!tracker.isPaused ? (
-                    <button className='tracking-btn tracking-btn-pause' onClick={handlePause}>
-                        <svg width='32' height='32' viewBox='0 0 24 24' fill='currentColor'>
-                            <rect x='6' y='4' width='4' height='16' rx='1'></rect>
-                            <rect x='14' y='4' width='4' height='16' rx='1'></rect>
+                    <button className='hud-btn-pause' onClick={handlePause}>
+                        <svg width='28' height='28' viewBox='0 0 24 24' fill='currentColor'>
+                            <rect x='6' y='4' width='4' height='16' rx='1' />
+                            <rect x='14' y='4' width='4' height='16' rx='1' />
                         </svg>
                     </button>
                 ) : (
-                    <div className='tracking-paused-controls'>
-                        <button className='tracking-btn tracking-btn-discard' onClick={handleDiscard}>
-                            <svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                                <line x1='18' y1='6' x2='6' y2='18'></line>
-                                <line x1='6' y1='6' x2='18' y2='18'></line>
+                    <div className='hud-paused-row'>
+                        <button className='hud-btn-action discard' onClick={handleDiscard}>
+                            <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5'>
+                                <line x1='18' y1='6' x2='6' y2='18' /><line x1='6' y1='6' x2='18' y2='18' />
                             </svg>
                             <span>Huỷ</span>
                         </button>
-                        <button className='tracking-btn tracking-btn-resume' onClick={handleResume}>
-                            <svg width='32' height='32' viewBox='0 0 24 24' fill='currentColor'>
-                                <polygon points='5,3 19,12 5,21'></polygon>
+                        <button className='hud-btn-pause resume' onClick={handleResume}>
+                            <svg width='28' height='28' viewBox='0 0 24 24' fill='currentColor'>
+                                <polygon points='5,3 19,12 5,21' />
                             </svg>
                         </button>
-                        <button className='tracking-btn tracking-btn-complete' onClick={handleComplete}>
-                            <svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-                                <polyline points='20,6 9,17 4,12'></polyline>
+                        <button className='hud-btn-action complete' onClick={handleComplete}>
+                            <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5'>
+                                <polyline points='20,6 9,17 4,12' />
                             </svg>
-                            <span>Hoàn thành</span>
+                            <span>Xong</span>
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Confirm Discard Modal */}
+            {/* ═══ CONFIRM DISCARD MODAL ═══ */}
             {showConfirmDiscard && (
-                <div className='tracking-modal-overlay'>
-                    <div className='tracking-modal'>
+                <div className='hud-modal-overlay'>
+                    <div className='hud-modal'>
+                        <div className='hud-modal-icon'>🗑️</div>
                         <h3>Huỷ hoạt động?</h3>
-                        <p>Hoạt động này sẽ bị huỷ và không được tính vào tiến độ.</p>
-                        <div className='tracking-modal-buttons'>
-                            <button className='modal-btn modal-btn-cancel' onClick={() => setShowConfirmDiscard(false)}>Quay lại</button>
-                            <button className='modal-btn modal-btn-confirm' onClick={confirmDiscard}>Huỷ hoạt động</button>
+                        <p>Hoạt động sẽ bị huỷ và không tính vào tiến độ.</p>
+                        <div className='hud-modal-stats'>
+                            <div><strong>{distanceKm}</strong> km</div>
+                            <div><strong>{formatDuration(tracker.duration)}</strong></div>
+                            <div><strong>{tracker.calories}</strong> kcal</div>
+                        </div>
+                        <div className='hud-modal-btns'>
+                            <button className='hud-modal-btn cancel' onClick={() => setShowConfirmDiscard(false)}>Quay lại</button>
+                            <button className='hud-modal-btn danger' onClick={confirmDiscard}>Huỷ hoạt động</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Confirm Complete Modal */}
+            {/* ═══ CONFIRM COMPLETE MODAL ═══ */}
             {showConfirmComplete && (
-                <div className='tracking-modal-overlay'>
-                    <div className='tracking-modal'>
+                <div className='hud-modal-overlay'>
+                    <div className='hud-modal'>
+                        <div className='hud-modal-icon'>🎉</div>
                         <h3>Hoàn thành hoạt động?</h3>
-                        <p>Kết quả: <strong>{distanceKm} km</strong> trong <strong>{formatDuration(tracker.duration)}</strong></p>
-                        <p style={{ marginTop: 4, fontSize: 13 }}>🔥 {tracker.calories} kcal • ⚡ V.tốc TB {avgSpeedKmH} km/h</p>
-                        <div className='tracking-modal-buttons'>
-                            <button className='modal-btn modal-btn-cancel' onClick={() => setShowConfirmComplete(false)}>Quay lại</button>
-                            <button className='modal-btn modal-btn-success' onClick={confirmComplete}>Xác nhận</button>
+                        <div className='hud-modal-stats'>
+                            <div><strong>{distanceKm}</strong> km</div>
+                            <div><strong>{formatDuration(tracker.duration)}</strong></div>
+                            <div>🔥 <strong>{tracker.calories}</strong> kcal</div>
+                        </div>
+                        <div className='hud-modal-detail'>
+                            ⚡ Vận tốc TB {avgSpeedKmH} km/h • Tốc độ {formatPace(tracker.avgPace)}/km
+                        </div>
+                        <div className='hud-modal-btns'>
+                            <button className='hud-modal-btn cancel' onClick={() => setShowConfirmComplete(false)}>Quay lại</button>
+                            <button className='hud-modal-btn success' onClick={confirmComplete}>Xác nhận</button>
                         </div>
                     </div>
                 </div>

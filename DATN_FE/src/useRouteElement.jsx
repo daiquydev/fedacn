@@ -88,6 +88,9 @@ const MyMealPlans = lazy(() => import('./pages/MealPlan/MyMealPlans/MyMealPlans'
 const ActiveMealPlan = lazy(() => import('./pages/MealPlan/ActiveMealPlan/ActiveMealPlan'))
 const FriendManagement = lazy(() => import('./pages/Friends/FriendManagement'))
 const Explore = lazy(() => import('./pages/Explore'))
+const HabitChallenge = lazy(() => import('./pages/HabitChallenge'))
+const HabitChallengeDetail = lazy(() => import('./pages/HabitChallengeDetail'))
+const CreateHabitChallenge = lazy(() => import('./pages/CreateHabitChallenge'))
 const PublicMealPlanDetail = lazy(() => import('./pages/Explore/PublicMealPlanDetail'))
 const PersonalDashboard = lazy(() => import('./pages/PersonalDashboard/PersonalDashboard'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
@@ -545,6 +548,36 @@ export default function useRouteElement() {
             <Suspense>
               <ActivityResult />
             </Suspense>
+          )
+        },
+        {
+          path: '/habit-challenge',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <HabitChallenge />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/habit-challenge/create',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <CreateHabitChallenge />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/habit-challenge/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <HabitChallengeDetail />
+              </Suspense>
+            </MainLayout>
           )
         },
         {

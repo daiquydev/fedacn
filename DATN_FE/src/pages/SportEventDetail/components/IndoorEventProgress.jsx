@@ -19,6 +19,7 @@ import {
 } from '../../../apis/sportEventApi'
 import VideoCallModal from '../../../components/SportEvent/VideoCallModal'
 import VideoCallResult from '../../../components/SportEvent/VideoCallResult'
+import { ActivityRings } from '../../../components/SportEvent/ProgressRing'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatSeconds(secs) {
@@ -126,32 +127,44 @@ export default function IndoorEventProgress({ event, userProgress }) {
     const indoorStats = useMemo(() => {
         const totalActiveSeconds = endedSessions.reduce((s, v) => s + (v.activeSeconds || 0), 0)
         const totalCalories = endedSessions.reduce((s, v) => s + (v.caloriesBurned || 0), 0)
+
+        // Weekly Streak calculation
+        const weekSet = new Set()
+        endedSessions.forEach(s => {
+            weekSet.add(moment(s.joinedAt).format('YYYY-[W]WW'))
+        })
+        let streak = 0
+        let checkWeek = moment()
+        while (weekSet.has(checkWeek.format('YYYY-[W]WW'))) {
+            streak++
+            checkWeek = checkWeek.subtract(1, 'week')
+        }
+
         return {
             totalSessions: endedSessions.length,
             totalActiveSeconds,
-            totalCalories
+            totalCalories,
+            weeklyStreak: streak
         }
     }, [endedSessions])
 
-    // Progress % from userProgress
-    // Với sự kiện trong nhà: dùng nguồn dữ liệu thực từ video sessions thay vì userProgress
+    // Progress % from userProgress — with NaN/zero guards
     const progressStats = useMemo(() => {
-        if (!event?.targetValue) return null
+        if (!event?.targetValue || event.targetValue <= 0) return null
         const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
         const perPersonTarget = event.targetValue / maxParticipants
+        if (perPersonTarget <= 0) return null
 
-        // Xác định giá trị tiến độ thực tế theo targetUnit
         const unit = (event.targetUnit || '').toLowerCase()
         let actualTotal = 0
         if (unit.includes('kcal') || unit.includes('calo')) {
-            // Đo bằng calo: lấy từ video sessions
             actualTotal = indoorStats.totalCalories
         } else {
-            // Đo bằng phút/thời gian: quy đổi activeSeconds -> phút
             actualTotal = Math.round(indoorStats.totalActiveSeconds / 60)
         }
 
-        const pct = Math.min(Math.round((actualTotal / perPersonTarget) * 100), 100)
+        const rawPct = Math.round((actualTotal / perPersonTarget) * 100)
+        const pct = isNaN(rawPct) ? 0 : Math.min(rawPct, 100)
         return { total: actualTotal, pct, perPersonTarget }
     }, [indoorStats, event])
 
@@ -241,6 +254,11 @@ export default function IndoorEventProgress({ event, userProgress }) {
                         <div className="flex items-center gap-2 mb-1">
                             <MdVideocam className="text-2xl" />
                             <h3 className="text-xl font-bold">Video Call Trong nhà</h3>
+                            {indoorStats.weeklyStreak > 0 && (
+                                <span className="ml-2 bg-white/20 backdrop-blur-sm rounded-lg px-2 py-0.5 text-sm font-black">
+                                    🔥 {indoorStats.weeklyStreak} tuần
+                                </span>
+                            )}
                         </div>
 
                         {isEnded ? (
@@ -292,44 +310,113 @@ export default function IndoorEventProgress({ event, userProgress }) {
                 )}
             </div>
 
-            {/* ── Stat Cards ─────────────────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    icon={<FaTrophy className="text-yellow-500" />}
-                    label="Tiến độ của bạn"
-                    value={progressStats
-                        ? `${progressStats.total} / ${progressStats.perPersonTarget.toFixed(1)} ${event.targetUnit}`
-                        : `0 / ${(event.targetValue / (event?.maxParticipants > 0 ? event.maxParticipants : 1)).toFixed(1)} ${event.targetUnit}`}
-                    subValue={progressStats ? `${progressStats.pct}% phần đóng góp của bạn` : '0% phần đóng góp của bạn'}
-                    colorClass="bg-yellow-100 text-yellow-600"
-                    isActive={false}
-                    onClick={() => { }}
-                />
-                <StatCard
-                    icon={<FaClock className="text-blue-500" />}
-                    label="Thời gian tham gia"
-                    value={formatSeconds(indoorStats.totalActiveSeconds)}
-                    subValue="Thời gian AI xác nhận có mặt"
-                    colorClass="bg-blue-100 text-blue-600"
-                    isActive={activeMetric === 'minutes'}
-                    onClick={() => setActiveMetric('minutes')}
-                />
-                <StatCard
-                    icon={<FaFire className="text-orange-500" />}
-                    label="kcal tiêu thụ"
-                    value={`${indoorStats.totalCalories} kcal`}
-                    colorClass="bg-orange-100 text-orange-600"
-                    isActive={activeMetric === 'calories'}
-                    onClick={() => setActiveMetric('calories')}
-                />
-                <StatCard
-                    icon={<MdVideocam className="text-purple-500" />}
-                    label="Số buổi tham gia"
-                    value={`${indoorStats.totalSessions} buổi`}
-                    colorClass="bg-purple-100 text-purple-600"
-                    isActive={false}
-                    onClick={() => { }}
-                />
+            {/* ── Activity Rings Hero — Apple Fitness style ──────────────────── */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-6 py-4">
+                    <h3 className="text-lg font-bold text-white">📊 Thống kê hoạt động</h3>
+                    <p className="text-white/70 text-sm">Mục tiêu cá nhân: {progressStats?.perPersonTarget > 0 ? `${progressStats.perPersonTarget.toFixed(1)} ${event.targetUnit}` : 'Chưa thiết lập'}</p>
+                </div>
+                <div className="p-6">
+                    <div className="flex flex-col md:flex-row items-center gap-8">
+                        {/* Activity Rings */}
+                        <div className="relative flex-shrink-0">
+                            <ActivityRings
+                                size={180}
+                                strokeWidth={14}
+                                gap={5}
+                                rings={[
+                                    {
+                                        percent: progressStats?.pct || 0,
+                                        color: '#6366f1',
+                                        colorEnd: (progressStats?.pct || 0) >= 100 ? '#22c55e' : '#8b5cf6',
+                                        label: event.targetUnit
+                                    },
+                                    {
+                                        percent: indoorStats.totalActiveSeconds > 0 ? Math.min(Math.round(indoorStats.totalActiveSeconds / 60 / (progressStats?.perPersonTarget || 60) * 100), 100) : 0,
+                                        color: '#3b82f6',
+                                        colorEnd: '#06b6d4',
+                                        label: 'phút'
+                                    },
+                                    {
+                                        percent: indoorStats.totalCalories > 0 ? Math.min(indoorStats.totalCalories / 5, 100) : 0,
+                                        color: '#f97316',
+                                        colorEnd: '#eab308',
+                                        label: 'kcal'
+                                    }
+                                ]}
+                                centerContent={
+                                    <div className="text-center">
+                                        <p className="text-2xl font-black text-gray-800 dark:text-white">{progressStats?.pct || 0}%</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">hoàn thành</p>
+                                    </div>
+                                }
+                            />
+                        </div>
+
+                        {/* Ring Legend + Stats */}
+                        <div className="flex-1 grid grid-cols-2 gap-3 w-full">
+                            {/* Progress stat */}
+                            <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ</span>
+                                </div>
+                                <p className="text-xl font-black text-gray-800 dark:text-white">
+                                    {progressStats ? progressStats.total : 0} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">{progressStats?.pct || 0}% hoàn thành</p>
+                            </div>
+
+                            {/* Time stat */}
+                            <div
+                                onClick={() => setActiveMetric('minutes')}
+                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                    activeMetric === 'minutes'
+                                        ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                                        : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 bg-white dark:bg-gray-800'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Thời gian</span>
+                                </div>
+                                <p className="text-xl font-black text-gray-800 dark:text-white">
+                                    {formatSeconds(indoorStats.totalActiveSeconds)}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">AI xác nhận có mặt</p>
+                            </div>
+
+                            {/* Calories stat */}
+                            <div
+                                onClick={() => setActiveMetric('calories')}
+                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                    activeMetric === 'calories'
+                                        ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 shadow-md'
+                                        : 'border-gray-100 dark:border-gray-700 hover:border-orange-200 bg-white dark:bg-gray-800'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" />
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
+                                </div>
+                                <p className="text-xl font-black text-gray-800 dark:text-white">
+                                    {indoorStats.totalCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
+                                </p>
+                            </div>
+
+                            {/* Sessions stat */}
+                            <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Buổi tham gia</span>
+                                </div>
+                                <p className="text-xl font-black text-gray-800 dark:text-white">
+                                    {indoorStats.totalSessions} <span className="text-sm font-medium text-gray-400">buổi</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* ── Chart + History ─────────────────────────────────────────────────── */}

@@ -701,18 +701,26 @@ class PostService {
     const follow_ids_arr = follow_ids.map((f) => f.follow_id)
     follow_ids_arr.push(user_id_obj)
 
+    // tìm những tài khoản đã theo dõi ngược lại user (mutual = bạn bè)
+    const follower_ids = await FollowModel.find({
+      follow_id: user_id_obj
+    }).select('user_id')
+    const follower_ids_set = new Set(follower_ids.map((f) => f.user_id.toString()))
+
+    // friend_ids = người mà user follow VÀ cũng follow ngược lại
+    const friend_ids_arr = follow_ids
+      .filter((f) => follower_ids_set.has(f.follow_id.toString()))
+      .map((f) => f.follow_id)
+    friend_ids_arr.push(user_id_obj) // bản thân cũng thấy bài của mình
+
     const newFeeds = await PostModel.aggregate([
       {
-        // lấy post public và những post trong trạng thái chỉ cho người đã theo dõi xem
         $match: {
           $or: [
-            {
-              status: PostStatus.publish
-            },
-            {
-              status: PostStatus.following,
-              user_id: { $in: follow_ids_arr }
-            }
+            { status: PostStatus.publish },
+            { status: PostStatus.following, user_id: { $in: follow_ids_arr } },
+            { status: PostStatus.friends, user_id: { $in: friend_ids_arr } },
+            { status: PostStatus.private, user_id: user_id_obj }
           ],
           is_banned: false
         }
@@ -1848,6 +1856,17 @@ class PostService {
         new: true
       }
     )
+
+    // Gửi thông báo ẩn danh cho chủ bài viết khi bị báo cáo
+    if (newReport && newReport.user_id.toString() !== user_id) {
+      await NotificationModel.create({
+        receiver_id: newReport.user_id,
+        content: 'Bài viết của bạn đã bị báo cáo vi phạm',
+        name_notification: reason || 'Vi phạm',
+        link_id: post_id,
+        type: NotificationTypes.reportPost
+      })
+    }
 
     return newReport
   }

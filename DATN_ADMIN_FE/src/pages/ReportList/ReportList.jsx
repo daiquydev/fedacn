@@ -1,5 +1,5 @@
-import { FaSearch, FaFlag, FaFilter, FaSync } from 'react-icons/fa'
-import { MdReport } from 'react-icons/md'
+import { FaSearch, FaFlag, FaSync, FaUndo } from 'react-icons/fa'
+import { MdReport, MdDeleteSweep } from 'react-icons/md'
 import Pagination from '../../components/GlobalComponents/Pagination'
 import { useNavigate, createSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -7,8 +7,10 @@ import Loading from '../../components/GlobalComponents/Loading'
 import useQueryConfig from '../../hooks/useQueryConfig'
 import { omit } from 'lodash'
 import { useForm } from 'react-hook-form'
-import { getReportPost } from '../../apis/inspectorApi'
+import { getReportPost, getDeletedPosts } from '../../apis/inspectorApi'
 import PostItem from './components/PostItem'
+import DeletedPostItem from './components/DeletedPostItem'
+import { useState } from 'react'
 
 function MiniStatCard({ icon: Icon, label, value, color, iconBg }) {
   return (
@@ -26,19 +28,37 @@ function MiniStatCard({ icon: Icon, label, value, color, iconBg }) {
   )
 }
 
+const tabs = [
+  { key: 'reported', label: 'Bài viết bị báo cáo', icon: MdReport },
+  { key: 'deleted', label: 'Bài viết đã xóa', icon: MdDeleteSweep }
+]
+
 export default function ReportList() {
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('reported')
   const queryConfig = omit(useQueryConfig(), 'sort')
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['report-list', queryConfig],
     queryFn: () => getReportPost(queryConfig),
     placeholderData: keepPreviousData,
-    staleTime: 1000
+    staleTime: 1000,
+    enabled: activeTab === 'reported'
+  })
+
+  const { data: deletedData, isLoading: isLoadingDeleted, refetch: refetchDeleted, isFetching: isFetchingDeleted } = useQuery({
+    queryKey: ['deleted-posts', queryConfig],
+    queryFn: () => getDeletedPosts(queryConfig),
+    placeholderData: keepPreviousData,
+    staleTime: 1000,
+    enabled: activeTab === 'deleted'
   })
 
   const posts = data?.data?.result?.posts || []
   const totalPage = data?.data?.result?.totalPage || 1
+
+  const deletedPosts = deletedData?.data?.result?.posts || []
+  const deletedTotalPage = deletedData?.data?.result?.totalPage || 1
 
   // Calculate report severity counts from current page
   const highRisk = posts.filter(p => (p.report_count ?? 0) >= 5).length
@@ -62,6 +82,9 @@ export default function ReportList() {
     })
   })
 
+  const currentRefetch = activeTab === 'reported' ? refetch : refetchDeleted
+  const currentIsFetching = activeTab === 'reported' ? isFetching : isFetchingDeleted
+
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
 
@@ -76,86 +99,185 @@ export default function ReportList() {
             </p>
           </div>
           <button
-            onClick={() => refetch()}
-            disabled={isFetching}
+            onClick={() => currentRefetch()}
+            disabled={currentIsFetching}
             className='flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50 mt-1 shrink-0'
           >
-            <FaSync size={13} className={isFetching ? 'animate-spin' : ''} />
+            <FaSync size={13} className={currentIsFetching ? 'animate-spin' : ''} />
             Làm mới
           </button>
         </div>
+
+        {/* Tabs inside Hero Banner */}
+        <div className='relative z-10 flex gap-2 mt-5'>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                activeTab === tab.key
+                  ? 'bg-white text-red-700 shadow-md'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              <tab.icon size={15} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
         <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
-        <MiniStatCard icon={MdReport} label='Bài viết cần xét' value={posts.length} color='border-l-rose-400' iconBg='bg-gradient-to-br from-rose-400 to-red-600' />
-        <MiniStatCard icon={FaFlag} label='Nguy cơ cao (≥5 báo cáo)' value={highRisk} color='border-l-red-500' iconBg='bg-gradient-to-br from-red-500 to-rose-700' />
-        <MiniStatCard icon={FaFlag} label='Báo cáo vừa (2-4 lần)' value={moderate} color='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
-      </div>
-
-      {/* ── Search / Filter ── */}
-      <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
-        <form onSubmit={onSubmitSearch} className='flex gap-2'>
-          <div className='relative flex-1'>
-            <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
-            <input
-              autoComplete='off'
-              type='search'
-              {...register('searchReport')}
-              placeholder='Tìm bài viết bị báo cáo...'
-              className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
-            />
-          </div>
-          <button type='submit' className='px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1.5'>
-            <FaSearch size={12} /> Tìm
-          </button>
-        </form>
-      </div>
-
-      {/* ── Table ── */}
-      {isLoading ? (
-        <Loading />
-      ) : (
+      {/* ── Tab: Bài viết bị báo cáo ── */}
+      {activeTab === 'reported' && (
         <>
-          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
-            <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
-              <p className='text-sm text-gray-500 dark:text-gray-400'>
-                Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{posts.length}</span> bài viết bị báo cáo
-              </p>
-            </div>
-            <div className='overflow-x-auto'>
-              <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
-                <thead className='bg-gray-50 dark:bg-slate-900'>
-                  <tr>
-                    {['Người viết', 'Nội dung', 'Số lần bị báo cáo', 'Ngày tạo', 'Hành động'].map(h => (
-                      <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className='divide-y divide-gray-50 dark:divide-slate-700'>
-                  {posts.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className='text-center py-16'>
-                        <FaFlag className='mx-auto text-4xl text-gray-300 mb-3' />
-                        <p className='text-gray-400 text-sm'>Không có bài viết nào bị báo cáo</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    posts.map(post => <PostItem key={post._id} post={post} />)
-                  )}
-                </tbody>
-              </table>
-            </div>
+          {/* Stat Cards */}
+          <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
+            <MiniStatCard icon={MdReport} label='Bài viết cần xét' value={posts.length} color='border-l-rose-400' iconBg='bg-gradient-to-br from-rose-400 to-red-600' />
+            <MiniStatCard icon={FaFlag} label='Nguy cơ cao (≥5 báo cáo)' value={highRisk} color='border-l-red-500' iconBg='bg-gradient-to-br from-red-500 to-rose-700' />
+            <MiniStatCard icon={FaFlag} label='Báo cáo vừa (2-4 lần)' value={moderate} color='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
           </div>
 
-          {totalPage > 1 && (
-            <div className='flex justify-center items-center mt-5'>
-              <Pagination pageSize={totalPage} queryConfig={queryConfig} url='/reports' />
-            </div>
+          {/* Search / Filter */}
+          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
+            <form onSubmit={onSubmitSearch} className='flex gap-2'>
+              <div className='relative flex-1'>
+                <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+                <input
+                  autoComplete='off'
+                  type='search'
+                  {...register('searchReport')}
+                  placeholder='Tìm bài viết bị báo cáo...'
+                  className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                />
+              </div>
+              <button type='submit' className='px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1.5'>
+                <FaSearch size={12} /> Tìm
+              </button>
+            </form>
+          </div>
+
+          {/* Table */}
+          {isLoading ? (
+            <Loading />
+          ) : (
+            <>
+              <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
+                <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
+                  <p className='text-sm text-gray-500 dark:text-gray-400'>
+                    Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{posts.length}</span> bài viết bị báo cáo
+                  </p>
+                </div>
+                <div className='overflow-x-auto'>
+                  <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
+                    <thead className='bg-gray-50 dark:bg-slate-900'>
+                      <tr>
+                        {['Người viết', 'Nội dung', 'Số lần bị báo cáo', 'Ngày tạo', 'Hành động'].map(h => (
+                          <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className='divide-y divide-gray-50 dark:divide-slate-700'>
+                      {posts.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className='text-center py-16'>
+                            <FaFlag className='mx-auto text-4xl text-gray-300 mb-3' />
+                            <p className='text-gray-400 text-sm'>Không có bài viết nào bị báo cáo</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        posts.map(post => <PostItem key={post._id} post={post} />)
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {totalPage > 1 && (
+                <div className='flex justify-center items-center mt-5'>
+                  <Pagination pageSize={totalPage} queryConfig={queryConfig} url='/reports' />
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Bài viết đã xóa ── */}
+      {activeTab === 'deleted' && (
+        <>
+          {/* Stat Cards */}
+          <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
+            <MiniStatCard icon={MdDeleteSweep} label='Tổng bài viết đã xóa' value={deletedPosts.length} color='border-l-gray-400' iconBg='bg-gradient-to-br from-gray-400 to-gray-600' />
+          </div>
+
+          {/* Search / Filter */}
+          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
+            <form onSubmit={onSubmitSearch} className='flex gap-2'>
+              <div className='relative flex-1'>
+                <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+                <input
+                  autoComplete='off'
+                  type='search'
+                  {...register('searchReport')}
+                  placeholder='Tìm bài viết đã xóa...'
+                  className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                />
+              </div>
+              <button type='submit' className='px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1.5'>
+                <FaSearch size={12} /> Tìm
+              </button>
+            </form>
+          </div>
+
+          {/* Table */}
+          {isLoadingDeleted ? (
+            <Loading />
+          ) : (
+            <>
+              <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
+                <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
+                  <p className='text-sm text-gray-500 dark:text-gray-400'>
+                    Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{deletedPosts.length}</span> bài viết đã xóa
+                  </p>
+                </div>
+                <div className='overflow-x-auto'>
+                  <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
+                    <thead className='bg-gray-50 dark:bg-slate-900'>
+                      <tr>
+                        {['Người viết', 'Nội dung', 'Ngày tạo', 'Hành động'].map(h => (
+                          <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className='divide-y divide-gray-50 dark:divide-slate-700'>
+                      {deletedPosts.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className='text-center py-16'>
+                            <MdDeleteSweep className='mx-auto text-4xl text-gray-300 mb-3' />
+                            <p className='text-gray-400 text-sm'>Không có bài viết nào đã xóa</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        deletedPosts.map(post => <DeletedPostItem key={post._id} post={post} />)
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {deletedTotalPage > 1 && (
+                <div className='flex justify-center items-center mt-5'>
+                  <Pagination pageSize={deletedTotalPage} queryConfig={queryConfig} url='/reports' />
+                </div>
+              )}
+            </>
           )}
         </>
       )}

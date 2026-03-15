@@ -150,7 +150,7 @@ const CreateSportEvent = () => {
     }
     setAiLoading(true)
     try {
-      const today = '08/03/2026'
+      const today = moment().format('DD/MM/YYYY')
       const allCategoryNames = categories.map(c => `${c.name} (${c.type})`).join(', ')
       const outdoorCategories = categories.filter(c => c.type === 'Ngoài trời').map(c => c.name).join(', ')
       const indoorCategories = categories.filter(c => c.type === 'Trong nhà').map(c => c.name).join(', ')
@@ -353,7 +353,7 @@ JSON output (chỉ object, không gì khác):
   }
 
   const validateForm = () => {
-    const fields = ['name', 'startDate', 'endDate', 'eventTime', 'location', 'description', 'image']
+    const fields = ['name', 'startDate', 'endDate', 'eventTime', ...(newEvent.eventType === 'Ngoài trời' ? ['location'] : []), 'description', 'image']
     const sErr = {}
     fields.forEach(f => {
       const e = validateField(f, newEvent[f])
@@ -382,7 +382,7 @@ JSON output (chỉ object, không gì khác):
       name: newEvent.name,
       startDate: startISO,
       endDate: endISO,
-      location: newEvent.location,
+      location: newEvent.eventType === 'Trong nhà' ? (newEvent.location?.trim() || 'Video call trực tuyến') : newEvent.location,
       category: newEvent.category,
       maxParticipants: Number(newEvent.maxParticipants),
       targetValue: Number(newEvent.targetValue),
@@ -837,18 +837,19 @@ JSON output (chỉ object, không gì khác):
                     onChange={handleInputChange}
                     rows={5}
                     placeholder="Thông tin chi tiết, lịch trình, lưu ý đặc biệt..."
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/10 transition"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 transition"
                   />
                 </div>
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Yêu cầu tham gia</label>
-                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="VD: Sức khỏe ổn định, có kinh nghiệm" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
+                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="VD: Sức khỏe ổn định, có kinh nghiệm" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Lợi ích khi tham gia</label>
-                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="VD: Voucher, huy chương, kinh nghiệm..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-purple-400 transition" />
+                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="VD: Voucher, huy chương, kinh nghiệm..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
                   </div>
                 </div>
               </div>

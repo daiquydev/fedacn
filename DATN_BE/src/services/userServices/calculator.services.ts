@@ -128,14 +128,7 @@ class CalculatorServices {
 
     if (user.weight !== weight) {
       const pre_weight = user.pre_weight || []
-      //nếu pre_weight > 10 thì xóa phần tử đầu tiên thêm phần tử mới vào cuối mảng
-
-      if (pre_weight.length >= 10) {
-        pre_weight.shift()
-        pre_weight.push({ weight: weight, date: new Date() })
-      } else {
-        pre_weight.push({ weight: weight, date: new Date() })
-      }
+      pre_weight.push({ weight: weight, date: new Date() })
       await UserModel.findByIdAndUpdate(user_id, { weight, height: convertHeight, BMI, pre_weight }, { new: true })
     } else {
       const pre_weight = user.pre_weight || []
@@ -145,40 +138,41 @@ class CalculatorServices {
 
     // const user = await UserModel.findByIdAndUpdate(user_id, { weight, height: convertHeight, BMI }, { new: true })
 
-    // cập nhật lại những chỉ số cùng sử dụng các giá trị với BMI , nếu chỉ số đó mà bằng null tức là chưa tính toán thì sẽ không cập nhật chỉ số đó
     const updateData: Record<string, any> = {}
+    const pushData: Record<string, any> = {}
 
-    // // nếu các chỉ số khác null thì cập nhật
+    // Push BMI history
+    pushData['pre_BMI'] = { value: BMI, date: new Date() }
+
+    // nếu các chỉ số khác null thì cập nhật
     if (user.BMR !== null) {
-      updateData['BMR'] = this.BMRCalculator(weight, convertHeight, user.age as number, user.gender as string)
+      const newBMR = this.BMRCalculator(weight, convertHeight, user.age as number, user.gender as string)
+      updateData['BMR'] = newBMR
+      pushData['pre_BMR'] = { value: newBMR, date: new Date() }
     }
     if (user.TDEE !== null) {
-      updateData['TDEE'] = this.TDEECalculator(
-        weight,
-        convertHeight,
-        user.age as number,
-        user.gender as string,
-        user.activity_level as number
-      )
+      const newTDEE = this.TDEECalculator(weight, convertHeight, user.age as number, user.gender as string, user.activity_level as number)
+      updateData['TDEE'] = newTDEE
+      pushData['pre_TDEE'] = { value: newTDEE, date: new Date() }
     }
     if (user.body_fat !== null) {
-      updateData['body_fat'] = this.BodyFatCalculator(
-        convertHeight,
-        user.neck as number,
-        user.waist as number,
-        user.hip as number,
-        user.gender as string
-      )
+      const newBF = this.BodyFatCalculator(convertHeight, user.neck as number, user.waist as number, user.hip as number, user.gender as string)
+      updateData['body_fat'] = newBF
+      pushData['pre_body_fat'] = { value: newBF, date: new Date() }
     }
     if (user.IBW !== null) {
-      updateData['IBW'] = this.IBWCalculator(convertHeight, user.gender as string)
+      const newIBW = this.IBWCalculator(convertHeight, user.gender as string)
+      updateData['IBW'] = newIBW
+      pushData['pre_IBW'] = { value: newIBW, date: new Date() }
     }
     if (user.LBM !== null) {
-      updateData['LBM'] = this.LBMCalculator(weight, convertHeight, user.gender as string)
+      const newLBM = this.LBMCalculator(weight, convertHeight, user.gender as string)
+      updateData['LBM'] = newLBM
+      pushData['pre_LBM'] = { value: newLBM, date: new Date() }
     }
 
-    // // cập nhật lại db
-    const updatedUser = await UserModel.findByIdAndUpdate(user_id, updateData, { new: true })
+    // cập nhật lại db
+    const updatedUser = await UserModel.findByIdAndUpdate(user_id, { ...updateData, $push: pushData }, { new: true })
     if (updatedUser) {
       return omit(updatedUser.toObject(), ['password', 'upgrade_request'])
     }
@@ -201,14 +195,7 @@ class CalculatorServices {
 
     if (user.weight !== weight) {
       const pre_weight = user.pre_weight || []
-      // nếu pre_weight > 10 thì xóa phần tử đầu tiên thêm phần tử mới vào cuối mảng
-
-      if (pre_weight.length >= 10) {
-        pre_weight.shift()
-        pre_weight.push({ weight: weight, date: new Date() })
-      } else {
-        pre_weight.push({ weight: weight, date: new Date() })
-      }
+      pre_weight.push({ weight: weight, date: new Date() })
       await UserModel.findByIdAndUpdate(user_id, { weight, height, age, BMR, gender, pre_weight }, { new: true })
     } else {
       const pre_weight = user.pre_weight || []
@@ -221,38 +208,40 @@ class CalculatorServices {
     // cập nhật lại những chỉ số cùng sử dụng các giá trị với BMR , nếu chỉ số đó mà bằng null tức là chưa tính toán thì sẽ không cập nhật chỉ số đó
 
     const updateData: Record<string, any> = {}
-    // if (!user) {
-    //   throw new ErrorWithStatus({
-    //     message: AUTH_USER_MESSAGE.USER_NOT_FOUND,
-    //     status: HTTP_STATUS.NOT_FOUND
-    //   })
-    // }
+    const pushData: Record<string, any> = {}
+
+    // Push BMR history
+    pushData['pre_BMR'] = { value: BMR, date: new Date() }
 
     // nếu các chỉ số khác null thì cập nhật
     if (user.BMI !== null) {
-      updateData['BMI'] = this.BMICalculator(weight, convertHeight)
+      const newBMI = this.BMICalculator(weight, convertHeight)
+      updateData['BMI'] = newBMI
+      pushData['pre_BMI'] = { value: newBMI, date: new Date() }
     }
     if (user.TDEE !== null) {
-      updateData['TDEE'] = this.TDEECalculator(weight, height, age, gender, user.activity_level as number)
+      const newTDEE = this.TDEECalculator(weight, height, age, gender, user.activity_level as number)
+      updateData['TDEE'] = newTDEE
+      pushData['pre_TDEE'] = { value: newTDEE, date: new Date() }
     }
     if (user.body_fat !== null) {
-      updateData['body_fat'] = this.BodyFatCalculator(
-        height,
-        user.neck as number,
-        user.waist as number,
-        user.hip as number,
-        gender
-      )
+      const newBF = this.BodyFatCalculator(height, user.neck as number, user.waist as number, user.hip as number, gender)
+      updateData['body_fat'] = newBF
+      pushData['pre_body_fat'] = { value: newBF, date: new Date() }
     }
     if (user.IBW !== null) {
-      updateData['IBW'] = this.IBWCalculator(height, gender)
+      const newIBW = this.IBWCalculator(height, gender)
+      updateData['IBW'] = newIBW
+      pushData['pre_IBW'] = { value: newIBW, date: new Date() }
     }
     if (user.LBM !== null) {
-      updateData['LBM'] = this.LBMCalculator(weight, height, gender)
+      const newLBM = this.LBMCalculator(weight, height, gender)
+      updateData['LBM'] = newLBM
+      pushData['pre_LBM'] = { value: newLBM, date: new Date() }
     }
 
     // cập nhật lại db
-    const updatedUser = await UserModel.findByIdAndUpdate(user_id, updateData, { new: true })
+    const updatedUser = await UserModel.findByIdAndUpdate(user_id, { ...updateData, $push: pushData }, { new: true })
     if (updatedUser) {
       return omit(updatedUser.toObject(), ['password', 'upgrade_request'])
     }
@@ -273,14 +262,7 @@ class CalculatorServices {
 
     if (user.weight !== weight) {
       const pre_weight = user.pre_weight || []
-      // nếu pre_weight > 10 thì xóa phần tử đầu tiên thêm phần tử mới vào cuối mảng
-
-      if (pre_weight.length >= 10) {
-        pre_weight.shift()
-        pre_weight.push({ weight: weight, date: new Date() })
-      } else {
-        pre_weight.push({ weight: weight, date: new Date() })
-      }
+      pre_weight.push({ weight: weight, date: new Date() })
 
       await UserModel.findByIdAndUpdate(
         user_id,
@@ -303,148 +285,132 @@ class CalculatorServices {
     //   { new: true }
     // )
 
-    // cập nhật lại những chỉ số cùng sử dụng các giá trị với TDEE , nếu chỉ số đó mà bằng null tức là chưa tính toán thì sẽ không cập nhật chỉ số đó'
     const updateData: Record<string, any> = {}
-    // if (!user) {
-    //   throw new ErrorWithStatus({
-    //     message: AUTH_USER_MESSAGE.USER_NOT_FOUND,
-    //     status: HTTP_STATUS.NOT_FOUND
-    //   })
-    // }
+    const pushData: Record<string, any> = {}
 
-    // nếu các chỉ số khác null thì cập nhật
+    // Push TDEE history
+    pushData['pre_TDEE'] = { value: TDEE, date: new Date() }
+
     if (user.BMI !== null) {
-      updateData['BMI'] = this.BMICalculator(weight, convertHeight)
+      const newBMI = this.BMICalculator(weight, convertHeight)
+      updateData['BMI'] = newBMI
+      pushData['pre_BMI'] = { value: newBMI, date: new Date() }
     }
-
     if (user.BMR !== null) {
-      updateData['BMR'] = this.BMRCalculator(weight, height, age, gender)
+      const newBMR = this.BMRCalculator(weight, height, age, gender)
+      updateData['BMR'] = newBMR
+      pushData['pre_BMR'] = { value: newBMR, date: new Date() }
     }
     if (user.body_fat !== null) {
-      updateData['body_fat'] = this.BodyFatCalculator(
-        height,
-        user.neck as number,
-        user.waist as number,
-        user.hip as number,
-        gender
-      )
+      const newBF = this.BodyFatCalculator(height, user.neck as number, user.waist as number, user.hip as number, gender)
+      updateData['body_fat'] = newBF
+      pushData['pre_body_fat'] = { value: newBF, date: new Date() }
     }
     if (user.IBW !== null) {
-      updateData['IBW'] = this.IBWCalculator(height, gender)
+      const newIBW = this.IBWCalculator(height, gender)
+      updateData['IBW'] = newIBW
+      pushData['pre_IBW'] = { value: newIBW, date: new Date() }
     }
     if (user.LBM !== null) {
-      updateData['LBM'] = this.LBMCalculator(weight, height, gender)
+      const newLBM = this.LBMCalculator(weight, height, gender)
+      updateData['LBM'] = newLBM
+      pushData['pre_LBM'] = { value: newLBM, date: new Date() }
     }
 
-    // cập nhật lại db
-    const updatedUser = await UserModel.findByIdAndUpdate(user_id, updateData, { new: true })
+    const updatedUser = await UserModel.findByIdAndUpdate(user_id, { ...updateData, $push: pushData }, { new: true })
     if (updatedUser) {
       return omit(updatedUser.toObject(), ['password', 'upgrade_request'])
     }
   }
 
   async saveBodyFatService({ height, neck, waist, hip, gender, body_fat, user_id }: SaveBodyFatReqBody) {
-    // save vào db
     const convertHeight = convertCentimeterToMetter(height)
-    const user = await UserModel.findByIdAndUpdate(
-      user_id,
-      { height, neck, waist, hip, gender, body_fat },
-      { new: true }
-    )
-
-    // cập nhật lại những chỉ số cùng sử dụng các giá trị với body_fat , nếu chỉ số đó mà bằng null tức là chưa tính toán thì sẽ không cập nhật chỉ số đó'
-
-    const updateData: Record<string, any> = {}
+    const user = await UserModel.findOne({ _id: user_id })
 
     if (!user) {
-      throw new ErrorWithStatus({
-        message: AUTH_USER_MESSAGE.USER_NOT_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
+      throw new ErrorWithStatus({ message: AUTH_USER_MESSAGE.USER_NOT_FOUND, status: HTTP_STATUS.NOT_FOUND })
     }
 
-    // nếu các chỉ số khác null thì cập nhật
+    await UserModel.findByIdAndUpdate(user_id, { height, neck, waist, hip, gender, body_fat }, { new: true })
+
+    const updateData: Record<string, any> = {}
+    const pushData: Record<string, any> = {}
+
+    pushData['pre_body_fat'] = { value: body_fat, date: new Date() }
+
     if (user.BMI !== null) {
-      updateData['BMI'] = this.BMICalculator(user.weight as number, convertHeight)
+      const newBMI = this.BMICalculator(user.weight as number, convertHeight)
+      updateData['BMI'] = newBMI
+      pushData['pre_BMI'] = { value: newBMI, date: new Date() }
     }
-
     if (user.BMR !== null) {
-      updateData['BMR'] = this.BMRCalculator(user.weight as number, height, user.age as number, gender)
+      const newBMR = this.BMRCalculator(user.weight as number, height, user.age as number, gender)
+      updateData['BMR'] = newBMR
+      pushData['pre_BMR'] = { value: newBMR, date: new Date() }
     }
     if (user.TDEE !== null) {
-      updateData['TDEE'] = this.TDEECalculator(
-        user.weight as number,
-        height,
-        user.age as number,
-        gender,
-        user.activity_level as number
-      )
+      const newTDEE = this.TDEECalculator(user.weight as number, height, user.age as number, gender, user.activity_level as number)
+      updateData['TDEE'] = newTDEE
+      pushData['pre_TDEE'] = { value: newTDEE, date: new Date() }
     }
     if (user.IBW !== null) {
-      updateData['IBW'] = this.IBWCalculator(height, gender)
+      const newIBW = this.IBWCalculator(height, gender)
+      updateData['IBW'] = newIBW
+      pushData['pre_IBW'] = { value: newIBW, date: new Date() }
     }
     if (user.LBM !== null) {
-      updateData['LBM'] = this.LBMCalculator(user.weight as number, height, gender)
+      const newLBM = this.LBMCalculator(user.weight as number, height, gender)
+      updateData['LBM'] = newLBM
+      pushData['pre_LBM'] = { value: newLBM, date: new Date() }
     }
 
-    // cập nhật lại db
-    const updatedUser = await UserModel.findByIdAndUpdate(user_id, updateData, { new: true })
+    const updatedUser = await UserModel.findByIdAndUpdate(user_id, { ...updateData, $push: pushData }, { new: true })
     if (updatedUser) {
       return omit(updatedUser.toObject(), ['password', 'upgrade_request'])
     }
   }
   async saveIBWService({ height, gender, user_id, IBW }: SaveIBWReqBody) {
-    // save vào db
     const convertHeight = convertCentimeterToMetter(height)
-    const user = await UserModel.findByIdAndUpdate(user_id, { height, gender, IBW }, { new: true })
-
-    // cập nhật lại những chỉ số cùng sử dụng các giá trị với IBW , nếu chỉ số đó mà bằng null tức là chưa tính toán thì sẽ không cập nhật chỉ số đó'
-
-    const updateData: Record<string, any> = {}
+    const user = await UserModel.findOne({ _id: user_id })
 
     if (!user) {
-      throw new ErrorWithStatus({
-        message: AUTH_USER_MESSAGE.USER_NOT_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
+      throw new ErrorWithStatus({ message: AUTH_USER_MESSAGE.USER_NOT_FOUND, status: HTTP_STATUS.NOT_FOUND })
     }
 
-    // nếu các chỉ số khác null thì cập nhật
+    await UserModel.findByIdAndUpdate(user_id, { height, gender, IBW }, { new: true })
+
+    const updateData: Record<string, any> = {}
+    const pushData: Record<string, any> = {}
+
+    pushData['pre_IBW'] = { value: IBW, date: new Date() }
 
     if (user.BMI !== null) {
-      updateData['BMI'] = this.BMICalculator(user.weight as number, convertHeight)
+      const newBMI = this.BMICalculator(user.weight as number, convertHeight)
+      updateData['BMI'] = newBMI
+      pushData['pre_BMI'] = { value: newBMI, date: new Date() }
     }
-
     if (user.BMR !== null) {
-      updateData['BMR'] = this.BMRCalculator(user.weight as number, height, user.age as number, gender)
+      const newBMR = this.BMRCalculator(user.weight as number, height, user.age as number, gender)
+      updateData['BMR'] = newBMR
+      pushData['pre_BMR'] = { value: newBMR, date: new Date() }
     }
-
     if (user.TDEE !== null) {
-      updateData['TDEE'] = this.TDEECalculator(
-        user.weight as number,
-        height,
-        user.age as number,
-        gender,
-        user.activity_level as number
-      )
+      const newTDEE = this.TDEECalculator(user.weight as number, height, user.age as number, gender, user.activity_level as number)
+      updateData['TDEE'] = newTDEE
+      pushData['pre_TDEE'] = { value: newTDEE, date: new Date() }
     }
-
     if (user.body_fat !== null) {
-      updateData['body_fat'] = this.BodyFatCalculator(
-        height,
-        user.neck as number,
-        user.waist as number,
-        user.hip as number,
-        gender
-      )
+      const newBF = this.BodyFatCalculator(height, user.neck as number, user.waist as number, user.hip as number, gender)
+      updateData['body_fat'] = newBF
+      pushData['pre_body_fat'] = { value: newBF, date: new Date() }
     }
-
     if (user.LBM !== null) {
-      updateData['LBM'] = this.LBMCalculator(user.weight as number, height, gender)
+      const newLBM = this.LBMCalculator(user.weight as number, height, gender)
+      updateData['LBM'] = newLBM
+      pushData['pre_LBM'] = { value: newLBM, date: new Date() }
     }
 
-    // cập nhật lại db
-    const updatedUser = await UserModel.findByIdAndUpdate(user_id, updateData, { new: true })
+    const updatedUser = await UserModel.findByIdAndUpdate(user_id, { ...updateData, $push: pushData }, { new: true })
     if (updatedUser) {
       return omit(updatedUser.toObject(), ['password', 'upgrade_request'])
     }
@@ -466,15 +432,7 @@ class CalculatorServices {
 
     if (user.weight !== weight) {
       const pre_weight = user.pre_weight || []
-
-      // nếu pre_weight > 10 thì xóa phần tử đầu tiên thêm phần tử mới vào cuối mảng
-
-      if (pre_weight.length >= 10) {
-        pre_weight.shift()
-        pre_weight.push({ weight: weight, date: new Date() })
-      } else {
-        pre_weight.push({ weight: weight, date: new Date() })
-      }
+      pre_weight.push({ weight: weight, date: new Date() })
 
       await UserModel.findByIdAndUpdate(user_id, { weight, height, gender, LBM, pre_weight }, { new: true })
     } else {
@@ -483,45 +441,38 @@ class CalculatorServices {
       await UserModel.findByIdAndUpdate(user_id, { weight, height, gender, LBM, pre_weight }, { new: true })
     }
 
-    // cập nhật lại những chỉ số cùng sử dụng các giá trị với LBM , nếu chỉ số đó mà bằng null tức là chưa tính toán thì sẽ không cập nhật chỉ số đó'
-
     const updateData: Record<string, any> = {}
+    const pushData: Record<string, any> = {}
 
-    // nếu các chỉ số khác null thì cập nhật
+    pushData['pre_LBM'] = { value: LBM, date: new Date() }
 
     if (user.BMI !== null) {
-      updateData['BMI'] = this.BMICalculator(weight, convertHeight)
+      const newBMI = this.BMICalculator(weight, convertHeight)
+      updateData['BMI'] = newBMI
+      pushData['pre_BMI'] = { value: newBMI, date: new Date() }
     }
-
     if (user.BMR !== null) {
-      updateData['BMR'] = this.BMRCalculator(weight, height, user.age as number, gender)
+      const newBMR = this.BMRCalculator(weight, height, user.age as number, gender)
+      updateData['BMR'] = newBMR
+      pushData['pre_BMR'] = { value: newBMR, date: new Date() }
     }
-
     if (user.TDEE !== null) {
-      updateData['TDEE'] = this.TDEECalculator(
-        weight,
-        height,
-        user.age as number,
-        gender,
-        user.activity_level as number
-      )
+      const newTDEE = this.TDEECalculator(weight, height, user.age as number, gender, user.activity_level as number)
+      updateData['TDEE'] = newTDEE
+      pushData['pre_TDEE'] = { value: newTDEE, date: new Date() }
     }
     if (user.body_fat !== null) {
-      updateData['body_fat'] = this.BodyFatCalculator(
-        height,
-        user.neck as number,
-        user.waist as number,
-        user.hip as number,
-        gender
-      )
+      const newBF = this.BodyFatCalculator(height, user.neck as number, user.waist as number, user.hip as number, gender)
+      updateData['body_fat'] = newBF
+      pushData['pre_body_fat'] = { value: newBF, date: new Date() }
     }
     if (user.IBW !== null) {
-      updateData['IBW'] = this.IBWCalculator(height, gender)
+      const newIBW = this.IBWCalculator(height, gender)
+      updateData['IBW'] = newIBW
+      pushData['pre_IBW'] = { value: newIBW, date: new Date() }
     }
 
-    // cập nhật lại db
-
-    const updatedUser = await UserModel.findByIdAndUpdate(user_id, updateData, { new: true })
+    const updatedUser = await UserModel.findByIdAndUpdate(user_id, { ...updateData, $push: pushData }, { new: true })
     if (updatedUser) {
       return omit(updatedUser.toObject(), ['password', 'upgrade_request'])
     }

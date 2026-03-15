@@ -90,13 +90,14 @@ export const updateCoverAvatarUserController = async (req: Request, res: Respons
 
 export const updateUserController = async (req: Request, res: Response) => {
   const user = req.decoded_authorization as TokenPayload
-  const { name, user_name, birthday, address } = req.body
+  const { name, user_name, birthday, address, gender } = req.body
   const result = await usersService.updateUserService({
     user_id: user.user_id,
     name: name,
     user_name: user_name,
-    birthday: new Date(birthday),
-    address: address
+    birthday: birthday ? new Date(birthday) : undefined,
+    address: address,
+    gender: gender
   })
   return res.json({
     message: USER_MESSAGE.UPDATE_USER_SUCCESS,
@@ -162,6 +163,17 @@ export const requestUpgradeToChefController = async (req: Request, res: Response
   })
   return res.json({
     message: USER_MESSAGE.REQUEST_UPGRADE_SUCCESS,
+    result: result
+  })
+}
+
+export const getMeStatsController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+  const result = await usersService.getMeStats({
+    user_id: user.user_id
+  })
+  return res.json({
+    message: 'Lấy thống kê thành công',
     result: result
   })
 }

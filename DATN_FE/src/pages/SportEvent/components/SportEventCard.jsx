@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaMapMarkerAlt, FaRunning, FaCalendarAlt, FaClock, FaPlus } from 'react-icons/fa';
-import { MdVideocam, MdCheckCircle } from 'react-icons/md';
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus } from 'react-icons/fa';
+import { MdVideocam, MdCheckCircle, MdSportsScore } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs';
 import moment from 'moment';
 import ParticipantsList from '../../../components/ParticipantsList';
 import { getImageUrl } from '../../../utils/imageUrl';
@@ -17,7 +18,7 @@ import useravatar from '../../../assets/images/useravatar.jpg';
  * @param {Set}    props.friendIds     - Set of friend IDs (mutual follow)
  * @param {Set}    props.connectedIds  - Set of all connected IDs (friends + followings + followers)
  */
-const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), connectedIds = new Set() }) => {
+const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), connectedIds = new Set(), CategoryIcon }) => {
   const navigate = useNavigate();
 
   // Map participants_ids to ParticipantsList format
@@ -37,7 +38,7 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full"
       onClick={handleClick}
     >
       {/* Event Image */}
@@ -57,10 +58,27 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
         <div className="absolute top-3 right-3 bg-white dark:bg-gray-900 text-red-500 font-medium px-3 py-1 rounded-full text-sm">
           {event.participants}/{event.maxParticipants} người
         </div>
+
+        {/* Status Badge */}
+        <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
+          isEnded
+            ? 'bg-gray-800/70 text-gray-300'
+            : isNotStarted
+              ? 'bg-amber-500/80 text-white'
+              : 'bg-emerald-500/80 text-white'
+        }`}>
+          {isEnded ? (
+            <><BsClockHistory className="text-[10px]" /> Đã kết thúc</>
+          ) : isNotStarted ? (
+            <><BsCalendarCheck className="text-[10px]" /> Sắp diễn ra</>
+          ) : (
+            <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Đang diễn ra</>
+          )}
+        </div>
       </div>
 
       {/* Details */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
         <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white line-clamp-2">{event.name}</h3>
 
         <div className="space-y-2 mb-3">
@@ -77,8 +95,13 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
             <span className="truncate">{event.location}</span>
           </div>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <FaRunning className="mr-2" />
+            {CategoryIcon ? <CategoryIcon className="mr-2" /> : <MdSportsScore className="mr-2" />}
             <span>{event.category}</span>
+            {event.difficulty && (() => {
+              const map = { easy: '😊 Dễ', medium: '💪 TB', hard: '🔥 Khó', expert: '🏆 Pro' }
+              const colors = { easy: 'bg-green-100 text-green-600', medium: 'bg-yellow-100 text-yellow-600', hard: 'bg-orange-100 text-orange-600', expert: 'bg-red-100 text-red-600' }
+              return <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${colors[event.difficulty] || ''}`}>{map[event.difficulty] || event.difficulty}</span>
+            })()}
           </div>
         </div>
 

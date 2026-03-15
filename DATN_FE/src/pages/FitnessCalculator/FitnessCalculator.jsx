@@ -178,45 +178,14 @@ function HistoryTab() {
 
   return (
     <div>
-      {/* Weight trend chart */}
-      <div className='mb-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden'>
-        <div className='px-5 pt-4 pb-1'>
-          <p className='text-sm font-bold text-gray-700 dark:text-gray-300'>📊 Biểu đồ cân nặng</p>
-        </div>
+      {/* Combined chart: 6 metric cards + weight chart with time filters */}
+      <div className='mb-6'>
         <LineChart profile={user} />
-      </div>
-
-      {/* Summary strip */}
-      <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl border border-blue-100 dark:border-blue-800">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white">
-          <FaChartLine className="text-base" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Chỉ số hiện tại của bạn</p>
-          <p className="text-xs text-gray-500">{available.length} / {STAT_CONFIGS.length} chỉ số đã được tính</p>
-        </div>
-        <div className="ml-auto">
-          <div className="text-right">
-            <div className="flex gap-0.5 justify-end mb-1">
-              {STAT_CONFIGS.map((c, i) => (
-                <div key={i} className={`w-3 h-3 rounded-sm ${user[c.key] !== null && user[c.key] !== undefined ? `bg-gradient-to-r ${c.gradient}` : 'bg-gray-200 dark:bg-gray-700'}`} />
-              ))}
-            </div>
-            <p className="text-xs text-gray-400">{Math.round((available.length / STAT_CONFIGS.length) * 100)}% hoàn thành</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stat grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {available.map(config => (
-          <HistoryStatCard key={config.key} config={config} value={user[config.key]} />
-        ))}
       </div>
 
       {/* Missing metrics prompt */}
       {available.length < STAT_CONFIGS.length && (
-        <div className="mt-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
           <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2">Chỉ số chưa có:</p>
           <div className="flex flex-wrap gap-2">
             {STAT_CONFIGS.filter(c => user[c.key] === null || user[c.key] === undefined).map(c => (
@@ -239,14 +208,14 @@ export default function FitnessCalculator() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* ── Page Header ── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 px-6 py-6">
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 px-6 py-4">
         <div className="relative flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-            <MdFitnessCenter className="text-white text-2xl" />
+          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+            <MdFitnessCenter className="text-white text-xl" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Công cụ tính toán</h1>
-            <p className="text-white/75 text-sm mt-0.5">
+            <h1 className="text-xl font-bold text-white">Công cụ tính toán</h1>
+            <p className="text-white/75 text-xs mt-0.5">
               Phân tích và theo dõi các chỉ số sức khỏe — BMI, TDEE, Body Fat, BMR và nhiều hơn nữa.
             </p>
           </div>

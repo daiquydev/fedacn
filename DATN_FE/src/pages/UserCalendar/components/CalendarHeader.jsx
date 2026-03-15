@@ -33,105 +33,104 @@ export default function CalendarHeader({
   onFilterChange
 }) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pb-4">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-3 pb-3">
+      {/* Left: Navigation */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         <button
           onClick={onPrevious}
-          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
-          <FaChevronLeft className="text-gray-600 dark:text-gray-300" />
+          <FaChevronLeft className="text-gray-600 dark:text-gray-300 text-sm" />
         </button>
 
         <button
           onClick={onToday}
-          className="px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors"
+          className="px-3 py-1.5 rounded-md bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors"
         >
           Hôm nay
         </button>
 
         <button
           onClick={onNext}
-          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
-          <FaChevronRight className="text-gray-600 dark:text-gray-300" />
+          <FaChevronRight className="text-gray-600 dark:text-gray-300 text-sm" />
         </button>
 
-        <h2 className="text-xl font-bold ml-2">
+        <h2 className="text-base font-bold ml-1 whitespace-nowrap">
           {formatDate(currentDate, currentView)}
         </h2>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex items-center gap-2 mr-4 flex-wrap">
-          <button
-            onClick={() => onFilterChange('events')}
-            className={`flex items-center gap-1 px-3 py-1 rounded-md ${filters.events
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100'
-              : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-              }`}
-          >
-            <MdSportsSoccer size={16} />
-            <span>Sự kiện</span>
-          </button>
+      {/* Center: Filters */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <button
+          onClick={() => onFilterChange('events')}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-sm ${filters.events
+            ? 'bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100'
+            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+            }`}
+        >
+          <MdSportsSoccer size={14} />
+          <span>Sự kiện</span>
+        </button>
 
-          {/* Thử thách đã bị ẩn */}
+        <button
+          onClick={() => onFilterChange('workouts')}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-sm ${filters.workouts
+            ? 'bg-purple-100 text-purple-700 dark:bg-purple-700 dark:text-purple-100'
+            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+            }`}
+        >
+          <FaDumbbell size={14} />
+          <span>Tập luyện</span>
+        </button>
+      </div>
 
-          {/* Thực đơn đã bị ẩn */}
-
-          <button
-            onClick={() => onFilterChange('workouts')}
-            className={`flex items-center gap-1 px-3 py-1 rounded-md ${filters.workouts
-              ? 'bg-purple-100 text-purple-700 dark:bg-purple-700 dark:text-purple-100'
-              : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-              }`}
-          >
-            <FaDumbbell size={16} />
-            <span>Tập luyện</span>
-          </button>
-        </div>
-
-        <div className="flex border rounded-md overflow-hidden">
+      {/* Right: View tabs — horizontal scroll on mobile */}
+      <div className="ml-auto overflow-x-auto flex-shrink-0 scrollbar-thin">
+        <div className="flex border rounded-md overflow-hidden whitespace-nowrap">
           <button
             onClick={() => onChangeView('month')}
-            className={`px-3 py-2 flex items-center gap-1 ${currentView === 'month'
+            className={`px-2.5 py-1.5 flex items-center gap-1 text-sm ${currentView === 'month'
               ? 'bg-green-500 text-white'
               : 'bg-white dark:bg-gray-800 dark:text-gray-300'
               }`}
           >
-            <FaCalendarAlt size={14} />
+            <FaCalendarAlt size={12} />
             <span>Tháng</span>
           </button>
 
           <button
             onClick={() => onChangeView('week')}
-            className={`px-3 py-2 flex items-center gap-1 ${currentView === 'week'
+            className={`px-2.5 py-1.5 flex items-center gap-1 text-sm ${currentView === 'week'
               ? 'bg-green-500 text-white'
               : 'bg-white dark:bg-gray-800 dark:text-gray-300'
               }`}
           >
-            <BsFillCalendarWeekFill size={14} />
+            <BsFillCalendarWeekFill size={12} />
             <span>Tuần</span>
           </button>
 
           <button
             onClick={() => onChangeView('day')}
-            className={`px-3 py-2 flex items-center gap-1 ${currentView === 'day'
+            className={`px-2.5 py-1.5 flex items-center gap-1 text-sm ${currentView === 'day'
               ? 'bg-green-500 text-white'
               : 'bg-white dark:bg-gray-800 dark:text-gray-300'
               }`}
           >
-            <BsFillCalendarDayFill size={14} />
+            <BsFillCalendarDayFill size={12} />
             <span>Ngày</span>
           </button>
 
           <button
             onClick={() => onChangeView('agenda')}
-            className={`px-3 py-2 flex items-center gap-1 ${currentView === 'agenda'
+            className={`px-2.5 py-1.5 flex items-center gap-1 text-sm ${currentView === 'agenda'
               ? 'bg-green-500 text-white'
               : 'bg-white dark:bg-gray-800 dark:text-gray-300'
               }`}
           >
-            <FaList size={14} />
+            <FaList size={12} />
             <span>Danh sách</span>
           </button>
         </div>

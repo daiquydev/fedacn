@@ -8,6 +8,7 @@ import { sendOtp, verifyOtp } from '../../../../apis/authApi'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import Loading from '../../../../components/GlobalComponents/Loading'
+import { HiOutlineShieldCheck } from 'react-icons/hi'
 
 export default function InputConfirm() {
   const queryConfig = omit(useQueryConfig(), ['page', 'sort'])
@@ -81,46 +82,56 @@ export default function InputConfirm() {
       }}
     >
       <div className='flex justify-center'>
-        <form className='px-10 rounded-lg shadow-md py-10 bg-white  mt-[5rem]'>
-          <div className='text-center mb-5'>
-            <h1 className='block text-2xl font-bold text-gray-800 '>Xác nhận OTP</h1>
+        <div className='bg-white rounded-2xl shadow-xl border border-white/20 px-8 py-10 max-w-md w-full'>
+          {/* Icon */}
+          <div className='flex justify-center mb-5'>
+            <div className='w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center'>
+              <HiOutlineShieldCheck className='text-emerald-600 text-2xl' />
+            </div>
           </div>
-          <div className='flex justify-center  gap-2 mb-6'>
+
+          <div className='text-center mb-6'>
+            <h1 className='text-2xl font-bold text-gray-900'>Xác nhận OTP</h1>
+            <p className='text-sm text-gray-500 mt-1'>Nhập mã 4 số đã gửi đến email của bạn</p>
+          </div>
+          <div className='flex justify-center gap-2 mb-6'>
             <OtpInput
               value={otp}
               onChange={setOtp}
               numInputs={4}
               className='otp-input'
               inputStyle={{
-                border: '1px solid transparent',
-                borderRadius: '8px',
-                width: '54px',
-                height: '54px',
+                border: '2px solid #E5E7EB',
+                borderRadius: '12px',
+                width: '56px',
+                height: '56px',
                 fontSize: '20px',
-                color: '#000',
-                fontWeight: '400',
-                caretColor: 'blue',
-                backgroundColor: '#F3F4F6',
-                margin: '0 4px'
+                color: '#111827',
+                fontWeight: '600',
+                caretColor: '#059669',
+                backgroundColor: '#F9FAFB',
+                margin: '0 4px',
+                transition: 'all 0.2s'
               }}
               focusStyle={{
-                border: '1px solid #CFD3DB',
-                outline: 'none'
+                border: '2px solid #059669',
+                outline: 'none',
+                backgroundColor: '#ECFDF5'
               }}
               separator={<span style={{ width: '8px' }}></span>}
               shouldAutoFocus={true}
               renderInput={(props) => <input {...props} />}
             />
           </div>
-          <div className='flex items-center justify-center'>
+          <div className='flex items-center justify-center gap-3'>
             {confirmOtpMutation.isPending ? (
-              <button disabled className='bg-red-700 w-24 hover:bg-red-600 text-white font-bold rounded-lg btn'>
-                <Loading classNameSpin='inline  w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+              <button disabled className='bg-gray-300 text-gray-500 px-6 py-2.5 rounded-xl font-semibold'>
+                <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-emerald-600' />
               </button>
             ) : (
               <button
                 onClick={onConfirm}
-                className='bg-red-700 w-24 hover:bg-red-600 text-white font-bold rounded-lg btn '
+                className='bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-md shadow-amber-200 transition-all'
                 type='button'
               >
                 Xác nhận
@@ -128,20 +139,20 @@ export default function InputConfirm() {
             )}
 
             {sendOtpMutation.isPending ? (
-              <button className='inline-block w-24 cursor-not-allowed align-baseline font-bold text-sm text-teal-500 hover:text-teal-800 ml-4'>
-                <Loading classNameSpin='inline  w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+              <button className='text-gray-400 px-4 py-2.5 cursor-not-allowed'>
+                <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-emerald-600' />
               </button>
             ) : (
               <button
                 onClick={onSubmit}
-                className='inline-block w-24 cursor-pointer align-baseline font-bold text-sm text-teal-500 hover:text-teal-800 ml-4 '
+                className='text-emerald-600 hover:text-emerald-700 px-4 py-2.5 font-semibold text-sm hover:underline'
                 type='button'
               >
                 Gửi lại mã
               </button>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </MotionWrapper>
   )

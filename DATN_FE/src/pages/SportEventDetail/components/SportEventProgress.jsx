@@ -26,6 +26,7 @@ import { MdOutlineHistoryEdu } from 'react-icons/md'
 import moment from 'moment'
 import { getUserActivities } from '../../../apis/sportEventApi'
 import ActivityShareModal from '../../../components/SportEvent/ActivityShareModal'
+import { ActivityRings } from '../../../components/SportEvent/ProgressRing'
 
 // Simple stat card — now clickable to select chart metric
 const StatCard = ({ icon, label, value, subValue, colorClass, isActive, onClick }) => (
@@ -113,22 +114,36 @@ export default function SportEventProgress({
     const totalDistance = completedActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
     const totalCalories = completedActivities.reduce((sum, a) => sum + Math.round(a.calories), 0)
     const totalDuration = completedActivities.reduce((sum, a) => sum + a.totalDuration, 0)
+
+    // Weekly Streak calculation
+    const weekSet = new Set()
+    completedActivities.forEach(a => {
+      weekSet.add(moment(a.startTime).format('YYYY-[W]WW'))
+    })
+    let streak = 0
+    let checkWeek = moment()
+    while (weekSet.has(checkWeek.format('YYYY-[W]WW'))) {
+      streak++
+      checkWeek = checkWeek.subtract(1, 'week')
+    }
+
     return {
       totalSessions: completedActivities.length,
       totalDistance: totalDistance.toFixed(1),
       totalCalories,
-      totalDuration: formatActivityDuration(totalDuration)
+      totalDuration: formatActivityDuration(totalDuration),
+      weeklyStreak: streak
     }
   }, [completedActivities])
 
-  // Calculate stats from userProgress
+  // Calculate stats from userProgress — with NaN/zero guards
   const stats = useMemo(() => {
     if (!userProgress) return null
     const { totalProgress, totalDistance, totalCalories, totalEntries } = userProgress
-    // Tiến độ tối đa mỗi người = Mục tiêu sự kiện / Số người tối đa
     const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
-    const perPersonTarget = event?.targetValue / maxParticipants
-    const progressPercent = Math.min(Math.round((totalProgress / perPersonTarget) * 100), 100)
+    const perPersonTarget = (event?.targetValue && event.targetValue > 0) ? event.targetValue / maxParticipants : 0
+    const rawPercent = perPersonTarget > 0 ? Math.round((totalProgress / perPersonTarget) * 100) : 0
+    const progressPercent = isNaN(rawPercent) ? 0 : Math.min(rawPercent, 100)
     return {
       totalProgress,
       progressPercent,
@@ -282,13 +297,21 @@ export default function SportEventProgress({
               <h3 className="text-xl font-bold mb-1">🏃 Theo dõi hoạt động GPS</h3>
               <p className="text-sm opacity-90">Bắt đầu theo dõi quãng đường và tốc độ bằng GPS</p>
             </div>
-            <button
-              onClick={() => navigate(`/sport-event/${id}/tracking`)}
-              className="flex-shrink-0 bg-white text-red-500 px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center gap-2"
-            >
-              <FaMapMarkerAlt />
-              Bắt đầu
-            </button>
+            <div className="flex items-center gap-3">
+              {gpsStats?.weeklyStreak > 0 && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 text-center">
+                  <p className="text-lg font-black">🔥 {gpsStats.weeklyStreak}</p>
+                  <p className="text-[10px] opacity-80">tuần liên tiếp</p>
+                </div>
+              )}
+              <button
+                onClick={() => navigate(`/sport-event/${id}/tracking`)}
+                className="flex-shrink-0 bg-white text-red-500 px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center gap-2"
+              >
+                <FaMapMarkerAlt />
+                Bắt đầu
+              </button>
+            </div>
           </div>
           {gpsStats && (
             <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4 text-center">
@@ -309,41 +332,119 @@ export default function SportEventProgress({
         </div>
       )}
 
-      {/* 1. Summary Stats Section — clickable to switch chart metric */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<FaTrophy className="text-yellow-500" />}
-          label="Tiến độ của bạn"
-          value={`${displayProgress} / ${stats?.perPersonTarget?.toFixed(1) ?? event.targetValue} ${event.targetUnit}`}
-          subValue={`${stats.progressPercent}% phần đóng góp của bạn`}
-          colorClass="bg-yellow-100 text-yellow-600"
-          isActive={activeMetric === 'progress'}
-          onClick={() => setActiveMetric('progress')}
-        />
-        <StatCard
-          icon={<FaRoad className="text-blue-500" />}
-          label="Tổng quãng đường"
-          value={`${displayDistance} km`}
-          colorClass="bg-blue-100 text-blue-600"
-          isActive={activeMetric === 'distance'}
-          onClick={() => setActiveMetric('distance')}
-        />
-        <StatCard
-          icon={<FaFire className="text-red-500" />}
-          label="kcal tiêu thụ"
-          value={`${displayCalories} kcal`}
-          colorClass="bg-red-100 text-red-600"
-          isActive={activeMetric === 'calories'}
-          onClick={() => setActiveMetric('calories')}
-        />
-        <StatCard
-          icon={<MdOutlineHistoryEdu className="text-purple-500" />}
-          label="Số buổi tham gia"
-          value={`${displaySessions} buổi`}
-          colorClass="bg-purple-100 text-purple-600"
-          isActive={false}
-          onClick={() => { }}
-        />
+      {/* 1. Activity Rings Hero — Apple Fitness style */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 px-6 py-4">
+          <h3 className="text-lg font-bold text-white">📊 Thống kê hoạt động</h3>
+          <p className="text-white/70 text-sm">Mục tiêu cá nhân: {stats?.perPersonTarget > 0 ? `${stats.perPersonTarget.toFixed(1)} ${event.targetUnit}` : 'Chưa thiết lập'}</p>
+        </div>
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* Activity Rings */}
+            <div className="relative flex-shrink-0">
+              <ActivityRings
+                size={180}
+                strokeWidth={14}
+                gap={5}
+                rings={[
+                  {
+                    percent: stats?.progressPercent || 0,
+                    color: '#ef4444',
+                    colorEnd: stats?.progressPercent >= 100 ? '#22c55e' : '#f97316',
+                    label: `${event.targetUnit}`
+                  },
+                  {
+                    percent: displayDistance > 0 ? Math.min((parseFloat(displayDistance) / (parseFloat(stats?.perPersonTarget || 1))) * 100, 100) : 0,
+                    color: '#3b82f6',
+                    colorEnd: '#06b6d4',
+                    label: 'km'
+                  },
+                  {
+                    percent: displayCalories > 0 ? Math.min(displayCalories / 10, 100) : 0,
+                    color: '#f97316',
+                    colorEnd: '#eab308',
+                    label: 'kcal'
+                  }
+                ]}
+                centerContent={
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-gray-800 dark:text-white">{stats?.progressPercent || 0}%</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">hoàn thành</p>
+                  </div>
+                }
+              />
+            </div>
+
+            {/* Ring Legend + Stats */}
+            <div className="flex-1 grid grid-cols-2 gap-3 w-full">
+              {/* Progress stat */}
+              <div
+                onClick={() => setActiveMetric('progress')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  activeMetric === 'progress'
+                    ? 'border-red-400 bg-red-50 dark:bg-red-900/20 shadow-md'
+                    : 'border-gray-100 dark:border-gray-700 hover:border-red-200 bg-white dark:bg-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500" />
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ</span>
+                </div>
+                <p className="text-xl font-black text-gray-800 dark:text-white">
+                  {displayProgress || 0} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">{stats?.progressPercent || 0}% hoàn thành</p>
+              </div>
+
+              {/* Distance stat */}
+              <div
+                onClick={() => setActiveMetric('distance')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  activeMetric === 'distance'
+                    ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                    : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 bg-white dark:bg-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Quãng đường</span>
+                </div>
+                <p className="text-xl font-black text-gray-800 dark:text-white">
+                  {displayDistance} <span className="text-sm font-medium text-gray-400">km</span>
+                </p>
+              </div>
+
+              {/* Calories stat */}
+              <div
+                onClick={() => setActiveMetric('calories')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  activeMetric === 'calories'
+                    ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 shadow-md'
+                    : 'border-gray-100 dark:border-gray-700 hover:border-orange-200 bg-white dark:bg-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" />
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
+                </div>
+                <p className="text-xl font-black text-gray-800 dark:text-white">
+                  {displayCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
+                </p>
+              </div>
+
+              {/* Sessions stat */}
+              <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-violet-500" />
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Hoạt động</span>
+                </div>
+                <p className="text-xl font-black text-gray-800 dark:text-white">
+                  {displaySessions || 0} <span className="text-sm font-medium text-gray-400">buổi</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

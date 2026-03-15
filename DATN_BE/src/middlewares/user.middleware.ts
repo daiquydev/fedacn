@@ -94,8 +94,12 @@ export const updateProfileValidator = validate(
         },
         trim: true,
         custom: {
-          options: async (value) => {
-            const user = await UserModel.findOne({ user_name: value })
+          options: async (value, { req }) => {
+            const currentUserId = (req as any).decoded_authorization?.user_id
+            const user = await UserModel.findOne({
+              user_name: value,
+              _id: { $ne: currentUserId }
+            })
             if (user) {
               throw new Error(USER_MESSAGE.USER_NAME_ALREADY_EXISTS)
             }
@@ -117,6 +121,14 @@ export const updateProfileValidator = validate(
           }
         },
         trim: true
+      },
+      gender: {
+        optional: true,
+        isString: true,
+        isIn: {
+          options: [['male', 'female', 'other']],
+          errorMessage: 'Giới tính phải là male, female hoặc other'
+        }
       }
     },
     ['body']

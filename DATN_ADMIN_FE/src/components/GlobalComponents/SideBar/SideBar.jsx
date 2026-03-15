@@ -90,7 +90,7 @@ export default function SideBar() {
   // ]
 
   return (
-    <div className='fixed z-[100]'>
+    <div className='fixed top-0 left-0 h-screen z-[100]'>
       <div
         onClick={() => setOpen(false)}
         className={`md:hidden fixed inset-0 max-h-screen z-[80] bg-black/50 ${open ? 'block' : 'hidden'} `}

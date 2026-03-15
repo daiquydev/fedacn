@@ -2,11 +2,12 @@ import { useForm } from 'react-hook-form'
 import ModalLayout from '../../../../layouts/ModalLayout'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import Input from '../../../../components/InputComponents/Input'
+import TextArea from '../../../../components/InputComponents/TextArea'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaRequestUpgrade } from '../../../../utils/rules'
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
-import TextArea from '../../../../components/InputComponents/TextArea'
+import { FaArrowUp } from 'react-icons/fa'
 
 export default function ModalRequest({ handleCloseModalRequest, updateRequest }) {
   const {
@@ -22,81 +23,53 @@ export default function ModalRequest({ handleCloseModalRequest, updateRequest })
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
-
     updateRequest.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         toast.success('Yêu cầu nâng cấp lên đầu bếp thành công, hãy đợi email phản hồi từ chúng tôi')
-        queryClient.invalidateQueries({
-          queryKey: ['me']
-        })
+        queryClient.invalidateQueries({ queryKey: ['me'] })
         handleCloseModalRequest()
       },
       onError: (error) => {
-        console.log(error)
+        toast.error(error?.response?.data?.message || 'Có lỗi xảy ra')
       }
     })
   })
 
   return (
-    <ModalLayout
-      closeModal={handleCloseModalRequest}
-      className='modal-content overflow-y-auto scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 max-h-[90%] min-w-[360px] md:min-w-[450px] dark:bg-gray-900 bg-white'
-    >
-      <div className='relative w-full max-w-md max-h-full'>
-        <div className=''>
-          <div className='flex justify-between'>
-            <div className='px-3 py-1'></div>
-            <h3 className=' mb-2 font-medium text-lg md:text-xl text-black dark:text-gray-200'>Nâng cấp lên đầu bếp</h3>
-            <div className='text-2xl font-semibold'>
-              <span
-                onClick={handleCloseModalRequest}
-                className=' hover:bg-slate-100 transition-all dark:hover:bg-slate-700 cursor-pointer rounded-full px-3 py-1'
-              >
-                &times;
-              </span>
-            </div>
-          </div>
+    <ModalLayout closeModal={handleCloseModalRequest} title='Nâng cấp lên đầu bếp' icon={FaArrowUp} size='md'>
+      <form noValidate onSubmit={onSubmit} className='p-5 space-y-4'>
+        <Input
+          title='Link minh chứng kinh nghiệm của bạn'
+          type='text'
+          name='proof'
+          id='proof'
+          placeholder='VD: https://www.facebook.com/...'
+          register={register}
+          errors={errors.proof}
+        />
+        <TextArea
+          title='Lý do bạn muốn nâng cấp lên đầu bếp'
+          name='reason'
+          id='reason'
+          placeholder='Nhập lý do của bạn'
+          register={register}
+          errors={errors.reason}
+        />
 
-          <div className='border dark:border-gray-700 border-red-200 '></div>
-          <section className='w-full mx-auto items-center '>
-            <form noValidate onSubmit={onSubmit} className='p-3'>
-              <div className='sm:col-span-2'>
-                <Input
-                  title='Nhập link minh chứng kinh nghiệm của bạn'
-                  type='text'
-                  name='proof'
-                  id='proof'
-                  placeholder='VD: https://www.facebook.com/...'
-                  register={register}
-                  errors={errors.proof}
-                />
-              </div>
-              <div className='sm:col-span-2 pb-2'>
-                <TextArea
-                  title='Lý do bạn muốn nâng cấp lên đầu bếp'
-                  name='reason'
-                  id='reason'
-                  placeholder='Nhập lý do của bạn'
-                  register={register}
-                  errors={errors.reason}
-                />
-              </div>
-
-              <div className='flex justify-center'>
-                {updateRequest.isPending ? (
-                  <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
-                  </button>
-                ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'>Gửi lên hệ thống</button>
-                )}
-              </div>
-            </form>
-          </section>
+        <div className='pt-2'>
+          <button
+            type='submit'
+            disabled={updateRequest.isPending}
+            className='w-full py-3 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2'
+          >
+            {updateRequest.isPending ? (
+              <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-white' />
+            ) : (
+              'Gửi lên hệ thống'
+            )}
+          </button>
         </div>
-      </div>
+      </form>
     </ModalLayout>
   )
 }

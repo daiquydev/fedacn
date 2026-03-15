@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaClock, FaInfoCircle, FaCheck,
   FaArrowLeft, FaMedal, FaTrophy, FaStar, FaChartLine, FaChevronDown, FaChevronUp, FaStopwatch,
-  FaExclamationTriangle, FaBiking, FaSwimmer, FaDumbbell, FaAward
+  FaExclamationTriangle, FaBiking, FaSwimmer, FaDumbbell, FaAward, FaBullseye
 } from 'react-icons/fa'
 import { MdSportsSoccer, MdLeaderboard } from 'react-icons/md'
 import moment from 'moment'
-import { getSportEvent, joinSportEvent, leaveSportEvent } from '../../../apis/sportEventApi'
+import { getSportEvent, joinSportEvent, leaveSportEvent, getUserProgress, getLeaderboard } from '../../../apis/sportEventApi'
 import toast from 'react-hot-toast'
 
 export default function EventDetail() {
@@ -20,9 +20,13 @@ export default function EventDetail() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(true)
   const [showAllParticipants, setShowAllParticipants] = useState(false)
+  const [myProgress, setMyProgress] = useState(null)
+  const [leaderboardData, setLeaderboardData] = useState([])
+  const [progressLoading, setProgressLoading] = useState(false)
 
   useEffect(() => {
     fetchEventDetail()
+    fetchLeaderboard()
   }, [id])
 
   const fetchEventDetail = async () => {
@@ -64,6 +68,37 @@ export default function EventDetail() {
     }
   }
 
+  // Fetch user's own progress
+  const fetchMyProgress = async () => {
+    try {
+      const response = await getUserProgress(id)
+      setMyProgress(response.data?.result || null)
+    } catch (err) {
+      console.log('Could not fetch user progress (may not be participant)')
+    }
+  }
+
+  // Fetch leaderboard data
+  const fetchLeaderboard = async () => {
+    try {
+      setProgressLoading(true)
+      const response = await getLeaderboard(id)
+      setLeaderboardData(response.data?.result?.leaderboard || [])
+    } catch (err) {
+      console.log('Could not fetch leaderboard')
+    } finally {
+      setProgressLoading(false)
+    }
+  }
+
+  // Calculate progress percentage using per-person target
+  const calculateProgress = (totalProgress, targetValue, maxParticipants) => {
+    if (!targetValue || targetValue <= 0) return 0
+    const perPersonTarget = targetValue / (maxParticipants || 1)
+    if (perPersonTarget <= 0) return 0
+    return Math.min(Math.round((totalProgress / perPersonTarget) * 100), 100)
+  }
+
   const handleJoin = async () => {
     try {
       setIsJoining(true)
@@ -72,6 +107,9 @@ export default function EventDetail() {
 
       setEvent(updatedEvent)
       toast.success('Bạn đã tham gia sự kiện!')
+      // Refresh progress data after joining
+      fetchMyProgress()
+      fetchLeaderboard()
     } catch (error) {
       console.error('Error joining event:', error)
       toast.error(error.response?.data?.message || 'Lỗi khi tham gia sự kiện')
@@ -89,6 +127,8 @@ export default function EventDetail() {
       setEvent(updatedEvent)
       toast.success('Bạn đã rời khỏi sự kiện!')
       setShowLeaveConfirm(false)
+      setMyProgress(null)
+      fetchLeaderboard()
     } catch (error) {
       console.error('Error leaving event:', error)
       toast.error(error.response?.data?.message || 'Lỗi khi rời khỏi sự kiện')
@@ -164,6 +204,20 @@ export default function EventDetail() {
   const isParticipant = event.participants_ids?.some(p => p._id === localStorage.getItem('user_id')) || false
   const isEventInPast = new Date(event.endDate) < new Date()
   const isEventStarted = new Date(event.startDate) <= new Date()
+
+  // Fetch my progress when we confirm user is participant
+  useEffect(() => {
+    if (isParticipant && event?._id) {
+      fetchMyProgress()
+    }
+  }, [isParticipant, event?._id])
+
+  // Per-person target calculation
+  const perPersonTarget = event.targetValue && event.maxParticipants
+    ? (event.targetValue / event.maxParticipants)
+    : event.targetValue || 0
+  const myTotalProgress = myProgress?.totalProgress || 0
+  const myProgressPercent = calculateProgress(myTotalProgress, event.targetValue, event.maxParticipants)
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -416,6 +470,90 @@ export default function EventDetail() {
               </div>
             </div>
 
+            {/* My Progress Section */}
+            {event.targetValue > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
+                  <div className="flex items-center text-white">
+                    <FaBullseye className="text-xl mr-2" />
+                    <h3 className="text-lg font-semibold">Tiến độ của bạn</h3>
+                  </div>
+                </div>
+                <div className="p-5">
+                  {isParticipant ? (
+                    <div>
+                      {/* Big progress ring */}
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="relative w-32 h-32">
+                          <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                            <circle
+                              cx="60" cy="60" r="52" fill="none"
+                              stroke={myProgressPercent >= 100 ? '#10b981' : '#3b82f6'}
+                              strokeWidth="10"
+                              strokeLinecap="round"
+                              strokeDasharray={`${2 * Math.PI * 52}`}
+                              strokeDashoffset={`${2 * Math.PI * 52 * (1 - myProgressPercent / 100)}`}
+                              className="transition-all duration-700 ease-out"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className={`text-2xl font-bold ${myProgressPercent >= 100 ? 'text-green-500' : 'text-blue-600 dark:text-blue-400'}`}>
+                              {myProgressPercent}%
+                            </span>
+                            {myProgressPercent >= 100 && (
+                              <span className="text-xs text-green-500 font-medium">Hoàn thành! 🎉</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stats detail */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500 dark:text-gray-400">Đã đạt</span>
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {myTotalProgress.toFixed(1)} {event.targetUnit}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500 dark:text-gray-400">Mục tiêu cá nhân</span>
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {perPersonTarget.toFixed(1)} {event.targetUnit}
+                          </span>
+                        </div>
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                          <div className="flex justify-between items-center text-xs text-gray-400 dark:text-gray-500 mb-1">
+                            <span>Mục tiêu chung</span>
+                            <span>{event.targetValue} {event.targetUnit} ({event.maxParticipants} người)</span>
+                          </div>
+                          <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                            <div
+                              className="bg-blue-400 h-1.5 rounded-full transition-all duration-500"
+                              style={{ width: `${myProgressPercent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        {myProgress?.totalEntries > 0 && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                            {myProgress.totalEntries} lần ghi nhận
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <FaBullseye className="mx-auto text-3xl text-gray-300 dark:text-gray-600 mb-3" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Tham gia sự kiện để theo dõi tiến độ</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Mục tiêu: {event.targetValue} {event.targetUnit}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Event Time Info */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Thời gian chi tiết</h3>
@@ -441,7 +579,7 @@ export default function EventDetail() {
               </div>
             </div>
 
-            {/* Leaderboard (Mock data - will be updated later) */}
+            {/* Leaderboard with real data */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
               <div
                 className="bg-gradient-to-r from-green-500 to-green-600 p-4 flex justify-between items-center cursor-pointer"
@@ -466,27 +604,55 @@ export default function EventDetail() {
                         {moment(event.startDate).format('DD/MM/YYYY HH:mm')}
                       </p>
                     </div>
-                  ) : event.participants_ids && event.participants_ids.length > 0 ? (
+                  ) : progressLoading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                    </div>
+                  ) : leaderboardData.length > 0 ? (
                     <div className="space-y-2">
-                      {event.participants_ids.slice(0, 5).map((participant, index) => (
-                        <div key={participant._id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                          <div className="flex items-center">
-                            <div className="w-6 h-6 flex items-center justify-center mr-2">
-                              {index === 0 && <FaTrophy className="text-yellow-500 text-lg" />}
-                              {index === 1 && <FaMedal className="text-gray-400 text-lg" />}
-                              {index === 2 && <FaMedal className="text-amber-600 text-lg" />}
-                              {index >= 3 && <span className="text-sm font-bold text-gray-600 dark:text-gray-300">{index + 1}</span>}
+                      {leaderboardData.slice(0, 10).map((entry, index) => {
+                        const entryProgress = calculateProgress(entry.totalProgress, event.targetValue, event.maxParticipants)
+                        return (
+                          <div key={entry.userId} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div className="flex items-center min-w-0 flex-1">
+                              <div className="w-7 h-7 flex items-center justify-center mr-2 flex-shrink-0">
+                                {index === 0 && <FaTrophy className="text-yellow-500 text-lg" />}
+                                {index === 1 && <FaMedal className="text-gray-400 text-lg" />}
+                                {index === 2 && <FaMedal className="text-amber-600 text-lg" />}
+                                {index >= 3 && <span className="text-sm font-bold text-gray-500 dark:text-gray-400">{index + 1}</span>}
+                              </div>
+                              <img
+                                src={entry.avatar || 'https://via.placeholder.com/32'}
+                                alt={entry.name}
+                                className="w-7 h-7 rounded-full mr-2 flex-shrink-0"
+                              />
+                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{entry.name}</span>
                             </div>
-                            <img
-                              src={participant.avatar || 'https://via.placeholder.com/32'}
-                              alt={participant.name}
-                              className="w-6 h-6 rounded-full mr-2"
-                            />
-                            <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{participant.name}</span>
+                            <div className="flex flex-col items-end ml-2 flex-shrink-0">
+                              <span className="text-xs font-bold text-green-600 dark:text-green-400">
+                                {entry.totalProgress?.toFixed(1)} {event.targetUnit}
+                              </span>
+                              {event.targetValue > 0 && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <div className="w-12 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                                    <div
+                                      className={`h-1.5 rounded-full transition-all ${entryProgress >= 100 ? 'bg-green-500' : 'bg-blue-400'}`}
+                                      style={{ width: `${entryProgress}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-[10px] text-gray-400">{entryProgress}%</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">#{index + 1}</span>
-                        </div>
-                      ))}
+                        )
+                      })}
+                    </div>
+                  ) : event.participants_ids && event.participants_ids.length > 0 ? (
+                    <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                      <FaChartLine className="mx-auto text-3xl mb-2 text-gray-300 dark:text-gray-600" />
+                      <p className="text-sm">Chưa có dữ liệu tiến độ</p>
+                      <p className="text-xs mt-1">Hãy bắt đầu ghi nhận hoạt động!</p>
                     </div>
                   ) : (
                     <div className="text-center py-6 text-gray-500 dark:text-gray-400">

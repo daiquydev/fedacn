@@ -11,13 +11,14 @@ import postSound from '../../../../assets/sounds/post.mp3'
 import { AppContext } from '../../../../contexts/app.context'
 import { SocketContext } from '../../../../contexts/socket.context'
 import useSound from 'use-sound'
-import { FaTimes, FaShare, FaGlobeAsia } from 'react-icons/fa'
+import { FaTimes, FaShare, FaGlobeAsia, FaUserFriends } from 'react-icons/fa'
 import { BsLockFill, BsPeopleFill } from 'react-icons/bs'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 
 const PRIVACY_OPTIONS = [
   { value: 0, label: 'Công khai', icon: <FaGlobeAsia className="text-green-500" /> },
-  { value: 1, label: 'Người theo dõi', icon: <BsPeopleFill className="text-blue-500" /> },
+  { value: 3, label: 'Bạn bè', icon: <FaUserFriends className="text-blue-500" /> },
+  { value: 1, label: 'Người theo dõi', icon: <BsPeopleFill className="text-purple-500" /> },
   { value: 2, label: 'Chỉ mình tôi', icon: <BsLockFill className="text-gray-500" /> }
 ]
 

@@ -30,3 +30,5 @@ export const recommendUser = () => http.get('/users/recommed')
 export const bookmarkUser = () => http.get('/users/bookmarks')
 
 export const updateRequest = (body) => http.put('/users/update-to-chef', body)
+
+export const getMeStats = () => http.get('/users/me/stats')

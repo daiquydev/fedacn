@@ -25,55 +25,30 @@ const formatTime = (dateKey, time) => {
     } catch { return dateKey }
 }
 
-const EmptyState = ({ type }) => (
-    <div className='flex flex-col items-center justify-center py-6 text-center gap-2'>
-        <div className='w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center'>
-            {type === 'event'
-                ? <FaRunning className='text-gray-400 text-sm' />
-                : <FaDumbbell className='text-gray-400 text-sm' />}
-        </div>
-        <p className='text-xs text-gray-400 dark:text-gray-500'>
-            {type === 'event' ? 'Chưa có sự kiện sắp tới' : 'Chưa có lịch tập sắp tới'}
-        </p>
-    </div>
-)
-
-const ItemRow = ({ item, onClick }) => {
+const CompactItem = ({ item, onClick }) => {
     const isWorkout = item.type === 'workout'
     return (
         <div
             onClick={onClick}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group
-        hover:bg-gray-50 dark:hover:bg-gray-800/60 border border-transparent
-        hover:border-gray-100 dark:hover:border-gray-700`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all group
+                hover:bg-white/10 border border-white/10 hover:border-white/25 flex-1 min-w-0`}
         >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs
-        ${isWorkout
-                    ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-500'
-                    : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600'}`}>
+            <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-[10px]
+                ${isWorkout
+                    ? 'bg-orange-400/20 text-orange-200'
+                    : 'bg-emerald-400/20 text-emerald-200'}`}>
                 {isWorkout ? <FaDumbbell /> : <FaRunning />}
             </div>
-
             <div className='flex-1 min-w-0'>
-                <p className='text-sm font-semibold text-gray-800 dark:text-gray-100 truncate leading-tight'>
+                <p className='text-xs font-semibold text-white truncate leading-tight'>
                     {item.title}
                 </p>
-                <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium
-            ${isWorkout ? 'text-orange-500 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        <FaClock className='shrink-0' />
-                        {formatTime(item.dateKey, item.startTime)}
-                    </span>
-                    {item.location && (
-                        <span className='inline-flex items-center gap-1 text-[11px] text-gray-400 truncate max-w-[120px]'>
-                            <FaMapMarkerAlt className='shrink-0' />
-                            {item.location}
-                        </span>
-                    )}
-                </div>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-medium text-white/60`}>
+                    <FaClock className='shrink-0' />
+                    {formatTime(item.dateKey, item.startTime)}
+                </span>
             </div>
-
-            <FaArrowRight className='text-gray-300 dark:text-gray-600 group-hover:text-gray-500 text-xs flex-shrink-0 transition-colors' />
+            <FaArrowRight className='text-white/30 group-hover:text-white/60 text-[10px] flex-shrink-0 transition-colors' />
         </div>
     )
 }
@@ -144,20 +119,25 @@ export default function CalendarNotifications() {
     }, [])
 
     const list = activeTab === 'event' ? events : workouts
+    const visibleItems = list.slice(0, 2)
+    const remainingCount = Math.max(0, list.length - 2)
 
     return (
-        <div className='w-full shadow bg-white rounded-3xl dark:bg-color-primary dark:border dark:border-gray-800 overflow-hidden'>
-            {/* Header */}
-            <div className='bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 py-3.5 px-5 flex items-center justify-between'>
-                <div className='flex items-center gap-2'>
-                    <FaBell className='text-white text-base' />
-                    <div>
-                        <h3 className='text-sm md:text-base font-semibold text-white'>Thông báo Lịch Cá Nhân</h3>
-                        <p className='text-[11px] text-white/70'>Sự kiện và lịch tập hôm nay</p>
+        <div className='w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 rounded-2xl shadow-lg overflow-hidden'>
+            <div className='flex items-center gap-3 px-4 h-[52px]'>
+                {/* Left: Icon + Title */}
+                <div className='flex items-center gap-2 flex-shrink-0'>
+                    <div className='w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center'>
+                        <FaBell className='text-white text-sm' />
+                    </div>
+                    <div className='hidden sm:block'>
+                        <h3 className='text-sm font-semibold text-white leading-tight'>Lịch hôm nay</h3>
+                        <p className='text-[10px] text-white/50'>Sự kiện & tập luyện</p>
                     </div>
                 </div>
-                {/* Tabs */}
-                <div className='flex items-center gap-1 bg-white/15 rounded-full p-0.5'>
+
+                {/* Center: Tabs */}
+                <div className='flex items-center gap-0.5 bg-white/10 rounded-full p-0.5 flex-shrink-0'>
                     {[
                         { key: 'event', label: 'Sự kiện', icon: FaRunning },
                         { key: 'workout', label: 'Tập luyện', icon: FaDumbbell }
@@ -165,48 +145,56 @@ export default function CalendarNotifications() {
                         <button
                             key={key}
                             onClick={() => setActiveTab(key)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
-                ${activeTab === key
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all
+                                ${activeTab === key
                                     ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+                                    : 'text-white/70 hover:text-white hover:bg-white/10'}`}
                         >
-                            <Icon /> {label}
-                            <span className={`text-[10px] rounded-full px-1.5 py-0 font-bold ${activeTab === key ? 'bg-indigo-100 text-indigo-600' : 'bg-white/20 text-white'}`}>
+                            <Icon className='text-[10px]' /> {label}
+                            <span className={`text-[9px] rounded-full px-1.5 font-bold ${activeTab === key ? 'bg-indigo-100 text-indigo-600' : 'bg-white/15 text-white/80'}`}>
                                 {key === 'event' ? events.length : workouts.length}
                             </span>
                         </button>
                     ))}
                 </div>
-            </div>
 
-            {/* List */}
-            <div className='px-3 py-2'>
-                {loading ? (
-                    <div className='space-y-2 py-2'>
-                        {[...Array(3)].map((_, i) => (
-                            <div key={i} className='h-12 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse' />
-                        ))}
-                    </div>
-                ) : list.length === 0 ? (
-                    <EmptyState type={activeTab} />
-                ) : (
-                    <div className='divide-y divide-gray-50 dark:divide-gray-800/60'>
-                        {list.map(item => (
-                            <ItemRow key={`${item.type}-${item.id}`} item={item} onClick={() => navigate(item.navigateTo)} />
-                        ))}
-                    </div>
-                )}
-
-                {/* Footer */}
-                <div className='pt-1 pb-2 flex justify-end'>
-                    <button
-                        onClick={() => navigate('/user-calendar')}
-                        className='inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium transition-colors'
-                    >
-                        <FaCalendarAlt className='text-[11px]' />
-                        Xem lịch cá nhân <FaArrowRight className='text-[10px]' />
-                    </button>
+                {/* Right: Inline items or empty state — HIDDEN on mobile */}
+                <div className='flex-1 min-w-0 hidden md:flex items-center gap-2 overflow-hidden'>
+                    {loading ? (
+                        <div className='flex gap-2 flex-1'>
+                            <div className='h-8 flex-1 rounded-lg bg-white/10 animate-pulse' />
+                            <div className='h-8 flex-1 rounded-lg bg-white/10 animate-pulse' />
+                        </div>
+                    ) : list.length === 0 ? (
+                        <div className='flex items-center gap-2 px-2'>
+                            <span className='text-xs text-yellow-200 font-medium'>Không có lịch hôm nay</span>
+                        </div>
+                    ) : (
+                        <>
+                            {visibleItems.map(item => (
+                                <CompactItem key={`${item.type}-${item.id}`} item={item} onClick={() => navigate(item.navigateTo)} />
+                            ))}
+                            {remainingCount > 0 && (
+                                <button
+                                    onClick={() => navigate('/user-calendar')}
+                                    className='flex-shrink-0 text-[11px] font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-lg transition-all'
+                                >
+                                    +{remainingCount}
+                                </button>
+                            )}
+                        </>
+                    )}
                 </div>
+
+                {/* Far right: CTA */}
+                <button
+                    onClick={() => navigate('/user-calendar')}
+                    className='flex-shrink-0 ml-auto inline-flex items-center gap-1 text-[11px] text-white/70 hover:text-white font-medium transition-colors'
+                >
+                    <FaCalendarAlt className='text-[10px]' />
+                    <span className='hidden sm:inline'>Xem lịch</span>
+                    <FaArrowRight className='text-[9px]' />
+                </button>
             </div>
         </div>
     )

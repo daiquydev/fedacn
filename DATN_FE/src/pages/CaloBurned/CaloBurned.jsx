@@ -16,6 +16,7 @@ import { schemaCaloriesBurned } from '../../utils/rules'
 import PaginationNotUrl from '../../components/GlobalComponents/PaginationNotUrl'
 import { AppContext } from '../../contexts/app.context'
 import AIAnalysisModal from '../../components/GlobalComponents/AIAnalysisModal/AIAnalysisModal'
+import CalculatorSidebar from '../../components/GlobalComponents/CalculatorSidebar/CalculatorSidebar'
 
 export default function CaloBurned() {
   const { profile } = useContext(AppContext)
@@ -116,8 +117,8 @@ export default function CaloBurned() {
                     Công thức tính lượng kcal đốt cháy trong 1 hoạt động nào đó
                   </h1>
                   <div className='flex items-center'>
-                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Cook</span>
-                    <span className='font-semibold'>Healthy</span>
+                    Thu thập bởi: <span className='font-semibold text-red-600 dark:text-pink-400 ml-1'>Fit</span>
+                    <span className='font-semibold'>Connect</span>
                     <IoTimeOutline className='mr-1 ml-2' /> 02/04/2024
                   </div>
                 </header>
@@ -377,12 +378,18 @@ export default function CaloBurned() {
           </main>
         </div>
         <div className='col-span-6 order-first xl:order-last my-3 xl:my-0 xl:col-span-2'>
-          <div className='shadow mb-6 bg-white rounded-lg dark:bg-color-primary dark:border-none'>
-            <div className='flex flex-col dark:text-gray-300 justify-center items-center pt-4 text-xl font-semibold text-red-700'>
-              Tính toán lượng kcal đốt cháy <p className='text-base text-black dark:text-gray-300'></p>
-            </div>
-            <div className='border mt-2 mx-5 dark:border-gray-700 border-red-200 '></div>
-            <form noValidate onSubmit={onSubmit} className='p-3'>
+          <CalculatorSidebar
+            title='Tính toán lượng kcal đốt cháy'
+            subtitle='(Calories Burned)'
+            gradient='from-red-500 to-orange-500'
+            result={dataCaloBurned.calo_burned ? {
+              value: dataCaloBurned.calo_burned,
+              unit: 'kcal',
+              label: `Với cân nặng ${dataCaloBurned.weight}kg, hoạt động ${dataCaloBurned.time} phút (MET: ${dataCaloBurned.met})`
+            } : null}
+            onAIClick={dataCaloBurned.calo_burned ? () => setIsAIModalOpen(true) : null}
+          >
+            <form noValidate onSubmit={onSubmit} className='space-y-3'>
               <Input
                 title='Nhập cân nặng (kg)'
                 type='number'
@@ -410,37 +417,19 @@ export default function CaloBurned() {
                 id='met'
                 placeholder='Nhập chỉ số MET của hoạt động của bạn'
               />
-
-              <div className='flex justify-center'>
+              <div className='pt-1'>
                 {calculateCaloriesBurnedMutation.isPending ? (
-                  <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                  <button disabled className='w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold flex items-center justify-center gap-2 opacity-70'>
+                    <Loading classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
                   </button>
                 ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'> Tính toán</button>
+                  <button className='w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200'>
+                    Tính toán
+                  </button>
                 )}
               </div>
             </form>
-            <div>
-              {dataCaloBurned.calo_burned && (
-                <div className='flex mx-4 justify-center '>
-                  <div className='mt-5 w-full pb-5'>
-                    <div className=' text-gray-700 flex justify-center dark:text-gray-300 font-semibold '>
-                      Bạn đã tiêu thụ: {dataCaloBurned.calo_burned} kcal
-                    </div>
-                    <div className='flex justify-center mt-3'>
-                      <button
-                        onClick={() => setIsAIModalOpen(true)}
-                        className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 shadow-md transition-all duration-200'
-                      >
-                        🤖 AI Phân tích
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          </CalculatorSidebar>
         </div>
       </div>
       <AIAnalysisModal

@@ -36,7 +36,7 @@ export const getAllSportCategoriesAdminController = async (req: Request, res: Re
 
 export const createSportCategoryController = async (req: Request, res: Response) => {
     try {
-        const { name, type, kcal_per_unit } = req.body
+        const { name, type, kcal_per_unit, icon } = req.body
         if (!name || !name.trim()) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 message: 'Tên danh mục không được để trống'
@@ -52,7 +52,7 @@ export const createSportCategoryController = async (req: Request, res: Response)
                 message: 'Số kcal/đơn vị không hợp lệ'
             })
         }
-        const category = await sportCategoryService.createSportCategory({ name: name.trim(), type, kcal_per_unit: Number(kcal_per_unit) })
+        const category = await sportCategoryService.createSportCategory({ name: name.trim(), type, kcal_per_unit: Number(kcal_per_unit), icon: icon || 'sport' })
         return res.status(HTTP_STATUS.CREATED).json({
             message: 'Thêm danh mục thể thao thành công',
             result: category
@@ -69,7 +69,7 @@ export const createSportCategoryController = async (req: Request, res: Response)
 export const updateSportCategoryController = async (req: Request, res: Response) => {
     const { id } = req.params
     try {
-        const { name, type, kcal_per_unit } = req.body
+        const { name, type, kcal_per_unit, icon } = req.body
         if (!name || !name.trim()) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 message: 'Tên danh mục không được để trống'
@@ -85,7 +85,7 @@ export const updateSportCategoryController = async (req: Request, res: Response)
                 message: 'Số kcal/đơn vị không hợp lệ'
             })
         }
-        const category = await sportCategoryService.updateSportCategory(id, { name: name.trim(), type, kcal_per_unit: Number(kcal_per_unit) })
+        const category = await sportCategoryService.updateSportCategory(id, { name: name.trim(), type, kcal_per_unit: Number(kcal_per_unit), icon: icon || 'sport' })
         return res.status(HTTP_STATUS.OK).json({
             message: 'Cập nhật danh mục thể thao thành công',
             result: category

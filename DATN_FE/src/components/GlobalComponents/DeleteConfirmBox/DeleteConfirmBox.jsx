@@ -4,47 +4,34 @@ import ModalLayout from '../../../layouts/ModalLayout'
 
 export default function DeleteConfirmBox({ title, subtitle, type = 'submit', handleDelete, closeModal, isPending }) {
   return (
-    <ModalLayout
-      closeModal={closeModal}
-      className='modal-content min-w-[360px]  md:min-w-[450px] md:max-w-[500px] dark:bg-gray-900 bg-white'
-    >
-      <div className='md:flex items-center p-3'>
-        <div className='flex justify-center'>
-          <div className='rounded-full border border-gray-300 flex items-center justify-center w-14 h-14 flex-shrink-0'>
-            <div className=' text-red-900 dark:text-pink-500 text-3xl'>
-              <IoIosWarning />
-            </div>
-          </div>
-        </div>
-        <div className='mt-4 md:mt-0 md:ml-2 text-center md:text-left'>
-          <p className='font-bold'>{title}</p>
-          <p className='text-sm text-gray-800 dark:text-gray-400 mt-1'>{subtitle}</p>
-        </div>
-      </div>
-      <div className='text-center md:text-right mt-4 md:flex md:justify-end'>
-        {isPending ? (
+    <ModalLayout closeModal={closeModal} title={title} icon={IoIosWarning} size='sm'>
+      <div className='p-5'>
+        <p className='text-sm text-gray-600 dark:text-gray-400'>{subtitle}</p>
+
+        <div className='flex gap-3 mt-6 justify-end'>
           <button
-            disabled
-            className='block btn w-full btn-sm md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm md:ml-2 md:order-2'
+            onClick={closeModal}
+            className='px-5 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors'
           >
-            <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+            Hủy
           </button>
-        ) : (
-          <button
-            type={type}
-            onClick={handleDelete}
-            className='block btn btn-sm w-full md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm md:ml-2 md:order-2'
-          >
-            Xóa
-          </button>
-        )}
-        <button
-          onClick={closeModal}
-          className='block btn btn-sm w-full text-gray-700 hover:bg-slate-300 dark:text-gray-700 md:inline-block md:w-auto  bg-gray-200 rounded-lg font-semibold text-sm mt-4
-    md:mt-0 md:order-1'
-        >
-          Hủy
-        </button>
+          {isPending ? (
+            <button
+              disabled
+              className='px-5 py-2 rounded-xl font-bold text-white text-sm bg-gray-400 cursor-not-allowed flex items-center gap-2'
+            >
+              <Loading classNameSpin='inline w-4 h-4 text-gray-200 animate-spin fill-white' />
+            </button>
+          ) : (
+            <button
+              type={type}
+              onClick={handleDelete}
+              className='px-5 py-2 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 transition-all duration-300 shadow-lg shadow-red-500/20'
+            >
+              Xóa
+            </button>
+          )}
+        </div>
       </div>
     </ModalLayout>
   )

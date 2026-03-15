@@ -1,6 +1,6 @@
 import { IoIosWarning } from 'react-icons/io'
+import { FaExclamationTriangle } from 'react-icons/fa'
 import Loading from '../Loading'
-import ModalLayout from '../../../layouts/ModalLayout/ModalLayout'
 
 export default function ConfirmBox({
   title,
@@ -9,51 +9,56 @@ export default function ConfirmBox({
   handleDelete,
   closeModal,
   isPending,
-  tilteButton = 'Xóa'
+  tilteButton = 'Xóa',
+  danger = true
 }) {
   return (
-    <ModalLayout
-      closeModal={closeModal}
-      className='modal-content min-w-[360px]  md:min-w-[450px] md:max-w-[500px] dark:bg-gray-900 bg-white'
-    >
-      <div className='md:flex items-center p-3'>
-        <div className='flex justify-center'>
-          <div className='rounded-full border border-gray-300 flex items-center justify-center w-14 h-14 flex-shrink-0'>
-            <div className=' text-red-900 dark:text-pink-500 text-3xl'>
-              <IoIosWarning />
+    <div className='fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4' onClick={(e) => e.target === e.currentTarget && closeModal()}>
+      <div className='bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-[fadeIn_0.2s_ease-out]'>
+        {/* Header with icon */}
+        <div className='px-6 pt-6 pb-4'>
+          <div className='flex items-start gap-4'>
+            <div className={`p-3 rounded-xl shrink-0 ${danger ? 'bg-red-100 dark:bg-red-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+              <FaExclamationTriangle className={`text-lg ${danger ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
+            </div>
+            <div>
+              <h3 className='text-base font-bold text-gray-800 dark:text-white'>{title}</h3>
+              <p className='text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed'>{subtitle}</p>
             </div>
           </div>
         </div>
-        <div className='mt-4 md:mt-0 md:ml-2 text-center md:text-left'>
-          <p className='font-bold'>{title}</p>
-          <p className='text-sm text-gray-800 dark:text-gray-400 mt-1'>{subtitle}</p>
+
+        {/* Actions */}
+        <div className='flex justify-end gap-3 px-6 pb-5 pt-2'>
+          <button
+            onClick={closeModal}
+            className='px-4 py-2 text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors'
+          >
+            Hủy
+          </button>
+          {isPending ? (
+            <button
+              disabled
+              className={`px-4 py-2 text-sm text-white rounded-xl font-semibold flex items-center gap-2 ${danger ? 'bg-red-600' : 'bg-emerald-600'} opacity-70 cursor-not-allowed`}
+            >
+              <Loading classNameSpin='inline w-4 h-4 text-gray-200 animate-spin fill-white' />
+              Đang xử lý...
+            </button>
+          ) : (
+            <button
+              type={type}
+              onClick={handleDelete}
+              className={`px-4 py-2 text-sm text-white rounded-xl font-semibold transition-colors ${
+                danger
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
+            >
+              {tilteButton}
+            </button>
+          )}
         </div>
       </div>
-      <div className='text-center md:text-right mt-4 md:flex md:justify-end'>
-        {isPending ? (
-          <button
-            disabled
-            className='block btn w-full btn-sm md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm md:ml-2 md:order-2'
-          >
-            <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
-          </button>
-        ) : (
-          <button
-            type={type}
-            onClick={handleDelete}
-            className='block btn btn-sm w-full md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm md:ml-2 md:order-2'
-          >
-            {tilteButton}
-          </button>
-        )}
-        <button
-          onClick={closeModal}
-          className='block btn btn-sm w-full text-gray-700 hover:bg-slate-300 dark:text-gray-700 md:inline-block md:w-auto  bg-gray-200 rounded-lg font-semibold text-sm mt-4
-    md:mt-0 md:order-1'
-        >
-          Hủy
-        </button>
-      </div>
-    </ModalLayout>
+    </div>
   )
 }

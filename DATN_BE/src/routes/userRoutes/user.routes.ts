@@ -3,6 +3,7 @@ import {
   followUserController,
   getBookmarkedUserController,
   getMeController,
+  getMeStatsController,
   getUserController,
   recommendUsersController,
   requestUpgradeToChefController,
@@ -25,6 +26,7 @@ import upload from '~/utils/multer'
 const usersRouter = Router()
 
 usersRouter.get('/me', accessTokenValidator, wrapRequestHandler(getMeController))
+usersRouter.get('/me/stats', accessTokenValidator, wrapRequestHandler(getMeStatsController))
 usersRouter.get('/get-user/:id', accessTokenValidator, wrapRequestHandler(getUserController))
 usersRouter.post('/follow', accessTokenValidator, followValidator, wrapRequestHandler(followUserController))
 usersRouter.post('/unfollow', accessTokenValidator, followValidator, wrapRequestHandler(unfollowUserController))

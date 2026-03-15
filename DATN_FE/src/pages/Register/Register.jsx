@@ -80,20 +80,22 @@ export default function Register() {
     return `${url}?${queryString}`
   }
   const googleOAuthUrl = getGoogleAuthUrl()
+
   return (
     <form
-      className='sm:w-2/3 w-full px-4 lg:px-5 lg:py-10 rounded-lg mx-auto lg:bg-white'
+      className='sm:w-2/3 w-full px-4 lg:px-8 lg:py-10 rounded-2xl mx-auto lg:bg-white lg:shadow-sm'
       onSubmit={onSubmit}
       noValidate
     >
-      <h1 className='my-3'>
-        <div className='w-auto h-3 sm:h-4 inline-flex text-4xl lg:text-red-700 font-bold'>Đăng kí</div>
+      <h1 className='mb-4'>
+        <div className='text-3xl font-bold text-gray-900 lg:text-gray-900'>Đăng ký</div>
+        <p className='text-gray-400 text-sm mt-1'>Tạo tài khoản FitConnect miễn phí</p>
       </h1>
       <Input
         title='Tên của bạn'
         placeholder='Nhập tên của bạn'
-        className='block bg-white w-full placeholder:text-sm px-3 py-2 text-black text-lg border border-gray-300 rounded-lg'
-        classNameLabel='text-gray-400 lg:text-red-900 text-sm font-medium mb-1  text-left'
+        className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+        classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
         register={register}
         errors={errors.name}
         type='text'
@@ -102,8 +104,8 @@ export default function Register() {
       />
       <Input
         title='Email của bạn'
-        className='block bg-white w-full placeholder:text-sm px-3 py-2 text-black text-lg border border-gray-300 rounded-lg'
-        classNameLabel='text-gray-400 lg:text-red-900 text-sm font-medium mb-1  text-left'
+        className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+        classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
         placeholder='Nhập email của bạn'
         register={register}
         errors={errors.email}
@@ -113,8 +115,8 @@ export default function Register() {
       />
       <InputPass
         title='Mật khẩu của bạn'
-        className='block bg-white w-full placeholder:text-sm px-3 py-2 text-black text-lg border border-gray-300 rounded-lg'
-        classNameLabel='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 text-left'
+        className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+        classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
         placeholder='Nhập mật khẩu của bạn'
         register={register}
         errors={errors.password}
@@ -122,49 +124,49 @@ export default function Register() {
       />
       <InputPass
         title='Xác nhận mật khẩu'
-        className='block bg-white w-full placeholder:text-sm px-3 py-2 text-black text-lg border border-gray-300 rounded-lg'
-        classNameLabel='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 text-left'
+        className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+        classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
         placeholder='Nhập lại mật khẩu của bạn'
         register={register}
         errors={errors.confirm_password}
         name='confirm_password'
       />
-      <div className='px-4 pb-4 rounded-full pt-2'>
+      <div className='pt-2 pb-2'>
         {registerAccountMutation.isPending ? (
-          <div className='block w-full p-2 transition-all duration-500 mt-3 text-lg rounded-full bg-gray-500 first-letter:focus:outline-none'>
-            <div className='flex justify-center items-center'>
+          <div className='block w-full p-3 transition-all duration-500 text-base rounded-xl bg-gray-300 cursor-not-allowed'>
+            <div className='flex justify-center items-center text-gray-500'>
               <Loading
                 className='w-10 mx-1 flex justify-center items-center'
-                classNameSpin='inline w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-red-600'
+                classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-emerald-600'
               />
-              Loading...
+              Đang xử lý...
             </div>
           </div>
         ) : (
-          <button className='uppercase block w-full transition-all duration-500 p-2 mt-3 text-lg rounded-full bg-orange-500 hover:bg-orange-600 focus:outline-none'>
-            Đăng kí
+          <button className='block w-full p-3 transition-all duration-300 text-base font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 hover:shadow-lg hover:shadow-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2'>
+            ĐĂNG KÝ
           </button>
         )}
 
         {/* Divider */}
         <div className='flex items-center my-4'>
-          <div className='flex-1 border-t border-gray-300'></div>
-          <span className='px-4 text-gray-500 text-sm'>hoặc</span>
-          <div className='flex-1 border-t border-gray-300'></div>
+          <div className='flex-1 border-t border-gray-200'></div>
+          <span className='px-4 text-gray-400 text-sm'>hoặc</span>
+          <div className='flex-1 border-t border-gray-200'></div>
         </div>
 
         {/* Google Sign Up Button */}
         <Link
           to={googleOAuthUrl}
-          className='flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-gray-200 rounded-full hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 group'
+          className='flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-gray-200 rounded-xl hover:border-emerald-300 hover:bg-emerald-50/50 transition-all duration-300 group'
         >
           <FcGoogle className='text-2xl' />
-          <span className='text-gray-600 font-medium group-hover:text-gray-800'>Đăng kí với Google</span>
+          <span className='text-gray-600 font-medium group-hover:text-gray-800'>Đăng ký với Google</span>
         </Link>
 
         <div className='text-gray-500 flex justify-center items-center mt-4'>
           <span className='text-gray-400'>Bạn đã có tài khoản?</span>
-          <Link className='ml-1 font-medium text-red-400 hover:underline hover:text-red-700' to='/login'>
+          <Link className='ml-1 font-semibold text-emerald-600 hover:underline hover:text-emerald-700' to='/login'>
             Đăng nhập
           </Link>
         </div>

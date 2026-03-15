@@ -6,8 +6,8 @@ import Loading from '../../../../components/GlobalComponents/Loading'
 import { schemaChangePassword } from '../../../../utils/rules'
 import toast from 'react-hot-toast'
 import { changePassword } from '../../../../apis/userApi'
-
 import InputPass from '../../../../components/InputComponents/InputPass'
+import { FaLock } from 'react-icons/fa'
 
 export default function ModalChangePass({ handleCloseModalUpdatePass }) {
   const {
@@ -29,101 +29,74 @@ export default function ModalChangePass({ handleCloseModalUpdatePass }) {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
-
-    // bỏ đi confirm_password
-
     const newData = {
       old_password: data.old_password,
       new_password: data.new_password
     }
 
     updatePassMutation.mutate(newData, {
-      onSuccess: (data) => {
-        console.log(data)
-        toast.success('Cập nhật thông tin cá nhân thành công')
+      onSuccess: () => {
+        toast.success('Đổi mật khẩu thành công')
         handleCloseModalUpdatePass()
       },
       onError: (error) => {
-        console.log(error)
         setError('old_password', {
           type: 'manual',
-          message: error?.response.data.message
+          message: error?.response?.data?.message
         })
         setError('new_password', {
           type: 'manual',
-          message: error?.response.data.errors.new_password.msg
+          message: error?.response?.data?.errors?.new_password?.msg
         })
       }
     })
   })
 
   return (
-    <ModalLayout
-      closeModal={handleCloseModalUpdatePass}
-      className='modal-content max-h-[90%] min-w-[360px] md:min-w-[450px] dark:bg-gray-900 bg-white'
-    >
-      <div className='relative w-full max-w-md max-h-full'>
-        <div className=''>
-          <div className='flex justify-between'>
-            <div className='px-3 py-1'></div>
-            <h3 className=' mb-2 font-medium text-lg md:text-xl text-black dark:text-gray-200'>Đổi mật khẩu</h3>
-            <div className='text-2xl font-semibold'>
-              <span
-                onClick={handleCloseModalUpdatePass}
-                className=' hover:bg-slate-100 transition-all dark:hover:bg-slate-700 cursor-pointer rounded-full px-3 py-1'
-              >
-                &times;
-              </span>
-            </div>
-          </div>
+    <ModalLayout closeModal={handleCloseModalUpdatePass} title='Đổi mật khẩu' icon={FaLock} size='md'>
+      <form noValidate onSubmit={onSubmit} className='p-5 space-y-4'>
+        <InputPass
+          title='Mật khẩu cũ'
+          type='password'
+          name='old_password'
+          id='old_password'
+          register={register}
+          errors={errors.old_password}
+          placeholder='Nhập mật khẩu cũ'
+        />
+        <InputPass
+          title='Mật khẩu mới'
+          type='password'
+          name='new_password'
+          id='new_password'
+          register={register}
+          errors={errors.new_password}
+          placeholder='Nhập mật khẩu mới'
+        />
+        <InputPass
+          title='Nhập lại mật khẩu mới'
+          type='password'
+          name='confirm_password'
+          id='confirm_password'
+          register={register}
+          errors={errors.confirm_password}
+          placeholder='Nhập lại mật khẩu mới'
+        />
 
-          <div className='border dark:border-gray-700 border-red-200 '></div>
-          <section className='w-full mx-auto items-center '>
-            <form noValidate onSubmit={onSubmit} className='p-3'>
-              <InputPass
-                title='Nhập mật khẩu cũ'
-                type='password'
-                name='old_password'
-                id='old_password'
-                register={register}
-                errors={errors.old_password}
-                placeholder='Nhập mật khẩu cũ'
-              />
-
-              <InputPass
-                title='Nhập mật khẩu mới'
-                type='password'
-                name='new_password'
-                id='new_password'
-                register={register}
-                errors={errors.new_password}
-                placeholder='Nhập mật khẩu mới'
-              />
-
-              <InputPass
-                title='Nhập lại mật khẩu mới'
-                type='password'
-                name='confirm_password'
-                id='confirm_password'
-                register={register}
-                errors={errors.confirm_password}
-                placeholder='Nhập lại mật khẩu mới'
-              />
-
-              <div className='flex justify-center'>
-                {updatePassMutation.isPending ? (
-                  <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
-                  </button>
-                ) : (
-                  <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'>Đổi mật khẩu</button>
-                )}
-              </div>
-            </form>
-          </section>
+        <div className='pt-2'>
+          <button
+            type='submit'
+            disabled={updatePassMutation.isPending}
+            className='w-full py-3 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2'
+          >
+            {updatePassMutation.isPending ? (
+              <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-white' />
+            ) : (
+              'Đổi mật khẩu'
+            )}
+          </button>
         </div>
-      </div>
+      </form>
     </ModalLayout>
   )
 }

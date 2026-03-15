@@ -244,6 +244,41 @@ class SportEventProgressService {
 
     return progress
   }
+
+  // Get overall event progress (sum of all participants)
+  async getEventOverallProgressService(eventId: string) {
+    const result = await SportEventProgressModel.aggregate([
+      { $match: { eventId: new Types.ObjectId(eventId) } },
+      {
+        $group: {
+          _id: null,
+          totalGroupProgress: { $sum: '$value' },
+          totalCalories: { $sum: '$calories' },
+          totalDistance: { $sum: '$distance' },
+          participantIds: { $addToSet: '$userId' },
+          entriesCount: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalGroupProgress: 1,
+          totalCalories: 1,
+          totalDistance: 1,
+          participantCount: { $size: '$participantIds' },
+          entriesCount: 1
+        }
+      }
+    ])
+
+    return result[0] || {
+      totalGroupProgress: 0,
+      totalCalories: 0,
+      totalDistance: 0,
+      participantCount: 0,
+      entriesCount: 0
+    }
+  }
 }
 
 const sportEventProgressService = new SportEventProgressService()

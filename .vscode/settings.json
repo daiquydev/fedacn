@@ -11,5 +11,7 @@
     "editor.experimental.preferTreeSitter.regex": true,
     "editor.experimental.preferTreeSitter.ini": true,
     "editor.experimental.preferTreeSitter.css": true,
-    "editor.experimentalGpuAcceleration": "on"
+    "editor.experimentalGpuAcceleration": "on",
+    "agCockpit.criticalThreshold": 30,
+    "agCockpit.refreshInterval": 2000
 }

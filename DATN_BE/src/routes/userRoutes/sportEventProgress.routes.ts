@@ -5,7 +5,8 @@ import {
   getLeaderboardController,
   getParticipantsController,
   updateProgressController,
-  deleteProgressController
+  deleteProgressController,
+  getEventOverallProgressController
 } from '~/controllers/userControllers/sportEventProgress.controller'
 import { verifyToken } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -18,8 +19,9 @@ sportEventProgressRouter.get('/', verifyToken, wrapRequestHandler(getUserProgres
 sportEventProgressRouter.put('/:progressId', verifyToken, wrapRequestHandler(updateProgressController))
 sportEventProgressRouter.delete('/:progressId', verifyToken, wrapRequestHandler(deleteProgressController))
 
-// Public routes for leaderboard and participants
+// Public routes for leaderboard, participants and overall progress
 sportEventProgressRouter.get('/leaderboard', wrapRequestHandler(getLeaderboardController))
 sportEventProgressRouter.get('/participants', wrapRequestHandler(getParticipantsController))
+sportEventProgressRouter.get('/overall', wrapRequestHandler(getEventOverallProgressController))
 
 export default sportEventProgressRouter

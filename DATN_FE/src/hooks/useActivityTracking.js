@@ -53,6 +53,14 @@ export default function useActivityTracking() {
     const [gpsError, setGpsError] = useState(null)
     const [kcalPerKm, setKcalPerKm] = useState(0)
 
+    // Split/Lap tracking
+    const [splits, setSplits] = useState([]) // [{ km: 1, time: 285, pace: '4:45' }, ...]
+    const lastSplitDistRef = useRef(0)
+    const lastSplitTimeRef = useRef(0)
+
+    // GPS Anti-cheat flags
+    const [gpsFlags, setGpsFlags] = useState([]) // [{ type: 'teleport'|'speed', ... }]
+
     const timerRef = useRef(null)
     const watchIdRef = useRef(null)
     const wakeLockRef = useRef(null)
@@ -116,11 +124,46 @@ export default function useActivityTracking() {
                 const lastPos = lastPositionRef.current
                 if (lastPos) {
                     const dist = haversineDistance(lastPos.lat, lastPos.lng, latitude, longitude)
+                    const timeDiff = (point.timestamp - lastPos.timestamp) / 1000
+
+                    // GPS Anti-cheat: flag teleport (>500m jump)
+                    if (dist > 500) {
+                        setGpsFlags(prev => [...prev, {
+                            type: 'teleport', distance: Math.round(dist),
+                            timestamp: Date.now(), lat: latitude, lng: longitude
+                        }])
+                        // Skip this point entirely
+                        lastPositionRef.current = point
+                        setGpsPoints((prev) => [...prev, point])
+                        return
+                    }
+
+                    // GPS Anti-cheat: flag impossible speed (>50km/h = 13.9m/s)
+                    if (timeDiff > 0 && dist / timeDiff > 13.9) {
+                        setGpsFlags(prev => [...prev, {
+                            type: 'speed', speed: Math.round(dist / timeDiff * 3.6),
+                            timestamp: Date.now()
+                        }])
+                    }
 
                     // Filter noise: ignore movements < 3m or > 100m (GPS jump)
                     if (dist >= 3 && dist <= 100) {
                         distanceRef.current += dist
                         setDistance(distanceRef.current)
+
+                        // Split/Lap: auto-split every km
+                        const currentKm = Math.floor(distanceRef.current / 1000)
+                        const lastKm = Math.floor(lastSplitDistRef.current / 1000)
+                        if (currentKm > lastKm && currentKm > 0) {
+                            const splitTime = durationRef.current - lastSplitTimeRef.current
+                            setSplits(prev => [...prev, {
+                                km: currentKm,
+                                time: splitTime,
+                                pace: formatPace(splitTime) // pace for this km
+                            }])
+                            lastSplitDistRef.current = currentKm * 1000
+                            lastSplitTimeRef.current = durationRef.current
+                        }
                     }
                 }
 
@@ -134,7 +177,6 @@ export default function useActivityTracking() {
                         const dist = haversineDistance(lastPos.lat, lastPos.lng, latitude, longitude)
                         const calculatedSpeed = dist / timeDiff
                         if (calculatedSpeed < 15) {
-                            // max ~54km/h, filter GPS jumps
                             setCurrentSpeed(calculatedSpeed)
                             setMaxSpeed((prev) => Math.max(prev, calculatedSpeed))
                         }
@@ -274,9 +316,11 @@ export default function useActivityTracking() {
             maxSpeed,
             avgPace,
             calories,
-            pauseIntervals: pauseIntervalsRef.current
+            pauseIntervals: pauseIntervalsRef.current,
+            splits,
+            gpsFlags
         }
-    }, [gpsPoints, avgSpeed, maxSpeed, avgPace, calories])
+    }, [gpsPoints, avgSpeed, maxSpeed, avgPace, calories, splits, gpsFlags])
 
     return {
         isTracking,
@@ -294,6 +338,8 @@ export default function useActivityTracking() {
         gpsError,
         activityType,
         setActivityType,
+        splits,
+        gpsFlags,
         start,
         pause,
         resume,

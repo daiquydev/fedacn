@@ -2,15 +2,27 @@ import SideBar from '../../components/GlobalComponents/SideBar'
 import Header from '../../components/GlobalComponents/Header'
 import Footer from '../../components/GlobalComponents/Footer'
 import { AiOutlineArrowUp } from 'react-icons/ai'
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 
 function MainLayoutInner({ children }) {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
   return (
-    <div className='flex justify-between text-gray-800 w-full bg-gray-100 h-full dark:text-gray-300 dark:bg-color-primary-dark'>
-      <SideBar />
+    <div className='flex flex-col min-h-screen w-full bg-gray-100 text-gray-800 dark:text-gray-300 dark:bg-color-primary-dark'>
+      {/* Header - Fixed top, full width */}
       <Header />
-      <div className='md:ml-64 h-screen bg-gray-100 dark:bg-color-primary-dark w-[100%]'>
-        <div className='mt-16 lg:mt-20  bg-gray-100 dark:bg-color-primary-dark'>
+
+      {/* Body - Sidebar + Content */}
+      <div className='flex flex-1 pt-14'>
+        {/* Sidebar - Desktop: fixed left, Mobile: drawer overlay */}
+        <SideBar />
+
+        {/* Main content area */}
+        <main className='flex-1 min-w-0 lg:ml-60 bg-gray-100 dark:bg-color-primary-dark'>
           {children}
           <div
             onClick={() => {
@@ -20,12 +32,12 @@ function MainLayoutInner({ children }) {
               })
             }}
           >
-            <AiOutlineArrowUp className='hidden sm:block fixed bottom-10 cursor-pointer transition-all right-0 bg-blue-300 text-slate-50 text-5xl p-3 rounded-full mb-2 mr-20 hover:bg-blue-500' />
+            <AiOutlineArrowUp className='hidden sm:block fixed bottom-10 cursor-pointer transition-all right-0 bg-blue-300 text-slate-50 text-5xl p-3 rounded-full mb-2 mr-20 hover:bg-blue-500 z-40' />
           </div>
           <div className='mt-20'>
             <Footer />
           </div>
-        </div>
+        </main>
       </div>
     </div>
   )

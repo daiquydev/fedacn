@@ -43,6 +43,17 @@ export const deleteNotificationController = async (req: Request, res: Response) 
   })
 }
 
+export const readAllNotificationController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+  const result = await notificationService.readAllNotificationService({
+    user_id: user.user_id
+  })
+  return res.json({
+    result,
+    message: NOTIFICATION_MESSAGE.READ_ALL_NOTIFICATION_SUCCESS
+  })
+}
+
 export const checkReadNotificationController = async (req: Request, res: Response) => {
   const user = req.decoded_authorization as TokenPayload
   const result = await notificationService.checkReadNotificationService({

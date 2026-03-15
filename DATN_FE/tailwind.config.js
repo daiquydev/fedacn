@@ -6,14 +6,16 @@ export default {
     extend: {
       fontFamily: {
         Montserrat: 'Monterrat',
-        Roboto: 'Roboto'
+        Roboto: 'Roboto',
+        Inter: ['Inter', 'sans-serif']
       },
       backgroundImage: {
         chef_bg: 'url(/src/assets/images/chef.png)',
         dark_bg: 'url(/src/assets/images/darkbg.jpg)',
         white_bg: 'url(/src/assets/images/whitebg.jpg)',
         footerdark_bg: 'url(/src/assets/images/footerdarkbg.jpg)',
-        start_bg: 'url(/src/assets/images/startbg.png)'
+        start_bg: 'url(/src/assets/images/startbg.png)',
+        auth_fitness: 'url(/src/assets/images/auth_fitness.png)'
       },
       screen: {
         xs: '480px',
@@ -28,7 +30,11 @@ export default {
         'color-primary-dark': '#010410',
         'color-secondary': '#ef571a',
         'color-gray': '#333',
-        'color-blob': '#A427DF'
+        'color-blob': '#A427DF',
+        'brand-green': '#15803D',
+        'brand-green-light': '#F0FDF4',
+        'brand-amber': '#F59E0B',
+        'brand-amber-dark': '#D97706'
       }
     }
   },

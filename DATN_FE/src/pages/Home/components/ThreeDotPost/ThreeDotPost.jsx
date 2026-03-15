@@ -39,9 +39,9 @@ export default function ThreeDotPost({ userID, handleDeletePost, isPending, post
 
   return (
     <>
-      <div ref={ref}>
+      <div ref={ref} className='relative'>
         <button
-          className='flex relative items-center transition-all duration-700 text-2xl py-1 px-2 font-medium text-gray-900 rounded-full
+          className='flex items-center transition-all duration-700 text-2xl py-1 px-2 font-medium text-gray-900 rounded-full
          hover:text-red-600 dark:hover:text-red-600 md:mr-0  dark:text-white'
           type='button'
           onClick={() => setIsMenu(!isMenu)}

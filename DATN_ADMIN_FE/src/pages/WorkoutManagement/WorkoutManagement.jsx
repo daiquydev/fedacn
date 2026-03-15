@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaImage, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader'
 import {
     adminGetEquipment, adminCreateEquipment, adminUpdateEquipment, adminDeleteEquipment,
     adminGetMuscleGroups,
@@ -125,45 +126,42 @@ function EquipmentManager() {
                         <span className='text-lg'>{editingId ? '✏️' : '✨'}</span>
                         {editingId ? 'Chỉnh sửa thiết bị' : 'Thêm thiết bị mới'}
                     </h4>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                        <div>
-                            <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Việt *</label>
-                            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                                className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
-                                placeholder='VD: Tạ tay' />
+                    <div className='flex gap-5'>
+                        {/* Left: Square image uploader */}
+                        <div className='w-44 shrink-0'>
+                            <CloudinaryImageUploader
+                                value={form.image_url}
+                                onChange={(url) => setForm({ ...form, image_url: url })}
+                                label='Hình ảnh'
+                                folder='equipment'
+                                square
+                            />
                         </div>
-                        <div>
-                            <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Anh *</label>
-                            <input value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })}
-                                className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
-                                placeholder='VD: Dumbbell' />
-                        </div>
-                        <div>
-                            <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>
-                                <FaImage className='inline mr-1 text-blue-500' />Đường dẫn ảnh
-                            </label>
-                            <input value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })}
-                                className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
-                                placeholder='URL hình ảnh (không bắt buộc)' />
-                        </div>
-                        <div>
-                            <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Mô tả</label>
-                            <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                                className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
-                                placeholder='Mô tả ngắn về thiết bị' />
+                        {/* Right: Text fields stacked */}
+                        <div className='flex-1 space-y-3'>
+                            <div>
+                                <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Việt *</label>
+                                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                                    className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
+                                    placeholder='VD: Tạ tay' />
+                            </div>
+                            <div>
+                                <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Anh *</label>
+                                <input value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })}
+                                    className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
+                                    placeholder='VD: Dumbbell' />
+                            </div>
+                            <div>
+                                <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Mô tả</label>
+                                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+                                    className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
+                                    placeholder='Mô tả ngắn về thiết bị' />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Preview & Status */}
-                    <div className='flex items-center justify-between mt-4'>
-                        <div className='flex items-center gap-3'>
-                            {form.image_url && (
-                                <div className='flex items-center gap-2'>
-                                    <span className='text-xs text-slate-500'>Xem trước:</span>
-                                    <img src={form.image_url} alt='preview' className='w-12 h-12 object-contain border border-slate-200 rounded-lg bg-white' />
-                                </div>
-                            )}
-                        </div>
+                    {/* Status toggle */}
+                    <div className='flex items-center justify-end mt-4'>
                         <button type='button' onClick={() => setForm({ ...form, is_active: !form.is_active })}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${form.is_active
                                 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'

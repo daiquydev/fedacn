@@ -1,7 +1,7 @@
 export default function LoadingHome() {
   return (
     <div className='w-full h-[100rem] flex flex-col items-center'>
-      <h1 className='cooking-text dark:text-white'>Cooking in progress</h1>
+      <h1 className='cooking-text dark:text-white'>Đang tải bài viết...</h1>
       <div id='cooking'>
         <div className='bubble' />
         <div className='bubble' />
