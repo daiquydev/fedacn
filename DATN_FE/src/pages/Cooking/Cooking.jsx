@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import RecipeCard from '../../components/CardComponents/RecipeCard'
 import { Link, useNavigate } from 'react-router-dom'
 import AlbumCard from '../../components/CardComponents/AlbumCard'
 import useravatar from '../../assets/images/useravatar.jpg'
 import BlogCard from '../../components/CardComponents/BlogCard'
 import { getBlogsForUser } from '../../apis/blogApi'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getRecipesForUser } from '../../apis/recipeApi'
 import { getListAlbumForUser } from '../../apis/albumApi'
 import FoodBanner from './components/FoodBanner'
@@ -19,8 +20,7 @@ export default function Cooking() {
     queryFn: () => {
       return getBlogsForUser({ limit: 4 })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: recipesData, isLoading: isLoadingRecipe } = useQuery({
@@ -28,8 +28,7 @@ export default function Cooking() {
     queryFn: () => {
       return getRecipesForUser({ limit: 6 })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: albumsData, isLoading: isLoadingAlbum } = useQuery({
@@ -37,8 +36,7 @@ export default function Cooking() {
     queryFn: () => {
       return getListAlbumForUser({ limit: 4 })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: userData } = useQuery({
@@ -46,8 +44,7 @@ export default function Cooking() {
     queryFn: () => {
       return recommendUser()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   return (
     <>
@@ -223,7 +220,7 @@ export default function Cooking() {
 
 const ItemUser = ({ user }) => {
   const navigate = useNavigate()
-  const followMutation = useMutation({
+  const followMutation = useSafeMutation({
     mutationFn: (body) => followUser(body)
   })
   const handleFollow = () => {

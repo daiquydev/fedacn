@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import Model from 'react-body-highlighter'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
@@ -46,7 +47,7 @@ const SVG_TO_MUSCLE_MAP = {
   'left-shin': 'calves',
   'right-shin': 'calves',
   'left-wrist': 'forearm',
-  'right-wrist': 'forearm',
+  'right-wrist': 'forearm'
 }
 
 // Activity level options
@@ -1199,13 +1200,7 @@ const ExerciseListStep = ({ exercises, isLoading, selectedExercises, onToggle, o
                 })()}
               </div>
 
-              {/* Description */}
-              {detailEx.description && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Mô tả</p>
-                  <p className="text-sm leading-relaxed">{detailEx.description}</p>
-                </div>
-              )}
+
 
               {/* Instructions */}
               {detailEx.instructions?.length > 0 && (
@@ -1890,8 +1885,7 @@ export default function Challenge() {
   // Saved workouts - loaded from BE API
   const { data: savedWorkoutsData, isLoading: isSavedWorkoutsLoading, refetch: refetchSavedWorkouts } = useQuery({
     queryKey: ['savedWorkouts'],
-    queryFn: apiGetSavedWorkouts,
-    staleTime: 1000
+    queryFn: apiGetSavedWorkouts
   })
   const savedWorkouts = savedWorkoutsData?.data?.result || []
 
@@ -1900,7 +1894,7 @@ export default function Challenge() {
   const [showSavedModal, setShowSavedModal] = useState(false)
 
   // useMutation: tạo bài tập đã lưu
-  const createSavedWorkoutMutation = useMutation({
+  const createSavedWorkoutMutation = useSafeMutation({
     mutationFn: (data) => apiCreateSavedWorkout(data),
     onSuccess: (_, variables) => {
       refetchSavedWorkouts()
@@ -1916,14 +1910,14 @@ export default function Challenge() {
   })
 
   // useMutation: xóa bài tập đã lưu
-  const deleteSavedWorkoutMutation = useMutation({
+  const deleteSavedWorkoutMutation = useSafeMutation({
     mutationFn: (id) => apiDeleteSavedWorkout(id),
     onSuccess: () => { refetchSavedWorkouts(); toast.success('Đã xóa bài tập') },
     onError: () => toast.error('Không thể xóa. Vui lòng thử lại.')
   })
 
   // useMutation: cập nhật lịch tập của bài đã lưu
-  const updateScheduleMutation = useMutation({
+  const updateScheduleMutation = useSafeMutation({
     mutationFn: ({ id, schedule }) => apiUpdateSavedWorkoutSchedule(id, schedule),
     onSuccess: () => { refetchSavedWorkouts(); toast.success('Cập nhật lịch tập thành công!') },
     onError: () => toast.error('Không thể cập nhật lịch')
@@ -2028,28 +2022,27 @@ export default function Challenge() {
     }
   }, [])
 
-  const { data: equipmentData } = useQuery({ queryKey: ['equipment'], queryFn: getEquipment, staleTime: 1000 })
+  const { data: equipmentData } = useQuery({ queryKey: ['equipment'], queryFn: getEquipment })
   const equipmentList = equipmentData?.data?.result || []
 
-  const { data: muscleGroupData } = useQuery({ queryKey: ['muscleGroups'], queryFn: getMuscleGroups, staleTime: 1000 })
+  const { data: muscleGroupData } = useQuery({ queryKey: ['muscleGroups'], queryFn: getMuscleGroups })
   const muscleGroups = muscleGroupData?.data?.result || []
 
   const isNormalExStep = mode === 'normal' && currentStep === 2
   const { data: exercisesData, isLoading: isLoadingExercises } = useQuery({
     queryKey: ['exercises', selectedEquipment, selectedMuscles],
     queryFn: () => filterExercises(selectedEquipment, selectedMuscles),
-    enabled: isNormalExStep && selectedEquipment.length > 0 && selectedMuscles.length > 0,
-    staleTime: 1000
+    enabled: isNormalExStep && selectedEquipment.length > 0 && selectedMuscles.length > 0
   })
   const exercises = exercisesData?.data?.result || []
 
-  const createSessionMutation = useMutation({
+  const createSessionMutation = useSafeMutation({
     mutationFn: (data) => createWorkoutSession(data),
     onSuccess: (res) => { setSessionId(res.data?.result?._id); toast.success('Bắt đầu tập luyện! ⏱️') },
     onError: () => toast.error('Không thể bắt đầu phiên tập.')
   })
 
-  const completeSessionMutation = useMutation({
+  const completeSessionMutation = useSafeMutation({
     mutationFn: ({ id, data }) => completeWorkoutSession(id, data),
     onSuccess: () => { toast.success('🎉 Phiên tập hoàn thành! Tuyệt vời!'); navigate('/challenge/my-challenges') },
     onError: () => toast.error('Lỗi khi lưu phiên tập.')
@@ -2129,7 +2122,7 @@ export default function Challenge() {
     const sessionData = {
       equipment_used: selectedEquipment,
       muscles_targeted: selectedMuscles,
-      exercises: editedSets.map(ex => ({ exercise_id: ex.exercise_id, exercise_name: ex.exercise_name, sets: ex.sets })),
+      exercises: editedSets.map(ex => ({ exercise_id: ex.exercise_id, exercise_name: ex.exercise_name, sets: ex.sets }))
     }
     if (mode === 'smart' && kcalResult) {
       sessionData.is_smart_mode = true

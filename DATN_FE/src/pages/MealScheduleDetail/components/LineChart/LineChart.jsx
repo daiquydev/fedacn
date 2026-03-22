@@ -25,8 +25,7 @@ export default function LineChart({ meal }) {
     queryFn: () => {
       return getDateMealItem(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const dataCalo = lineData?.data.result.mealDate

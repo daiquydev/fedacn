@@ -17,8 +17,7 @@ export default function RecipeDetail() {
     queryFn: () => {
       return getRecipeDetailForInspector(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const location = useLocation()

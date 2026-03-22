@@ -15,8 +15,7 @@ const BADGE_MAP = {
 export default function BadgeDisplay({ challengeId }) {
   const { data: badgesData } = useQuery({
     queryKey: ['habit-badges', challengeId],
-    queryFn: () => getBadgesForChallenge(challengeId),
-    staleTime: 1000
+    queryFn: () => getBadgesForChallenge(challengeId)
   })
 
   const badges = badgesData?.data?.result || []

@@ -1,6 +1,5 @@
 import './config/moduleAlias'
 import express, { Express, Request, Response } from 'express'
-import bodyParser from 'body-parser'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
@@ -48,6 +47,7 @@ import adminExerciseRouter from './routes/adminRoutes/exercise.routes'
 import aiRouter from './routes/userRoutes/ai.routes'
 import savedWorkoutTemplateRouter from './routes/userRoutes/savedWorkoutTemplate.routes'
 import habitChallengeRouter from './routes/userRoutes/habitChallenge.routes'
+import challengeRouter from './routes/userRoutes/challenge.routes'
 const app: Express = express()
 const port = envConfig.port
 
@@ -105,13 +105,7 @@ app.use(
 )
 
 app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb' }))
-app.use(bodyParser.urlencoded({ extended: false, limit: '50mb', parameterLimit: 50000 }))
-app.use(
-  bodyParser.json({
-    limit: '50mb'
-  })
-)
+app.use(express.urlencoded({ extended: false, limit: '50mb' }))
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'))
@@ -151,6 +145,7 @@ app.use('/api/muscle-groups', publicMuscleGroupRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/saved-workouts', savedWorkoutTemplateRouter)
 app.use('/api/habit-challenges', habitChallengeRouter)
+app.use('/api/challenges', challengeRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)
 app.use('/api/admin/sport-categories', adminSportCategoryRouter)

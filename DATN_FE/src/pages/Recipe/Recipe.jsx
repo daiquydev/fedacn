@@ -18,8 +18,7 @@ export default function Recipe() {
     queryFn: () => {
       return getCategoryRecipes()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const fetchRecipes = async ({ pageParam }) => {
@@ -36,8 +35,7 @@ export default function Recipe() {
       if (nextPage > lastPage.data.result.totalPage) return undefined
       return nextPage
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const handleChangeSort = (e) => {

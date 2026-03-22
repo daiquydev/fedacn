@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import parse from 'html-react-parser'
@@ -10,7 +11,7 @@ import { schemaCreateBlog } from '../../utils/rules'
 import { useQuery } from '@tanstack/react-query'
 import { getBlogForChef, getCategoryBlogs, updateBlogForChef } from '../../apis/blogApi'
 import Loading from '../../components/GlobalComponents/Loading'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -53,7 +54,7 @@ export default function EditBlog() {
     }
   })
 
-  const editBlogMutation = useMutation({
+  const editBlogMutation = useSafeMutation({
     mutationFn: (body) => updateBlogForChef(id, body)
   })
   const onSubmit = handleSubmit((data) => {

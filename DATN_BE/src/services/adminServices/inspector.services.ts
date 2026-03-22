@@ -99,11 +99,11 @@ class InspectorService {
       $match: {
         ...(search
           ? {
-              $or: [
-                { title: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
-              ]
-            }
+            $or: [
+              { title: { $regex: search, $options: 'i' } },
+              { description: { $regex: search, $options: 'i' } }
+            ]
+          }
           : {}),
         // ensure the report array exists before sizing it to avoid $size on missing field
         $expr: { $gt: [{ $size: { $ifNull: ['$report_meal_plan', []] } }, 0] }
@@ -328,10 +328,10 @@ class InspectorService {
       }
     )
 
-    // Soft delete các bài share của post này
+    // Đảm bảo các bài share KHÔNG bị ban - chỉ hiển thị placeholder phía user
     await PostModel.updateMany(
-      { parent_id: new ObjectId(post_id) },
-      { $set: { is_banned: true } }
+      { parent_id: new ObjectId(post_id), is_banned: true },
+      { $set: { is_banned: false } }
     )
 
     // tăng banned_count của user  = banned_count + 1
@@ -368,6 +368,24 @@ class InspectorService {
 
     const posts = await PostModel.aggregate([
       { $match: condition },
+      // Loại bỏ bài share mà bài gốc cũng bị ban (cascade-ban từ dữ liệu cũ)
+      {
+        $lookup: {
+          from: 'posts',
+          localField: 'parent_id',
+          foreignField: '_id',
+          as: 'parent_post_check'
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { parent_id: null },                          // Bài gốc (không phải share)
+            { 'parent_post_check.is_banned': { $ne: true } } // Bài share mà bài gốc KHÔNG bị ban
+          ]
+        }
+      },
+      { $project: { parent_post_check: 0 } },
       {
         $lookup: {
           from: 'image_posts',
@@ -398,18 +416,34 @@ class InspectorService {
       { $limit: limit }
     ])
 
-    const total = await PostModel.countDocuments(condition)
+    // Đếm tổng cũng phải loại bỏ cascade-ban
+    const totalAgg = await PostModel.aggregate([
+      { $match: condition },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: 'parent_id',
+          foreignField: '_id',
+          as: 'parent_post_check'
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { parent_id: null },
+            { 'parent_post_check.is_banned': { $ne: true } }
+          ]
+        }
+      },
+      { $count: 'total' }
+    ])
+    const total = totalAgg[0]?.total || 0
     const totalPage = Math.ceil(total / limit)
     return { posts, totalPage, page, limit }
   }
   async restorePostService({ post_id }: { post_id: string }) {
     await PostModel.findOneAndUpdate(
       { _id: new ObjectId(post_id) },
-      { $set: { is_banned: false } }
-    )
-    // Khôi phục các bài share
-    await PostModel.updateMany(
-      { parent_id: new ObjectId(post_id) },
       { $set: { is_banned: false } }
     )
     return true

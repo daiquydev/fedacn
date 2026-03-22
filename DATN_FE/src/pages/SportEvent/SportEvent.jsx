@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   FaCalendarAlt,
   FaMapMarkerAlt,
@@ -108,8 +109,7 @@ const SportEvent = () => {
     error
   } = useQuery({
     queryKey: ['sportEvents', { sortBy }],
-    queryFn: () => getAllSportEvents({ page: 1, limit: 100, sortBy }),
-    staleTime: 1000
+    queryFn: () => getAllSportEvents({ page: 1, limit: 100, sortBy })
   })
 
   const sportEvents = eventsData?.data?.result?.events || eventsData?.result?.events || []
@@ -117,8 +117,7 @@ const SportEvent = () => {
   // Fetch current user's social graph
   const { data: meData } = useQuery({
     queryKey: ['me'],
-    queryFn: currentAccount,
-    staleTime: 1000
+    queryFn: currentAccount
   })
 
   const me = meData?.data?.result?.[0]
@@ -136,7 +135,7 @@ const SportEvent = () => {
   const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
 
   // Join event mutation
-  const joinEventMutation = useMutation({
+  const joinEventMutation = useSafeMutation({
     mutationFn: (eventId) => joinSportEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries(['sportEvents'])
@@ -233,8 +232,7 @@ const SportEvent = () => {
   // Fetch sport categories
   const { data: categoriesData } = useQuery({
     queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll(),
-    staleTime: 1000
+    queryFn: () => sportCategoryApi.getAll()
   })
 
   // Dynamic categories from DB

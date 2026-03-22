@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import Input from '../../../../components/InputComponents/Input'
 import ModalLayout from '../../../../layouts/ModalLayout'
 import { createIngredientsForWritter, getCategoryIngredients } from '../../../../apis/writterApi'
@@ -7,6 +7,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaCreateIngredient } from '../../../../utils/rules'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { toast } from 'react-hot-toast'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function ModalCreate({ handleCloseModalCreate }) {
   const {
@@ -32,7 +33,7 @@ export default function ModalCreate({ handleCloseModalCreate }) {
     }
   })
 
-  const createIngredientMutation = useMutation({
+  const createIngredientMutation = useSafeMutation({
     mutationFn: (body) => createIngredientsForWritter(body)
   })
   const onSubmit = handleSubmit((data) => {

@@ -41,7 +41,7 @@ function SessionCard({ session }) {
       text: 'text-green-600 dark:text-green-400',
       badge: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
       label: 'Hoàn thành',
-      dot: 'bg-green-500',
+      dot: 'bg-green-500'
     },
     quit: {
       icon: <FaRedo />,
@@ -49,8 +49,8 @@ function SessionCard({ session }) {
       text: 'text-red-500 dark:text-red-400',
       badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
       label: 'Đã hủy',
-      dot: 'bg-red-500',
-    },
+      dot: 'bg-red-500'
+    }
   }
   const cfg = statusConfig[session.status] || statusConfig.quit
 
@@ -170,8 +170,7 @@ export default function MyChallenge() {
 
   const { data: historyData, isLoading } = useQuery({
     queryKey: ['workoutHistory', page],
-    queryFn: () => getWorkoutHistory({ page, limit: 10 }),
-    staleTime: 1000
+    queryFn: () => getWorkoutHistory({ page, limit: 10 })
   })
 
   const sessions = historyData?.data?.result?.sessions || []

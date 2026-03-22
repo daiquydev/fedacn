@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FaSearch, FaUserFriends, FaUserMinus, FaUserPlus, FaUser, FaHeart } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -164,8 +165,7 @@ export default function FriendManagement() {
     isError
   } = useQuery({
     queryKey: ['me'],
-    queryFn: currentAccount,
-    staleTime: 1000
+    queryFn: currentAccount
   })
 
   const me = meData?.data?.result?.[0]
@@ -207,7 +207,7 @@ export default function FriendManagement() {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
-  const followMutation = useMutation({
+  const followMutation = useSafeMutation({
     mutationFn: followUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] })
@@ -216,7 +216,7 @@ export default function FriendManagement() {
     onError: () => toast.error('Có lỗi xảy ra, vui lòng thử lại')
   })
 
-  const unfollowMutation = useMutation({
+  const unfollowMutation = useSafeMutation({
     mutationFn: unfollowUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] })
@@ -274,8 +274,7 @@ export default function FriendManagement() {
 
   const { data: recommendedData, isLoading: loadingRecommendations } = useQuery({
     queryKey: ['friend-recommendations'],
-    queryFn: recommendUser,
-    staleTime: 1000
+    queryFn: recommendUser
   })
 
   const [exploreFilter, setExploreFilter] = useState('')

@@ -16,8 +16,7 @@ export default function MeAlbum() {
     queryFn: () => {
       return getMeAlbum(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(queryConfig)

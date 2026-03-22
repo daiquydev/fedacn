@@ -11,7 +11,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false
+      refetchOnWindowFocus: true,
+      staleTime: 1000
     }
   }
 })

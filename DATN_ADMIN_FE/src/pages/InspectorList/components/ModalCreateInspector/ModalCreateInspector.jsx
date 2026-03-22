@@ -3,12 +3,12 @@ import ModalLayout from '../../../../layouts/ModalLayout'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaRegisterUser } from '../../../../utils/rules'
 import { createUserAdmin } from '../../../../apis/adminApi'
-import { useMutation } from '@tanstack/react-query'
 import Input from '../../../../components/InputComponents/Input'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { toast } from 'react-hot-toast'
 import { isAxiosUnprocessableEntityError } from '../../../../utils/utils'
 import { queryClient } from '../../../../main'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function ModalCreateInspector({ handleCloseModal }) {
   // name, email, user_name, role
@@ -22,7 +22,7 @@ export default function ModalCreateInspector({ handleCloseModal }) {
     resolver: yupResolver(schemaRegisterUser)
   })
 
-  const registerAccountMutation = useMutation({
+  const registerAccountMutation = useSafeMutation({
     mutationFn: (body) => createUserAdmin(body)
   })
 

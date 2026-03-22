@@ -3,15 +3,35 @@ import { ADMIN_MESSAGE } from '~/constants/messages'
 import userAdminService from '~/services/adminServices/userAdmin.services'
 
 export const getAllUserController = async (req: Request, res: Response) => {
-  const { page, limit, role, status, search, sort } = req.query
+  const { page, limit, role, status, search, sort, isDeleted } = req.query
   const result = await userAdminService.getAllUserService({
     page: Number(page),
     limit: Number(limit),
     role: Number(role),
     status: Number(status),
     search: search as string,
-    sort: sort as string
+    sort: sort as string,
+    isDeleted: isDeleted as string
   })
+
+  return res.json({
+    result,
+    message: ADMIN_MESSAGE.GET_ALL_USER_SUCCESS
+  })
+}
+
+export const restoreUserByIdController = async (req: Request, res: Response) => {
+  const { user_id } = req.body
+  const result = await userAdminService.restoreUserByIdService(user_id)
+
+  return res.json({
+    result,
+    message: ADMIN_MESSAGE.GET_USER_BY_ID_SUCCESS
+  })
+}
+
+export const getUserStatsController = async (req: Request, res: Response) => {
+  const result = await userAdminService.getUserStatsService()
 
   return res.json({
     result,

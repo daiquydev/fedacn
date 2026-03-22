@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import moment from 'moment'
 import { Link } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { deleteBlogForChef } from '../../../../apis/blogApi'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
@@ -16,7 +17,7 @@ export default function BlogItem({ blog }) {
   const handleCloseDelete = () => {
     setOpenDelete(false)
   }
-  const deleteBlogMutation = useMutation({
+  const deleteBlogMutation = useSafeMutation({
     mutationFn: () => deleteBlogForChef(blog._id),
     onSuccess: () => {
       toast.success('Xóa bài viết thành công')

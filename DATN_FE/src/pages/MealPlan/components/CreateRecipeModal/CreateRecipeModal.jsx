@@ -1,7 +1,8 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { FaPlus, FaTrash, FaUtensils, FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { createRecipe, getCategoryRecipes } from '../../../../apis/recipeApi'
@@ -357,7 +358,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
   }, [imageSource, setValue])
 
   // Create recipe mutation
-  const createRecipeMutation = useMutation({
+  const createRecipeMutation = useSafeMutation({
     mutationFn: (body) => createRecipe(body)
   })
 

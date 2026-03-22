@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import moment from 'moment'
 import { Link } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
 import DeleteConfirmBox from '../../../../components/GlobalComponents/DeleteConfirmBox'
@@ -16,7 +17,7 @@ export default function AlbumItem({ album }) {
   const handleCloseDelete = () => {
     setOpenDelete(false)
   }
-  const deleteAlbumMutation = useMutation({
+  const deleteAlbumMutation = useSafeMutation({
     mutationFn: () => deleteAlbumForChef(album._id),
     onSuccess: () => {
       toast.success('Xóa album thành công')

@@ -4,15 +4,15 @@ import { cutString } from '../../../../utils/helper'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 import { FaUndo } from 'react-icons/fa'
 import { restorePost } from '../../../../apis/inspectorApi'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function DeletedPostItem({ post }) {
   const [openRestore, setOpenRestore] = useState(false)
 
-  const restoreMutation = useMutation({
+  const restoreMutation = useSafeMutation({
     mutationFn: () => restorePost(post._id)
   })
 

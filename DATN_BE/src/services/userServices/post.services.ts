@@ -396,21 +396,6 @@ class PostService {
       {
         $unwind: { path: '$parent_post', preserveNullAndEmptyArrays: true }
       },
-      //Nếu có parent_post id thì nếu parent_post bị ban thì không hiển thị còn không thì hiển thị
-      //Nếu parent_post id bằng null nếu post bị ban thì không hiển thị còn không thì hiển thị
-      {
-        $match: {
-          $or: [
-            {
-              'parent_post.is_banned': false
-            },
-            {
-              parent_id: null,
-              is_banned: false
-            }
-          ]
-        }
-      },
       //lay image array cua post cha
       {
         $lookup: {
@@ -585,14 +570,7 @@ class PostService {
           as: 'parent_post'
         }
       },
-      {
-        $match: {
-          $or: [
-            { 'parent_post.is_banned': false },
-            { parent_id: null, is_banned: false }
-          ]
-        }
-      },
+
       {
         $unwind: { path: '$parent_post', preserveNullAndEmptyArrays: true }
       },
@@ -835,21 +813,7 @@ class PostService {
           as: 'parent_post'
         }
       },
-      //Nếu có parent_post id thì nếu parent_post bị ban thì không hiển thị còn không thì hiển thị
-      //Nếu parent_post id bằng null nếu post bị ban thì không hiển thị còn không thì hiển thị
-      {
-        $match: {
-          $or: [
-            {
-              'parent_post.is_banned': false
-            },
-            {
-              parent_id: null,
-              is_banned: false
-            }
-          ]
-        }
-      },
+
       {
         $unwind: { path: '$parent_post', preserveNullAndEmptyArrays: true }
       },

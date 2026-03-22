@@ -5,9 +5,9 @@ import { cutString } from '../../../../utils/helper'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 import { acceptBlog, rejectBlog } from '../../../../apis/inspectorApi'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 export default function BlogItem({ blog }) {
   const [openAccept, setOpenAccept] = useState(false)
   const [openReject, setOpenReject] = useState(false)
@@ -27,11 +27,11 @@ export default function BlogItem({ blog }) {
     setOpenReject(false)
   }
 
-  const acceptBlogsMutation = useMutation({
+  const acceptBlogsMutation = useSafeMutation({
     mutationFn: () => acceptBlog(blog._id)
   })
 
-  const rejectBlogsMutation = useMutation({
+  const rejectBlogsMutation = useSafeMutation({
     mutationFn: () => rejectBlog(blog._id)
   })
 

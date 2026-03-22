@@ -138,15 +138,13 @@ export default function MeOverview() {
   const { data: statsData, isLoading } = useQuery({
     queryKey: ['meStats'],
     queryFn: getMeStats,
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: userData } = useQuery({
     queryKey: ['me'],
     queryFn: currentAccount,
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const stats = statsData?.data?.result

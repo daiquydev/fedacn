@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoTimeOutline } from 'react-icons/io5'
 import { FaArrowCircleRight } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
@@ -7,7 +8,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaTDEE } from '../../utils/rules'
 import { useContext, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { calculateTDEE, saveTDEEData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -34,11 +35,11 @@ export default function Calories() {
     }
   })
 
-  const calculateTDEEMutation = useMutation({
+  const calculateTDEEMutation = useSafeMutation({
     mutationFn: (body) => calculateTDEE(body)
   })
 
-  const saveTDEEMutation = useMutation({
+  const saveTDEEMutation = useSafeMutation({
     mutationFn: (body) => saveTDEEData(body)
   })
 

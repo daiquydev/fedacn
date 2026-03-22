@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { BsFillImageFill, BsFillSunFill } from 'react-icons/bs'
 import useravatar from '../../assets/images/useravatar.jpg'
 import { MdNightlight } from 'react-icons/md'
@@ -8,7 +9,7 @@ import { useContext, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import ModalUploadPost from './components/ModalUploadPost'
 import { getNewsFeed } from '../../apis/postApi'
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useInView } from 'react-intersection-observer'
 import LoadingHome from './components/LoadingHome'
 import { AppContext } from '../../contexts/app.context'
@@ -59,8 +60,7 @@ export default function Home() {
       const nextPage = lastPage.data.result.newFeeds.length ? allPages.length + 1 : undefined
       return nextPage
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const content = data?.pages.map((dataNewFeeds) =>
@@ -81,8 +81,7 @@ export default function Home() {
     queryFn: () => {
       return recommendUser()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   if (status === 'pending') {
@@ -250,7 +249,7 @@ const checkTime = (profile) => {
 
 const ItemUser = ({ user }) => {
   const navigate = useNavigate()
-  const followMutation = useMutation({
+  const followMutation = useSafeMutation({
     mutationFn: (body) => followUser(body)
   })
   const handleFollow = () => {
@@ -297,10 +296,11 @@ const ItemUser = ({ user }) => {
       {/* Nút kết bạn - Cột 3 */}
       <button
         onClick={handleFollow}
-        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-md shadow-sm hover:shadow transition-all"
+        disabled={followMutation.isPending}
+        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-md shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:pointer-events-none"
       >
         <FaUserPlus size={11} />
-        Kết bạn
+        {followMutation.isPending ? '...' : 'Kết bạn'}
       </button>
     </div>
   )

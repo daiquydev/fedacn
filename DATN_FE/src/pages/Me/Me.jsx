@@ -67,8 +67,7 @@ export default function Me() {
   const { data: userData } = useQuery({
     queryKey: ['me'],
     queryFn: () => currentAccount(),
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const user = userData?.data?.result?.[0]

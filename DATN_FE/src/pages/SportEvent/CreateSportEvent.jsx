@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   FaArrowLeft,
   FaCalendarAlt,
@@ -108,7 +109,7 @@ const CreateSportEvent = () => {
   const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Mutation for creating event
-  const createMutation = useMutation({
+  const createMutation = useSafeMutation({
     mutationFn: (data) => createSportEvent(data),
     onSuccess: (response) => {
       toast.success('🎉 Đã tạo sự kiện thành công!')
@@ -123,8 +124,7 @@ const CreateSportEvent = () => {
 
   const { data: categoriesData } = useQuery({
     queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll(),
-    staleTime: 1000
+    queryFn: () => sportCategoryApi.getAll()
   })
 
   const categories = categoriesData?.data?.result || []

@@ -49,6 +49,7 @@ export interface User {
     proof: string
     type: RequestType
   }
+  isDeleted?: boolean
 }
 
 const UserSchema = new mongoose.Schema<User>(
@@ -193,7 +194,8 @@ const UserSchema = new mongoose.Schema<User>(
       reason: { type: String, default: null },
       proof: { type: String, default: null },
       type: { type: Number, default: null }
-    }
+    },
+    isDeleted: { type: Boolean, default: false }
   },
   {
     timestamps: true,

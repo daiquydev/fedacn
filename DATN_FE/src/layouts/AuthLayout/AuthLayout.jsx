@@ -65,7 +65,7 @@ function AuthLayoutInner({ children }) {
       </div>
 
       {/* Right Panel — White Form */}
-      <div className='lg:w-1/2 w-full flex bg-gray-50 items-center justify-center text-center md:px-16 px-0 z-0'>
+      <div className='lg:w-1/2 w-full flex bg-gray-50 items-center justify-center text-left md:px-16 px-0 z-0'>
         <div className='absolute lg:hidden z-10 inset-0 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800'>
           <div className='absolute inset-0 bg-black/40' />
         </div>

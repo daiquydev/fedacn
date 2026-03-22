@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useParams } from 'react-router-dom'
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { bookmarkAlbum, getAlbumForUser, getRecipesInAlbum, unbookmarkAlbum } from '../../apis/albumApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import { FaCheckCircle } from 'react-icons/fa'
@@ -16,8 +17,7 @@ export default function AlbumDetail() {
     queryFn: () => {
       return getAlbumForUser(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const album = data?.data.result[0]
@@ -41,15 +41,14 @@ export default function AlbumDetail() {
       if (nextPage > lastPage.data.result.totalPage) return undefined
       return nextPage
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
-  const bookmarkMutation = useMutation({
+  const bookmarkMutation = useSafeMutation({
     mutationFn: (body) => bookmarkAlbum(body)
   })
 
-  const unbookmarkMutation = useMutation({
+  const unbookmarkMutation = useSafeMutation({
     mutationFn: (body) => unbookmarkAlbum(body)
   })
 

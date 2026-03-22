@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext } from 'react'
 import { useForm } from 'react-hook-form'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { FaUser, FaCamera, FaSave, FaEye, FaEyeSlash, FaLock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { updateProfile, updateAvatar, updateCoverAvatar, changePassword } from '../../apis/userApi'
@@ -96,19 +97,19 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
   } = useForm()
 
   // Mutations
-  const updateProfileMutation = useMutation({
+  const updateProfileMutation = useSafeMutation({
     mutationFn: (data) => updateProfile(data)
   })
 
-  const updateAvatarMutation = useMutation({
+  const updateAvatarMutation = useSafeMutation({
     mutationFn: (data) => updateAvatar(data)
   })
 
-  const updateCoverMutation = useMutation({
+  const updateCoverMutation = useSafeMutation({
     mutationFn: (data) => updateCoverAvatar(data)
   })
 
-  const changePasswordMutation = useMutation({
+  const changePasswordMutation = useSafeMutation({
     mutationFn: (data) => changePassword(data)
   })
 

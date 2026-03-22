@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaImage } from 'react-icons/fa'
@@ -16,20 +17,20 @@ function EquipmentManager() {
     const [editingId, setEditingId] = useState(null)
     const [form, setForm] = useState({ name: '', name_en: '', image_url: '', description: '' })
 
-    const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment, staleTime: 60000 })
+    const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
     const items = data?.data?.result || []
 
-    const createMut = useMutation({
+    const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateEquipment(d),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Tạo thành công'); resetForm() },
         onError: () => toast.error('Lỗi tạo thiết bị')
     })
-    const updateMut = useMutation({
+    const updateMut = useSafeMutation({
         mutationFn: ({ id, d }) => adminUpdateEquipment(id, d),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Cập nhật thành công'); resetForm() },
         onError: () => toast.error('Lỗi cập nhật')
     })
-    const deleteMut = useMutation({
+    const deleteMut = useSafeMutation({
         mutationFn: (id) => adminDeleteEquipment(id),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Xóa thành công') },
         onError: () => toast.error('Lỗi xóa')
@@ -140,20 +141,20 @@ function MuscleGroupManager() {
     const [editingId, setEditingId] = useState(null)
     const [form, setForm] = useState({ name: '', name_en: '', body_part_ids: '', description: '' })
 
-    const { data, isLoading } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups, staleTime: 60000 })
+    const { data, isLoading } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups })
     const items = data?.data?.result || []
 
-    const createMut = useMutation({
+    const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateMuscleGroup({ ...d, body_part_ids: d.body_part_ids.split(',').map(s => s.trim()).filter(Boolean) }),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-muscle-groups'] }); toast.success('Tạo thành công'); resetForm() },
         onError: () => toast.error('Lỗi tạo nhóm cơ')
     })
-    const updateMut = useMutation({
+    const updateMut = useSafeMutation({
         mutationFn: ({ id, d }) => adminUpdateMuscleGroup(id, { ...d, body_part_ids: d.body_part_ids.split(',').map(s => s.trim()).filter(Boolean) }),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-muscle-groups'] }); toast.success('Cập nhật thành công'); resetForm() },
         onError: () => toast.error('Lỗi cập nhật')
     })
-    const deleteMut = useMutation({
+    const deleteMut = useSafeMutation({
         mutationFn: (id) => adminDeleteMuscleGroup(id),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-muscle-groups'] }); toast.success('Xóa thành công') },
         onError: () => toast.error('Lỗi xóa')
@@ -268,30 +269,29 @@ function ExerciseManager() {
 
     const { data, isLoading } = useQuery({
         queryKey: ['admin-exercises', search, page],
-        queryFn: () => adminGetExercises({ search, page, limit: 20 }),
-        staleTime: 60000
+        queryFn: () => adminGetExercises({ search, page, limit: 20 })
     })
     const result = data?.data?.result || {}
     const exercises = result.exercises || []
     const total = result.total || 0
 
     // Fetch equipment and muscle groups for dropdowns
-    const { data: eqData } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment, staleTime: 60000 })
-    const { data: mgData } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups, staleTime: 60000 })
+    const { data: eqData } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
+    const { data: mgData } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups })
     const allEquipment = eqData?.data?.result || []
     const allMuscleGroups = mgData?.data?.result || []
 
-    const createMut = useMutation({
+    const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateExercise(d),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-exercises'] }); toast.success('Tạo bài tập thành công'); resetForm() },
         onError: () => toast.error('Lỗi tạo bài tập')
     })
-    const updateMut = useMutation({
+    const updateMut = useSafeMutation({
         mutationFn: ({ id, d }) => adminUpdateExercise(id, d),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-exercises'] }); toast.success('Cập nhật thành công'); resetForm() },
         onError: () => toast.error('Lỗi cập nhật')
     })
-    const deleteMut = useMutation({
+    const deleteMut = useSafeMutation({
         mutationFn: (id) => adminDeleteExercise(id),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-exercises'] }); toast.success('Xóa thành công') },
         onError: () => toast.error('Lỗi xóa')

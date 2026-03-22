@@ -18,8 +18,7 @@ export default function AlbumList() {
     queryFn: () => {
       return getAlbumsForInspector(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   console.log(data)
 

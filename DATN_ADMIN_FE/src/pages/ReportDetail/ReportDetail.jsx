@@ -15,8 +15,7 @@ export default function ReportDetail() {
     queryFn: () => {
       return getReportPostDetail(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(data)

@@ -1,4 +1,5 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { bookmarkUser } from '../../apis/userApi'
 import RecipeCard from '../../components/CardComponents/RecipeCard'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -13,8 +14,7 @@ export default function Bookmark() {
     queryFn: () => {
       return bookmarkUser()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   return (
@@ -80,7 +80,7 @@ export default function Bookmark() {
 }
 
 const AlbumItem = ({ album }) => {
-  const unbookmarkMutation = useMutation({
+  const unbookmarkMutation = useSafeMutation({
     mutationFn: (body) => unbookmarkAlbum(body)
   })
 

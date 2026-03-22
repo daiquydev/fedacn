@@ -215,8 +215,7 @@ export default function ChallengeDetail() {
     queryKey: ['me'],
     queryFn: () => {
       return currentAccount()
-    },
-    staleTime: 1000
+    }
   })
 
   const userProfile = userData?.data?.result?.[0] || { name: "Người dùng", avatar: "" }

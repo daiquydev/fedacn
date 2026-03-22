@@ -9,7 +9,9 @@ import {
   getAllUserController,
   getRequestUpgradeController,
   getUserByIdController,
+  getUserStatsController,
   rejectRequestUpgradeController,
+  restoreUserByIdController,
   unbanUserByIdController
 } from '~/controllers/adminControllers/userAdmin.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
@@ -40,6 +42,20 @@ userAdminRouter.put(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin])),
   wrapRequestHandler(unbanUserByIdController)
+)
+
+userAdminRouter.put(
+  '/restore',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(restoreUserByIdController)
+)
+
+userAdminRouter.get(
+  '/stats',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getUserStatsController)
 )
 
 userAdminRouter.post(

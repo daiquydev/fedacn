@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import TextArea from '../../../../components/InputComponents/TextArea'
 import { createCommentBlog, getCommentBlog } from '../../../../apis/blogApi'
-import { keepPreviousData, useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { useForm } from 'react-hook-form'
 
@@ -10,7 +11,7 @@ export default function Comments({ blog }) {
   const fetchComment = async ({ pageParam }) => {
     return await getCommentBlog({ page: pageParam, blog_id: blog._id })
   }
-  const commentMutation = useMutation({
+  const commentMutation = useSafeMutation({
     mutationFn: (body) => createCommentBlog(body)
   })
 

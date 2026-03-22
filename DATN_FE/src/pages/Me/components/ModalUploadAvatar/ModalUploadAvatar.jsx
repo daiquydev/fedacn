@@ -1,8 +1,9 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useContext, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import ModalLayout from '../../../../layouts/ModalLayout'
 import { updateAvatar } from '../../../../apis/userApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { AppContext } from '../../../../contexts/app.context'
 import { setProfileToLS } from '../../../../utils/auth'
@@ -19,7 +20,7 @@ export default function ModalUploadAvatar({ closeModalAvatar }) {
     setImage(file)
   }
 
-  const updateAvatarMutation = useMutation({
+  const updateAvatarMutation = useSafeMutation({
     mutationFn: (body) => updateAvatar(body)
   })
 
@@ -88,7 +89,7 @@ export default function ModalUploadAvatar({ closeModalAvatar }) {
             className='flex-1 py-2.5 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2'
           >
             {updateAvatarMutation.isPending ? (
-              <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-white' />
+              <Loading className='' classNameSpin='inline w-5 h-5 text-gray-200 animate-spin fill-white' />
             ) : (
               'Tải lên'
             )}

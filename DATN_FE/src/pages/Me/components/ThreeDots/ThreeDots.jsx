@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BiDotsHorizontalRounded } from 'react-icons/bi'
 import ModalChangePass from '../ModalChangePass'
 import ModalRequest from '../ModalRequest'
 import { updateRequest } from '../../../../apis/userApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
 export default function ThreeDots({ user }) {
@@ -19,7 +20,7 @@ export default function ThreeDots({ user }) {
   const handleCloseModalChangePass = () => {
     setOpenModalChangePass(false)
   }
-  const updateRequestMutation = useMutation({
+  const updateRequestMutation = useSafeMutation({
     mutationFn: (body) => updateRequest(body)
   })
 

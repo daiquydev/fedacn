@@ -1,7 +1,8 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import moment from 'moment'
 import ShowMoreContent from '../../../../components/GlobalComponents/ShowMoreContent/ShowMoreContent'
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import toast from 'react-hot-toast'
 import ThreeDotComment from '../ThreeDotComment/ThreeDotComment'
@@ -11,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 
 export default function CommentItems({ comment }) {
   const navigate = useNavigate()
-  const deleteCommentMutation = useMutation({
+  const deleteCommentMutation = useSafeMutation({
     mutationFn: (body) => deleteCommentRecipe(body)
   })
 

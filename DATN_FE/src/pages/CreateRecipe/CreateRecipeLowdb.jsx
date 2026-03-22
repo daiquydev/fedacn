@@ -1,7 +1,8 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
@@ -73,11 +74,11 @@ export default function CreateRecipeLowdb() {
   const watchedTags = watch('tags')
   const watchedIngredients = watch('ingredients')
 
-  const createRecipeMutation = useMutation({
+  const createRecipeMutation = useSafeMutation({
     mutationFn: (body) => createRecipe(body)
   })
 
-  const calculateNutritionMutation = useMutation({
+  const calculateNutritionMutation = useSafeMutation({
     mutationFn: (ingredients) => calculateNutrition(ingredients)
   })
 

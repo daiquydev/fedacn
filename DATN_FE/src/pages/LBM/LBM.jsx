@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoTimeOutline } from 'react-icons/io5'
 import { FaArrowCircleRight } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
@@ -7,7 +8,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaLBM } from '../../utils/rules'
 import { useContext, useState } from 'react'
 import { calculateLBM, saveLBMData } from '../../apis/calculatorApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
 import { AppContext } from '../../contexts/app.context'
@@ -32,11 +33,11 @@ export default function LBM() {
     }
   })
 
-  const calculateLBMMutation = useMutation({
+  const calculateLBMMutation = useSafeMutation({
     mutationFn: (body) => calculateLBM(body)
   })
 
-  const saveLBMMutation = useMutation({
+  const saveLBMMutation = useSafeMutation({
     mutationFn: (body) => saveLBMData(body)
   })
 

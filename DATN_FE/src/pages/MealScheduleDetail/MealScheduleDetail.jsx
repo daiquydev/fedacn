@@ -1,4 +1,5 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { IoIosCheckmarkCircle, IoMdHome } from 'react-icons/io'
 import { completeDateMealItem, deleteDateMealItem, getDateMealItem, getMealSchedules } from '../../apis/mealScheduleApi'
@@ -37,8 +38,7 @@ export default function MealScheduleDetail() {
     queryFn: () => {
       return getMealSchedules(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const meal = data?.data.result
@@ -111,15 +111,14 @@ export default function MealScheduleDetail() {
       return nextPage
     },
     enabled: !!meal?._id,
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
-  const completeDateMealItemMutation = useMutation({
+  const completeDateMealItemMutation = useSafeMutation({
     mutationFn: (body) => completeDateMealItem(body)
   })
 
-  const deleteDateMealItemMutation = useMutation({
+  const deleteDateMealItemMutation = useSafeMutation({
     mutationFn: (body) => deleteDateMealItem(body)
   })
 

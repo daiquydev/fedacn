@@ -1,9 +1,10 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { HiOutlineLogout } from 'react-icons/hi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { logoutAccount } from '../../../../apis/authApi'
 import { getRefreshTokenFromLS } from '../../../../utils/auth'
 import { AppContext } from '../../../../contexts/app.context'
@@ -26,7 +27,7 @@ export default function UserAvatar() {
 
   // Dùng fallback an toàn khi chưa có profile hoặc avatar rỗng
   const avatarSrc = profile?.avatar ? profile.avatar : useravatar
-  const logoutAccountMutation = useMutation({
+  const logoutAccountMutation = useSafeMutation({
     mutationFn: (body) => logoutAccount(body)
   })
 

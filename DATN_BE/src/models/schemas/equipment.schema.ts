@@ -19,7 +19,6 @@ const EquipmentSchema = new Schema<Equipment>(
     { timestamps: true, collection: 'equipment' }
 )
 
-EquipmentSchema.index({ name_en: 1 })
 EquipmentSchema.index({ is_active: 1 })
 
 const EquipmentModel = mongoose.model<Equipment>('equipment', EquipmentSchema)

@@ -52,7 +52,6 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
         queryKey: ['sportEvent-preview', eventId],
         queryFn: () => getSportEvent(eventId),
         enabled: Boolean(eventId),
-        staleTime: 1000,
         retry: 1
     })
 

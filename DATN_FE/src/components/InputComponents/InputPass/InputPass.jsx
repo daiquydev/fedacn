@@ -33,7 +33,7 @@ export default function InputPass({
       >
         {showPass === false ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
       </div>
-      <div className='flex min-h-[1rem] font-medium text-orange-300 text-xs lg:text-red-600'> {errors?.message}</div>
+      <div className='flex min-h-[1rem] font-medium text-orange-300 text-xs lg:text-red-600 text-left w-full'> {errors?.message}</div>
     </div>
   )
 }

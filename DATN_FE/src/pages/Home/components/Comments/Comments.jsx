@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { createComment, getComments } from '../../../../apis/postApi'
-import { keepPreviousData, useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import CommentItems from '../CommentItems'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { useContext, useState } from 'react'
@@ -16,7 +17,7 @@ export default function Comments({ post }) {
   const fetchComment = async ({ pageParam }) => {
     return await getComments({ page: pageParam, post_id: post._id })
   }
-  const commentMutation = useMutation({
+  const commentMutation = useSafeMutation({
     mutationFn: (body) => createComment(body)
   })
 

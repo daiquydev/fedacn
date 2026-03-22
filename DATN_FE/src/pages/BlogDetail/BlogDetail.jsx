@@ -17,8 +17,7 @@ export default function BlogDetail() {
     queryFn: () => {
       return getBlogForUser(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: recommendBlog } = useQuery({
@@ -33,8 +32,7 @@ export default function BlogDetail() {
         category_blog_id: data?.data.result[0]?.category_blog_id
       })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   //bỏ blog hiện tại ra khỏi danh sách recommend và limted 4 bài

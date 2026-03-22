@@ -1,4 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
+import { } from '@tanstack/react-query'
 import moment from 'moment'
 import { Link } from 'react-router-dom'
 import { deleteWorkoutSchedule } from '../../../../apis/workoutScheduleApi'
@@ -18,7 +19,7 @@ export default function WorkoutItem({ workout }) {
   const handleOpenModaldeleteWorkout = () => {
     setOpenModalWorkout(true)
   }
-  const deleteWorkOutMutation = useMutation({
+  const deleteWorkOutMutation = useSafeMutation({
     mutationFn: (id) => deleteWorkoutSchedule(id)
   })
 

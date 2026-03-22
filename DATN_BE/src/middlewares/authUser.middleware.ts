@@ -134,6 +134,9 @@ export const loginValidator = validate(
             if (user.status === UserStatus.banned) {
               throw new Error(AUTH_USER_MESSAGE.ACCOUNT_BANNED)
             }
+            if (user.isDeleted === true) {
+              throw new Error(AUTH_USER_MESSAGE.ACCOUNT_DELETED)
+            }
             const compare = await comparePassword(req.body.password, user.password)
             if (!compare) {
               throw new Error(AUTH_USER_MESSAGE.EMAIL_OR_PASSWORD_INCORRECT)
@@ -217,12 +220,28 @@ export const accessTokenValidator = validate(
                 token: access_token,
                 secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
               });
-              if (decoded_authorization.status === UserStatus.banned) {
+
+              // Realtime DB check — don't trust stale JWT status
+              const freshUser = await UserModel.findById(decoded_authorization.user_id).lean();
+              if (!freshUser) {
+                throw new ErrorWithStatus({
+                  message: AUTH_USER_MESSAGE.USER_NOT_FOUND,
+                  status: HTTP_STATUS.UNAUTHORIZED
+                });
+              }
+              if (freshUser.status === UserStatus.banned) {
                 throw new ErrorWithStatus({
                   message: AUTH_USER_MESSAGE.ACCOUNT_BANNED,
                   status: HTTP_STATUS.UNAUTHORIZED
                 });
               }
+              if (freshUser.isDeleted === true) {
+                throw new ErrorWithStatus({
+                  message: AUTH_USER_MESSAGE.ACCOUNT_DELETED,
+                  status: HTTP_STATUS.UNAUTHORIZED
+                });
+              }
+
               (req as any).decoded_authorization = decoded_authorization;
             } catch (error) {
               throw new ErrorWithStatus({
@@ -254,7 +273,10 @@ export const optionalAccessTokenValidator = async (req: Request, res: any, next:
       token: access_token,
       secretOrPublicKey: envConfig.JWT_SECRET_ACCESS_TOKEN
     });
-    if (decoded_authorization.status !== UserStatus.banned) {
+
+    // Realtime DB check
+    const freshUser = await UserModel.findById(decoded_authorization.user_id).lean();
+    if (freshUser && freshUser.status !== UserStatus.banned && freshUser.isDeleted !== true) {
       (req as any).decoded_authorization = decoded_authorization;
     }
   } catch (error) {

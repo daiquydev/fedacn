@@ -62,7 +62,6 @@ export default function SearchInput() {
       })
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000,
     enabled: searchWatch !== ''
   })
 

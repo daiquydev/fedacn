@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 // * React icons
@@ -9,7 +10,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import Submenu from './SubMenu'
 import { FaPenToSquare } from 'react-icons/fa6'
 import Logo from '../Logo'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { currentAccount, updateRequest } from '../../../apis/userApi'
 import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
@@ -26,15 +27,14 @@ export default function SideBar() {
     queryFn: () => {
       return currentAccount()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const [openMenus, setOpenMenus] = useState({})
 
   const checkSubmenu = () => Number(userData?.data.result[0]?.role) === 1
   const isAdmin = Number(userData?.data.result[0]?.role) === 2
-  const updateRequestMutation = useMutation({
+  const updateRequestMutation = useSafeMutation({
     mutationFn: (body) => updateRequest(body)
   })
 
@@ -120,7 +120,7 @@ export default function SideBar() {
         </NavLink>
       </li>
       <li>
-        <NavLink to={'/sport-event'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+        <NavLink to={'/sport-event'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
           <MdSportsSoccer size={22} className='min-w-max' />
           Sự kiện thể thao
         </NavLink>

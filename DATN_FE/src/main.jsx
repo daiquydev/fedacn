@@ -15,7 +15,8 @@ import { SocketProvider } from './contexts/socket.context.jsx'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      staleTime: 1000,
       retry: 0
     }
   }

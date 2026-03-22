@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoTimeOutline } from 'react-icons/io5'
 import { FaArrowCircleRight } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
@@ -6,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaIBW } from '../../utils/rules'
 import { useContext, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { calculateIBW, saveIBWData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -31,11 +32,11 @@ export default function IBW() {
     }
   })
 
-  const calculateIBWMutation = useMutation({
+  const calculateIBWMutation = useSafeMutation({
     mutationFn: (body) => calculateIBW(body)
   })
 
-  const saveIBWMutation = useMutation({
+  const saveIBWMutation = useSafeMutation({
     mutationFn: (body) => saveIBWData(body)
   })
 

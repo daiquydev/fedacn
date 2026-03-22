@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useContext, useState } from 'react'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import { AiFillHeart } from 'react-icons/ai'
@@ -35,7 +36,7 @@ function fromNowVi(date) {
   return future ? `trong ${str}` : `${str} trước`
 }
 import { deletePostForEachUser, likePost, unlikePost } from '../../../apis/postApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
 import Comments from '../../../pages/Home/components/Comments'
 import ModalSharePost from '../../../pages/Home/components/ModalSharePost'
@@ -102,11 +103,11 @@ export default function PostCard({ data }) {
     setOpenComment(!openComment)
   }
 
-  const likeMutation = useMutation({
+  const likeMutation = useSafeMutation({
     mutationFn: (body) => likePost(body)
   })
 
-  const unlikeMutation = useMutation({
+  const unlikeMutation = useSafeMutation({
     mutationFn: (body) => unlikePost(body)
   })
 
@@ -139,7 +140,7 @@ export default function PostCard({ data }) {
     }
   }
 
-  const deletePostMutation = useMutation({
+  const deletePostMutation = useSafeMutation({
     mutationFn: (body) => deletePostForEachUser(body)
   })
 
@@ -429,7 +430,7 @@ function CheckTypeOfPost({
         <p className=''>{cleanActivityMarker(cleanSportEventMarker(data.content))}</p>
       </ShowMoreContent>
       <div className='border mt-2 mb-2 dark:border-gray-700 border-red-200 '></div>
-      {data.parent_user && data.parent_post ? (
+      {data.parent_user && data.parent_post && !data.parent_post?.is_banned ? (
         <>
           <div className='flex justify-between items-start'>
             <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>

@@ -148,8 +148,7 @@ function HistoryStatCard({ config, value }) {
 function HistoryTab() {
   const { data: userData, isFetching } = useQuery({
     queryKey: ['me'],
-    queryFn: currentAccount,
-    staleTime: 1000
+    queryFn: currentAccount
   })
   const user = userData?.data.result[0]
 

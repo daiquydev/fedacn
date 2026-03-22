@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useState, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FaSearch, FaUserFriends, FaTimes, FaCheck } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { currentAccount } from '../../../apis/userApi'
@@ -12,8 +13,7 @@ export default function BuddySelector({ challengeId, currentBuddyId, onClose }) 
 
   const { data: meData, isLoading } = useQuery({
     queryKey: ['me'],
-    queryFn: currentAccount,
-    staleTime: 1000
+    queryFn: currentAccount
   })
 
   const me = meData?.data?.result?.[0]
@@ -37,7 +37,7 @@ export default function BuddySelector({ challengeId, currentBuddyId, onClose }) 
     })
   }, [friends, search])
 
-  const buddyMutation = useMutation({
+  const buddyMutation = useSafeMutation({
     mutationFn: (buddyId) => setBuddy(challengeId, buddyId),
     onSuccess: () => {
       toast.success('Đã chọn buddy thành công! 🎉')

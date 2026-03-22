@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { createEventComment, getEventComments } from '../../../apis/sportEventApi'
-import { keepPreviousData, useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import SportEventCommentItems from './SportEventCommentItems'
 import Loading from '../../../components/GlobalComponents/Loading'
 import { useContext, useState } from 'react'
@@ -16,7 +17,7 @@ export default function SportEventComments({ post }) {
   const fetchComment = async ({ pageParam }) => {
     return await getEventComments(post._id, { page: pageParam })
   }
-  const commentMutation = useMutation({
+  const commentMutation = useSafeMutation({
     mutationFn: (body) => createEventComment(post._id, body)
   })
 

@@ -15,6 +15,7 @@ export const AUTH_USER_MESSAGE = {
   EMAIL_OR_PASSWORD_INCORRECT: 'Email hoặc mật khẩu không chính xác',
   GMAIL_NOT_VERIFIED: 'Email chưa được xác thực',
   ACCOUNT_BANNED: 'Tài khoản đã bị khóa',
+  ACCOUNT_DELETED: 'Tài khoản đã bị xóa',
   UNAUTHORIZED: 'Không có quyền truy cập',
   USER_NAME_OR_PASSWORD_INCORRECT: 'Tên đăng nhập hoặc mật khẩu không chính xác',
   OLD_PASSWORD_NEW_PASSWORD_NOT_SAME: 'Mật khẩu cũ và mật khẩu mới không được giống nhau',

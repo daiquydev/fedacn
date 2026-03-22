@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import moment from 'moment'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import { useContext, useState } from 'react'
 import InputEmoji from '../../../components/InputComponents/InputEmoji'
 import ShowMoreContent from '../../../components/GlobalComponents/ShowMoreContent/ShowMoreContent'
 import { createEventComment, deleteEventComment, getEventChildComments } from '../../../apis/sportEventApi'
-import { keepPreviousData, useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
 import { AppContext } from '../../../contexts/app.context'
 import { useNavigate } from 'react-router-dom'
@@ -87,7 +88,7 @@ export default function SportEventCommentItems({ comment, post }) {
     enabled: showReply
   })
 
-  const commentMutation = useMutation({
+  const commentMutation = useSafeMutation({
     mutationFn: (body) => createEventComment(post._id, body)
   })
 
@@ -146,7 +147,7 @@ export default function SportEventCommentItems({ comment, post }) {
     })
   )
 
-  const deleteCommentMutation = useMutation({
+  const deleteCommentMutation = useSafeMutation({
     mutationFn: () => deleteEventComment(comment._id)
   })
 
@@ -243,7 +244,7 @@ function CommentChildItems({ comment, profile, navigate, post }) {
       navigate(`/user/${comment.userId?._id}`)
     }
   }
-  const deleteChildCommentMutation = useMutation({
+  const deleteChildCommentMutation = useSafeMutation({
     mutationFn: () => deleteEventComment(comment._id)
   })
 

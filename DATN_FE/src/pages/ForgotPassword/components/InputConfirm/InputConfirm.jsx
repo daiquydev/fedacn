@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useNavigate } from 'react-router-dom'
 import MotionWrapper from '../../../../layouts/MotionWrapper'
 import useQueryConfig from '../../../../hooks/useQueryConfig'
@@ -5,7 +6,7 @@ import { omit } from 'lodash'
 import OtpInput from 'react-otp-input'
 import { useState } from 'react'
 import { sendOtp, verifyOtp } from '../../../../apis/authApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { HiOutlineShieldCheck } from 'react-icons/hi'
@@ -16,11 +17,11 @@ export default function InputConfirm() {
   const navigate = useNavigate()
 
   const [otp, setOtp] = useState('')
-  const sendOtpMutation = useMutation({
+  const sendOtpMutation = useSafeMutation({
     mutationFn: (body) => sendOtp(body)
   })
 
-  const confirmOtpMutation = useMutation({
+  const confirmOtpMutation = useSafeMutation({
     mutationFn: (body) => verifyOtp(body)
   })
 

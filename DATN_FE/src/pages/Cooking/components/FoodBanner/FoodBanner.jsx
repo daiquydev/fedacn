@@ -57,8 +57,7 @@ export default function FoodBanner() {
     queryFn: () => {
       return getTopRecipes()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   const navigate = useNavigate()
 

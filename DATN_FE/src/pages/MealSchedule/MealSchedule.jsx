@@ -32,8 +32,7 @@ export default function MealSchedule() {
     queryFn: () => {
       return getListMealSchedules(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   useEffect(() => {

@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
 import toast from 'react-hot-toast'
@@ -49,6 +50,7 @@ function formatDuration(seconds) {
 export default function ActivityShareModal({ activity, event, eventId, onClose }) {
     const { profile } = useContext(AppContext)
     const navigate = useNavigate()
+    const queryClient = useQueryClient()
     const [play] = useSound(postSound)
     const theme = localStorage.getItem('theme')
 
@@ -81,7 +83,7 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
         setShowEmoji(false)
     }
 
-    const createPostMutation = useMutation({
+    const createPostMutation = useSafeMutation({
         mutationFn: (body) => createPost(body)
     })
 
@@ -97,6 +99,7 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
 
         createPostMutation.mutate(formData, {
             onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
                 toast.success('🏃 Đã chia sẻ tiến độ lên cộng đồng!')
                 play()
                 onClose()

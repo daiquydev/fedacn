@@ -19,8 +19,7 @@ export default function BlogList() {
     queryFn: () => {
       return getCategoryBlogs()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data, isLoading } = useQuery({

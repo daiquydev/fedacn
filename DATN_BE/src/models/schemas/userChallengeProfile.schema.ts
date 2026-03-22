@@ -45,7 +45,6 @@ const UserChallengeProfileSchema = new mongoose.Schema<IUserChallengeProfile>(
   }
 )
 
-UserChallengeProfileSchema.index({ user_id: 1 }, { unique: true })
 UserChallengeProfileSchema.index({ total_xp: -1 })
 UserChallengeProfileSchema.index({ level: -1, total_xp: -1 })
 

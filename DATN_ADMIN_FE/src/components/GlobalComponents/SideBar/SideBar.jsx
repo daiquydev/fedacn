@@ -17,6 +17,7 @@ import { FaBowlFood, FaCookieBite, FaPenToSquare, FaUserPen } from 'react-icons/
 import { AppContext } from '../../../contexts/app.context'
 import { IoMdAlbums } from 'react-icons/io'
 import { FaShareAlt, FaRunning, FaDumbbell, FaCalendarAlt } from 'react-icons/fa'
+import { GiBiceps } from 'react-icons/gi'
 import { MdReport } from 'react-icons/md'
 import { GiMuscleUp } from 'react-icons/gi'
 
@@ -123,9 +124,15 @@ export default function SideBar() {
                 {/* </li> */}
                 {/*  */}
                 <li>
+                  <NavLink to={'/user'} className='link-custom '>
+                    <BsPeopleFill size={25} className='min-w-max' />
+                    Quản lý Người dùng
+                  </NavLink>
+                </li>
+                <li>
                   <NavLink to={'/reports'} className='link-custom '>
                     <MdReport size={25} className='min-w-max' />
-                    Bài viết bị báo cáo
+                    Kiểm duyệt bài viết
                   </NavLink>
                 </li>
               </>
@@ -160,9 +167,15 @@ export default function SideBar() {
                 <div className='border-t py-5 border-t-slate-300 '>
                   <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lý Tập luyện</small>
                   <li>
-                    <NavLink to={'/workout-management'} className='link-custom '>
+                    <NavLink to={'/equipment-management'} className='link-custom '>
                       <FaDumbbell size={25} className='min-w-max' />
-                      Quản lý tập luyện
+                      Quản lý Thiết bị
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to={'/exercise-management'} className='link-custom '>
+                      <GiBiceps size={25} className='min-w-max' />
+                      Quản lý Bài tập
                     </NavLink>
                   </li>
                 </div>

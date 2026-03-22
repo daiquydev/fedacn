@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import moment from 'moment'
 import { AiFillHeart, AiOutlineClockCircle } from 'react-icons/ai'
 import { BsFillBookmarkFill } from 'react-icons/bs'
 import { FaAppleAlt, FaUtensils } from 'react-icons/fa'
 import { CiHeart } from 'react-icons/ci'
 import { bookmarkRecipe, likeRecipe, unbookmarkRecipe, unlikeRecipe } from '../../../apis/recipeApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
 import { Link, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -86,19 +87,19 @@ export default function RecipeCard({ recipe }) {
 
     // return queryClient.invalidateQueries(['userPost', data.user._id])
   }
-  const likeMutation = useMutation({
+  const likeMutation = useSafeMutation({
     mutationFn: (body) => likeRecipe(body)
   })
 
-  const unlikeMutation = useMutation({
+  const unlikeMutation = useSafeMutation({
     mutationFn: (body) => unlikeRecipe(body)
   })
 
-  const bookmarkMutation = useMutation({
+  const bookmarkMutation = useSafeMutation({
     mutationFn: (body) => bookmarkRecipe(body)
   })
 
-  const unbookmarkMutation = useMutation({
+  const unbookmarkMutation = useSafeMutation({
     mutationFn: (body) => unbookmarkRecipe(body)
   })
 

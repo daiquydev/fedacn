@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import { cutString } from '../../../../utils/helper'
 import { useState } from 'react'
 import { deleteRecipe } from '../../../../apis/writterApi'
-import { useMutation } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function RecipeItem({ recipe }) {
   const [openDelete, setOpenDelete] = useState(false)
@@ -19,10 +19,10 @@ export default function RecipeItem({ recipe }) {
     setOpenDelete(false)
   }
 
-  const deleteRecipeMutation = useMutation({
+  const deleteRecipeMutation = useSafeMutation({
     mutationFn: () => deleteRecipe(recipe._id)
   })
-  // const acceptRecipesMutation = useMutation({
+  // const acceptRecipesMutation = useSafeMutation({
   //   mutationFn: () => acceptRecipe(recipe._id)
   // })
 

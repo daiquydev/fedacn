@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import moment from 'moment'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { useContext, useState } from 'react'
 import InputEmoji from '../../../../components/InputComponents/InputEmoji'
 import ShowMoreContent from '../../../../components/GlobalComponents/ShowMoreContent/ShowMoreContent'
 import { createComment, deleteChildComment, deleteComment, getChildComments } from '../../../../apis/postApi'
-import { keepPreviousData, useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { AppContext } from '../../../../contexts/app.context'
 import { useNavigate } from 'react-router-dom'
@@ -44,7 +45,7 @@ export default function CommentItems({ comment, post }) {
     enabled: showReply
   })
 
-  const commentMutation = useMutation({
+  const commentMutation = useSafeMutation({
     mutationFn: (body) => createComment(body)
   })
 
@@ -102,7 +103,7 @@ export default function CommentItems({ comment, post }) {
     })
   )
 
-  const deleteCommentMutation = useMutation({
+  const deleteCommentMutation = useSafeMutation({
     mutationFn: (body) => deleteComment(body)
   })
 
@@ -204,7 +205,7 @@ function CommentChildItems({ comment, profile, navigate, post }) {
       navigate(`/user/${comment.user._id}`)
     }
   }
-  const deleteChildCommentMutation = useMutation({
+  const deleteChildCommentMutation = useSafeMutation({
     mutationFn: (body) => deleteChildComment(body)
   })
 

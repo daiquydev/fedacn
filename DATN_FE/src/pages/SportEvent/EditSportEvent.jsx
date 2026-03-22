@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   FaArrowLeft,
   FaCalendarAlt,
@@ -131,7 +132,7 @@ const EditSportEvent = () => {
   }, [eventData])
 
   // Mutation for updating event
-  const updateMutation = useMutation({
+  const updateMutation = useSafeMutation({
     mutationFn: (data) => updateSportEvent(id, data),
     onSuccess: () => {
       toast.success('🎉 Đã cập nhật sự kiện thành công!')
@@ -145,8 +146,7 @@ const EditSportEvent = () => {
 
   const { data: categoriesData } = useQuery({
     queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll(),
-    staleTime: 1000
+    queryFn: () => sportCategoryApi.getAll()
   })
 
   const categories = categoriesData?.data?.result || []
@@ -173,7 +173,6 @@ const EditSportEvent = () => {
       case 'startDate':
         if (!value) error = 'Vui lòng nhập ngày bắt đầu'
         else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
-        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
         else if (currentState.endDate && isValidDateStr(currentState.endDate)) {
           const [sd, sm, sy] = value.split('/').map(Number)
           const [ed, em, ey] = currentState.endDate.split('/').map(Number)
@@ -481,7 +480,7 @@ const EditSportEvent = () => {
                 {/* Hint */}
                 <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
                   <FaInfoCircle className="mt-0.5 shrink-0" />
-                  <span>Nhập ngày theo định dạng <strong>DD/MM/YYYY</strong> (VD: 15/06/2026) và giờ theo <strong>HH:mm</strong> (VD: 07:30). Không thể chọn ngày trong quá khứ.</span>
+                  <span>Nhập ngày theo định dạng <strong>DD/MM/YYYY</strong> (VD: 15/06/2026) và giờ theo <strong>HH:mm</strong> (VD: 07:30). Ngày kết thúc không thể ở quá khứ.</span>
                 </div>
 
                 {/* Địa điểm — chỉ hiện khi là sự kiện ngoài trời */}

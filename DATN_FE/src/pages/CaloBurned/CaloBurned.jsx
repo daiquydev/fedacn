@@ -1,9 +1,10 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoTimeOutline } from 'react-icons/io5'
 import { FaArrowCircleRight } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import Input from '../../components/InputComponents/Input'
 import { AiOutlineSearch } from 'react-icons/ai'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getActivities } from '../../apis/activityApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import { omit } from 'lodash'
@@ -30,8 +31,7 @@ export default function CaloBurned() {
     queryFn: () => {
       return getActivities(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   const { register: registerActivity, handleSubmit: handleSubmitActivity } = useForm({
     defaultValues: {
@@ -84,7 +84,7 @@ export default function CaloBurned() {
     setIsModalOpen(false)
   }
 
-  const calculateCaloriesBurnedMutation = useMutation({
+  const calculateCaloriesBurnedMutation = useSafeMutation({
     mutationFn: (body) => calculateCaloriesBurned(body)
   })
 

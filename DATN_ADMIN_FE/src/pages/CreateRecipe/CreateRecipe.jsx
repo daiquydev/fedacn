@@ -9,7 +9,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaCreateRecipe } from '../../utils/rules'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
@@ -26,6 +25,7 @@ import { AiOutlineSearch } from 'react-icons/ai'
 import { omit } from 'lodash'
 import PaginationNotUrl from '../../components/GlobalComponents/PaginationNotUrl'
 import { FaPlus } from 'react-icons/fa6'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 
 export default function CreateRecipe() {
   const navigate = useNavigate()
@@ -40,8 +40,7 @@ export default function CreateRecipe() {
     queryFn: () => {
       return getCategoryIngredients()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data, isLoading } = useQuery({
@@ -49,8 +48,7 @@ export default function CreateRecipe() {
     queryFn: () => {
       return getIngredients(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { register: registerIngredients, handleSubmit: handleSubmitIngredients } = useForm({
@@ -115,7 +113,7 @@ export default function CreateRecipe() {
 
   console.log(mealState)
 
-  const createRecipeMutation = useMutation({
+  const createRecipeMutation = useSafeMutation({
     mutationFn: (body) => createRecipesForWritter(body)
   })
   const onSubmit = handleSubmit((data) => {

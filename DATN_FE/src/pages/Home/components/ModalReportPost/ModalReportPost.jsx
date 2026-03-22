@@ -1,4 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
+import { } from '@tanstack/react-query'
 import { reportPost } from '../../../../apis/postApi'
 import toast from 'react-hot-toast'
 import ModalLayout from '../../../../layouts/ModalLayout'
@@ -22,7 +23,7 @@ export default function ModalReportPost({ handleCloseReportPost, post }) {
     }
   })
 
-  const reportMutation = useMutation({
+  const reportMutation = useSafeMutation({
     mutationFn: (body) => reportPost(body)
   })
 

@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   FaFire, FaArrowLeft, FaCamera, FaUsers, FaCalendarCheck, FaHeart, FaRegHeart,
   FaSignOutAlt, FaUserFriends, FaTrophy, FaSnowflake, FaStar, FaInfoCircle
@@ -63,35 +64,30 @@ export default function HabitChallengeDetail() {
 
   const { data: challengeData, isLoading } = useQuery({
     queryKey: ['habit-challenge', id],
-    queryFn: () => getHabitChallenge(id),
-    staleTime: 1000
+    queryFn: () => getHabitChallenge(id)
   })
 
   const { data: checkinsData } = useQuery({
     queryKey: ['habit-checkins', id],
     queryFn: () => getCheckins(id, { limit: 90 }),
-    staleTime: 1000,
     enabled: activeTab === 'progress'
   })
 
   const { data: feedData } = useQuery({
     queryKey: ['habit-checkin-feed', id],
     queryFn: () => getCheckinFeed(id, { limit: 30 }),
-    staleTime: 1000,
     enabled: activeTab === 'feed'
   })
 
   const { data: leaderboardData } = useQuery({
     queryKey: ['habit-leaderboard', id, leaderboardSort],
     queryFn: () => getLeaderboard({ challengeId: id, sort_by: leaderboardSort, limit: 50 }),
-    staleTime: 1000,
     enabled: activeTab === 'leaderboard'
   })
 
   const { data: participantsData } = useQuery({
     queryKey: ['habit-participants', id],
     queryFn: () => getParticipants(id),
-    staleTime: 1000,
     enabled: activeTab === 'participants'
   })
 
@@ -105,19 +101,19 @@ export default function HabitChallengeDetail() {
     queryClient.invalidateQueries({ queryKey: ['habit-leaderboard', id] })
   }
 
-  const joinMutation = useMutation({
+  const joinMutation = useSafeMutation({
     mutationFn: () => joinHabitChallenge(id),
     onSuccess: () => { toast.success('Đã tham gia thử thách!'); invalidateAll() },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
   })
 
-  const quitMutation = useMutation({
+  const quitMutation = useSafeMutation({
     mutationFn: () => quitHabitChallenge(id),
     onSuccess: () => { toast.success('Đã rời thử thách'); invalidateAll() },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
   })
 
-  const checkinMutation = useMutation({
+  const checkinMutation = useSafeMutation({
     mutationFn: () => checkin(id, { image_url: checkinImage, note: checkinNote }),
     onSuccess: (res) => {
       const r = res?.data?.result
@@ -132,7 +128,7 @@ export default function HabitChallengeDetail() {
     onError: (err) => toast.error(err?.response?.data?.message || 'Không thể check-in')
   })
 
-  const freezeMutation = useMutation({
+  const freezeMutation = useSafeMutation({
     mutationFn: () => useStreakFreeze(id),
     onSuccess: (res) => {
       const r = res?.data?.result
@@ -142,7 +138,7 @@ export default function HabitChallengeDetail() {
     onError: (err) => toast.error(err?.response?.data?.message || 'Không thể đóng băng')
   })
 
-  const likeMutation = useMutation({
+  const likeMutation = useSafeMutation({
     mutationFn: (checkinId) => likeCheckin(id, checkinId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['habit-checkin-feed', id] })
   })

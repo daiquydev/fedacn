@@ -1,6 +1,6 @@
 import { BsPeopleFill } from 'react-icons/bs'
 import { MdSportsSoccer } from 'react-icons/md'
-import { FaDumbbell, FaFire, FaSync } from 'react-icons/fa'
+import { FaDumbbell, FaFire } from 'react-icons/fa'
 import PieChart from './components/PieChart/PieChart'
 import AIUsageLineChart from './components/AIUsageLineChart/AIUsageLineChart'
 import CommunityLineChart from './components/CommunityLineChart/CommunityLineChart'
@@ -8,7 +8,7 @@ import SportEventPieChart from './components/SportEventPieChart/SportEventPieCha
 import SportCategoryBarChart from './components/SportCategoryBarChart/SportCategoryBarChart'
 import WorkoutLineChart from './components/WorkoutLineChart/WorkoutLineChart'
 import { dashboard } from '../../apis/adminApi'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon, iconBg, label, total, sub, subLabel }) {
@@ -63,19 +63,11 @@ function SectionHeader({ emoji, title, subtitle }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Home() {
-  const queryClient = useQueryClient()
-
-  const { data, isFetching } = useQuery({
+  const { data } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => dashboard(),
-    placeholderData: keepPreviousData,
-    staleTime: 1000,
-    refetchOnWindowFocus: true
+    placeholderData: keepPreviousData
   })
-
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-  }
 
   const result = data?.data?.result
   const community = result?.communityStats
@@ -85,22 +77,12 @@ export default function Home() {
 
       {/* ── Hero Banner ────────────────────────────────────────────── */}
       <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 px-8 py-8 mb-8 shadow-xl'>
-        <div className='relative z-10 flex items-start justify-between'>
-          <div>
-            <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-            <h1 className='text-3xl font-black text-white mb-2'>Trang Tổng Quan</h1>
-            <p className='text-white/80 text-sm max-w-md'>
-              Theo dõi toàn bộ hoạt động: người dùng, cộng đồng, sự kiện thể thao, tập luyện và AI.
-            </p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={isFetching}
-            className='flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50 mt-1 shrink-0'
-          >
-            <FaSync size={13} className={isFetching ? 'animate-spin' : ''} />
-            Làm mới
-          </button>
+        <div className='relative z-10'>
+          <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
+          <h1 className='text-3xl font-black text-white mb-2'>Trang Tổng Quan</h1>
+          <p className='text-white/80 text-sm max-w-md'>
+            Theo dõi toàn bộ hoạt động: người dùng, cộng đồng, sự kiện thể thao, tập luyện và AI.
+          </p>
         </div>
         <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
         <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />

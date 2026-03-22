@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
 import { startActivity, updateActivity, completeActivity, discardActivity, getSportEvent } from '../../../apis/sportEventApi'
 import sportCategoryApi from '../../../apis/sportCategoryApi'
@@ -43,8 +44,7 @@ export default function ActivityTracking() {
     // Fetch sport categories to get kcal_per_unit
     const { data: categoriesData } = useQuery({
         queryKey: ['sportCategories'],
-        queryFn: () => sportCategoryApi.getAll(),
-        staleTime: 60000
+        queryFn: () => sportCategoryApi.getAll()
     })
 
     // Lookup kcal_per_unit by event's category name
@@ -55,7 +55,7 @@ export default function ActivityTracking() {
     })()
 
     // Start activity mutation
-    const startMutation = useMutation({
+    const startMutation = useSafeMutation({
         mutationFn: (data) => startActivity(eventId, data),
         onSuccess: (res) => {
             const activity = res.data.result
@@ -68,12 +68,12 @@ export default function ActivityTracking() {
     })
 
     // Update activity mutation (auto-save)
-    const updateMutation = useMutation({
+    const updateMutation = useSafeMutation({
         mutationFn: (data) => updateActivity(eventId, activityId, data)
     })
 
     // Complete mutation
-    const completeMutation = useMutation({
+    const completeMutation = useSafeMutation({
         mutationFn: (data) => completeActivity(eventId, activityId, data),
         onSuccess: () => {
             toast.success('Hoàn thành hoạt động! Tiến độ đã được ghi nhận.')
@@ -85,7 +85,7 @@ export default function ActivityTracking() {
     })
 
     // Discard mutation
-    const discardMutation = useMutation({
+    const discardMutation = useSafeMutation({
         mutationFn: () => discardActivity(eventId, activityId),
         onSuccess: () => {
             toast.success('Đã huỷ hoạt động')

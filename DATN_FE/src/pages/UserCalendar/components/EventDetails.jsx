@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import {
   FaCalendarAlt,
   FaClock,
@@ -221,7 +221,7 @@ export default function EventDetails({ event, onClose }) {
                         ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
                         : 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                       }`}>
-                      {event.eventType === 'Trong nhà' ? '🏠 Trong nhà' : '🌳 Ngoài trời'}
+                      {event.eventType === 'Trong nhà' ? '🏠 Trong nhà' : '🌿 Ngoài trời'}
                     </span>
                   </div>
                 </div>

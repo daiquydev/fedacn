@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { deleteIngredient } from '../../../../apis/writterApi'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
-import { useMutation } from '@tanstack/react-query'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function IngerdientItem({ ingredient }) {
   const [openDelete, setOpenDelete] = useState(false)
@@ -18,7 +18,7 @@ export default function IngerdientItem({ ingredient }) {
     setOpenDelete(false)
   }
 
-  const deleteIngredientMutation = useMutation({
+  const deleteIngredientMutation = useSafeMutation({
     mutationFn: () => deleteIngredient(ingredient._id)
   })
 

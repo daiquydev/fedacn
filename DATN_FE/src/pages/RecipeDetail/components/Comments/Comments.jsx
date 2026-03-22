@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import TextArea from '../../../../components/InputComponents/TextArea'
-import { keepPreviousData, useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { useForm } from 'react-hook-form'
 
@@ -10,7 +11,7 @@ export default function Comments({ recipe }) {
   const fetchComment = async ({ pageParam }) => {
     return await getCommentRecipe({ page: pageParam, recipe_id: recipe._id })
   }
-  const commentMutation = useMutation({
+  const commentMutation = useSafeMutation({
     mutationFn: (body) => createCommentRecipe(body)
   })
 

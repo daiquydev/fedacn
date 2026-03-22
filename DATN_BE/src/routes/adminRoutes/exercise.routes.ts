@@ -4,7 +4,8 @@ import {
     getExerciseByIdAdminController,
     createExerciseAdminController,
     updateExerciseAdminController,
-    deleteExerciseAdminController
+    deleteExerciseAdminController,
+    restoreExerciseAdminController
 } from '~/controllers/adminControllers/exercise.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { checkRole } from '~/middlewares/roles.middleware'
@@ -20,5 +21,6 @@ adminExerciseRouter.get('/:id', wrapRequestHandler(getExerciseByIdAdminControlle
 adminExerciseRouter.post('/', wrapRequestHandler(createExerciseAdminController))
 adminExerciseRouter.put('/:id', wrapRequestHandler(updateExerciseAdminController))
 adminExerciseRouter.delete('/:id', wrapRequestHandler(deleteExerciseAdminController))
+adminExerciseRouter.patch('/:id/restore', wrapRequestHandler(restoreExerciseAdminController))
 
 export default adminExerciseRouter

@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import parse from 'html-react-parser'
@@ -10,7 +11,7 @@ import { schemaCreateBlog } from '../../utils/rules'
 import { useQuery } from '@tanstack/react-query'
 import { createBlog, getCategoryBlogs } from '../../apis/blogApi'
 import Loading from '../../components/GlobalComponents/Loading'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
@@ -45,7 +46,7 @@ export default function CreateBlog() {
     }
   })
 
-  const createBlogMutation = useMutation({
+  const createBlogMutation = useSafeMutation({
     mutationFn: (body) => createBlog(body)
   })
   const onSubmit = handleSubmit((data) => {

@@ -1,9 +1,10 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useForm } from 'react-hook-form'
 import { schemaSearchImage } from '../../utils/rules'
 import Loading from '../../components/GlobalComponents/Loading'
 import axios from 'axios'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { useState } from 'react'
 import SearchImageCard from '../../components/CardComponents/SearchImageCard'
 import { IoMdHome } from 'react-icons/io'
@@ -29,7 +30,7 @@ export default function SearchImage() {
 
   //https://cookhealthyimage.io.vn/search
   //http://127.0.0.1:5000/search
-  const searchImageMutation = useMutation({
+  const searchImageMutation = useSafeMutation({
     mutationFn: (body) =>
       axios.post('http://127.0.0.1:5000/search', body, {
         headers: {
@@ -103,7 +104,7 @@ export default function SearchImage() {
                   disabled
                   className='block btn  btn-sm md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm md:ml-2 md:order-2'
                 >
-                  <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                  <Loading className='' classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
                 </button>
               ) : (
                 <button className='block btn btn-sm  md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>

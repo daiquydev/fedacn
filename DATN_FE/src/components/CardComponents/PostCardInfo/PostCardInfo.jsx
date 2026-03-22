@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useContext, useState } from 'react'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import { AiFillHeart } from 'react-icons/ai'
@@ -6,7 +7,7 @@ import { PiShareFatLight } from 'react-icons/pi'
 import { LiaComments } from 'react-icons/lia'
 import moment from 'moment'
 import { deletePostForEachUser, likePost, unlikePost } from '../../../apis/postApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
 import Comments from '../../../pages/Home/components/Comments'
 import ModalSharePost from '../../../pages/Home/components/ModalSharePost'
@@ -57,11 +58,11 @@ export default function PostCardInfo({ data }) {
     setOpenComment(!openComment)
   }
 
-  const likeMutation = useMutation({
+  const likeMutation = useSafeMutation({
     mutationFn: (body) => likePost(body)
   })
 
-  const unlikeMutation = useMutation({
+  const unlikeMutation = useSafeMutation({
     mutationFn: (body) => unlikePost(body)
   })
 
@@ -94,7 +95,7 @@ export default function PostCardInfo({ data }) {
     }
   }
 
-  const deletePostMutation = useMutation({
+  const deletePostMutation = useSafeMutation({
     mutationFn: (body) => deletePostForEachUser(body)
   })
 
@@ -355,53 +356,61 @@ function CheckTypeOfPost({
         <p className=''>{data.content}</p>
       </ShowMoreContent>
       <div className='border mt-2 mb-2 dark:border-gray-700 border-red-200 '></div>
-      <div className='flex justify-between items-start'>
-        <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>
-          <div className='flex mx-3 items-center'>
-            <div onClick={checkNavigateProfileParentUser} className='inline-block mr-4'>
-              <img
-                className='rounded-full object-cover max-w-none w-10 h-10 md:w-12 md:h-12'
-                src={data.parent_user.avatar === '' ? useravatar : data.parent_user.avatar}
-              />
-            </div>
-            <div className='flex flex-col'>
-              <div onClick={checkNavigateProfileParentUser} className='flex items-center'>
-                <div className='flex items-center gap-2 hover:underline cursor-pointer  text-lg font-bold mr-2'>
-                  {data.parent_user.name}
-                  {data.parent_user.role === 1 && (
-                    <div className='text-blue-400 rounded-full flex justify-center items-center '>
-                      <FaCheckCircle size={15} />
-                    </div>
-                  )}
+      {data.parent_user && data.parent_post && !data.parent_post?.is_banned ? (
+        <>
+          <div className='flex justify-between items-start'>
+            <div className='flex pb-4 px-4 md:px-0 items-center justify-between'>
+              <div className='flex mx-3 items-center'>
+                <div onClick={checkNavigateProfileParentUser} className='inline-block mr-4'>
+                  <img
+                    className='rounded-full object-cover max-w-none w-10 h-10 md:w-12 md:h-12'
+                    src={data.parent_user.avatar === '' ? useravatar : data.parent_user.avatar}
+                  />
                 </div>
-              </div>
-              <div className='flex gap-2 items-center'>
-                <div className='text-slate-500 dark:text-slate-300'>{moment(data.parent_post.createdAt).fromNow()}</div>
+                <div className='flex flex-col'>
+                  <div onClick={checkNavigateProfileParentUser} className='flex items-center'>
+                    <div className='flex items-center gap-2 hover:underline cursor-pointer  text-lg font-bold mr-2'>
+                      {data.parent_user.name}
+                      {data.parent_user.role === 1 && (
+                        <div className='text-blue-400 rounded-full flex justify-center items-center '>
+                          <FaCheckCircle size={15} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className='flex gap-2 items-center'>
+                    <div className='text-slate-500 dark:text-slate-300'>{moment(data.parent_post.createdAt).fromNow()}</div>
 
-                {data.parent_post.status === 0 && (
-                  <div>
-                    <MdPublic />
+                    {data.parent_post.status === 0 && (
+                      <div>
+                        <MdPublic />
+                      </div>
+                    )}
+                    {data.parent_post.status === 1 && (
+                      <div>
+                        <FaUserFriends />
+                      </div>
+                    )}
+                    {data.parent_post.status === 2 && (
+                      <div>
+                        <RiGitRepositoryPrivateFill />
+                      </div>
+                    )}
                   </div>
-                )}
-                {data.parent_post.status === 1 && (
-                  <div>
-                    <FaUserFriends />
-                  </div>
-                )}
-                {data.parent_post.status === 2 && (
-                  <div>
-                    <RiGitRepositoryPrivateFill />
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
+          <ShowMoreContent className='px-4 whitespace-pre-line text-sm pb-5 md:px-0'>
+            <p className=''>{data.parent_post.content}</p>
+          </ShowMoreContent>
+          <CheckLengthOfImages images={data.parent_images} />
+        </>
+      ) : (
+        <div className='px-4 py-4 md:px-0 mx-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-center mt-2'>
+          <span className='text-gray-500 italic'>Bài viết gốc đã bị xóa hoặc không còn hiển thị.</span>
         </div>
-      </div>
-      <ShowMoreContent className='px-4 whitespace-pre-line text-sm pb-5 md:px-0'>
-        <p className=''>{data.parent_post.content}</p>
-      </ShowMoreContent>
-      <CheckLengthOfImages images={data.parent_images} />
+      )}
     </>
   )
 }

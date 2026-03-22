@@ -1,16 +1,31 @@
+// Admin Exercise Service
 import ExerciseModel from '../models/schemas/exercise.schema'
 
 class AdminExerciseService {
     async getAll(query: any = {}) {
         const filter: any = {}
+
+        // status filter: 'active' (default) | 'deleted' | 'all'
+        const status = query.status || 'active'
+        if (status === 'active') filter.isDeleted = { $ne: true }
+        else if (status === 'deleted') filter.isDeleted = true
+        // 'all' → no isDeleted filter
+
         if (query.search) {
             filter.$or = [
                 { name: { $regex: query.search, $options: 'i' } },
                 { name_vi: { $regex: query.search, $options: 'i' } }
             ]
         }
+
+        // Filter by muscle group ObjectId
+        if (query.muscle_group_id) filter.muscle_group_ids = query.muscle_group_id
+
+        // Filter by category
         if (query.category) filter.category = query.category
-        if (query.difficulty) filter.difficulty = query.difficulty
+
+        // Filter by equipment ObjectId
+        if (query.equipment_id) filter.equipment_ids = query.equipment_id
 
         const page = parseInt(query.page) || 1
         const limit = parseInt(query.limit) || 50
@@ -47,8 +62,20 @@ class AdminExerciseService {
             .populate('secondary_muscle_ids', 'name name_en')
     }
 
-    async delete(id: string) {
-        return ExerciseModel.findByIdAndDelete(id)
+    async softDelete(id: string) {
+        return ExerciseModel.findByIdAndUpdate(
+            id,
+            { isDeleted: true, deletedAt: new Date() },
+            { new: true }
+        )
+    }
+
+    async restore(id: string) {
+        return ExerciseModel.findByIdAndUpdate(
+            id,
+            { isDeleted: false, deletedAt: null },
+            { new: true }
+        )
     }
 }
 

@@ -19,8 +19,7 @@ export default function PostInfo() {
     queryFn: () => {
       return getBlogsForUser({ limit: 2 })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   const post = data?.data.result[0]
 

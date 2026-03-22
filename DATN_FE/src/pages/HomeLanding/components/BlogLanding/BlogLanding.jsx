@@ -9,8 +9,7 @@ export default function BlogLanding() {
     queryFn: () => {
       return randomBlogLanding()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(data)

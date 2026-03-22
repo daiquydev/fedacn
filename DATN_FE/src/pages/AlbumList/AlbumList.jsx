@@ -19,8 +19,7 @@ export default function AlbumList() {
     queryFn: () => {
       return getListAlbumForChef(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const handleChangeSort = (e) => {

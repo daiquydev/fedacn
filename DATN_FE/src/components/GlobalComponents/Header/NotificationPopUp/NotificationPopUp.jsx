@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { IoMdNotifications } from 'react-icons/io'
@@ -11,7 +12,7 @@ import {
   readAllNotifications,
   readNotification
 } from '../../../../apis/notificationApi'
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import Loading from '../../Loading'
 import { cutString } from '../../../../utils/helper'
 import moment from 'moment'
@@ -83,8 +84,7 @@ export default function NotificationPopUp() {
     queryFn: () => {
       return checkReadNotification()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   // result is now a number (unread count)
@@ -119,7 +119,7 @@ export default function NotificationPopUp() {
     enabled: isMenu
   })
 
-  const readAllMutation = useMutation({
+  const readAllMutation = useSafeMutation({
     mutationFn: () => readAllNotifications()
   })
 
@@ -130,7 +130,7 @@ export default function NotificationPopUp() {
           queryClient.invalidateQueries({ queryKey: ['notification'] }),
           queryClient.invalidateQueries({ queryKey: ['check-notification'] })
         ])
-        toast.success('Đã đánh dấu tất cả đã đọc')
+        toast.success('Đã đánh dấu tất cả đã đọc', { id: 'read-all-noti' })
       }
     })
   }
@@ -285,11 +285,11 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
     }
   }
 
-  const readMutation = useMutation({
+  const readMutation = useSafeMutation({
     mutationFn: () => readNotification(notification._id)
   })
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useSafeMutation({
     mutationFn: () => deleteNotification(notification._id)
   })
 
@@ -300,7 +300,7 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
           queryKey: ['notification']
         })
 
-        toast.success('Xóa thông báo thành công')
+        toast.success('Xóa thông báo thành công', { id: 'delete-noti' })
       }
     })
   }
@@ -335,9 +335,9 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
       >
         <div
           onClick={handleDelete}
-          className='absolute top-0 right-0 m-1 text-xs font-bold text-gray-400 hover:text-gray-500'
+          className={`absolute top-0 right-0 m-1 text-xs font-bold text-gray-400 hover:text-gray-500 ${deleteMutation.isPending ? 'pointer-events-none opacity-50' : ''}`}
         >
-          Xóa
+          {deleteMutation.isPending ? '...' : 'Xóa'}
         </div>
         <div className='relative inline-block shrink-0'>
           <img className='w-12 h-12 object-cover rounded-full' src={logo} alt='image' />
@@ -381,9 +381,9 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
     >
       <div
         onClick={handleDelete}
-        className='absolute top-0 right-0 m-1 text-xs font-bold text-gray-400 hover:text-gray-500'
+        className={`absolute top-0 right-0 m-1 text-xs font-bold text-gray-400 hover:text-gray-500 ${deleteMutation.isPending ? 'pointer-events-none opacity-50' : ''}`}
       >
-        Xóa
+        {deleteMutation.isPending ? '...' : 'Xóa'}
       </div>
       <div className='relative inline-block shrink-0'>
         <img

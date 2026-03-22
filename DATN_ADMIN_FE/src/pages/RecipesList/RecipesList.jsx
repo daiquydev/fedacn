@@ -18,8 +18,7 @@ export default function RecipeList() {
     queryFn: () => {
       return getCategoryRecipes()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data, isLoading } = useQuery({
@@ -27,8 +26,7 @@ export default function RecipeList() {
     queryFn: () => {
       return getRecipesForInspector(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   console.log(data)
 

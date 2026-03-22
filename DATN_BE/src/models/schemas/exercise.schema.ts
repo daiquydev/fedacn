@@ -25,6 +25,8 @@ export interface Exercise {
     difficulty: string
     default_sets: DefaultSet[]
     is_active: boolean
+    isDeleted: boolean
+    deletedAt?: Date
 }
 
 const DefaultSetSchema = new Schema<DefaultSet>(
@@ -63,7 +65,9 @@ const ExerciseSchema = new Schema<Exercise>(
             default: 'intermediate'
         },
         default_sets: { type: [DefaultSetSchema], default: [] },
-        is_active: { type: Boolean, default: true }
+        is_active: { type: Boolean, default: true },
+        isDeleted: { type: Boolean, default: false },
+        deletedAt: { type: Date, default: null }
     },
     { timestamps: true, collection: 'exercises' }
 )

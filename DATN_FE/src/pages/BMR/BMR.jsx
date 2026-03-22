@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoTimeOutline } from 'react-icons/io5'
 import { FaArrowCircleRight } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
@@ -7,7 +8,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaBMR } from '../../utils/rules'
 import { useContext, useState } from 'react'
 import { calculateBMR, saveBMRData } from '../../apis/calculatorApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -34,11 +35,11 @@ export default function BMR() {
     }
   })
 
-  const calculateBMRMutation = useMutation({
+  const calculateBMRMutation = useSafeMutation({
     mutationFn: (body) => calculateBMR(body)
   })
 
-  const saveBMRMutation = useMutation({
+  const saveBMRMutation = useSafeMutation({
     mutationFn: (body) => saveBMRData(body)
   })
 

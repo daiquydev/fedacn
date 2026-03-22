@@ -295,11 +295,21 @@ export default function useRouteElement() {
               )
             },
             {
-              path: '/workout-management',
+              path: '/equipment-management',
               element: (
                 <MainLayout>
                   <Suspense>
-                    <WorkoutManagement />
+                    <WorkoutManagement mode='equipment' />
+                  </Suspense>
+                </MainLayout>
+              )
+            },
+            {
+              path: '/exercise-management',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <WorkoutManagement mode='exercises' />
                   </Suspense>
                 </MainLayout>
               )

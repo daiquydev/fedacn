@@ -47,8 +47,20 @@ export const updateExerciseAdminController = async (req: Request, res: Response)
 
 export const deleteExerciseAdminController = async (req: Request, res: Response) => {
     try {
-        await adminExerciseService.delete(req.params.id)
+        await adminExerciseService.softDelete(req.params.id)
         return res.json({ message: 'Xóa bài tập thành công' })
+    } catch (error) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: (error as Error).message })
+    }
+}
+
+export const restoreExerciseAdminController = async (req: Request, res: Response) => {
+    try {
+        const exercise = await adminExerciseService.restore(req.params.id)
+        if (!exercise) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Không tìm thấy bài tập' })
+        }
+        return res.json({ result: exercise, message: 'Khôi phục bài tập thành công' })
     } catch (error) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: (error as Error).message })
     }

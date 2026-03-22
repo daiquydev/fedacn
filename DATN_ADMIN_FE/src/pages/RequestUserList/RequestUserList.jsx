@@ -19,8 +19,7 @@ export default function RequestUserList() {
     queryFn: () => {
       return getAllRequestToChef(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(queryConfig)

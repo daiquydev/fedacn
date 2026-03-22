@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { FaFire, FaPlus, FaSearch, FaUsers, FaCalendarCheck, FaChevronRight, FaTrophy, FaStar } from 'react-icons/fa'
 import { MdExplore } from 'react-icons/md'
@@ -240,8 +241,7 @@ export default function HabitChallenge() {
 
   const { data: profileData } = useQuery({
     queryKey: ['challenge-profile'],
-    queryFn: getChallengeProfile,
-    staleTime: 1000
+    queryFn: getChallengeProfile
   })
 
   const { data: challengesData, isLoading: loadingChallenges } = useQuery({
@@ -251,17 +251,15 @@ export default function HabitChallenge() {
       search: search || undefined,
       category: category !== 'all' ? category : undefined,
       difficulty: difficulty !== 'all' ? difficulty : undefined
-    }),
-    staleTime: 1000
+    })
   })
 
   const { data: myData, isLoading: loadingMy } = useQuery({
     queryKey: ['my-habit-challenges'],
-    queryFn: () => getMyHabitChallenges({ page: 1, limit: 50 }),
-    staleTime: 1000
+    queryFn: () => getMyHabitChallenges({ page: 1, limit: 50 })
   })
 
-  const joinMutation = useMutation({
+  const joinMutation = useSafeMutation({
     mutationFn: (id) => joinHabitChallenge(id),
     onSuccess: () => {
       toast.success('Đã tham gia thử thách!')

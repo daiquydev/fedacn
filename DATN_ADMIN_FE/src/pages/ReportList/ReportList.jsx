@@ -1,16 +1,11 @@
-import { FaSearch, FaFlag, FaSync, FaUndo } from 'react-icons/fa'
+import { FaSearch, FaFlag } from 'react-icons/fa'
 import { MdReport, MdDeleteSweep } from 'react-icons/md'
-import Pagination from '../../components/GlobalComponents/Pagination'
-import { useNavigate, createSearchParams } from 'react-router-dom'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import useQueryConfig from '../../hooks/useQueryConfig'
-import { omit } from 'lodash'
-import { useForm } from 'react-hook-form'
-import { getReportPost, getDeletedPosts } from '../../apis/inspectorApi'
 import PostItem from './components/PostItem'
 import DeletedPostItem from './components/DeletedPostItem'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { getReportPost, getDeletedPosts } from '../../apis/inspectorApi'
 
 function MiniStatCard({ icon: Icon, label, value, color, iconBg }) {
   return (
@@ -34,78 +29,115 @@ const tabs = [
 ]
 
 export default function ReportList() {
-  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('reported')
-  const queryConfig = omit(useQueryConfig(), 'sort')
+  const [reportedPage, setReportedPage] = useState(1)
+  const [deletedPage, setDeletedPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const debounceRef = useRef(null)
+  const LIMIT = 10
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['report-list', queryConfig],
-    queryFn: () => getReportPost(queryConfig),
+  // Debounce search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setSearch(searchInput)
+      setReportedPage(1)
+      setDeletedPage(1)
+    }, 500)
+    return () => clearTimeout(debounceRef.current)
+  }, [searchInput])
+
+  // Reported posts query
+  const reportedParams = { page: reportedPage, limit: LIMIT, ...(search && { search }) }
+  const { data, isLoading } = useQuery({
+    queryKey: ['report-list', reportedParams],
+    queryFn: () => getReportPost(reportedParams),
     placeholderData: keepPreviousData,
-    staleTime: 1000,
     enabled: activeTab === 'reported'
   })
 
-  const { data: deletedData, isLoading: isLoadingDeleted, refetch: refetchDeleted, isFetching: isFetchingDeleted } = useQuery({
-    queryKey: ['deleted-posts', queryConfig],
-    queryFn: () => getDeletedPosts(queryConfig),
+  // Deleted posts query
+  const deletedParams = { page: deletedPage, limit: LIMIT, ...(search && { search }) }
+  const { data: deletedData, isLoading: isLoadingDeleted } = useQuery({
+    queryKey: ['deleted-posts', deletedParams],
+    queryFn: () => getDeletedPosts(deletedParams),
     placeholderData: keepPreviousData,
-    staleTime: 1000,
     enabled: activeTab === 'deleted'
   })
 
   const posts = data?.data?.result?.posts || []
-  const totalPage = data?.data?.result?.totalPage || 1
+  const reportedTotalPage = data?.data?.result?.totalPage || 1
+  const reportedTotal = data?.data?.result?.totalPosts ?? posts.length
 
   const deletedPosts = deletedData?.data?.result?.posts || []
   const deletedTotalPage = deletedData?.data?.result?.totalPage || 1
+  const deletedTotal = deletedData?.data?.result?.totalPosts ?? deletedPosts.length
 
-  // Calculate report severity counts from current page
+  // Severity counts
   const highRisk = posts.filter(p => (p.report_count ?? 0) >= 5).length
   const moderate = posts.filter(p => (p.report_count ?? 0) >= 2 && (p.report_count ?? 0) < 5).length
 
-  const { register, handleSubmit } = useForm({
-    defaultValues: { searchReport: queryConfig.search || '' }
-  })
+  const handleTabChange = (key) => {
+    setActiveTab(key)
+  }
 
-  const onSubmitSearch = handleSubmit((formData) => {
-    if (!formData.searchReport) {
-      navigate({
-        pathname: '/reports',
-        search: createSearchParams(omit({ ...queryConfig }, ['page', 'search'])).toString()
-      })
-      return
-    }
-    navigate({
-      pathname: '/reports',
-      search: createSearchParams(omit({ ...queryConfig, search: formData.searchReport }, ['page'])).toString()
-    })
-  })
-
-  const currentRefetch = activeTab === 'reported' ? refetch : refetchDeleted
-  const currentIsFetching = activeTab === 'reported' ? isFetching : isFetchingDeleted
+  // Inline pagination renderer
+  const renderPagination = (currentPage, totalPage, setPage) => {
+    if (totalPage <= 1) return null
+    return (
+      <div className='flex items-center justify-center gap-2 mt-5'>
+        <button
+          disabled={currentPage <= 1}
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+          className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+        >
+          ← Trước
+        </button>
+        {Array.from({ length: totalPage }, (_, i) => i + 1)
+          .filter(p => p === 1 || p === totalPage || Math.abs(p - currentPage) <= 2)
+          .reduce((acc, p, i, arr) => {
+            if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+            acc.push(p)
+            return acc
+          }, [])
+          .map(p =>
+            typeof p === 'number' ? (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === currentPage ? 'bg-rose-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                {p}
+              </button>
+            ) : (
+              <span key={p} className='px-1 text-gray-400'>...</span>
+            )
+          )
+        }
+        <button
+          disabled={currentPage >= totalPage}
+          onClick={() => setPage(p => Math.min(totalPage, p + 1))}
+          className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+        >
+          Sau →
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
 
       {/* ── Hero Banner ── */}
       <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 px-8 py-8 mb-6 shadow-xl'>
-        <div className='relative z-10 flex items-start justify-between'>
-          <div>
-            <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-            <h1 className='text-3xl font-black text-white mb-2'>Kiểm duyệt Bài viết</h1>
-            <p className='text-white/80 text-sm max-w-md'>
-              Xem xét và xử lý các bài viết bị cộng đồng báo cáo vi phạm.
-            </p>
-          </div>
-          <button
-            onClick={() => currentRefetch()}
-            disabled={currentIsFetching}
-            className='flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50 mt-1 shrink-0'
-          >
-            <FaSync size={13} className={currentIsFetching ? 'animate-spin' : ''} />
-            Làm mới
-          </button>
+        <div className='relative z-10'>
+          <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
+          <h1 className='text-3xl font-black text-white mb-2'>Kiểm duyệt Bài viết</h1>
+          <p className='text-white/80 text-sm max-w-md'>
+            Xem xét và xử lý các bài viết bị cộng đồng báo cáo vi phạm.
+          </p>
         </div>
 
         {/* Tabs inside Hero Banner */}
@@ -113,7 +145,7 @@ export default function ReportList() {
           {tabs.map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
                 activeTab === tab.key
                   ? 'bg-white text-red-700 shadow-md'
@@ -135,28 +167,24 @@ export default function ReportList() {
         <>
           {/* Stat Cards */}
           <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
-            <MiniStatCard icon={MdReport} label='Bài viết cần xét' value={posts.length} color='border-l-rose-400' iconBg='bg-gradient-to-br from-rose-400 to-red-600' />
+            <MiniStatCard icon={MdReport} label='Bài viết cần xét' value={reportedTotal} color='border-l-rose-400' iconBg='bg-gradient-to-br from-rose-400 to-red-600' />
             <MiniStatCard icon={FaFlag} label='Nguy cơ cao (≥5 báo cáo)' value={highRisk} color='border-l-red-500' iconBg='bg-gradient-to-br from-red-500 to-rose-700' />
             <MiniStatCard icon={FaFlag} label='Báo cáo vừa (2-4 lần)' value={moderate} color='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
           </div>
 
-          {/* Search / Filter */}
+          {/* Search */}
           <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
-            <form onSubmit={onSubmitSearch} className='flex gap-2'>
-              <div className='relative flex-1'>
-                <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
-                <input
-                  autoComplete='off'
-                  type='search'
-                  {...register('searchReport')}
-                  placeholder='Tìm bài viết bị báo cáo...'
-                  className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
-                />
-              </div>
-              <button type='submit' className='px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1.5'>
-                <FaSearch size={12} /> Tìm
-              </button>
-            </form>
+            <div className='relative flex-1'>
+              <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+              <input
+                autoComplete='off'
+                type='search'
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder='Tìm bài viết bị báo cáo...'
+                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+              />
+            </div>
           </div>
 
           {/* Table */}
@@ -167,7 +195,8 @@ export default function ReportList() {
               <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
                 <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
                   <p className='text-sm text-gray-500 dark:text-gray-400'>
-                    Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{posts.length}</span> bài viết bị báo cáo
+                    <span className='font-semibold text-gray-800 dark:text-white'>{reportedTotal}</span> bài viết bị báo cáo
+                    {reportedTotalPage > 1 && <span className='text-gray-400'> (trang {reportedPage}/{reportedTotalPage})</span>}
                   </p>
                 </div>
                 <div className='overflow-x-auto'>
@@ -197,11 +226,7 @@ export default function ReportList() {
                 </div>
               </div>
 
-              {totalPage > 1 && (
-                <div className='flex justify-center items-center mt-5'>
-                  <Pagination pageSize={totalPage} queryConfig={queryConfig} url='/reports' />
-                </div>
-              )}
+              {renderPagination(reportedPage, reportedTotalPage, setReportedPage)}
             </>
           )}
         </>
@@ -212,26 +237,22 @@ export default function ReportList() {
         <>
           {/* Stat Cards */}
           <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
-            <MiniStatCard icon={MdDeleteSweep} label='Tổng bài viết đã xóa' value={deletedPosts.length} color='border-l-gray-400' iconBg='bg-gradient-to-br from-gray-400 to-gray-600' />
+            <MiniStatCard icon={MdDeleteSweep} label='Tổng bài viết đã xóa' value={deletedTotal} color='border-l-gray-400' iconBg='bg-gradient-to-br from-gray-400 to-gray-600' />
           </div>
 
-          {/* Search / Filter */}
+          {/* Search */}
           <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
-            <form onSubmit={onSubmitSearch} className='flex gap-2'>
-              <div className='relative flex-1'>
-                <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
-                <input
-                  autoComplete='off'
-                  type='search'
-                  {...register('searchReport')}
-                  placeholder='Tìm bài viết đã xóa...'
-                  className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
-                />
-              </div>
-              <button type='submit' className='px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1.5'>
-                <FaSearch size={12} /> Tìm
-              </button>
-            </form>
+            <div className='relative flex-1'>
+              <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+              <input
+                autoComplete='off'
+                type='search'
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder='Tìm bài viết đã xóa...'
+                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+              />
+            </div>
           </div>
 
           {/* Table */}
@@ -242,7 +263,8 @@ export default function ReportList() {
               <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
                 <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
                   <p className='text-sm text-gray-500 dark:text-gray-400'>
-                    Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{deletedPosts.length}</span> bài viết đã xóa
+                    <span className='font-semibold text-gray-800 dark:text-white'>{deletedTotal}</span> bài viết đã xóa
+                    {deletedTotalPage > 1 && <span className='text-gray-400'> (trang {deletedPage}/{deletedTotalPage})</span>}
                   </p>
                 </div>
                 <div className='overflow-x-auto'>
@@ -272,11 +294,7 @@ export default function ReportList() {
                 </div>
               </div>
 
-              {deletedTotalPage > 1 && (
-                <div className='flex justify-center items-center mt-5'>
-                  <Pagination pageSize={deletedTotalPage} queryConfig={queryConfig} url='/reports' />
-                </div>
-              )}
+              {renderPagination(deletedPage, deletedTotalPage, setDeletedPage)}
             </>
           )}
         </>

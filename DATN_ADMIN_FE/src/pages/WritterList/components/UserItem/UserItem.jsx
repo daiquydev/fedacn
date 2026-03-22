@@ -1,10 +1,10 @@
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { banUserAdmin, deleteUserAdmin, unbanUserAdmin } from '../../../../apis/adminApi'
 import { useState } from 'react'
 import { queryClient } from '../../../../main'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function UserItem({ user }) {
   const [openDelete, setOpenDelete] = useState(false)
@@ -25,7 +25,7 @@ export default function UserItem({ user }) {
     setOpenBan(false)
   }
 
-  const deleteUserMutation = useMutation({
+  const deleteUserMutation = useSafeMutation({
     mutationFn: () => deleteUserAdmin(user._id),
     onSuccess: () => {
       toast.success('Xóa người dùng thành công')
@@ -39,11 +39,11 @@ export default function UserItem({ user }) {
     deleteUserMutation.mutate()
   }
 
-  const banMutation = useMutation({
+  const banMutation = useSafeMutation({
     mutationFn: (body) => banUserAdmin(body)
   })
 
-  const unbanMutation = useMutation({
+  const unbanMutation = useSafeMutation({
     mutationFn: (body) => unbanUserAdmin(body)
   })
 

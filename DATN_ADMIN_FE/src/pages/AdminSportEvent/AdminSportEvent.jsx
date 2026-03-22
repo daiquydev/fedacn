@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaUndo, FaSearch,
     FaFilter, FaUsers, FaMapMarkerAlt, FaRunning, FaHome,
@@ -11,6 +11,7 @@ import toast from 'react-hot-toast'
 import adminSportEventApi from '../../apis/sportEventApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (dateStr) => {
@@ -551,8 +552,7 @@ export default function AdminSportEvent() {
     // Stats
     const { data: statsData } = useQuery({
         queryKey: ['adminSportEventStats'],
-        queryFn: () => adminSportEventApi.getStats(),
-        staleTime: 1000
+        queryFn: () => adminSportEventApi.getStats()
     })
     const stats = statsData?.data?.result || {}
 
@@ -568,8 +568,7 @@ export default function AdminSportEvent() {
             dateTo: filterDateTo || undefined,
             sortBy
         }),
-        keepPreviousData: true,
-        staleTime: 1000
+        keepPreviousData: true
     })
 
     const events = data?.data?.result?.events || []
@@ -579,8 +578,7 @@ export default function AdminSportEvent() {
     // Sport categories for the form dropdown — only active (non-deleted)
     const { data: catData } = useQuery({
         queryKey: ['adminSportCategories'],
-        queryFn: () => import('../../apis/sportCategoryApi').then(m => m.default.getAll()),
-        staleTime: 1000
+        queryFn: () => import('../../apis/sportCategoryApi').then(m => m.default.getAll())
     })
     const categories = (catData?.data?.result || []).filter(c => !c.isDeleted)
 
@@ -589,13 +587,13 @@ export default function AdminSportEvent() {
         queryClient.invalidateQueries({ queryKey: ['adminSportEventStats'] })
     }
 
-    const softDeleteMutation = useMutation({
+    const softDeleteMutation = useSafeMutation({
         mutationFn: (id) => adminSportEventApi.softDelete(id),
         onSuccess: () => { toast.success('Đã xóa sự kiện'); invalidate() },
         onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi xóa sự kiện')
     })
 
-    const restoreMutation = useMutation({
+    const restoreMutation = useSafeMutation({
         mutationFn: (id) => adminSportEventApi.restore(id),
         onSuccess: () => { toast.success('Đã khôi phục sự kiện'); invalidate() },
         onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khôi phục')
@@ -641,21 +639,12 @@ export default function AdminSportEvent() {
                             Tạo, chỉnh sửa và theo dõi các sự kiện thể thao trong hệ thống.
                         </p>
                     </div>
-                    <div className='flex items-center gap-2 mt-1'>
-                        <button
-                            onClick={() => queryClient.invalidateQueries({ queryKey: ['adminSportEvents'] })}
-                            className='flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all mt-1'
-                        >
-                            <FaSync size={13} />
-                            Làm mới
-                        </button>
-                        <button
-                            onClick={() => setModalEvent(null)}
-                            className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0 mt-1'
-                        >
-                            <FaPlus size={12} /> Tạo sự kiện
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setModalEvent(null)}
+                        className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0 mt-1'
+                    >
+                        <FaPlus size={12} /> Tạo sự kiện
+                    </button>
                 </div>
 
                 {/* Tabs inside Hero Banner */}
@@ -759,7 +748,7 @@ export default function AdminSportEvent() {
                             )}
                             {filterEventType !== 'all' && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'>
-                                    {filterEventType === 'Ngoài trời' ? '🌳' : '🏠'} {filterEventType}
+                                    {filterEventType === 'Ngoài trời' ? '🌿' : '🏠'} {filterEventType}
                                     <button onClick={() => { setFilterEventType('all'); setPage(1) }} className='hover:text-emerald-900 dark:hover:text-emerald-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
@@ -817,7 +806,7 @@ export default function AdminSportEvent() {
                                     className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all'
                                 >
                                     <option value='all'>Tất cả loại</option>
-                                    <option value='Ngoài trời'>🌳 Ngoài trời</option>
+                                    <option value='Ngoài trời'>🌿 Ngoài trời</option>
                                     <option value='Trong nhà'>🏠 Trong nhà</option>
                                 </select>
                             </div>
@@ -1009,7 +998,7 @@ export default function AdminSportEvent() {
                                                 <div>
                                                     <p className='text-sm font-medium text-gray-700 dark:text-gray-200'>{ev.category}</p>
                                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-0.5 ${ev.eventType === 'Ngoài trời' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'}`}>
-                                                        {ev.eventType === 'Ngoài trời' ? '🌳' : '🏠'} {ev.eventType}
+                                                        {ev.eventType === 'Ngoài trời' ? '🌿' : '🏠'} {ev.eventType}
                                                     </span>
                                                 </div>
                                             </td>
@@ -1092,9 +1081,10 @@ export default function AdminSportEvent() {
                                                         <button
                                                             onClick={() => setConfirmAction({ type: 'restore', event: ev })}
                                                             title='Khôi phục'
-                                                            className='p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors'
+                                                            className='p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors flex items-center gap-1.5'
                                                         >
                                                             <FaUndo size={14} />
+                                                            <span className='text-xs font-semibold'>Khôi phục</span>
                                                         </button>
                                                     ) : (
                                                         <button

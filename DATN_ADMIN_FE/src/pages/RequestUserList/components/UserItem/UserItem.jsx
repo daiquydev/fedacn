@@ -1,11 +1,11 @@
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { acceptRequestToChef, rejectRequestToChef } from '../../../../apis/adminApi'
 import { useState } from 'react'
 import { queryClient } from '../../../../main'
 import ModalRequest from '../ModalRequest'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function UserItem({ user }) {
   const [openAccept, setOpenAccept] = useState(false)
@@ -36,11 +36,11 @@ export default function UserItem({ user }) {
     setOpenReject(false)
   }
 
-  const acceptUserMutation = useMutation({
+  const acceptUserMutation = useSafeMutation({
     mutationFn: (body) => acceptRequestToChef(body)
   })
 
-  const rejectUserMutation = useMutation({
+  const rejectUserMutation = useSafeMutation({
     mutationFn: (body) => rejectRequestToChef(body)
   })
 

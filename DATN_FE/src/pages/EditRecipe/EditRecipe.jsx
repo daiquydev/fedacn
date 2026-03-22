@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import parse from 'html-react-parser'
@@ -10,7 +11,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaUpdateRecipe } from '../../utils/rules'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -34,8 +35,7 @@ export default function EditRecipe() {
     queryFn: () => {
       return getRecipeForChef(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   const recipe = data?.data.result[0]
   // console.log(recipe)
@@ -63,7 +63,7 @@ export default function EditRecipe() {
   })
   // console.log(id)
 
-  const editRecipeMutation = useMutation({
+  const editRecipeMutation = useSafeMutation({
     mutationFn: (body) => updateRecipeForChef(id, body)
   })
   const onSubmit = handleSubmit((data) => {
@@ -127,8 +127,7 @@ export default function EditRecipe() {
     queryFn: () => {
       return getCategoryRecipes()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   return (

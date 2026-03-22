@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoMdHome } from 'react-icons/io'
 import Input from '../../components/InputComponents/Input'
 import TextArea from '../../components/InputComponents/TextArea'
@@ -6,7 +7,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaCreateAlbum } from '../../utils/rules'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
@@ -50,7 +51,7 @@ export default function CreateAlbum() {
     }
   })
 
-  const createAlbumMutation = useMutation({
+  const createAlbumMutation = useSafeMutation({
     mutationFn: (data) => createAlbum(data)
   })
   const onSubmit = handleSubmit((data) => {
@@ -84,8 +85,7 @@ export default function CreateAlbum() {
     queryFn: () => {
       return getRecipesForChef(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { register: registerRecipe, handleSubmit: handleSubmitRecipe } = useForm({

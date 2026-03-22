@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoTimeOutline } from 'react-icons/io5'
 import { FaArrowCircleRight } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
@@ -7,7 +8,7 @@ import { useForm } from 'react-hook-form'
 import { schemaWaterPerDay } from '../../utils/rules'
 import { useContext, useState } from 'react'
 import { calculateWaterIntake } from '../../apis/calculatorApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -36,7 +37,7 @@ export default function WaterPerDay() {
     setIsModalOpen(false)
   }
 
-  const calculateWaterMutation = useMutation({
+  const calculateWaterMutation = useSafeMutation({
     mutationFn: (body) => calculateWaterIntake(body)
   })
 
@@ -288,7 +289,7 @@ export default function WaterPerDay() {
               <div className='pt-1'>
                 {calculateWaterMutation.isPending ? (
                   <button disabled className='w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold flex items-center justify-center gap-2 opacity-70'>
-                    <Loading classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
+                    <Loading className='' classNameSpin='inline w-5 h-5 text-white/60 animate-spin fill-white' /> Đang tính...
                   </button>
                 ) : (
                   <button className='w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200'>

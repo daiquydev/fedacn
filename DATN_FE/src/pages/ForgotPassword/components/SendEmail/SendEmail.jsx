@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { Link, useNavigate } from 'react-router-dom'
 import Input from '../../../../components/InputComponents/Input'
 import MotionWrapper from '../../../../layouts/MotionWrapper'
@@ -5,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { sendOtp } from '../../../../apis/authApi'
 
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { schemaSendOtp } from '../../../../utils/rules'
 import toast from 'react-hot-toast'
 import Loading from '../../../../components/GlobalComponents/Loading'
@@ -22,7 +23,7 @@ export default function SendEmail() {
   } = useForm({
     resolver: yupResolver(schemaSendOtp)
   })
-  const sendOtpMutation = useMutation({
+  const sendOtpMutation = useSafeMutation({
     mutationFn: (body) => sendOtp(body)
   })
   const onSubmit = handleSubmit(

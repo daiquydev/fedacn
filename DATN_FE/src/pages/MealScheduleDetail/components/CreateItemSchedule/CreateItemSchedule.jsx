@@ -1,7 +1,8 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { omit } from 'lodash'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { AiOutlineSearch } from 'react-icons/ai'
@@ -30,8 +31,7 @@ export default function CreateItemSchedule({ meal }) {
     queryFn: () => {
       return getCategoryIngredients()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data, isLoading } = useQuery({
@@ -39,8 +39,7 @@ export default function CreateItemSchedule({ meal }) {
     queryFn: () => {
       return getIngredients(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { register: registerIngredients, handleSubmit: handleSubmitIngredients } = useForm({
@@ -105,7 +104,7 @@ export default function CreateItemSchedule({ meal }) {
     })
   })
 
-  const createMealItemMutation = useMutation({
+  const createMealItemMutation = useSafeMutation({
     mutationFn: (body) => createMealItem(body)
   })
 
@@ -253,7 +252,7 @@ export default function CreateItemSchedule({ meal }) {
           </div>
           {createMealItemMutation.isPending ? (
             <button disabled className='block my-5 btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-              <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+              <Loading className='' classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
             </button>
           ) : (
             <button className='btn my-5 btn-sm text-white hover:bg-red-900 bg-red-800'> Lưu</button>

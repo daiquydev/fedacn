@@ -17,8 +17,7 @@ export default function Blog() {
     queryFn: () => {
       return getCategoryBlogs()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const fetchBlog = async ({ pageParam }) => {
@@ -30,7 +29,7 @@ export default function Blog() {
   //     return getBlogsForUser(queryConfig)
   //   },
   //   placeholderData: keepPreviousData,
-  //   staleTime: 1000
+  //,
 
   const { data, fetchNextPage, isFetchingNextPage, hasNextPage, isLoading } = useInfiniteQuery({
     queryKey: ['blogs-list-user', queryConfig],
@@ -42,8 +41,7 @@ export default function Blog() {
       if (nextPage > lastPage.data.result.totalPage) return undefined
       return nextPage
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const handleChangeSort = (e) => {

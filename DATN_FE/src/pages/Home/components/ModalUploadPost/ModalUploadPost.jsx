@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useravatar from '../../../../assets/images/useravatar.jpg'
@@ -7,7 +8,7 @@ import { FaTimes, FaGlobeAsia, FaPen, FaUserFriends } from 'react-icons/fa'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
-import { useMutation } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { createPost } from '../../../../apis/postApi'
 import useSound from 'use-sound'
 import postSfx from '../../../../assets/sounds/post.mp3'
@@ -22,6 +23,7 @@ const PRIVACY_OPTIONS = [
 ]
 
 export default function ModalUploadPost({ closeModalPost, profile, initialContent = '' }) {
+  const queryClient = useQueryClient()
   const theme = localStorage.getItem('theme')
   const inputRef = useRef(null)
   const dropdownRef = useRef(null)
@@ -38,7 +40,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   const handleImageChange = (e) => setImage((prev) => [...prev, ...e.target.files])
   const handleDeleteImage = (index) => setImage((prev) => prev.filter((_, i) => i !== index))
 
-  const uploadMutation = useMutation({
+  const uploadMutation = useSafeMutation({
     mutationFn: (body) => createPost(body)
   })
 
@@ -135,6 +137,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
 
     uploadMutation.mutate(formData, {
       onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
         toast.success('Đăng bài viết thành công')
         setContent('')
         setImage([])

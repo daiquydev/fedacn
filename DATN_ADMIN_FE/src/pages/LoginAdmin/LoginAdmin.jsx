@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaLoginAdmin } from '../../utils/rules'
 import Input from '../../components/InputComponents/Input'
-import { useMutation } from '@tanstack/react-query'
 import { loginAdminAccount } from '../../apis/authApi'
 import { toast } from 'react-hot-toast'
 import { isAxiosUnprocessableEntityError } from '../../utils/utils'
@@ -12,6 +11,7 @@ import { useContext } from 'react'
 import { AppContext } from '../../contexts/app.context'
 import Loading from '../../components/GlobalComponents/Loading'
 import { FaShieldAlt } from 'react-icons/fa'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 
 export default function Login() {
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
@@ -24,7 +24,7 @@ export default function Login() {
   } = useForm({
     resolver: yupResolver(schemaLoginAdmin)
   })
-  const loginAccountAdminMutation = useMutation({
+  const loginAccountAdminMutation = useSafeMutation({
     mutationFn: (body) => loginAdminAccount(body)
   })
   const onSubmit = handleSubmit((data) => {

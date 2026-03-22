@@ -150,6 +150,12 @@ class AuthUserService {
         user: null
       }
     }
+    if (user && user.isDeleted === true) {
+      return {
+        message: AUTH_USER_MESSAGE.ACCOUNT_DELETED,
+        user: null
+      }
+    }
     if (user) {
       const [access_token, refresh_token] = await Promise.all([
         this.signAccessToken({
@@ -242,6 +248,13 @@ class AuthUserService {
     //check
     const user = await UserModel.findOne({ email })
     if (user) {
+      // Defense-in-depth: double-check even though validator should block
+      if (user.status === UserStatus.banned) {
+        return { message: AUTH_USER_MESSAGE.ACCOUNT_BANNED, user: null }
+      }
+      if (user.isDeleted === true) {
+        return { message: AUTH_USER_MESSAGE.ACCOUNT_DELETED, user: null }
+      }
       const [access_token, refresh_token] = await Promise.all([
         this.signAccessToken({
           user_id: user._id.toString(),
@@ -331,6 +344,11 @@ class AuthUserService {
   }) {
     const findUser = await UserModel.findOne({ _id: user.user_id })
     if (findUser) {
+      // Block banned/deleted users from refreshing tokens
+      if (findUser.status === UserStatus.banned || findUser.isDeleted === true) {
+        await RefreshTokenModel.deleteOne({ token: user.refresh_token })
+        return null
+      }
       const [new_access_token, new_refresh_token] = await Promise.all([
         this.signAccessToken({
           user_id: user.user_id.toString(),

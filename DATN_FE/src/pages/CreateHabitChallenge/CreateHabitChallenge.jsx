@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { FaArrowLeft, FaFire, FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { createHabitChallenge } from '../../apis/habitChallengeApi'
@@ -68,7 +69,7 @@ export default function CreateHabitChallenge() {
     }
   })
 
-  const createMutation = useMutation({
+  const createMutation = useSafeMutation({
     mutationFn: () => createHabitChallenge(form),
     onSuccess: () => {
       toast.success('Tạo thử thách thành công! 🎉')

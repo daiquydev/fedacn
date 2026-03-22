@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { IoMdHome } from 'react-icons/io'
 import Input from '../../components/InputComponents/Input'
 import TextArea from '../../components/InputComponents/TextArea'
@@ -6,7 +7,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaCreateAlbum } from '../../utils/rules'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -61,7 +62,7 @@ export default function EditAlbum() {
     }
   })
 
-  const updateAlbumMutation = useMutation({
+  const updateAlbumMutation = useSafeMutation({
     mutationFn: (body) => updateAlbumForChef(id, body)
   })
 
@@ -103,8 +104,7 @@ export default function EditAlbum() {
     queryFn: () => {
       return getRecipesForChef(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { register: registerRecipe, handleSubmit: handleSubmitRecipe } = useForm({
@@ -499,7 +499,7 @@ const RecipeItemAdded = ({ recipe, album_id }) => {
   const handleCloseDelete = () => {
     setOpenDelete(false)
   }
-  const deleteRecipeInAlbumMutation = useMutation({
+  const deleteRecipeInAlbumMutation = useSafeMutation({
     mutationFn: (body) => deleteRecipeInAlbumForChef(body)
   })
 

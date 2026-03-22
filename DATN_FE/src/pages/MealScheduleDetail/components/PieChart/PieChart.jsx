@@ -31,8 +31,7 @@ export default function PieChart({ meal, profile }) {
         date: moment(new Date()).format('YYYY-MM-DD')
       })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const item = mealItem?.data.result[0] ? mealItem?.data.result[0].total_calories : 0

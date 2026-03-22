@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   FaEdit,
   FaTrash,
@@ -48,7 +49,7 @@ const MySportEvents = () => {
   const joinedEvents = joinedEventsData?.data?.result?.events || joinedEventsData?.result?.events || []
 
   // Delete mutation
-  const deleteMutation = useMutation({
+  const deleteMutation = useSafeMutation({
     mutationFn: (eventId) => deleteSportEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries(['myCreatedEvents'])

@@ -74,8 +74,7 @@ export default function MeSportEvents() {
   const { data, isLoading } = useQuery({
     queryKey: ['joinedEvents', { page: 1, limit: 20 }],
     queryFn: () => getJoinedEvents({ page: 1, limit: 20 }),
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const raw = data?.data?.result

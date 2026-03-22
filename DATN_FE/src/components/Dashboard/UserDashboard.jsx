@@ -454,8 +454,7 @@ const UserDashboard = () => {
     isLoading: loadingActive
   } = useQuery({
     queryKey: ['dashboard-active-meal-plan'],
-    queryFn: getActiveMealSchedule,
-    staleTime: 1000
+    queryFn: getActiveMealSchedule
   })
 
   const {
@@ -463,8 +462,7 @@ const UserDashboard = () => {
     isLoading: loadingRecommendations
   } = useQuery({
     queryKey: ['dashboard-public-meal-plans'],
-    queryFn: () => getPublicMealPlans({ limit: 6, sort: 'popular' }),
-    staleTime: 1000
+    queryFn: () => getPublicMealPlans({ limit: 6, sort: 'popular' })
   })
 
   const scheduleSummary = useMemo(() => {

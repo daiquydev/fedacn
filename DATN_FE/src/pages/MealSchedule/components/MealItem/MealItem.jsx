@@ -1,4 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
+import { } from '@tanstack/react-query'
 import moment from 'moment'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -18,7 +19,7 @@ export default function MealItem({ meal }) {
   const handleOpenModaldeleteMeal = () => {
     setOpenModalMeal(true)
   }
-  const deleteMealMutation = useMutation({
+  const deleteMealMutation = useSafeMutation({
     mutationFn: (id) => deleteMealSchedule(id)
   })
 

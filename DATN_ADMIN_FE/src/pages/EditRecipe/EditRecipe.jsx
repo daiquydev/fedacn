@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   getCategoryIngredients,
   getCategoryRecipes,
@@ -28,6 +28,7 @@ import { FaPlus } from 'react-icons/fa6'
 import IngerdientItem from './components/IngerdientItem'
 import { formats, modules } from '../../constants/editorToolbar'
 import { getImageUrl } from '../../utils/imageUrl'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 
 export default function EditRecipe() {
   const [openEdit, setOpenEdit] = useState(false)
@@ -41,8 +42,7 @@ export default function EditRecipe() {
     queryFn: () => {
       return getCategoryIngredients()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: ingredients, isLoading } = useQuery({
@@ -50,8 +50,7 @@ export default function EditRecipe() {
     queryFn: () => {
       return getIngredients(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { register: registerIngredients, handleSubmit: handleSubmitIngredients } = useForm({
@@ -93,8 +92,7 @@ export default function EditRecipe() {
     queryFn: () => {
       return getRecipeDetailForWritter(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   const recipe = data?.data.result[0]
   // console.log(recipe)
@@ -128,7 +126,7 @@ export default function EditRecipe() {
   })
   // console.log(id)
 
-  const editRecipeMutation = useMutation({
+  const editRecipeMutation = useSafeMutation({
     mutationFn: (body) => updateRecipe(id, body)
   })
   const onSubmit = handleSubmit((data) => {
@@ -211,8 +209,7 @@ export default function EditRecipe() {
     queryFn: () => {
       return getCategoryRecipes()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   return (

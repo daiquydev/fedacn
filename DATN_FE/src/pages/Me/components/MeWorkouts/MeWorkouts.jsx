@@ -70,12 +70,11 @@ function WorkoutCard({ schedule }) {
   )
 }
 
-export default function MeWorkouts() {
+export default function MeWorkouts({ isOwner = true }) {
   const { data, isLoading } = useQuery({
     queryKey: ['workoutSchedules', { page: 1, limit: 20 }],
     queryFn: () => getListWorkoutSchedules({ page: 1, limit: 20 }),
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const raw = data?.data?.result
@@ -90,10 +89,14 @@ export default function MeWorkouts() {
       <div className='text-center py-16'>
         <FaDumbbell className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
         <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>Chưa có lịch bài tập nào</h3>
-        <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tạo lịch bài tập để theo dõi tiến trình!</p>
-        <Link to='/schedule/ex-schedule' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
-          Tạo lịch tập <FaArrowRight />
-        </Link>
+        {isOwner && (
+          <>
+            <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tạo lịch bài tập để theo dõi tiến trình!</p>
+            <Link to='/challenge' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+              Tạo lịch tập <FaArrowRight />
+            </Link>
+          </>
+        )}
       </div>
     )
   }

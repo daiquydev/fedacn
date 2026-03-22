@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useravatar from '../../../assets/images/useravatar.jpg'
@@ -6,7 +7,7 @@ import { MdEmojiEmotions, MdSportsGymnastics, MdPublic, MdLock, MdPeople } from 
 import { FaRunning, FaBiking, FaSwimmer, FaWalking, FaChartLine, FaFlag } from 'react-icons/fa'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
-import { useMutation } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { createPost } from '../../../apis/postApi' // Điều chỉnh thành API đăng bài đến challenge
 import ModalLayout from '../../../layouts/ModalLayout'
 import useSound from 'use-sound'
@@ -16,6 +17,7 @@ import Loading from '../../../components/GlobalComponents/Loading'
 import * as nsfwjs from 'nsfwjs'
 
 export default function ModalUploadChallengePost({ closeModalPost, profile, challenge, userProgress }) {
+  const queryClient = useQueryClient()
   const theme = localStorage.getItem('theme')
   const inputRef = useRef(null)
   const [play] = useSound(post)
@@ -56,7 +58,7 @@ export default function ModalUploadChallengePost({ closeModalPost, profile, chal
     setShowEvidenceSelector(false)
   }
 
-  const uploadMutation = useMutation({
+  const uploadMutation = useSafeMutation({
     mutationFn: (body) => {
       // Đây sẽ là API tạo bài đăng cho challenge thay vì bài đăng thông thường
       // Giả sử API có thêm tham số challengeId
@@ -174,13 +176,14 @@ export default function ModalUploadChallengePost({ closeModalPost, profile, chal
     uploadMutation.mutate(formData, {
       onSuccess: (data) => {
         console.log(data)
+        queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
+        queryClient.invalidateQueries({ queryKey: ['challengePosts', challenge.id] })
         toast.success('Đăng bài thành công')
         setContent('')
         setImage([])
         setIncludeProgress(false)
         setSelectedEvidence(null)
         play()
-        // queryClient.invalidateQueries({ queryKey: ['challengePosts', challenge.id] })
         closeModalPost()
       },
       onError: (error) => {

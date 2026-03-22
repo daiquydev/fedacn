@@ -16,8 +16,7 @@ export default function UserBlog({ user_id }) {
     queryFn: () => {
       return getUserBlog(user_id, queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(queryConfig)

@@ -30,7 +30,10 @@ export enum NotificationTypes {
   habitChallengeInvite,
   habitBuddyReminder,
   habitCheckinLike,
-  habitStreakMilestone
+  habitStreakMilestone,
+  challengeJoined,
+  challengeCompleted,
+  challengeMilestone
 }
 
 // có 2 kiểu type là đủ 5000 follow hoặc gửi minh chứng

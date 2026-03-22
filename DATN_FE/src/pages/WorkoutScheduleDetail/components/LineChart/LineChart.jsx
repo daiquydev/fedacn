@@ -24,8 +24,7 @@ export default function LineChart({ workout }) {
     queryFn: () => {
       return getDateWorkoutItem(query)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const dataCalo = lineData?.data.result.workoutDate

@@ -1,4 +1,5 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   completeDateWorkoutItem,
@@ -35,7 +36,7 @@ export default function WorkoutScheduleDetail() {
   const handleOpenModalUpdateWorkout = () => {
     setOpenModalWorkout(true)
   }
-  const syncWeightWorkoutMutation = useMutation({
+  const syncWeightWorkoutMutation = useSafeMutation({
     mutationFn: (body) => syncWeight(body)
   })
 
@@ -67,8 +68,7 @@ export default function WorkoutScheduleDetail() {
     queryFn: () => {
       return getWorkoutSchedule(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const workout = data?.data.result
@@ -104,15 +104,14 @@ export default function WorkoutScheduleDetail() {
       return nextPage
     },
     enabled: !!workout?._id,
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
-  const completeDateWorkOutItemMutation = useMutation({
+  const completeDateWorkOutItemMutation = useSafeMutation({
     mutationFn: (body) => completeDateWorkoutItem(body)
   })
 
-  const deleteDateWorkOutItemMutation = useMutation({
+  const deleteDateWorkOutItemMutation = useSafeMutation({
     mutationFn: (body) => deleteDateWorkoutItem(body)
   })
 

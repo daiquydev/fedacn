@@ -16,8 +16,7 @@ export default function MeRecipe() {
     queryFn: () => {
       return getMeRecipe(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(queryConfig)

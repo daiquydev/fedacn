@@ -1,6 +1,7 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AiOutlineLoading3Quarters
 } from 'react-icons/ai'
@@ -96,8 +97,7 @@ export default function SportEventDetail() {
   // Fetch current user's friends/followers
   const { data: meData } = useQuery({
     queryKey: ['me'],
-    queryFn: currentAccount,
-    staleTime: 1000
+    queryFn: currentAccount
   })
 
   const me = meData?.data?.result?.[0]
@@ -180,8 +180,7 @@ export default function SportEventDetail() {
   } = useQuery({
     queryKey: ['eventOverallProgress', id],
     queryFn: () => getEventOverallProgress(id),
-    enabled: !!id,
-    staleTime: 1000
+    enabled: !!id
   })
 
   const overallProgress = overallProgressData?.data?.result || { totalGroupProgress: 0, participantCount: 0 }
@@ -191,7 +190,7 @@ export default function SportEventDetail() {
   // ==================== MUTATIONS ====================
 
   // Join Event Mutation
-  const joinEventMutation = useMutation({
+  const joinEventMutation = useSafeMutation({
     mutationFn: () => joinSportEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sportEvent', id] })
@@ -203,7 +202,7 @@ export default function SportEventDetail() {
   })
 
   // Invite Friend Mutation
-  const inviteFriendMutation = useMutation({
+  const inviteFriendMutation = useSafeMutation({
     mutationFn: (friendId) => inviteFriendToEvent(id, friendId),
     onSuccess: (_, friendId) => {
       setInvitedIds(prev => new Set([...prev, String(friendId)]))
@@ -215,7 +214,7 @@ export default function SportEventDetail() {
   })
 
   // Leave Event Mutation
-  const leaveEventMutation = useMutation({
+  const leaveEventMutation = useSafeMutation({
     mutationFn: () => leaveSportEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sportEvent', id] })
@@ -227,7 +226,7 @@ export default function SportEventDetail() {
   })
 
   // Add Progress Mutation
-  const addProgressMutation = useMutation({
+  const addProgressMutation = useSafeMutation({
     mutationFn: (progressData) => addProgress(id, progressData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProgress', id] })
@@ -247,7 +246,7 @@ export default function SportEventDetail() {
   }
 
   // Check-in Mutation
-  const checkInMutation = useMutation({
+  const checkInMutation = useSafeMutation({
     mutationFn: (sessionId) => checkInSession(id, sessionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessionAttendance'] })
@@ -259,7 +258,7 @@ export default function SportEventDetail() {
   })
 
   // Check-out Mutation
-  const checkOutMutation = useMutation({
+  const checkOutMutation = useSafeMutation({
     mutationFn: (sessionId) => checkOutSession(id, sessionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessionAttendance'] })

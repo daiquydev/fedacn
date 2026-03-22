@@ -158,6 +158,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
     const aiTimerRef = useRef(null)
     const faceApiRef = useRef(null)
     const localVideoRef = useRef(null)  // For AI detection (always shows local cam)
+    const camOnRef = useRef(true)        // Synchronous cam state for AI interval
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -391,8 +392,10 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
     }, [micOn])
 
     const toggleCam = useCallback(() => {
-        localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !camOn })
-        setCamOn(v => !v)
+        const next = !camOn
+        localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = next })
+        camOnRef.current = next
+        setCamOn(next)
     }, [camOn])
 
     const toggleScreenShare = useCallback(async () => {
@@ -475,10 +478,18 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
         }, 1000)
 
         aiTimerRef.current = setInterval(async () => {
+            // When camera is OFF, face detection is impossible → treat as absent
+            if (!camOnRef.current) {
+                setFace(false)
+                absenceRef.current += AI_INTERVAL / 1000
+                setAbsenceSecs(absenceRef.current)
+                if (absenceRef.current >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
+                return
+            }
             if (!faceApiRef.current || !localVideoRef.current) return
             try {
                 const faceapi = faceApiRef.current
-                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.3 })
+                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
                 const detected = (await faceapi.detectAllFaces(localVideoRef.current, opts)).length > 0
                 setFace(detected)
                 if (!detected) {
@@ -585,8 +596,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
     // ── Fetch kcal_per_unit from SportCategory for realtime calorie display
     const { data: categoriesData } = useQuery({
         queryKey: ['sportCategories'],
-        queryFn: () => sportCategoryApi.getAll(),
-        staleTime: 60000
+        queryFn: () => sportCategoryApi.getAll()
     })
 
     const kcalPerMinute = useMemo(() => {

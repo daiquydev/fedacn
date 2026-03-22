@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { MdEmojiEmotions } from 'react-icons/md'
 import { useContext, useEffect, useRef, useState } from 'react'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import moment from 'moment'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { sharePost } from '../../../../apis/postApi'
 import toast from 'react-hot-toast'
 import postSound from '../../../../assets/sounds/post.mp3'
@@ -53,7 +54,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
     setShowEmoji(false)
   }
 
-  const uploadMutation = useMutation({
+  const uploadMutation = useSafeMutation({
     mutationFn: (body) => sharePost(body)
   })
 

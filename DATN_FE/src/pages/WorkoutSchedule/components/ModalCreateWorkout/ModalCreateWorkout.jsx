@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import Input from '../../../../components/InputComponents/Input'
 import ModalLayout from '../../../../layouts/ModalLayout'
 import DatePicker from 'react-datepicker'
@@ -8,7 +9,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { createWorkoutSchedule } from '../../../../apis/workoutScheduleApi'
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { useNavigate } from 'react-router-dom'
 import { useContext } from 'react'
@@ -47,7 +48,7 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
 
   // console.log(startDate)
   // console.log(endDate)
-  const createWorkoutMutation = useMutation({
+  const createWorkoutMutation = useSafeMutation({
     mutationFn: (body) => createWorkoutSchedule(body)
   })
   const onSubmit = handleSubmit((data) => {
@@ -155,7 +156,7 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
               <div className='flex justify-center'>
                 {createWorkoutMutation.isPending ? (
                   <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                    <Loading className='' classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
                   </button>
                 ) : (
                   <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'> Tạo lịch mới</button>

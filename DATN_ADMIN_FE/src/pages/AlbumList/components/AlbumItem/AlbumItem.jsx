@@ -4,10 +4,10 @@ import useravatar from '../../../../assets/images/useravatar.jpg'
 import { cutString } from '../../../../utils/helper'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
-import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { acceptAlbum, rejectAlbum } from '../../../../apis/inspectorApi'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 export default function AlbumItem({ album }) {
   const [openAccept, setOpenAccept] = useState(false)
   const [openReject, setOpenReject] = useState(false)
@@ -27,11 +27,11 @@ export default function AlbumItem({ album }) {
     setOpenReject(false)
   }
 
-  const acceptAlbumsMutation = useMutation({
+  const acceptAlbumsMutation = useSafeMutation({
     mutationFn: () => acceptAlbum(album._id)
   })
 
-  const rejectAlbumsMutation = useMutation({
+  const rejectAlbumsMutation = useSafeMutation({
     mutationFn: () => rejectAlbum(album._id)
   })
 

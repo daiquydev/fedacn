@@ -19,8 +19,7 @@ export default function RecipeWritterList() {
     queryFn: () => {
       return getCategoryRecipes()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data, isLoading } = useQuery({
@@ -28,8 +27,7 @@ export default function RecipeWritterList() {
     queryFn: () => {
       return getListRecipesForWritter(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
   console.log(data)
 

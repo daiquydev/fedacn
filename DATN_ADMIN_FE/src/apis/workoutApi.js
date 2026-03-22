@@ -15,3 +15,4 @@ export const adminGetExercises = (params) => http.get('/admin/exercises', { para
 export const adminCreateExercise = (data) => http.post('/admin/exercises', data)
 export const adminUpdateExercise = (id, data) => http.put(`/admin/exercises/${id}`, data)
 export const adminDeleteExercise = (id) => http.delete(`/admin/exercises/${id}`)
+export const adminRestoreExercise = (id) => http.patch(`/admin/exercises/${id}/restore`)

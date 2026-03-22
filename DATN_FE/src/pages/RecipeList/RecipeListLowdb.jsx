@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { AiOutlineSearch } from 'react-icons/ai'
 import Pagination from '../../components/GlobalComponents/Pagination'
 import { FaPlus, FaUtensils } from 'react-icons/fa6'
@@ -8,7 +9,7 @@ import useQueryConfig from '../../hooks/useQueryConfig'
 import { omit } from 'lodash'
 import { useForm } from 'react-hook-form'
 import { getRecipesForChef, deleteRecipeForChef } from '../../apis/recipeApi'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
 
@@ -29,11 +30,10 @@ export default function RecipeListLowdb() {
     queryFn: () => {
       return getRecipesForChef(queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
-  const deleteRecipeMutation = useMutation({
+  const deleteRecipeMutation = useSafeMutation({
     mutationFn: (id) => deleteRecipeForChef(id),
     onSuccess: () => {
       toast.success('Xóa công thức thành công!')

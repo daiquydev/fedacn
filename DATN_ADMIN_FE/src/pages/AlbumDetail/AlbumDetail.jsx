@@ -17,8 +17,7 @@ export default function AlbumDetail() {
     queryFn: () => {
       return getAlbumDetailForInspector(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const album = data?.data.result[0]
@@ -31,8 +30,7 @@ export default function AlbumDetail() {
         ...queryConfig
       })
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(recipeData)

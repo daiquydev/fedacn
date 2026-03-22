@@ -66,8 +66,7 @@ export default function HealthProfile() {
     queryFn: () => {
       return currentAccount()
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const userHealth = userData?.data?.result?.[0]

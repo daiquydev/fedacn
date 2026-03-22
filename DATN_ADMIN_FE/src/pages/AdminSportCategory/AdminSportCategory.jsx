@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import React, { useState, useRef, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-    FaPlus, FaEdit, FaTrash, FaDumbbell, FaRunning, FaHome, FaSync, FaTimes, FaUndo,
+    FaPlus, FaEdit, FaTrash, FaDumbbell, FaRunning, FaHome, FaTimes, FaUndo,
     FaBiking, FaSwimmer, FaBasketballBall, FaVolleyballBall, FaTableTennis, FaMountain, FaSkating,
     FaChevronDown, FaWalking, FaHorse, FaFistRaised, FaBowlingBall, FaFootballBall, FaGolfBall,
-    FaSkiing, FaSnowboarding, FaWater, FaBaseballBall
+    FaSkiing, FaSnowboarding, FaWater, FaBaseballBall, FaSearch, FaExclamationTriangle
 } from 'react-icons/fa'
 import {
     MdSportsSoccer, MdSportsTennis, MdGolfCourse, MdSportsScore,
@@ -22,57 +22,58 @@ import toast from 'react-hot-toast'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import { useForm, Controller } from 'react-hook-form'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 
 // ── Bộ icon thể thao (đồng nhất với DATN_FE/src/utils/sportIcons.js) ──
 const SPORT_ICONS = {
-    running:        { icon: FaRunning },
-    walking:        { icon: FaWalking },
+    running: { icon: FaRunning },
+    walking: { icon: FaWalking },
     directions_run: { icon: MdDirectionsRun },
-    cycling:        { icon: FaBiking },
-    directions_bike:{ icon: MdDirectionsBike },
-    swimming:       { icon: FaSwimmer },
-    surfing:        { icon: MdSurfing },
-    kayaking:       { icon: MdKayaking },
-    sailing:        { icon: MdSailing },
-    scuba_diving:   { icon: MdScubaDiving },
-    pool:           { icon: MdPool },
-    water:          { icon: FaWater },
-    fitness:        { icon: FaDumbbell },
+    cycling: { icon: FaBiking },
+    directions_bike: { icon: MdDirectionsBike },
+    swimming: { icon: FaSwimmer },
+    surfing: { icon: MdSurfing },
+    kayaking: { icon: MdKayaking },
+    sailing: { icon: MdSailing },
+    scuba_diving: { icon: MdScubaDiving },
+    pool: { icon: MdPool },
+    water: { icon: FaWater },
+    fitness: { icon: FaDumbbell },
     fitness_center: { icon: MdFitnessCenter },
     weight_lifting: { icon: GiWeightLiftingUp },
-    jump_rope:      { icon: GiJumpingRope },
-    yoga:           { icon: GiMeditation },
-    self_improve:   { icon: MdSelfImprovement },
-    pilates:        { icon: MdDirectionsWalk },
-    soccer:         { icon: MdSportsSoccer },
-    basketball:     { icon: FaBasketballBall },
-    volleyball:     { icon: FaVolleyballBall },
-    football:       { icon: FaFootballBall },
-    baseball:       { icon: FaBaseballBall },
-    rugby:          { icon: MdSportsRugby },
-    cricket:        { icon: MdSportsCricket },
-    handball:       { icon: MdSportsHandball },
-    bowling:        { icon: FaBowlingBall },
-    tennis:         { icon: MdSportsTennis },
-    tabletennis:    { icon: FaTableTennis },
-    badminton:      { icon: GiShuttlecock },
-    martial_arts:   { icon: GiHighKick },
-    boxing:         { icon: GiBoxingGlove },
-    fencing:        { icon: GiFencer },
-    fist:           { icon: FaFistRaised },
-    hiking:         { icon: FaMountain },
-    archery:        { icon: GiArcheryTarget },
-    horse:          { icon: FaHorse },
-    golf:           { icon: MdGolfCourse },
-    skating:        { icon: FaSkating },
-    skateboarding:  { icon: MdSkateboarding },
-    skiing:         { icon: FaSkiing },
-    downhill_ski:   { icon: MdDownhillSkiing },
-    snowboarding:   { icon: FaSnowboarding },
-    gymnastics:     { icon: MdSportsGymnastics },
-    hockey:         { icon: MdSportsHockey },
-    esports:        { icon: MdSportsEsports },
-    sport:          { icon: MdSportsScore },
+    jump_rope: { icon: GiJumpingRope },
+    yoga: { icon: GiMeditation },
+    self_improve: { icon: MdSelfImprovement },
+    pilates: { icon: MdDirectionsWalk },
+    soccer: { icon: MdSportsSoccer },
+    basketball: { icon: FaBasketballBall },
+    volleyball: { icon: FaVolleyballBall },
+    football: { icon: FaFootballBall },
+    baseball: { icon: FaBaseballBall },
+    rugby: { icon: MdSportsRugby },
+    cricket: { icon: MdSportsCricket },
+    handball: { icon: MdSportsHandball },
+    bowling: { icon: FaBowlingBall },
+    tennis: { icon: MdSportsTennis },
+    tabletennis: { icon: FaTableTennis },
+    badminton: { icon: GiShuttlecock },
+    martial_arts: { icon: GiHighKick },
+    boxing: { icon: GiBoxingGlove },
+    fencing: { icon: GiFencer },
+    fist: { icon: FaFistRaised },
+    hiking: { icon: FaMountain },
+    archery: { icon: GiArcheryTarget },
+    horse: { icon: FaHorse },
+    golf: { icon: MdGolfCourse },
+    skating: { icon: FaSkating },
+    skateboarding: { icon: MdSkateboarding },
+    skiing: { icon: FaSkiing },
+    downhill_ski: { icon: MdDownhillSkiing },
+    snowboarding: { icon: FaSnowboarding },
+    gymnastics: { icon: MdSportsGymnastics },
+    hockey: { icon: MdSportsHockey },
+    esports: { icon: MdSportsEsports },
+    sport: { icon: MdSportsScore }
 }
 
 /** Helper: lấy component icon từ key, fallback về MdSportsScore */
@@ -123,7 +124,7 @@ function IconPickerDropdown({ value, onChange }) {
 
             {open && (
                 <div className='absolute z-50 mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl p-2 max-h-48 overflow-y-auto'
-                     style={{ width: '320px' }}>
+                    style={{ width: '320px' }}>
                     <div className='grid grid-cols-8 gap-1'>
                         {Object.entries(SPORT_ICONS).map(([key, { icon: IconComp }]) => {
                             const isActive = value === key
@@ -155,15 +156,25 @@ export default function AdminSportCategory() {
     const [modalOpen, setModalOpen] = useState(false)
     const [editingCategory, setEditingCategory] = useState(null)
     const [showDeleted, setShowDeleted] = useState(false)
+    const [confirmAction, setConfirmAction] = useState(null) // { type: 'delete'|'restore', category }
     const [page, setPage] = useState(1)
+    const [searchInput, setSearchInput] = useState('')
+    const [search, setSearch] = useState('')
+    const [filterType, setFilterType] = useState('') // '' = Tất cả, 'Ngoài trời', 'Trong nhà'
+    const debounceRef = useRef(null)
     const LIMIT = 10
     const { register, handleSubmit, reset, watch, control, formState: { errors } } = useForm()
     const watchedType = watch('type', 'Ngoài trời')
 
-    const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => { setSearch(searchInput); setPage(1) }, 300)
+        return () => clearTimeout(debounceRef.current)
+    }, [searchInput])
+
+    const { data, isLoading, isError, error } = useQuery({
         queryKey: ['adminSportCategories'],
         queryFn: () => sportCategoryApi.getAll(),
-        staleTime: 1000,
         retry: 2
     })
 
@@ -173,11 +184,17 @@ export default function AdminSportCategory() {
     const outdoorCount = activeCategories.filter(c => c.type === 'Ngoài trời').length
     const indoorCount = activeCategories.filter(c => c.type === 'Trong nhà').length
 
-    const displayCategories = showDeleted ? deletedCategories : activeCategories
+    const baseCategories = showDeleted ? deletedCategories : activeCategories
+    const filteredByType = filterType
+        ? baseCategories.filter(c => c.type === filterType)
+        : baseCategories
+    const displayCategories = search
+        ? filteredByType.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+        : filteredByType
     const totalPage = Math.ceil(displayCategories.length / LIMIT) || 1
     const paginatedCategories = displayCategories.slice((page - 1) * LIMIT, page * LIMIT)
 
-    const createMutation = useMutation({
+    const createMutation = useSafeMutation({
         mutationFn: (body) => sportCategoryApi.create(body),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminSportCategories'] })
@@ -187,7 +204,7 @@ export default function AdminSportCategory() {
         onError: (err) => toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi thêm danh mục')
     })
 
-    const updateMutation = useMutation({
+    const updateMutation = useSafeMutation({
         mutationFn: ({ id, body }) => sportCategoryApi.update(id, body),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminSportCategories'] })
@@ -197,7 +214,7 @@ export default function AdminSportCategory() {
         onError: (err) => toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi cập nhật')
     })
 
-    const deleteMutation = useMutation({
+    const deleteMutation = useSafeMutation({
         mutationFn: (id) => sportCategoryApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminSportCategories'] })
@@ -206,7 +223,7 @@ export default function AdminSportCategory() {
         onError: (err) => toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa')
     })
 
-    const restoreMutation = useMutation({
+    const restoreMutation = useSafeMutation({
         mutationFn: (id) => sportCategoryApi.restore(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminSportCategories'] })
@@ -238,16 +255,19 @@ export default function AdminSportCategory() {
         }
     }
 
-    const handleDelete = (id, name) => {
-        if (window.confirm(`Bạn có chắc muốn xóa danh mục "${name}" không? Danh mục sẽ bị ẩn khỏi hệ thống (có thể khôi phục).`)) {
-            deleteMutation.mutate(id)
-        }
+    const handleDelete = (category) => {
+        setConfirmAction({ type: 'delete', category })
     }
 
-    const handleRestore = (id, name) => {
-        if (window.confirm(`Khôi phục danh mục "${name}"?`)) {
-            restoreMutation.mutate(id)
-        }
+    const handleRestore = (category) => {
+        setConfirmAction({ type: 'restore', category })
+    }
+
+    const handleConfirm = () => {
+        if (!confirmAction) return
+        if (confirmAction.type === 'delete') deleteMutation.mutate(confirmAction.category._id)
+        else if (confirmAction.type === 'restore') restoreMutation.mutate(confirmAction.category._id)
+        setConfirmAction(null)
     }
 
     if (isError) {
@@ -281,44 +301,32 @@ export default function AdminSportCategory() {
                             Quản lý các môn thể thao và hoạt động phân theo loại hình trong nhà / ngoài trời.
                         </p>
                     </div>
-                    <div className='flex items-center gap-2 mt-1 flex-wrap justify-end'>
-                        <button
-                            onClick={() => refetch()}
-                            disabled={isFetching}
-                            className='flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50'
-                        >
-                            <FaSync size={13} className={isFetching ? 'animate-spin' : ''} />
-                            Làm mới
-                        </button>
-                        <button
-                            onClick={() => openModalConfig()}
-                            className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0'
-                        >
-                            <FaPlus size={12} /> Thêm danh mục
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => openModalConfig()}
+                        className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0 mt-1'
+                    >
+                        <FaPlus size={12} /> Thêm danh mục
+                    </button>
                 </div>
 
                 {/* Tabs inside Hero Banner */}
                 <div className='relative z-10 flex gap-2 mt-5'>
                     <button
                         onClick={() => { setShowDeleted(false); setPage(1) }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                            !showDeleted
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${!showDeleted
                                 ? 'bg-white text-emerald-700 shadow-md'
                                 : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
+                            }`}
                     >
                         <FaDumbbell size={14} />
                         Đang hoạt động ({activeCategories.length})
                     </button>
                     <button
                         onClick={() => { setShowDeleted(true); setPage(1) }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                            showDeleted
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${showDeleted
                                 ? 'bg-white text-emerald-700 shadow-md'
                                 : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
+                            }`}
                     >
                         <FaTrash size={13} />
                         Đã xóa ({deletedCategories.length})
@@ -337,6 +345,34 @@ export default function AdminSportCategory() {
                 <MiniStatCard icon={FaTrash} label='Đã xóa' value={deletedCategories.length} color='border-l-red-400' iconBg='bg-gradient-to-br from-red-400 to-rose-600' />
             </div>
 
+            {/* ── Search Box + Filter ── */}
+            <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 mb-4 border border-gray-100 dark:border-gray-700 flex items-center gap-3'>
+                <div className='relative flex-1'>
+                    <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs' />
+                    <input
+                        value={searchInput}
+                        onChange={e => setSearchInput(e.target.value)}
+                        placeholder='Tìm kiếm theo tên danh mục...'
+                        className='pl-9 pr-4 py-2 text-sm w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 outline-none transition-all'
+                    />
+                </div>
+
+                {/* Type filter dropdown */}
+                <select
+                    value={filterType}
+                    onChange={e => { setFilterType(e.target.value); setPage(1) }}
+                    className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-all outline-none cursor-pointer shrink-0 ${
+                        filterType
+                            ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                    }`}
+                >
+                    <option value=''>📋 Tất cả</option>
+                    <option value='Ngoài trời'>🌿 Ngoài trời</option>
+                    <option value='Trong nhà'>🏠 Trong nhà</option>
+                </select>
+            </div>
+
             {/* ── Table ── */}
             {isLoading ? (
                 <Loading />
@@ -344,9 +380,11 @@ export default function AdminSportCategory() {
                 <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700'>
                     <div className='px-4 py-3 border-b border-gray-100 dark:border-gray-700'>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            {showDeleted
-                                ? <><span className='font-semibold text-red-600'>{deletedCategories.length}</span> danh mục đã xóa</>
-                                : <><span className='font-semibold text-gray-800 dark:text-white'>{activeCategories.length}</span> danh mục đang hoạt động</>
+                            {search
+                                ? <><span className='font-semibold text-emerald-600'>{displayCategories.length}</span> kết quả cho &ldquo;<strong>{search}</strong>&rdquo;</>
+                                : showDeleted
+                                    ? <><span className='font-semibold text-red-600'>{deletedCategories.length}</span> danh mục đã xóa</>
+                                    : <><span className='font-semibold text-gray-800 dark:text-white'>{activeCategories.length}</span> danh mục đang hoạt động</>
                             }
                             {displayCategories.length > LIMIT && (
                                 <span className='ml-2 text-xs text-gray-400'>
@@ -406,7 +444,7 @@ export default function AdminSportCategory() {
                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                     {category.type === 'Ngoài trời' ? (
                                                         <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'>
-                                                            🌳 Ngoài trời
+                                                            🌿 Ngoài trời
                                                         </span>
                                                     ) : (
                                                         <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'>
@@ -439,12 +477,13 @@ export default function AdminSportCategory() {
                                                     <div className='flex items-center gap-2'>
                                                         {category.isDeleted ? (
                                                             <button
-                                                                onClick={() => handleRestore(category._id, category.name)}
+                                                                onClick={() => handleRestore(category)}
                                                                 disabled={restoreMutation.isPending}
                                                                 title='Khôi phục danh mục'
-                                                                className='p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50'
+                                                                className='p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5'
                                                             >
                                                                 <FaUndo size={14} />
+                                                                <span className='text-xs font-semibold'>Khôi phục</span>
                                                             </button>
                                                         ) : (
                                                             <>
@@ -456,7 +495,7 @@ export default function AdminSportCategory() {
                                                                     <FaEdit size={14} />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => handleDelete(category._id, category.name)}
+                                                                    onClick={() => handleDelete(category)}
                                                                     disabled={deleteMutation.isPending}
                                                                     title='Xóa (có thể khôi phục)'
                                                                     className='p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50'
@@ -577,7 +616,7 @@ export default function AdminSportCategory() {
                                     className='mt-1 w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all'
                                     {...register('type', { required: 'Vui lòng chọn loại hình' })}
                                 >
-                                    <option value='Ngoài trời'>🌳 Ngoài trời</option>
+                                    <option value='Ngoài trời'>🌿 Ngoài trời</option>
                                     <option value='Trong nhà'>🏠 Trong nhà</option>
                                 </select>
                                 {errors.type && <p className='text-red-500 text-xs mt-1'>{errors.type.message}</p>}
@@ -625,6 +664,36 @@ export default function AdminSportCategory() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Confirm Dialog ── */}
+            {confirmAction && (
+                <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60' onClick={(e) => e.target === e.currentTarget && setConfirmAction(null)}>
+                    <div className='bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4'>
+                        <div className='flex items-center gap-3 mb-3'>
+                            <div className={`p-2 rounded-full ${confirmAction.type === 'delete' ? 'bg-red-100 dark:bg-red-900' : 'bg-yellow-100 dark:bg-yellow-900'}`}>
+                                <FaExclamationTriangle className={`text-lg ${confirmAction.type === 'delete' ? 'text-red-600' : 'text-yellow-600'}`} />
+                            </div>
+                            <h3 className='text-base font-bold text-gray-800 dark:text-white'>
+                                {confirmAction.type === 'delete' ? 'Xóa danh mục' : 'Khôi phục danh mục'}
+                            </h3>
+                        </div>
+                        <p className='text-sm text-gray-600 dark:text-gray-400 ml-11 mb-5'>
+                            {confirmAction.type === 'delete'
+                                ? `Bạn có chắc muốn xóa danh mục "${confirmAction.category.name}"? Danh mục sẽ bị ẩn khỏi hệ thống (có thể khôi phục).`
+                                : `Khôi phục danh mục "${confirmAction.category.name}"?`
+                            }
+                        </p>
+                        <div className='flex justify-end gap-3'>
+                            <button onClick={() => setConfirmAction(null)} className='px-4 py-2 text-sm bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors'>
+                                Hủy
+                            </button>
+                            <button onClick={handleConfirm} className={`px-4 py-2 text-sm text-white rounded-lg font-medium transition-colors ${confirmAction.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                                Xác nhận
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

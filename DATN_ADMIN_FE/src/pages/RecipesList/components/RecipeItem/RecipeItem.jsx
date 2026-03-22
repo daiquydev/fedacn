@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { cutString } from '../../../../utils/helper'
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 import { acceptRecipe, rejectRecipe } from '../../../../apis/inspectorApi'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function RecipeItem({ recipe }) {
   const [openAccept, setOpenAccept] = useState(false)
@@ -28,11 +28,11 @@ export default function RecipeItem({ recipe }) {
     setOpenReject(false)
   }
 
-  const acceptRecipesMutation = useMutation({
+  const acceptRecipesMutation = useSafeMutation({
     mutationFn: () => acceptRecipe(recipe._id)
   })
 
-  const rejectRecipesMutation = useMutation({
+  const rejectRecipesMutation = useSafeMutation({
     mutationFn: () => rejectRecipe(recipe._id)
   })
 

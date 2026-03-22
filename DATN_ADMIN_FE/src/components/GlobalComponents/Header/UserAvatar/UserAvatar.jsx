@@ -3,11 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { HiOutlineLogout } from 'react-icons/hi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { useMutation } from '@tanstack/react-query'
 import { logoutAccount } from '../../../../apis/authApi'
 
 import { AppContext } from '../../../../contexts/app.context'
 import { toast } from 'react-hot-toast'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 export default function UserAvatar() {
   const [isMenu, setIsMenu] = useState(false)
   const ref = useRef()
@@ -23,7 +23,7 @@ export default function UserAvatar() {
     }
   }, [])
   const { setIsAuthenticated, setProfile, profile } = useContext(AppContext)
-  const logoutAccountMutation = useMutation({
+  const logoutAccountMutation = useSafeMutation({
     mutationFn: () => logoutAccount()
   })
 

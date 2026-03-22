@@ -15,8 +15,7 @@ export default function BlogDetail() {
     queryFn: () => {
       return getBlogDetailForInspector(id)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   return (

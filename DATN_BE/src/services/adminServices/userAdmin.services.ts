@@ -28,32 +28,39 @@ import { hashPassword } from '~/utils/crypto'
 import { sendAcceptEmailNodeMailer, sendRejectEmailNodeMailer } from '~/utils/emailMailer'
 
 class UserAdminService {
-  async getAllUserService({ page, limit, role, status, search, sort }: GetListUserAdminQuery) {
+  async getAllUserService({ page, limit, role, status, search, sort, isDeleted }: GetListUserAdminQuery & { isDeleted?: string }) {
     if (!page) {
       page = 1
     }
     if (!limit) {
       limit = 10
     }
-    if (!role) {
-      role = UserRoles.user
-    }
-    // nếu không truyền status thì mặc định status = 1 còn nếu truyền status = 0 thì status = 0
-    if (!status && status !== 0) {
-      status = UserStatus.active
-    }
 
     const condition: any = {}
-    console.log('role', role)
 
-    condition.role = role
-    condition.status = status
+    // Filter by role (only if explicitly provided)
+    if (role !== undefined && role !== null && !isNaN(Number(role))) {
+      condition.role = Number(role)
+    } else {
+      condition.role = UserRoles.user
+    }
+
+    // Filter by status (for banned view)
+    if (status !== undefined && status !== null && !isNaN(Number(status))) {
+      condition.status = Number(status)
+    }
+
+    // Filter by isDeleted
+    if (isDeleted === 'true') {
+      condition.isDeleted = true
+    } else {
+      condition.isDeleted = { $ne: true }
+    }
 
     if (search) {
       condition.$text = { $search: search }
     }
 
-    console.log(condition)
     const users = await UserModel.find(condition)
       .sort({ createdAt: sort === 'asc' ? 1 : -1 })
       .skip((page - 1) * limit)
@@ -63,6 +70,7 @@ class UserAdminService {
     const totalPage = Math.ceil(total / limit)
     return {
       users,
+      total,
       limit,
       page,
       totalPage
@@ -70,12 +78,12 @@ class UserAdminService {
   }
   async getUserByIdService(user_id: string) {
     const user = await UserModel.aggregate([
-      // lấy những người follow mình
       {
         $match: {
           _id: new ObjectId(user_id)
         }
       },
+      // Followers
       {
         $lookup: {
           from: 'follows',
@@ -84,102 +92,111 @@ class UserAdminService {
           as: 'followers'
         }
       },
-      // nối followers vào bảng user để lấy thông tin những người follow mình
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'followers.user_id',
-          foreignField: '_id',
-          as: 'followers'
-        }
-      },
-      // đếm số người follow mình
       {
         $addFields: {
           followers_count: { $size: '$followers' }
         }
       },
-      // xóa password trong mảng followers
-      {
-        $addFields: {
-          followers: {
-            $map: {
-              input: '$followers',
-              as: 'follower',
-              in: {
-                _id: '$$follower._id',
-                email: '$$follower.email',
-                name: '$$follower.name',
-                avatar: '$$follower.avatar'
-              }
-            }
-          }
-        }
-      },
-      // nối với bảng posts để lấy số bài viết
+      // Posts
       {
         $lookup: {
           from: 'posts',
-          localField: '_id',
-          foreignField: 'user_id',
+          let: { uid: '$_id' },
+          pipeline: [{ $match: { $expr: { $eq: ['$user_id', '$$uid'] }, is_banned: false } }],
           as: 'posts'
         }
       },
-      // đếm số bài viết
       {
         $addFields: {
           posts_count: { $size: '$posts' }
         }
       },
-      // nối với bảng albums để lấy số album
+      // Likes given by user
       {
         $lookup: {
-          from: 'albums',
+          from: 'like_posts',
           localField: '_id',
           foreignField: 'user_id',
-          as: 'albums'
+          as: 'likes'
         }
       },
-      // đếm số album
       {
         $addFields: {
-          albums_count: { $size: '$albums' }
+          likes_count: { $size: '$likes' }
         }
       },
-      // nối với bảng recipes để lấy số công thức
+      // Sport event attendance
       {
         $lookup: {
-          from: 'recipes',
+          from: 'sport_event_attendance',
           localField: '_id',
-          foreignField: 'user_id',
-          as: 'recipes'
+          foreignField: 'userId',
+          as: 'event_attendance'
         }
       },
-      // đếm số công thức
       {
         $addFields: {
-          recipes_count: { $size: '$recipes' }
+          events_attended: { $size: '$event_attendance' }
         }
       },
-      // nối với bảng blogs để lấy số blog
+      // Workout sessions (completed only)
       {
         $lookup: {
-          from: 'blogs',
-          localField: '_id',
-          foreignField: 'user_id',
-          as: 'blogs'
+          from: 'workout_sessions',
+          let: { uid: '$_id' },
+          pipeline: [{ $match: { $expr: { $eq: ['$user_id', '$$uid'] }, status: 'completed' } }],
+          as: 'workout_sessions'
         }
       },
-      // đếm số blog
       {
         $addFields: {
-          blogs_count: { $size: '$blogs' }
+          workouts_completed: { $size: '$workout_sessions' },
+          total_workout_kcal: {
+            $reduce: {
+              input: '$workout_sessions',
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.total_calories', 0] }] }
+            }
+          }
         }
       },
-      // bỏ password
+      // Activity score calculation
+      {
+        $addFields: {
+          activity_score: {
+            $add: [
+              { $multiply: ['$posts_count', 3] },
+              { $multiply: ['$events_attended', 5] },
+              { $multiply: ['$workouts_completed', 2] },
+              { $multiply: ['$followers_count', 1] },
+              { $multiply: ['$likes_count', 0.5] }
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          activity_level: {
+            $switch: {
+              branches: [
+                { case: { $gte: ['$activity_score', 50] }, then: 'very_active' },
+                { case: { $gte: ['$activity_score', 20] }, then: 'active' },
+                { case: { $gte: ['$activity_score', 5] }, then: 'low_activity' }
+              ],
+              default: 'inactive'
+            }
+          }
+        }
+      },
+      // Clean up — remove raw arrays, keep only counts
       {
         $project: {
-          password: 0
+          password: 0,
+          followers: 0,
+          posts: 0,
+          likes: 0,
+          event_attendance: 0,
+          workout_sessions: 0
         }
       }
     ])
@@ -188,92 +205,26 @@ class UserAdminService {
   async deleteUserByIdService(user_id: string) {
     const user = await UserModel.findById(user_id)
     if (user) {
-      // xóa refresh token của user
+      // Soft delete — mark as deleted, revoke tokens
       await RefreshTokenModel.deleteMany({ user_id })
-      // xóa post và ảnh post của user
-      const posts = await PostModel.find({ user_id })
-      const post_ids = posts.map((post) => post._id)
-      // xóa trên s3 để sau
-      await ImagePostModel.deleteMany({ post_id: { $in: post_ids } })
-
-      // xóa like và comment của của từng post
-      await LikePostModel.deleteMany({ user_id })
-      await LikePostModel.deleteMany({ post_id: { $in: post_ids } })
-      // tìm comment con của comment của user
-      const comments = await CommentPostModel.find({ user_id })
-      const comment_ids = comments.map((comment) => comment._id)
-      console.log(comment_ids)
-      await CommentPostModel.deleteMany({ parent_comment_id: { $in: comment_ids } })
-      await CommentPostModel.deleteMany({ user_id })
-      await CommentPostModel.deleteMany({ post_id: { $in: post_ids } })
-
-      // lấy các post con của post của user
-      const shared_posts = await PostModel.find({ parent_id: { $in: post_ids } })
-      const shared_post_ids = shared_posts.map((post) => post._id)
-      // xóa like và comment của của từng post
-      await LikePostModel.deleteMany({ post_id: { $in: shared_post_ids } })
-      await CommentPostModel.deleteMany({ post_id: { $in: shared_post_ids } })
-      // xóa shared post
-      await PostModel.deleteMany({ parent_id: { $in: post_ids } })
-      await PostModel.deleteMany({ user_id })
-      // xóa follow của user
-      await FollowModel.deleteMany({ user_id })
-      await FollowModel.deleteMany({ follow_id: user_id })
-
-      // tìm album của user
-      const albums = await AlbumModel.find({ user_id })
-      const album_ids = albums.map((album) => album._id)
-      // xóa bookmark của Album
-      await BookmarkAlbumModel.deleteMany({ album_id: { $in: album_ids } })
-      await BookmarkAlbumModel.deleteMany({ user_id })
-      // xóa album
-      await AlbumModel.deleteMany({ user_id })
-
-      // tìm blog của user
-      const blogs = await BlogModel.find({ user_id })
-      const blog_ids = blogs.map((blog) => blog._id)
-      // xóa comment của blog
-      await CommentBlogModel.deleteMany({ blog_id: { $in: blog_ids } })
-      await CommentBlogModel.deleteMany({ user_id })
-      // xóa blog
-      await BlogModel.deleteMany({ user_id })
-
-      // tìm recipe của user
-      const recipes = await RecipeModel.find({ user_id })
-      const recipe_ids = recipes.map((recipe) => recipe._id)
-
-      // xóa bookmark, like, comment của recipe
-      await LikeRecipeModel.deleteMany({ recipe_id: { $in: recipe_ids } })
-      await LikeRecipeModel.deleteMany({ user_id })
-      await CommentRecipeModel.deleteMany({ recipe_id: { $in: recipe_ids } })
-      await CommentRecipeModel.deleteMany({ user_id })
-      await BookmarkRecipeModel.deleteMany({ recipe_id: { $in: recipe_ids } })
-      await BookmarkRecipeModel.deleteMany({ user_id })
-      // xóa recipe
-      await RecipeModel.deleteMany({ user_id })
-
-      // xóa lịch trình ăn uống của user
-      const meal_schedules = await MealScheduleModel.find({ user_id })
-      const meal_schedule_ids = meal_schedules.map((meal_schedule) => meal_schedule._id)
-
-      //xóa item trong lịch trình ăn uống
-      await MealItemModel.deleteMany({ meal_schedule_id: { $in: meal_schedule_ids } })
-      // xóa lịch trình ăn uống
-      await MealScheduleModel.deleteMany({ user_id })
-
-      // xóa lịch trình tập luyện của user
-      const workout_schedules = await WorkoutScheduleModel.find({ user_id })
-      const workout_schedule_ids = workout_schedules.map((workout_schedule) => workout_schedule._id)
-      // xóa item trong lịch trình tập luyện
-
-      await WorkoutItemModel.deleteMany({ workout_schedule_id: { $in: workout_schedule_ids } })
-      // xóa lịch trình tập luyện
-      await WorkoutScheduleModel.deleteMany({ user_id })
-
-      // xóa user
-      await UserModel.findByIdAndDelete(user_id)
+      await UserModel.findByIdAndUpdate(user_id, { isDeleted: true })
       return true
     }
+  }
+  async restoreUserByIdService(user_id: string) {
+    const user = await UserModel.findById(user_id)
+    if (user) {
+      await UserModel.findByIdAndUpdate(user_id, { isDeleted: false })
+      return true
+    }
+  }
+  async getUserStatsService() {
+    const [active, banned, deleted] = await Promise.all([
+      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.active, isDeleted: { $ne: true } }),
+      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.banned, isDeleted: { $ne: true } }),
+      UserModel.countDocuments({ role: UserRoles.user, isDeleted: true })
+    ])
+    return { active, banned, deleted, total: active + banned }
   }
   async banUserByIdService(user_id: string) {
     const user = await UserModel.findById(user_id)

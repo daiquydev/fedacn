@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useQuery } from '@tanstack/react-query'
 import RecipeCard from '../../components/CardComponents/RecipeCard'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -154,7 +155,7 @@ export default function Search() {
 }
 
 // const AlbumItem = ({ album }) => {
-//   const unbookmarkMutation = useMutation({
+//   const unbookmarkMutation = useSafeMutation({
 //     mutationFn: (body) => unbookmarkAlbum(body)
 //   })
 

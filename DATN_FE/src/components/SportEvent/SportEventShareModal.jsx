@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
 import toast from 'react-hot-toast'
@@ -43,6 +44,7 @@ const PRIVACY_OPTIONS = [
 export default function SportEventShareModal({ event, onClose, eventId }) {
     const { profile } = useContext(AppContext)
     const navigate = useNavigate()
+    const queryClient = useQueryClient()
     const [play] = useSound(postSound)
     const theme = localStorage.getItem('theme')
 
@@ -79,7 +81,7 @@ export default function SportEventShareModal({ event, onClose, eventId }) {
         setShowEmoji(false)
     }
 
-    const createPostMutation = useMutation({
+    const createPostMutation = useSafeMutation({
         mutationFn: (body) => createPost(body)
     })
 
@@ -96,10 +98,10 @@ export default function SportEventShareModal({ event, onClose, eventId }) {
 
         createPostMutation.mutate(formData, {
             onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
                 toast.success('🏆 Đã chia sẻ sự kiện lên cộng đồng!')
                 play()
                 onClose()
-                // Navigate to /home to see the new post
                 navigate('/home')
             },
             onError: (err) => {

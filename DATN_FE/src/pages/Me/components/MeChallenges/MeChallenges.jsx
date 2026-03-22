@@ -111,15 +111,13 @@ export default function MeChallenges() {
   const { data, isLoading } = useQuery({
     queryKey: ['myHabitChallenges'],
     queryFn: () => getMyHabitChallenges({ page: 1, limit: 20 }),
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: badgesData } = useQuery({
     queryKey: ['userBadges'],
     queryFn: getUserBadges,
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const participations = data?.data?.result?.participations || []

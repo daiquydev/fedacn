@@ -1,3 +1,4 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -5,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import ModalLayout from '../../../../layouts/ModalLayout'
 import { useEffect, useState } from 'react'
 import Input from '../../../../components/InputComponents/Input'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { updateMealSchedule } from '../../../../apis/mealScheduleApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { schemaUpdateMeal } from '../../../../utils/rules'
@@ -57,7 +58,7 @@ export default function ModalUpdateMeal({ handleCloseModalUpdateMeal, meal }) {
 
   const endDate = watch('end_date')
 
-  const updateMealMutation = useMutation({
+  const updateMealMutation = useSafeMutation({
     mutationFn: (body) => updateMealSchedule(meal._id, body)
   })
   const onSubmit = handleSubmit((data) => {
@@ -180,7 +181,7 @@ export default function ModalUpdateMeal({ handleCloseModalUpdateMeal, meal }) {
               <div className='flex justify-center'>
                 {updateMealMutation.isPending ? (
                   <button disabled className='block btn  btn-sm  md:w-auto  bg-red-800 hover:bg-red-700 '>
-                    <Loading classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
+                    <Loading className='' classNameSpin='inline w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-red-600' />
                   </button>
                 ) : (
                   <button className='btn btn-sm text-white hover:bg-red-900 bg-red-800'>Chỉnh sửa lịch</button>

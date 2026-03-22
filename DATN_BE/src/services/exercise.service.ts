@@ -2,7 +2,7 @@ import ExerciseModel from '~/models/schemas/exercise.schema'
 
 class ExerciseService {
     async getAllExercises() {
-        return ExerciseModel.find({ is_active: true })
+        return ExerciseModel.find({ is_active: true, isDeleted: { $ne: true } })
             .populate('equipment_ids', 'name name_en image_url')
             .populate('muscle_group_ids', 'name name_en')
             .populate('secondary_muscle_ids', 'name name_en')
@@ -10,7 +10,7 @@ class ExerciseService {
     }
 
     async filterExercises(equipment: string[], muscles: string[]) {
-        const query: any = { is_active: true }
+        const query: any = { is_active: true, isDeleted: { $ne: true } }
 
         if (equipment && equipment.length > 0) {
             query.equipment = { $in: equipment }
@@ -45,9 +45,10 @@ class ExerciseService {
         muscles: string[],
         durationMinutes: number = 45
     ) {
-        const query: any = { is_active: true }
+        const query: any = { is_active: true, isDeleted: { $ne: true } }
         if (equipment && equipment.length > 0) query.equipment = { $in: equipment }
         if (muscles && muscles.length > 0) query.primary_muscles = { $in: muscles }
+
 
         const allExercises = await ExerciseModel.find(query)
             .populate('equipment_ids', 'name name_en image_url')

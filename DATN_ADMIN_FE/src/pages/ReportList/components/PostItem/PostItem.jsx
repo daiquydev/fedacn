@@ -5,20 +5,20 @@ import { cutString } from '../../../../utils/helper'
 import { queryClient } from '../../../../main'
 import { toast } from 'react-hot-toast'
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 import { FaEye, FaCheck, FaTrash } from 'react-icons/fa'
 import { acceptReportPost, rejectReportPost } from '../../../../apis/inspectorApi'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function PostItem({ post }) {
   const [openAccept, setOpenAccept] = useState(false)
   const [openReject, setOpenReject] = useState(false)
 
-  const acceptPostsMutation = useMutation({
+  const acceptPostsMutation = useSafeMutation({
     mutationFn: () => acceptReportPost(post._id)
   })
 
-  const rejectPostsMutation = useMutation({
+  const rejectPostsMutation = useSafeMutation({
     mutationFn: (body) => rejectReportPost(post._id, body)
   })
 

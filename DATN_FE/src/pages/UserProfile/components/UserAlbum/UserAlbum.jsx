@@ -16,8 +16,7 @@ export default function UserAlbum({ user_id }) {
     queryFn: () => {
       return getUserAlbum(user_id, queryConfig)
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   console.log(queryConfig)

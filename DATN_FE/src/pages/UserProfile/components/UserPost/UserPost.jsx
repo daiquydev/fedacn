@@ -20,8 +20,7 @@ export default function UserPost({ user_id, user, isFollowing = false }) {
       const nextPage = lastPage.data.result.posts.length ? allPages.length + 1 : undefined
       return nextPage
     },
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const content = data?.pages.map((dataMePost) =>

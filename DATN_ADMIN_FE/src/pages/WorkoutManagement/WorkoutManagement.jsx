@@ -1,12 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaUndo, FaChevronDown } from 'react-icons/fa'
+import { GiBiceps } from 'react-icons/gi'
 import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader'
 import {
     adminGetEquipment, adminCreateEquipment, adminUpdateEquipment, adminDeleteEquipment,
     adminGetMuscleGroups,
-    adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise
+    adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise, adminRestoreExercise
 } from '../../apis/workoutApi'
 
 // Gradient colors for cards
@@ -23,6 +25,52 @@ const CARD_GRADIENTS = [
     'from-lime-500 to-emerald-400'
 ]
 
+// ===================== SHARED PAGINATION =====================
+function TablePagination({ page, totalPages, onPageChange }) {
+    if (totalPages <= 1) return null
+    const pageList = Array.from({ length: totalPages }, (_, i) => i + 1)
+        .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+        .reduce((acc, p, i, arr) => {
+            if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+            acc.push(p)
+            return acc
+        }, [])
+    return (
+        <div className='flex items-center justify-center gap-2 mt-5'>
+            <button
+                disabled={page <= 1}
+                onClick={() => onPageChange(Math.max(1, page - 1))}
+                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+            >
+                ← Trước
+            </button>
+            {pageList.map(p =>
+                typeof p === 'number' ? (
+                    <button
+                        key={p}
+                        onClick={() => onPageChange(p)}
+                        className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                    >
+                        {p}
+                    </button>
+                ) : (
+                    <span key={p} className='px-1 text-gray-400'>...</span>
+                )
+            )}
+            <button
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+            >
+                Sau →
+            </button>
+        </div>
+    )
+}
+
 // ===================== EQUIPMENT MANAGEMENT =====================
 function EquipmentManager() {
     const qc = useQueryClient()
@@ -31,7 +79,7 @@ function EquipmentManager() {
     const [search, setSearch] = useState('')
     const [form, setForm] = useState({ name: '', name_en: '', image_url: '', description: '', is_active: true })
 
-    const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment, staleTime: 60000 })
+    const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
     const items = data?.data?.result || []
 
     const filteredItems = items.filter(item =>
@@ -42,22 +90,22 @@ function EquipmentManager() {
 
     const activeCount = items.filter(i => i.is_active !== false).length
 
-    const createMut = useMutation({
+    const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateEquipment(d),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Tạo thành công'); resetForm() },
         onError: () => toast.error('Lỗi tạo thiết bị')
     })
-    const updateMut = useMutation({
+    const updateMut = useSafeMutation({
         mutationFn: ({ id, d }) => adminUpdateEquipment(id, d),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Cập nhật thành công'); resetForm() },
         onError: () => toast.error('Lỗi cập nhật')
     })
-    const deleteMut = useMutation({
+    const deleteMut = useSafeMutation({
         mutationFn: (id) => adminDeleteEquipment(id),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Xóa thành công') },
         onError: () => toast.error('Lỗi xóa')
     })
-    const toggleActiveMut = useMutation({
+    const toggleActiveMut = useSafeMutation({
         mutationFn: ({ id, is_active }) => adminUpdateEquipment(id, { is_active }),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-equipment'] }); toast.success('Cập nhật trạng thái thành công') },
         onError: () => toast.error('Lỗi cập nhật trạng thái')
@@ -71,8 +119,6 @@ function EquipmentManager() {
             is_active: item.is_active !== false
         })
         setEditingId(item._id); setShowForm(true)
-        // Scroll to top of form
-        setTimeout(() => document.getElementById('equipment-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     }
     const handleSubmit = () => {
         if (!form.name || !form.name_en) return toast.error('Tên không được để trống')
@@ -80,65 +126,90 @@ function EquipmentManager() {
     }
 
     return (
-        <div>
-            {/* Header with stats */}
-            <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5'>
-                <div>
-                    <h3 className='text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100'>
-                        <div className='w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30'>
-                            <FaDumbbell className='text-white text-sm' />
-                        </div>
-                        Quản lý Thiết bị
-                    </h3>
-                    <div className='flex items-center gap-3 mt-1.5'>
-                        <span className='text-xs text-slate-500 flex items-center gap-1'>
-                            <span className='inline-block w-2 h-2 rounded-full bg-blue-500'></span>
-                            Tổng: <strong className='text-slate-700 dark:text-slate-300'>{items.length}</strong>
-                        </span>
-                        <span className='text-xs text-slate-500 flex items-center gap-1'>
-                            <span className='inline-block w-2 h-2 rounded-full bg-emerald-500'></span>
-                            Hoạt động: <strong className='text-emerald-600'>{activeCount}</strong>
-                        </span>
-                        <span className='text-xs text-slate-500 flex items-center gap-1'>
-                            <span className='inline-block w-2 h-2 rounded-full bg-slate-400'></span>
-                            Ẩn: <strong className='text-slate-500'>{items.length - activeCount}</strong>
-                        </span>
-                    </div>
-                </div>
-                <div className='flex items-center gap-2'>
-                    <div className='relative'>
-                        <FaSearch className='absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs' />
-                        <input value={search} onChange={e => setSearch(e.target.value)}
-                            placeholder='Tìm thiết bị...'
-                            className='pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all w-52' />
+        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
+
+            {/* ── Hero Banner ── */}
+            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-8 py-8 mb-6 shadow-xl'>
+                <div className='relative z-10 flex items-start justify-between'>
+                    <div>
+                        <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
+                        <h1 className='text-3xl font-black text-white mb-2'>Quản lý Thiết bị</h1>
+                        <p className='text-white/80 text-sm max-w-md'>
+                            Quản lý dụng cụ và thiết bị tập luyện trong hệ thống.
+                        </p>
                     </div>
                     <button onClick={() => { resetForm(); setShowForm(true) }}
-                        className='flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 transition-all'>
+                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg mt-1 shrink-0'>
                         <FaPlus className='text-xs' /> Thêm mới
                     </button>
                 </div>
+                <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
+                <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
+                <FaDumbbell className='absolute right-8 top-8 text-white/10 text-[8rem]' />
             </div>
 
-            {/* Form */}
+            {/* ── Stat Cards ── */}
+            <div className='grid grid-cols-3 gap-3 mb-5'>
+                <div className='bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 border-l-blue-400 shadow-sm border border-gray-100 dark:border-slate-700'>
+                    <p className='text-xs text-gray-400 mb-0.5'>Tổng thiết bị</p>
+                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{items.length}</p>
+                </div>
+                <div className='bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 border-l-emerald-400 shadow-sm border border-gray-100 dark:border-slate-700'>
+                    <p className='text-xs text-gray-400 mb-0.5'>Hoạt động</p>
+                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{activeCount}</p>
+                </div>
+                <div className='bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 border-l-slate-400 shadow-sm border border-gray-100 dark:border-slate-700'>
+                    <p className='text-xs text-gray-400 mb-0.5'>Đã ẩn</p>
+                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{items.length - activeCount}</p>
+                </div>
+            </div>
+
+            {/* ── Search Bar ── */}
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 mb-4 border border-gray-100 dark:border-slate-700'>
+                <div className='relative'>
+                    <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs' />
+                    <input value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder='Tìm thiết bị...'
+                        className='pl-9 pr-3 py-2 text-sm w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all' />
+                </div>
+            </div>
+
+            {/* Modal Form */}
             {showForm && (
-                <div id='equipment-form' className='mb-6 p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/80 dark:to-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm'>
-                    <h4 className='font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2'>
-                        <span className='text-lg'>{editingId ? '✏️' : '✨'}</span>
-                        {editingId ? 'Chỉnh sửa thiết bị' : 'Thêm thiết bị mới'}
-                    </h4>
-                    <div className='flex gap-5'>
-                        {/* Left: Square image uploader */}
-                        <div className='w-44 shrink-0'>
-                            <CloudinaryImageUploader
-                                value={form.image_url}
-                                onChange={(url) => setForm({ ...form, image_url: url })}
-                                label='Hình ảnh'
-                                folder='equipment'
-                                square
-                            />
+                <div className='fixed inset-0 z-50 flex items-center justify-center p-4'
+                    style={{ animation: 'fadeIn 0.15s ease-out' }}>
+                    {/* Backdrop */}
+                    <div className='absolute inset-0 bg-black/50 backdrop-blur-sm' onClick={resetForm} />
+                    {/* Modal content */}
+                    <div className='relative w-full max-w-lg max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+                        style={{ animation: 'scaleIn 0.2s ease-out' }}>
+                        {/* Modal header */}
+                        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-600 to-indigo-600 flex-shrink-0'>
+                            <h4 className='font-bold text-white text-base flex items-center gap-2'>
+                                <span>{editingId ? '✏️' : '✨'}</span>
+                                {editingId ? 'Chỉnh sửa thiết bị' : 'Thêm thiết bị mới'}
+                            </h4>
+                            <button onClick={resetForm}
+                                className='p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors'>
+                                <FaTimes />
+                            </button>
                         </div>
-                        {/* Right: Text fields stacked */}
-                        <div className='flex-1 space-y-3'>
+
+                        {/* Scrollable body */}
+                        <div className='flex-1 overflow-y-auto p-5 space-y-4'>
+                            {/* Image uploader */}
+                            <div className='flex justify-center'>
+                                <div className='w-44'>
+                                    <CloudinaryImageUploader
+                                        value={form.image_url}
+                                        onChange={(url) => setForm({ ...form, image_url: url })}
+                                        label='Hình ảnh'
+                                        folder='equipment'
+                                        square
+                                    />
+                                </div>
+                            </div>
+                            {/* Text fields */}
                             <div>
                                 <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Việt *</label>
                                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
@@ -157,30 +228,30 @@ function EquipmentManager() {
                                     className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
                                     placeholder='Mô tả ngắn về thiết bị' />
                             </div>
+                            {/* Status toggle */}
+                            <div className='flex items-center justify-end'>
+                                <button type='button' onClick={() => setForm({ ...form, is_active: !form.is_active })}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${form.is_active
+                                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                                        }`}>
+                                    {form.is_active ? <FaToggleOn className='text-lg text-emerald-500' /> : <FaToggleOff className='text-lg text-slate-400' />}
+                                    {form.is_active ? 'Đang hoạt động' : 'Đã ẩn'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Status toggle */}
-                    <div className='flex items-center justify-end mt-4'>
-                        <button type='button' onClick={() => setForm({ ...form, is_active: !form.is_active })}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${form.is_active
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
-                                }`}>
-                            {form.is_active ? <FaToggleOn className='text-lg text-emerald-500' /> : <FaToggleOff className='text-lg text-slate-400' />}
-                            {form.is_active ? 'Đang hoạt động' : 'Đã ẩn'}
-                        </button>
-                    </div>
-
-                    <div className='flex gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700'>
-                        <button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}
-                            className='flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'>
-                            <FaSave /> {editingId ? 'Cập nhật' : 'Tạo mới'}
-                        </button>
-                        <button onClick={resetForm}
-                            className='flex items-center gap-1.5 px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all'>
-                            <FaTimes /> Hủy
-                        </button>
+                        {/* Modal footer */}
+                        <div className='flex gap-2 px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0'>
+                            <button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}
+                                className='flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'>
+                                <FaSave /> {editingId ? 'Cập nhật' : 'Tạo mới'}
+                            </button>
+                            <button onClick={resetForm}
+                                className='flex items-center gap-1.5 px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all'>
+                                <FaTimes /> Hủy
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -189,7 +260,7 @@ function EquipmentManager() {
             {isLoading ? (
                 <div className='flex items-center justify-center py-12'>
                     <div className='flex flex-col items-center gap-3'>
-                        <div className='w-10 h-10 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin'></div>
+                        <div className='w-10 h-10 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin'></div>
                         <p className='text-sm text-slate-500'>Đang tải thiết bị...</p>
                     </div>
                 </div>
@@ -203,52 +274,33 @@ function EquipmentManager() {
                     {filteredItems.map((item, index) => {
                         const isActive = item.is_active !== false
                         const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length]
-
                         return (
                             <div key={item._id}
                                 className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 hover:-translate-y-1 transition-all duration-300 ${!isActive ? 'opacity-60' : ''}`}>
-
-                                {/* Top gradient bar */}
                                 <div className={`h-1.5 bg-gradient-to-r ${gradient}`}></div>
-
                                 <div className='p-4'>
-                                    {/* Icon + Name */}
                                     <div className='flex items-start gap-3'>
                                         <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}
-                                            style={{ boxShadow: `0 4px 14px -3px rgba(0,0,0,0.15)` }}>
+                                            style={{ boxShadow: '0 4px 14px -3px rgba(0,0,0,0.15)' }}>
                                             {item.image_url
                                                 ? <img src={item.image_url} alt={item.name} className='w-8 h-8 object-contain' />
-                                                : <FaDumbbell className='text-white text-lg' />
-                                            }
+                                                : <FaDumbbell className='text-white text-lg' />}
                                         </div>
                                         <div className='flex-1 min-w-0'>
                                             <h4 className='font-bold text-slate-800 dark:text-slate-100 text-sm truncate'>{item.name}</h4>
                                             <p className='text-xs text-slate-400 dark:text-slate-500 font-medium truncate'>{item.name_en}</p>
                                         </div>
-                                        {/* Status badge */}
                                         <button onClick={() => toggleActiveMut.mutate({ id: item._id, is_active: !isActive })}
                                             title={isActive ? 'Đang hoạt động — Nhấn để ẩn' : 'Đã ẩn — Nhấn để kích hoạt'}
                                             className='flex-shrink-0 transition-all hover:scale-110'>
-                                            {isActive ? (
-                                                <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold'>
-                                                    <FaCheckCircle className='text-[8px]' /> Active
-                                                </span>
-                                            ) : (
-                                                <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-semibold'>
-                                                    <FaTimesCircle className='text-[8px]' /> Ẩn
-                                                </span>
-                                            )}
+                                            {isActive
+                                                ? <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold'><FaCheckCircle className='text-[8px]' /> Hoạt động</span>
+                                                : <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-semibold'><FaTimesCircle className='text-[8px]' /> Ẩn</span>}
                                         </button>
                                     </div>
-
-                                    {/* Description */}
                                     {item.description && (
-                                        <p className='mt-2.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed'>
-                                            {item.description}
-                                        </p>
+                                        <p className='mt-2.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed'>{item.description}</p>
                                     )}
-
-                                    {/* Actions */}
                                     <div className='flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50'>
                                         <button onClick={() => startEdit(item)}
                                             className='flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors'>
@@ -383,14 +435,42 @@ const DIFFICULTY_CONFIG = {
     expert: { label: 'Khó', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
 }
 
+const LIMIT = 12
+
 function ExerciseManager() {
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [searchInput, setSearchInput] = useState('')
     const [search, setSearch] = useState('')
-    const [filterCat, setFilterCat] = useState('')
-    const [filterDiff, setFilterDiff] = useState('')
+    const [filterMuscle, setFilterMuscle] = useState('') // muscle_group _id
+    const [filterEquipment, setFilterEquipment] = useState('') // equipment _id
+    const [status, setStatus] = useState('active') // 'active' | 'deleted'
+    const [showMuscleFilter, setShowMuscleFilter] = useState(false)
+    const [showEquipmentFilter, setShowEquipmentFilter] = useState(false)
     const [page, setPage] = useState(1)
+    const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
+    const debounceRef = useRef(null)
+    const muscleFilterRef = useRef(null)
+    const equipmentFilterRef = useRef(null)
+
+    // Close filter panels on outside click
+    useEffect(() => {
+        const handler = (e) => {
+            if (muscleFilterRef.current && !muscleFilterRef.current.contains(e.target)) setShowMuscleFilter(false)
+            if (equipmentFilterRef.current && !equipmentFilterRef.current.contains(e.target)) setShowEquipmentFilter(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
+
+    // Debounce search 300ms
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => { setSearch(searchInput); setPage(1) }, 300)
+        return () => clearTimeout(debounceRef.current)
+    }, [searchInput])
+
     const initForm = {
         name: '', name_vi: '', description: '', instructions: '', tips: '', video_url: '', image_url: '',
         category: 'strength', difficulty: 'intermediate',
@@ -405,33 +485,63 @@ function ExerciseManager() {
     const [form, setForm] = useState(initForm)
 
     const { data, isLoading } = useQuery({
-        queryKey: ['admin-exercises', search, filterCat, filterDiff, page],
-        queryFn: () => adminGetExercises({ search, category: filterCat, difficulty: filterDiff, page, limit: 20 }),
-        staleTime: 60000
+        queryKey: ['admin-exercises', search, filterMuscle, filterEquipment, page, status],
+        queryFn: () => adminGetExercises({ search, muscle_group_id: filterMuscle, equipment_id: filterEquipment, page, limit: LIMIT, status }),
+        keepPreviousData: true
     })
     const result = data?.data?.result || {}
     const exercises = result.exercises || []
     const total = result.total || 0
+    const totalPages = Math.ceil(total / LIMIT)
 
-    const { data: eqData } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment, staleTime: 60000 })
-    const { data: mgData } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups, staleTime: 60000 })
+    const { data: eqData } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
+    const { data: mgData } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups })
     const allEquipment = eqData?.data?.result || []
     const allMuscleGroups = mgData?.data?.result || []
 
-    const createMut = useMutation({
+    // Stat counts per category
+    const { data: strengthData } = useQuery({ queryKey: ['admin-exercises-count-strength'], queryFn: () => adminGetExercises({ category: 'strength', page: 1, limit: 1, status: 'active' }) })
+    const { data: cardioData } = useQuery({ queryKey: ['admin-exercises-count-cardio'], queryFn: () => adminGetExercises({ category: 'cardio', page: 1, limit: 1, status: 'active' }) })
+    const { data: stretchData } = useQuery({ queryKey: ['admin-exercises-count-stretching'], queryFn: () => adminGetExercises({ category: 'stretching', page: 1, limit: 1, status: 'active' }) })
+    const { data: plyoData } = useQuery({ queryKey: ['admin-exercises-count-plyometrics'], queryFn: () => adminGetExercises({ category: 'plyometrics', page: 1, limit: 1, status: 'active' }) })
+    const { data: totalAllData } = useQuery({ queryKey: ['admin-exercises-count-all'], queryFn: () => adminGetExercises({ page: 1, limit: 1, status: 'active' }) })
+    const { data: deletedCountData } = useQuery({ queryKey: ['admin-exercises-count-deleted'], queryFn: () => adminGetExercises({ page: 1, limit: 1, status: 'deleted' }) })
+    const totalActiveCount = totalAllData?.data?.result?.total || 0
+    const deletedCount = deletedCountData?.data?.result?.total || 0
+    const strengthCount = strengthData?.data?.result?.total || 0
+    const cardioCount = cardioData?.data?.result?.total || 0
+    const stretchCount = stretchData?.data?.result?.total || 0
+    const plyoCount = plyoData?.data?.result?.total || 0
+
+    const invalidateAll = () => {
+        qc.invalidateQueries({ queryKey: ['admin-exercises'] })
+        qc.invalidateQueries({ queryKey: ['admin-exercises-count-strength'] })
+        qc.invalidateQueries({ queryKey: ['admin-exercises-count-cardio'] })
+        qc.invalidateQueries({ queryKey: ['admin-exercises-count-stretching'] })
+        qc.invalidateQueries({ queryKey: ['admin-exercises-count-plyometrics'] })
+        qc.invalidateQueries({ queryKey: ['admin-exercises-count-all'] })
+        qc.invalidateQueries({ queryKey: ['admin-exercises-count-deleted'] })
+    }
+
+    const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateExercise(d),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-exercises'] }); toast.success('Tạo bài tập thành công'); resetForm() },
+        onSuccess: () => { invalidateAll(); toast.success('Tạo bài tập thành công'); resetForm() },
         onError: () => toast.error('Lỗi tạo bài tập')
     })
-    const updateMut = useMutation({
+    const updateMut = useSafeMutation({
         mutationFn: ({ id, d }) => adminUpdateExercise(id, d),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-exercises'] }); toast.success('Cập nhật thành công'); resetForm() },
+        onSuccess: () => { invalidateAll(); toast.success('Cập nhật thành công'); resetForm() },
         onError: () => toast.error('Lỗi cập nhật')
     })
-    const deleteMut = useMutation({
+    const deleteMut = useSafeMutation({
         mutationFn: (id) => adminDeleteExercise(id),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-exercises'] }); toast.success('Xóa thành công') },
+        onSuccess: () => { invalidateAll(); toast.success('Đã xóa bài tập') },
         onError: () => toast.error('Lỗi xóa')
+    })
+    const restoreMut = useSafeMutation({
+        mutationFn: (id) => adminRestoreExercise(id),
+        onSuccess: () => { invalidateAll(); toast.success('Đã khôi phục bài tập') },
+        onError: () => toast.error('Lỗi khôi phục')
     })
 
     const resetForm = () => { setForm(initForm); setEditingId(null); setShowForm(false) }
@@ -449,14 +559,10 @@ function ExerciseManager() {
             ]
         })
         setEditingId(ex._id); setShowForm(true)
-        setTimeout(() => document.getElementById('exercise-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     }
     const handleSubmit = () => {
         if (!form.name) return toast.error('Tên bài tập không được để trống')
-        const payload = {
-            ...form,
-            instructions: form.instructions.split('\n').filter(Boolean),
-        }
+        const payload = { ...form, instructions: form.instructions.split('\n').filter(Boolean) }
         editingId ? updateMut.mutate({ id: editingId, d: payload }) : createMut.mutate(payload)
     }
 
@@ -470,176 +576,342 @@ function ExerciseManager() {
     const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 outline-none transition-all'
     const labelClass = 'block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide'
 
+    // Active filter count (for badge)
+    const activeFilterCount = [filterMuscle, filterEquipment].filter(Boolean).length
+
+    const clearAllFilters = () => { setSearchInput(''); setSearch(''); setFilterMuscle(''); setFilterEquipment(''); setPage(1) }
+
+    const switchStatus = (s) => { setStatus(s); setPage(1); setFilterMuscle(''); setFilterEquipment(''); setSearchInput(''); setSearch(''); setShowMuscleFilter(false); setShowEquipmentFilter(false) }
+
+    const handleDeleteClick = (ex) => setConfirmDelete({ id: ex._id, name: ex.name })
+    const handleDeleteConfirm = () => {
+        if (!confirmDelete) return
+        deleteMut.mutate(confirmDelete.id, { onSettled: () => setConfirmDelete(null) })
+    }
+
     return (
-        <div>
-            {/* ── Header ── */}
-            <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5'>
-                <div>
-                    <h3 className='text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100'>
-                        <div className='w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30'>
-                            <FaDumbbell className='text-white text-sm' />
-                        </div>
-                        Quản lý Bài tập
-                    </h3>
-                    <p className='text-xs text-slate-500 mt-1'>Tổng <strong className='text-slate-700 dark:text-slate-300'>{total}</strong> bài tập</p>
-                </div>
-                <button onClick={() => { resetForm(); setShowForm(true) }}
-                    className='flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 transition-all'>
-                    <FaPlus className='text-xs' /> Thêm bài tập
-                </button>
-            </div>
-
-            {/* ── Filter bar ── */}
-            <div className='flex flex-wrap items-center gap-2 mb-5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700'>
-                <div className='relative flex-1 min-w-[160px]'>
-                    <FaSearch className='absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs' />
-                    <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
-                        placeholder='Tìm tên bài tập...'
-                        className='pl-7 pr-3 py-1.5 text-sm w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 outline-none transition-all' />
-                </div>
-                <select value={filterCat} onChange={e => { setFilterCat(e.target.value); setPage(1) }}
-                    className='py-1.5 px-2 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500/30 outline-none'>
-                    <option value=''>Tất cả loại</option>
-                    <option value='strength'>Sức mạnh</option>
-                    <option value='cardio'>Cardio</option>
-                    <option value='stretching'>Giãn cơ</option>
-                    <option value='plyometrics'>Bật nhảy</option>
-                </select>
-                <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1) }}
-                    className='py-1.5 px-2 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500/30 outline-none'>
-                    <option value=''>Tất cả độ khó</option>
-                    <option value='beginner'>Dễ</option>
-                    <option value='intermediate'>Trung bình</option>
-                    <option value='expert'>Khó</option>
-                </select>
-                {(search || filterCat || filterDiff) && (
-                    <button onClick={() => { setSearch(''); setFilterCat(''); setFilterDiff(''); setPage(1) }}
-                        className='text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors'>
-                        <FaTimes className='text-[10px]' /> Xóa bộ lọc
+        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
+            {/* ── Hero Banner ── */}
+            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 px-8 py-8 mb-6 shadow-xl'>
+                <div className='relative z-10 flex items-start justify-between'>
+                    <div>
+                        <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
+                        <h1 className='text-3xl font-black text-white mb-2'>Quản lý Bài tập</h1>
+                        <p className='text-white/80 text-sm max-w-md'>Quản lý toàn bộ bài tập trong hệ thống, bao gồm nhóm cơ và kcal tiêu thụ.</p>
+                    </div>
+                    <button onClick={() => { resetForm(); setShowForm(true) }}
+                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg mt-1 shrink-0'>
+                        <FaPlus className='text-xs' /> Thêm bài tập
                     </button>
-                )}
+                </div>
+
+                {/* Status tabs inside banner */}
+                <div className='relative z-10 flex gap-2 mt-5'>
+                    <button onClick={() => switchStatus('active')}
+                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'active' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                        <FaCheckCircle className='text-xs' /> Đang hoạt động ({totalActiveCount})
+                    </button>
+                    <button onClick={() => switchStatus('deleted')}
+                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'deleted' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                        <FaTrash className='text-xs' /> Đã xóa ({deletedCount})
+                    </button>
+                </div>
+
+                <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
+                <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
+                <GiBiceps className='absolute right-8 top-8 text-white/10 text-[8rem]' />
             </div>
 
-            {/* ── Form ── */}
-            {showForm && (
-                <div id='exercise-form' className='mb-6 bg-gradient-to-br from-slate-50 to-indigo-50/20 dark:from-slate-800/80 dark:to-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden'>
-                    {/* Form header */}
-                    <div className='px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 flex items-center justify-between'>
-                        <h4 className='font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2'>
-                            <span>{editingId ? '✏️' : '✨'}</span>
-                            {editingId ? 'Chỉnh sửa bài tập' : 'Thêm bài tập mới'}
-                        </h4>
-                        <button onClick={resetForm} className='p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors'><FaTimes /></button>
+            {/* ── Stat Cards ── */}
+            <div className='grid grid-cols-2 xl:grid-cols-5 gap-3 mb-5'>
+                {[
+                    { label: 'Tổng bài tập', value: totalActiveCount, color: 'border-l-indigo-400' },
+                    { label: '💪 Sức mạnh', value: strengthCount, color: 'border-l-blue-400' },
+                    { label: '🏃 Cardio', value: cardioCount, color: 'border-l-red-400' },
+                    { label: '🧘 Giãn cơ', value: stretchCount, color: 'border-l-green-400' },
+                    { label: '⚡ Bật nhảy', value: plyoCount, color: 'border-l-orange-400' },
+                ].map(c => (
+                    <div key={c.label} className={`bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 ${c.color} shadow-sm border border-gray-100 dark:border-slate-700`}>
+                        <p className='text-xs text-gray-400 mb-0.5'>{c.label}</p>
+                        <p className='text-2xl font-black text-gray-800 dark:text-white'>{c.value}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* ── Smart Search + Filters ── */}
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 mb-3 border border-gray-100 dark:border-slate-700'>
+                <div className='flex items-center gap-2'>
+                    {/* Search */}
+                    <div className='relative flex-1'>
+                        <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs' />
+                        {searchInput && (
+                            <button onClick={() => setSearchInput('')}
+                                className='absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors'>
+                                <FaTimes size={11} />
+                            </button>
+                        )}
+                        <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
+                            placeholder='Tìm tên bài tập (EN hoặc VI)...'
+                            className='pl-9 pr-8 py-2 text-sm w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 outline-none transition-all' />
                     </div>
 
-                    <div className='p-6 max-h-[75vh] overflow-y-auto space-y-5'>
-                        {/* Section: Basic Info */}
-                        <div>
-                            <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3'>📝 Thông tin cơ bản</p>
-                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                                <div>
-                                    <label className={labelClass}>Tên tiếng Anh *</label>
-                                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputClass} placeholder='VD: Dumbbell Curl' />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Tên tiếng Việt</label>
-                                    <input value={form.name_vi} onChange={e => setForm({ ...form, name_vi: e.target.value })} className={inputClass} placeholder='VD: Cuốn tạ' />
-                                </div>
-                                <div className='md:col-span-2'>
-                                    <label className={labelClass}>Mô tả</label>
-                                    <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className={inputClass} />
-                                </div>
-                                <div className='md:col-span-2'>
-                                    <label className={labelClass}>Hướng dẫn (mỗi bước 1 dòng)</label>
-                                    <textarea value={form.instructions} onChange={e => setForm({ ...form, instructions: e.target.value })} rows={3}
-                                        className={inputClass} placeholder={'Bước 1...\nBước 2...'} />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Mẹo / Lưu ý</label>
-                                    <input value={form.tips} onChange={e => setForm({ ...form, tips: e.target.value })} className={inputClass} placeholder='Lưu ý khi thực hiện' />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>URL Video</label>
-                                    <input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} className={inputClass} placeholder='https://youtube.com/...' />
+                    {/* Muscle Group filter dropdown */}
+                    <div className='relative' ref={muscleFilterRef}>
+                        <button onClick={() => { setShowMuscleFilter(p => !p); setShowEquipmentFilter(false) }}
+                            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showMuscleFilter || filterMuscle
+                                ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300'}`}>
+                            💪
+                            <span className='hidden sm:inline'>{filterMuscle ? allMuscleGroups.find(m => m._id === filterMuscle)?.name || 'Nhóm cơ' : 'Nhóm cơ'}</span>
+                            {filterMuscle && (
+                                <button onClick={(e) => { e.stopPropagation(); setFilterMuscle(''); setPage(1) }}
+                                    className='w-4 h-4 rounded-full bg-violet-600 text-white text-[8px] flex items-center justify-center hover:bg-violet-700'>
+                                    <FaTimes size={7} />
+                                </button>
+                            )}
+                            <FaChevronDown size={9} className={`transition-transform ${showMuscleFilter ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showMuscleFilter && (
+                            <div className='absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 p-3'
+                                style={{ animation: 'fadeIn 0.15s ease-out' }}>
+                                <p className='text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest mb-2'>💪 Lọc theo Nhóm cơ</p>
+                                <div className='max-h-48 overflow-y-auto flex flex-wrap gap-1.5 pr-1'>
+                                    <button onClick={() => { setFilterMuscle(''); setPage(1); setShowMuscleFilter(false) }}
+                                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filterMuscle === ''
+                                            ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-violet-400 hover:text-violet-600'}`}>
+                                        Tất cả
+                                    </button>
+                                    {allMuscleGroups.map(mg => (
+                                        <button key={mg._id} onClick={() => { setFilterMuscle(mg._id); setPage(1); setShowMuscleFilter(false) }}
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filterMuscle === mg._id
+                                                ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                                                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-violet-400 hover:text-violet-600'}`}>
+                                            {mg.name}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
+                        )}
+                    </div>
 
-                        {/* Section: Category */}
-                        <div className='bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4'>
-                            <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3'>⚙️ Phân loại</p>
-                            <div className='max-w-xs'>
-                                <label className={labelClass}>Loại hình bài tập</label>
-                                <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={inputClass}>
-                                    <option value='strength'>Sức mạnh</option>
-                                    <option value='cardio'>Cardio</option>
-                                    <option value='stretching'>Giãn cơ</option>
-                                    <option value='plyometrics'>Bật nhảy</option>
-                                </select>
-                                <p className='text-[10px] text-slate-400 mt-1'>Độ khó được tự động xác định từ Set tập mặc định bên dưới</p>
-                            </div>
-                        </div>
+                    {/* Equipment filter dropdown */}
+                    <div className='relative' ref={equipmentFilterRef}>
+                        <button onClick={() => { setShowEquipmentFilter(p => !p); setShowMuscleFilter(false) }}
+                            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showEquipmentFilter || filterEquipment
+                                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300'}`}>
+                            🏋️
+                            <span className='hidden sm:inline'>{filterEquipment ? allEquipment.find(e => e._id === filterEquipment)?.name || 'Thiết bị' : 'Thiết bị'}</span>
+                            {filterEquipment && (
+                                <button onClick={(e) => { e.stopPropagation(); setFilterEquipment(''); setPage(1) }}
+                                    className='w-4 h-4 rounded-full bg-blue-600 text-white text-[8px] flex items-center justify-center hover:bg-blue-700'>
+                                    <FaTimes size={7} />
+                                </button>
+                            )}
+                            <FaChevronDown size={9} className={`transition-transform ${showEquipmentFilter ? 'rotate-180' : ''}`} />
+                        </button>
 
-                        {/* Section: Equipment & Muscles */}
-                        <div className='bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3'>
-                            <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest'>🏋️ Thiết bị & Nhóm cơ</p>
-                            <div>
-                                <label className={labelClass}>Thiết bị sử dụng</label>
-                                <div className='flex flex-wrap gap-1.5 mt-1'>
+                        {showEquipmentFilter && (
+                            <div className='absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 p-3'
+                                style={{ animation: 'fadeIn 0.15s ease-out' }}>
+                                <p className='text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2'>🏋️ Lọc theo Thiết bị</p>
+                                <div className='max-h-48 overflow-y-auto flex flex-wrap gap-1.5 pr-1'>
+                                    <button onClick={() => { setFilterEquipment(''); setPage(1); setShowEquipmentFilter(false) }}
+                                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filterEquipment === ''
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600'}`}>
+                                        Tất cả
+                                    </button>
                                     {allEquipment.map(eq => (
-                                        <button key={eq._id} type='button' onClick={() => toggleArrayItem('equipment_ids', eq._id)}
-                                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${form.equipment_ids.includes(eq._id)
-                                                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+                                        <button key={eq._id} onClick={() => { setFilterEquipment(eq._id); setPage(1); setShowEquipmentFilter(false) }}
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filterEquipment === eq._id
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600'}`}>
                                             {eq.name}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <div>
-                                <label className={labelClass}>Nhóm cơ chính</label>
-                                <div className='flex flex-wrap gap-1.5 mt-1'>
-                                    {allMuscleGroups.map(mg => (
-                                        <button key={mg._id} type='button' onClick={() => toggleArrayItem('muscle_group_ids', mg._id)}
-                                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${form.muscle_group_ids.includes(mg._id)
-                                                ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-                                            {mg.name}
-                                        </button>
-                                    ))}
+                        )}
+                    </div>
+                </div>
+
+                {/* Active filter chips */}
+                {activeFilterCount > 0 && (
+                    <div className='flex flex-wrap gap-2 mt-2.5'>
+                        {filterMuscle && (
+                            <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'>
+                                💪 {allMuscleGroups.find(m => m._id === filterMuscle)?.name || 'Nhóm cơ'}
+                                <button onClick={() => { setFilterMuscle(''); setPage(1) }} className='hover:text-violet-900'><FaTimes size={9} /></button>
+                            </span>
+                        )}
+                        {filterEquipment && (
+                            <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'>
+                                🏋️ {allEquipment.find(e => e._id === filterEquipment)?.name || 'Thiết bị'}
+                                <button onClick={() => { setFilterEquipment(''); setPage(1) }} className='hover:text-blue-900'><FaTimes size={9} /></button>
+                            </span>
+                        )}
+                        <button onClick={clearAllFilters}
+                            className='inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors'>
+                            <FaTimes size={9} /> Xóa tất cả
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Custom Delete Confirm Modal ── */}
+            {confirmDelete && (
+                <div className='fixed inset-0 z-50 flex items-center justify-center p-4'
+                    style={{ animation: 'fadeIn 0.15s ease-out' }}>
+                    <div className='absolute inset-0 bg-black/50 backdrop-blur-sm' onClick={() => setConfirmDelete(null)} />
+                    <div className='relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-5 w-full max-w-sm'
+                        style={{ animation: 'scaleIn 0.2s ease-out' }}>
+                        {/* Icon */}
+                        <div className='flex items-center justify-center w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full mx-auto mb-3'>
+                            <FaTrash className='text-base text-red-500' />
+                        </div>
+                        <h3 className='text-sm font-bold text-slate-800 dark:text-white text-center mb-1.5'>Xác nhận xóa</h3>
+                        <p className='text-xs text-slate-500 dark:text-slate-400 text-center mb-4'>
+                            Bạn có chắc chắn muốn xóa bài tập <strong className='text-slate-700 dark:text-slate-200'>"{confirmDelete.name}"</strong>?
+                            <br /><span className='text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 block'>Bài tập sẽ được chuyển vào thùng rác và có thể khôi phục.</span>
+                        </p>
+                        <div className='flex gap-2'>
+                            <button onClick={() => setConfirmDelete(null)}
+                                className='flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors'>
+                                Hủy
+                            </button>
+                            <button onClick={handleDeleteConfirm} disabled={deleteMut.isPending}
+                                className='flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5'>
+                                <FaTrash size={10} /> {deleteMut.isPending ? 'Đang xóa...' : 'Xóa bài tập'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Modal Form ── */}
+            {showForm && (
+                <div className='fixed inset-0 z-50 flex items-center justify-center p-4'
+                    style={{ animation: 'fadeIn 0.15s ease-out' }}>
+                    {/* Backdrop */}
+                    <div className='absolute inset-0 bg-black/50 backdrop-blur-sm' onClick={resetForm} />
+                    {/* Modal content */}
+                    <div className='relative w-full max-w-3xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+                        style={{ animation: 'scaleIn 0.2s ease-out' }}>
+                        {/* Modal header */}
+                        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-600 to-violet-600 flex-shrink-0'>
+                            <h4 className='font-bold text-white text-base flex items-center gap-2'>
+                                <span>{editingId ? '✏️' : '✨'}</span>
+                                {editingId ? 'Chỉnh sửa bài tập' : 'Thêm bài tập mới'}
+                            </h4>
+                            <button onClick={resetForm}
+                                className='p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors'>
+                                <FaTimes />
+                            </button>
+                        </div>
+
+                        {/* Scrollable body */}
+                        <div className='flex-1 overflow-y-auto p-5 space-y-4'>
+
+                            {/* ── Row 1: Identity + Category ── */}
+                            <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+                                <div className='md:col-span-1'>
+                                    <label className={labelClass}>Tên tiếng Anh <span className='text-red-500'>*</span></label>
+                                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                                        className={inputClass} placeholder='VD: Dumbbell Curl' />
+                                </div>
+                                <div className='md:col-span-1'>
+                                    <label className={labelClass}>Tên tiếng Việt</label>
+                                    <input value={form.name_vi} onChange={e => setForm({ ...form, name_vi: e.target.value })}
+                                        className={inputClass} placeholder='VD: Cuốn tạ' />
+                                </div>
+                                <div className='md:col-span-1'>
+                                    <label className={labelClass}>Loại hình <span className='text-red-500'>*</span></label>
+                                    <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={inputClass}>
+                                        <option value='strength'>💪 Sức mạnh</option>
+                                        <option value='cardio'>🏃 Cardio</option>
+                                        <option value='stretching'>🧘 Giãn cơ</option>
+                                        <option value='plyometrics'>⚡ Bật nhảy</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div>
-                                <label className={labelClass}>Nhóm cơ phụ</label>
-                                <div className='flex flex-wrap gap-1.5 mt-1'>
-                                    {allMuscleGroups.map(mg => (
-                                        <button key={mg._id} type='button' onClick={() => toggleArrayItem('secondary_muscle_ids', mg._id)}
-                                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${form.secondary_muscle_ids.includes(mg._id)
-                                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-                                            {mg.name}
-                                        </button>
-                                    ))}
+
+                            {/* ── Row 2: Equipment (left) | Muscle Groups (right) ── */}
+                            <div className='grid grid-cols-1 md:grid-cols-5 gap-3'>
+                                {/* Left 40%: Equipment */}
+                                <div className='md:col-span-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-3'>
+                                    <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2'>🏋️ Thiết bị</p>
+                                    <div className='flex flex-wrap gap-1.5'>
+                                        {allEquipment.map(eq => (
+                                            <button key={eq._id} type='button' onClick={() => toggleArrayItem('equipment_ids', eq._id)}
+                                                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${form.equipment_ids.includes(eq._id)
+                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-400 hover:text-indigo-600'}`}>
+                                                {eq.name}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Right 60%: Muscle Groups */}
+                                <div className='md:col-span-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-3'>
+                                    <p className='text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest mb-2'>💪 Nhóm cơ</p>
+                                    <div className='flex flex-wrap gap-1.5'>
+                                        {allMuscleGroups.map(mg => (
+                                            <button key={mg._id} type='button' onClick={() => toggleArrayItem('muscle_group_ids', mg._id)}
+                                                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${form.muscle_group_ids.includes(mg._id)
+                                                    ? 'bg-violet-600 text-white border-violet-600 shadow-sm' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-violet-400 hover:text-violet-600'}`}>
+                                                {mg.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Row 3: Instructions (left) | Tips + Video (right) ── */}
+                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                <div>
+                                    <label className={labelClass}>📋 Hướng dẫn <span className='text-slate-400 font-normal'>(mỗi bước 1 dòng)</span></label>
+                                    <textarea value={form.instructions} onChange={e => setForm({ ...form, instructions: e.target.value })}
+                                        rows={4} className={inputClass} placeholder={'Bước 1: ...\nBước 2: ...\nBước 3: ...'} />
+                                </div>
+                                <div className='flex flex-col gap-2'>
+                                    <div>
+                                        <label className={labelClass}>💡 Mẹo / Lưu ý</label>
+                                        <textarea value={form.tips} onChange={e => setForm({ ...form, tips: e.target.value })}
+                                            rows={2} className={inputClass} placeholder='VD: Giữ lưng thẳng, thở đều...' />
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>🔗 URL Video</label>
+                                        <input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })}
+                                            className={inputClass} placeholder='https://youtube.com/...' />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Row 4: Default Sets (full width) ── */}
+                            <div className='bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-3'>
+                                <div className='flex items-center justify-between mb-2'>
+                                    <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest'>📊 Set tập mặc định</p>
+                                    <span className='text-[10px] text-slate-400'>Độ khó: <strong className='text-slate-600 dark:text-slate-300'>{DIFFICULTY_CONFIG[form.difficulty]?.label || form.difficulty}</strong></span>
+                                </div>
+                                <DefaultSetsEditor
+                                    sets={form.default_sets}
+                                    onChange={(newSets) => setForm({ ...form, default_sets: newSets })}
+                                    onDifficultyChange={(d) => setForm(prev => ({ ...prev, difficulty: d }))}
+                                />
                             </div>
                         </div>
 
-                        {/* Section: Default Sets */}
-                        <div className='bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4'>
-                            <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2'>📊 Set tập mặc định</p>
-                            <p className='text-[10px] text-slate-400 mb-2'>Chọn preset để tự động đặt độ khó: <strong className='text-slate-600 dark:text-slate-300'>{DIFFICULTY_CONFIG[form.difficulty]?.label || form.difficulty}</strong></p>
-                            <DefaultSetsEditor
-                                sets={form.default_sets}
-                                onChange={(newSets) => setForm({ ...form, default_sets: newSets })}
-                                onDifficultyChange={(d) => setForm(prev => ({ ...prev, difficulty: d }))}
-                            />
-                        </div>
-
-                        {/* Submit */}
-                        <div className='flex gap-2 pt-2'>
+                        {/* Modal footer */}
+                        <div className='flex gap-2 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0'>
                             <button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}
                                 className='flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-indigo-500/25 active:scale-95 transition-all disabled:opacity-50'>
                                 <FaSave /> {editingId ? 'Cập nhật' : 'Tạo bài tập'}
                             </button>
                             <button onClick={resetForm}
-                                className='flex items-center gap-1.5 px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all'>
+                                className='flex items-center gap-1.5 px-5 py-2.5 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-600 transition-all'>
                                 <FaTimes /> Hủy
                             </button>
                         </div>
@@ -647,159 +919,128 @@ function ExerciseManager() {
                 </div>
             )}
 
-            {/* ── Exercise Card List ── */}
+            {/* ── Table ── */}
             {isLoading ? (
-                <div className='flex justify-center py-12'>
-                    <div className='flex flex-col items-center gap-3'>
-                        <div className='w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin'></div>
-                        <p className='text-sm text-slate-500'>Đang tải bài tập...</p>
-                    </div>
+                <div className='flex justify-center py-16'>
+                    <div className='w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin'></div>
                 </div>
             ) : exercises.length === 0 ? (
-                <div className='text-center py-12'>
-                    <span className='text-4xl mb-3 block'>🔍</span>
-                    <p className='text-slate-500'>Không tìm thấy bài tập nào</p>
+                <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700'>
+                    <GiBiceps className='mx-auto text-5xl text-gray-300 mb-3' />
+                    <p className='text-gray-400 text-sm'>
+                        {status === 'deleted'
+                            ? 'Không có bài tập nào đã xóa'
+                            : `Không tìm thấy bài tập nào${search ? ` khớp "${search}"` : ''}`}
+                    </p>
                 </div>
             ) : (
-                <div className='space-y-2'>
-                    {exercises.map(ex => {
-                        const cat = CATEGORY_CONFIG[ex.category] || CATEGORY_CONFIG.strength
-                        const diff = DIFFICULTY_CONFIG[ex.difficulty] || DIFFICULTY_CONFIG.intermediate
-                        const sets = ex.default_sets || []
-                        const equipList = (ex.equipment_ids || []).filter(e => typeof e === 'object')
-                        const muscleList = (ex.muscle_group_ids || []).filter(m => typeof m === 'object')
-
-                        return (
-                            <div key={ex._id}
-                                className='group bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 overflow-hidden hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all duration-200'>
-                                <div className='flex items-stretch'>
-                                    {/* Left color bar */}
-                                    <div className={`w-1 flex-shrink-0 ${cat.bar}`}></div>
-
-                                    <div className='flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 min-w-0'>
-                                        {/* Name block */}
-                                        <div className='flex-1 min-w-0'>
-                                            <div className='flex items-center gap-2 flex-wrap'>
-                                                <span className='font-semibold text-slate-800 dark:text-slate-100 text-sm'>{ex.name}</span>
-                                                {ex.name_vi && <span className='text-xs text-slate-400'>/ {ex.name_vi}</span>}
-                                            </div>
-                                            {/* Tags row */}
-                                            <div className='flex items-center flex-wrap gap-1.5 mt-1.5'>
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${cat.color}`}>{cat.label}</span>
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${diff.color}`}>{diff.label}</span>
-                                                {sets.length > 0 && (
-                                                    <span className='inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'>
-                                                        {sets.length} sets × {sets[0]?.reps} reps
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {/* Equipment & Muscles */}
-                                            {(equipList.length > 0 || muscleList.length > 0) && (
-                                                <div className='flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5'>
-                                                    {equipList.length > 0 && (
-                                                        <span className='text-[10px] text-slate-400 flex items-center gap-1'>
-                                                            <span className='font-medium text-slate-500'>🏋️</span>
-                                                            {equipList.map(e => e.name).join(', ')}
-                                                        </span>
-                                                    )}
-                                                    {muscleList.length > 0 && (
-                                                        <span className='text-[10px] text-slate-400 flex items-center gap-1'>
-                                                            <span className='font-medium text-slate-500'>💪</span>
-                                                            {muscleList.map(m => m.name).join(', ')}
-                                                        </span>
+                <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
+                    <div className='px-5 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between'>
+                        <p className='text-sm text-gray-500 dark:text-gray-400'>
+                            {status === 'deleted' ? (
+                                <span className='inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-semibold'>
+                                    <FaTrash className='text-[10px]' /> Đang xem bài tập đã xóa
+                                </span>
+                            ) : (
+                                <>Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}</span> / <span className='font-semibold'>{total}</span> bài tập</>
+                            )}
+                        </p>
+                    </div>
+                    <div className='overflow-x-auto'>
+                        <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
+                            <thead className='bg-gray-50 dark:bg-slate-900'>
+                                <tr>
+                                    {['Bài tập', 'Loại hình', 'Độ khó', 'Sets × Reps', 'Nhóm cơ', 'Thiết bị', 'Hành động'].map(h => (
+                                        <th key={h} className='px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className='divide-y divide-gray-50 dark:divide-slate-700'>
+                                {exercises.map(ex => {
+                                    const cat = CATEGORY_CONFIG[ex.category] || CATEGORY_CONFIG.strength
+                                    const diff = DIFFICULTY_CONFIG[ex.difficulty] || DIFFICULTY_CONFIG.intermediate
+                                    const sets = ex.default_sets || []
+                                    const equipList = (ex.equipment_ids || []).filter(e => typeof e === 'object')
+                                    const muscleList = (ex.muscle_group_ids || []).filter(m => typeof m === 'object')
+                                    return (
+                                        <tr key={ex._id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${status === 'deleted' ? 'opacity-70' : ''}`}>
+                                            <td className='px-5 py-3'>
+                                                <div className='flex items-center gap-2'>
+                                                    <div className={`w-2 h-8 rounded-full flex-shrink-0 ${cat.bar}`} />
+                                                    <div>
+                                                        <p className='font-semibold text-sm text-slate-800 dark:text-slate-100'>{ex.name}</p>
+                                                        {ex.name_vi && <p className='text-xs text-slate-400'>{ex.name_vi}</p>}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className='px-5 py-3'>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${cat.color}`}>{cat.label}</span>
+                                            </td>
+                                            <td className='px-5 py-3'>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${diff.color}`}>{diff.label}</span>
+                                            </td>
+                                            <td className='px-5 py-3 text-sm text-slate-500'>
+                                                {sets.length > 0 ? `${sets.length} × ${sets[0]?.reps} reps` : '—'}
+                                            </td>
+                                            <td className='px-5 py-3'>
+                                                <div className='flex flex-wrap gap-1'>
+                                                    {muscleList.slice(0, 2).map(m => (
+                                                        <span key={m._id} className='px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'>{m.name}</span>
+                                                    ))}
+                                                    {muscleList.length > 2 && <span className='text-[10px] text-slate-400'>+{muscleList.length - 2}</span>}
+                                                </div>
+                                            </td>
+                                            <td className='px-5 py-3'>
+                                                <div className='flex flex-wrap gap-1'>
+                                                    {equipList.slice(0, 2).map(e => (
+                                                        <span key={e._id} className='px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'>{e.name}</span>
+                                                    ))}
+                                                    {equipList.length > 2 && <span className='text-[10px] text-slate-400'>+{equipList.length - 2}</span>}
+                                                </div>
+                                            </td>
+                                            <td className='px-5 py-3'>
+                                                <div className='flex items-center gap-1.5'>
+                                                    {status === 'deleted' ? (
+                                                        <button onClick={() => restoreMut.mutate(ex._id)}
+                                                            disabled={restoreMut.isPending}
+                                                            className='flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-xs font-medium hover:bg-emerald-100 transition-colors disabled:opacity-50'>
+                                                            <FaUndo className='text-[10px]' /> Khôi phục
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button onClick={() => startEdit(ex)} title='Sửa'
+                                                                className='flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 transition-colors'>
+                                                                <FaEdit className='text-xs' />
+                                                            </button>
+                                                            <button onClick={() => handleDeleteClick(ex)}
+                                                                className='flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 text-xs font-medium hover:bg-red-100 transition-colors'>
+                                                                <FaTrash className='text-[10px]' />
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
-                                            )}
-                                        </div>
-
-
-                                        {/* Actions */}
-                                        <div className='flex items-center gap-1.5 flex-shrink-0'>
-                                            <button onClick={() => startEdit(ex)}
-                                                className='flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors'>
-                                                <FaEdit className='text-[10px]' /> Sửa
-                                            </button>
-                                            <button onClick={() => window.confirm(`Xóa bài tập "${ex.name}"?`) && deleteMut.mutate(ex._id)}
-                                                className='flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors'>
-                                                <FaTrash className='text-[10px]' />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    })}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
-            {/* Pagination */}
-            {total > page * 20 && (
-                <div className='mt-5 flex justify-center'>
-                    <button onClick={() => setPage(p => p + 1)}
-                        className='px-6 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-indigo-500/25 active:scale-95 transition-all'>
-                        Xem thêm ({total - page * 20} bài còn lại)
-                    </button>
-                </div>
-            )}
-
-            {/* Result count */}
-            {!isLoading && exercises.length > 0 && (
-                <p className='text-center text-xs text-slate-400 mt-3'>
-                    Hiển thị {exercises.length} / {total} bài tập
-                </p>
-            )}
+            {/* ── Pagination ── */}
+            <TablePagination page={page} totalPages={totalPages} onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
         </div>
     )
 }
 
 // ===================== MAIN EXPORT =====================
-export default function WorkoutManagement() {
-    const [activeTab, setActiveTab] = useState('equipment')
-
-    const tabs = [
-        { key: 'equipment', label: 'Thiết bị', emoji: '🏋️', desc: 'Quản lý dụng cụ tập luyện' },
-        { key: 'exercises', label: 'Bài tập', emoji: '📋', desc: 'Quản lý danh sách bài tập' }
-    ]
-
+export default function WorkoutManagement({ mode = 'equipment' }) {
     return (
-        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
-
-            {/* ── Hero Banner ── */}
-            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 px-8 py-8 mb-6 shadow-xl'>
-                <div className='relative z-10'>
-                    <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-                    <h1 className='text-3xl font-black text-white mb-2'>Quản lý Tập luyện</h1>
-                    <p className='text-white/80 text-sm max-w-lg'>
-                        Quản lý thiết bị tập luyện và danh sách bài tập trong hệ thống, bao gồm nhóm cơ và kcal tiêu thụ.
-                    </p>
-
-                    {/* Tab pills inside banner */}
-                    <div className='flex gap-2 mt-5'>
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
-                                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === tab.key
-                                    ? 'bg-white text-indigo-700 shadow-lg'
-                                    : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm'
-                                    }`}
-                            >
-                                {tab.emoji} {tab.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
-                <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
-                <FaDumbbell className='absolute right-8 top-8 text-white/10 text-[8rem]' />
-            </div>
-
-            {/* ── Tab Content ── */}
-            <div>
-                {activeTab === 'equipment' && <EquipmentManager />}
-                {activeTab === 'exercises' && <ExerciseManager />}
-            </div>
-        </div>
+        <>
+            {mode === 'equipment' && <EquipmentManager />}
+            {mode === 'exercises' && <ExerciseManager />}
+        </>
     )
 }
-

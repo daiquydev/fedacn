@@ -1,5 +1,6 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { Link, useParams } from 'react-router-dom'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
 import { FaArrowCircleRight, FaComment, FaEye } from 'react-icons/fa'
 import moment from 'moment'
@@ -52,22 +53,21 @@ export default function RecipeDetail() {
       return getRecipeForUser(id)
     },
     enabled: Boolean(id),
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
-  const likeMutation = useMutation({
+  const likeMutation = useSafeMutation({
     mutationFn: (body) => likeRecipe(body)
   })
 
-  const unlikeMutation = useMutation({
+  const unlikeMutation = useSafeMutation({
     mutationFn: (body) => unlikeRecipe(body)
   })
 
-  const bookmarkMutation = useMutation({
+  const bookmarkMutation = useSafeMutation({
     mutationFn: (body) => bookmarkRecipe(body)
   })
 
-  const unbookmarkMutation = useMutation({
+  const unbookmarkMutation = useSafeMutation({
     mutationFn: (body) => unbookmarkRecipe(body)
   })
 

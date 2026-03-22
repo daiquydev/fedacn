@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useNavigate } from 'react-router-dom'
 import InputPass from '../../../../components/InputComponents/InputPass'
 import MotionWrapper from '../../../../layouts/MotionWrapper'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { resetPassword } from '../../../../apis/authApi'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { schemaResetPassword } from '../../../../utils/rules'
 import useQueryConfig from '../../../../hooks/useQueryConfig'
 import { omit } from 'lodash'
@@ -24,7 +25,7 @@ export default function ChangePassForm() {
   } = useForm({
     resolver: yupResolver(schemaResetPassword)
   })
-  const resetPasswordMutation = useMutation({
+  const resetPasswordMutation = useSafeMutation({
     mutationFn: (body) => resetPassword(body)
   })
   const onSubmit = handleSubmit((data) => {

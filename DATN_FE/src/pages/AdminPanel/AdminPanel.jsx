@@ -1,4 +1,5 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { currentAccount } from '../../apis/userApi'
 import mealPlanApi from '../../apis/mealPlanApi'
 import { deleteRecipeForChef } from '../../apis/recipeApi'
@@ -53,47 +54,40 @@ export default function AdminPanel() {
   const { data: userData } = useQuery({
     queryKey: ['me'],
     queryFn: currentAccount,
-    placeholderData: keepPreviousData,
-    staleTime: 1000
+    placeholderData: keepPreviousData
   })
 
   const { data: reportData, isLoading: isLoadingReports } = useQuery({
     queryKey: ['admin-post-reports'],
-    queryFn: () => getPostReports({ page: 1, limit: 10 }),
-    staleTime: 1000
+    queryFn: () => getPostReports({ page: 1, limit: 10 })
   })
 
   const { data: mealPlanReportData, isLoading: isLoadingMealPlanReports } = useQuery({
     queryKey: ['admin-meal-plan-reports'],
-    queryFn: () => getMealPlanReports({ page: 1, limit: 10 }),
-    staleTime: 1000
+    queryFn: () => getMealPlanReports({ page: 1, limit: 10 })
   })
 
   const { data: publicPostsData, isLoading: isLoadingPosts } = useQuery({
     queryKey: ['admin-public-posts', postPage, postSearch],
-    queryFn: () => getPublicPosts({ page: postPage, limit: 20, search: postSearch || undefined }),
-    staleTime: 1000
+    queryFn: () => getPublicPosts({ page: postPage, limit: 20, search: postSearch || undefined })
   })
 
   const { data: mealPlansData, isLoading: isLoadingMealPlans } = useQuery({
     queryKey: ['admin-meal-plans', mealPage, mealSearch],
-    queryFn: () => mealPlanApi.getMealPlans({ limit: 20, page: mealPage, search: mealSearch || undefined }),
-    staleTime: 1000
+    queryFn: () => mealPlanApi.getMealPlans({ limit: 20, page: mealPage, search: mealSearch || undefined })
   })
 
   const { data: recipesData, isLoading: isLoadingRecipes } = useQuery({
     queryKey: ['admin-recipes', recipePage, recipeSearch],
-    queryFn: () => getInspectorRecipes({ page: recipePage, limit: 20, search: recipeSearch || undefined }),
-    staleTime: 1000
+    queryFn: () => getInspectorRecipes({ page: recipePage, limit: 20, search: recipeSearch || undefined })
   })
 
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['admin-users'],
-    queryFn: () => getUsersAdmin({ page: 1, limit: 20, role: undefined, status: undefined }),
-    staleTime: 1000
+    queryFn: () => getUsersAdmin({ page: 1, limit: 20, role: undefined, status: undefined })
   })
 
-  const deleteMealPlanMutation = useMutation({
+  const deleteMealPlanMutation = useSafeMutation({
     mutationFn: (id) => mealPlanApi.deleteMealPlan(id),
     onSuccess: () => {
       toast.success('Đã xóa meal plan')
@@ -102,7 +96,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Xóa meal plan thất bại (kiểm tra quyền hoặc ID)')
   })
 
-  const deleteRecipeMutation = useMutation({
+  const deleteRecipeMutation = useSafeMutation({
     mutationFn: (id) => deleteRecipeForChef(id),
     onSuccess: () => {
       toast.success('Đã xóa công thức')
@@ -111,7 +105,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Xóa công thức thất bại (kiểm tra quyền hoặc ID)')
   })
 
-  const deletePostMutation = useMutation({
+  const deletePostMutation = useSafeMutation({
     mutationFn: (id) => deletePostForEachUser({ post_id: id }),
     onSuccess: () => {
       toast.success('Đã xóa bài viết')
@@ -120,7 +114,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Xóa bài viết thất bại (kiểm tra quyền hoặc ID)')
   })
 
-  const acceptReportMutation = useMutation({
+  const acceptReportMutation = useSafeMutation({
     mutationFn: (id) => acceptPostReport(id),
     onSuccess: () => {
       toast.success('Đã duyệt báo cáo')
@@ -129,7 +123,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Duyệt báo cáo thất bại')
   })
 
-  const rejectReportMutation = useMutation({
+  const rejectReportMutation = useSafeMutation({
     mutationFn: (id) => rejectPostReport(id),
     onSuccess: () => {
       toast.success('Đã xóa báo cáo')
@@ -138,7 +132,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Xóa báo cáo thất bại')
   })
 
-  const banUserMutation = useMutation({
+  const banUserMutation = useSafeMutation({
     mutationFn: (id) => banUserAdmin(id),
     onSuccess: () => {
       toast.success('Đã khóa user')
@@ -147,7 +141,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Khóa user thất bại')
   })
 
-  const unbanUserMutation = useMutation({
+  const unbanUserMutation = useSafeMutation({
     mutationFn: (id) => unbanUserAdmin(id),
     onSuccess: () => {
       toast.success('Đã mở khóa user')
@@ -156,7 +150,7 @@ export default function AdminPanel() {
     onError: () => toast.error('Mở khóa user thất bại')
   })
 
-  const deleteUserMutation = useMutation({
+  const deleteUserMutation = useSafeMutation({
     mutationFn: (id) => deleteUserAdmin(id),
     onSuccess: () => {
       toast.success('Đã xóa user')

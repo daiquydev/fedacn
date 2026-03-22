@@ -21,7 +21,6 @@ const MuscleGroupSchema = new Schema<MuscleGroup>(
     { timestamps: true, collection: 'muscle_groups' }
 )
 
-MuscleGroupSchema.index({ name_en: 1 })
 MuscleGroupSchema.index({ is_active: 1 })
 
 const MuscleGroupModel = mongoose.model<MuscleGroup>('muscle_groups', MuscleGroupSchema)

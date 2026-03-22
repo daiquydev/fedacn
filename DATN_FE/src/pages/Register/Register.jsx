@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { Link, useNavigate } from 'react-router-dom'
 import InputPass from '../../components/InputComponents/InputPass'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useForm } from 'react-hook-form'
 import Input from '../../components/InputComponents/Input'
 import { schemaRegister } from '../../utils/rules'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { registerAccount } from '../../apis/authApi'
 import { omit } from 'lodash'
 import { isAxiosUnprocessableEntityError } from '../../utils/utils'
@@ -23,7 +24,7 @@ export default function Register() {
     resolver: yupResolver(schemaRegister)
   })
 
-  const registerAccountMutation = useMutation({
+  const registerAccountMutation = useSafeMutation({
     mutationFn: (body) => registerAccount(body)
   })
 

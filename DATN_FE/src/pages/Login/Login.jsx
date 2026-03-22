@@ -1,10 +1,11 @@
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { Link, useNavigate } from 'react-router-dom'
 import InputPass from '../../components/InputComponents/InputPass'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaLogin } from '../../utils/rules'
 import Input from '../../components/InputComponents/Input'
-import { useMutation } from '@tanstack/react-query'
+import { } from '@tanstack/react-query'
 import { loginAccount } from '../../apis/authApi'
 import { isAxiosUnprocessableEntityError } from '../../utils/utils'
 import { useContext } from 'react'
@@ -25,7 +26,7 @@ export default function Login() {
   } = useForm({
     resolver: yupResolver(schemaLogin)
   })
-  const loginAccountMutation = useMutation({
+  const loginAccountMutation = useSafeMutation({
     mutationFn: (body) => loginAccount(body)
   })
   const onSubmit = handleSubmit((data) => {

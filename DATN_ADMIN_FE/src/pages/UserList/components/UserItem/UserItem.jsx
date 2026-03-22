@@ -1,33 +1,42 @@
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
-import { banUserAdmin, deleteUserAdmin, unbanUserAdmin } from '../../../../apis/adminApi'
+import { banUserAdmin, deleteUserAdmin, restoreUserAdmin, unbanUserAdmin } from '../../../../apis/adminApi'
 import { useState } from 'react'
-import { FaBan, FaLockOpen, FaTrash } from 'react-icons/fa'
-import { queryClient } from '../../../../main'
+import { FaBan, FaEye, FaLockOpen, FaTrash, FaUndo } from 'react-icons/fa'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
+import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
-export default function UserItem({ user }) {
+export default function UserItem({ user, tab, onViewDetail, onMutationSuccess }) {
   const [openDelete, setOpenDelete] = useState(false)
   const [openBan, setOpenBan] = useState(false)
+  const [openRestore, setOpenRestore] = useState(false)
 
-  const deleteUserMutation = useMutation({
+  const deleteUserMutation = useSafeMutation({
     mutationFn: () => deleteUserAdmin(user._id),
     onSuccess: () => {
       toast.success('Xóa người dùng thành công')
-      queryClient.invalidateQueries({ queryKey: ['user-list'] })
+      onMutationSuccess?.()
       setOpenDelete(false)
     }
   })
 
-  const banMutation = useMutation({ mutationFn: (body) => banUserAdmin(body) })
-  const unbanMutation = useMutation({ mutationFn: (body) => unbanUserAdmin(body) })
+  const restoreMutation = useSafeMutation({
+    mutationFn: () => restoreUserAdmin({ user_id: user._id }),
+    onSuccess: () => {
+      toast.success('Khôi phục người dùng thành công')
+      onMutationSuccess?.()
+      setOpenRestore(false)
+    }
+  })
+
+  const banMutation = useSafeMutation({ mutationFn: (body) => banUserAdmin(body) })
+  const unbanMutation = useSafeMutation({ mutationFn: (body) => unbanUserAdmin(body) })
 
   const handleBan = () => {
     if (user?.status === 0) {
       unbanMutation.mutate({ user_id: user._id }, {
         onSuccess: () => {
-          queryClient.invalidateQueries(['user-list'])
+          onMutationSuccess?.()
           toast.success('Mở khóa thành công')
           setOpenBan(false)
         }
@@ -35,7 +44,7 @@ export default function UserItem({ user }) {
     } else {
       banMutation.mutate({ user_id: user._id }, {
         onSuccess: () => {
-          queryClient.invalidateQueries(['user-list'])
+          onMutationSuccess?.()
           toast.success('Khóa tài khoản thành công')
           setOpenBan(false)
         }
@@ -44,11 +53,12 @@ export default function UserItem({ user }) {
   }
 
   const isBanned = user?.status === 0
+  const isDeleted = tab === 'deleted'
   const isHighRisk = (user?.banned_count ?? 0) >= 3
 
   return (
     <>
-      <tr className='hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors'>
+      <tr className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${isDeleted ? 'opacity-60' : ''}`}>
         {/* User info */}
         <td className='px-6 py-4 whitespace-nowrap'>
           <div className='flex gap-3 items-center'>
@@ -58,23 +68,10 @@ export default function UserItem({ user }) {
               alt={user.name}
             />
             <div>
-              <div className='text-sm font-semibold text-gray-800 dark:text-white'>{user.name}</div>
+              <div className={`text-sm font-semibold ${isDeleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-white'}`}>{user.name}</div>
               <div className='text-xs text-gray-400'>@{user.user_name}</div>
             </div>
           </div>
-        </td>
-
-        {/* Status */}
-        <td className='px-6 py-4 whitespace-nowrap'>
-          {isBanned ? (
-            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'>
-              🔒 Bị khóa
-            </span>
-          ) : (
-            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'>
-              ✅ Hoạt động
-            </span>
-          )}
         </td>
 
         {/* Email */}
@@ -95,42 +92,52 @@ export default function UserItem({ user }) {
           )}
         </td>
 
-        {/* Role */}
-        <td className='px-6 py-4 whitespace-nowrap'>
-          {user.role === 1 ? (
-            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'>
-              👨‍🍳 Đầu bếp
-            </span>
-          ) : (
-            <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'>
-              👤 Người dùng
-            </span>
-          )}
-        </td>
-
         {/* Actions */}
         <td className='px-6 py-4 whitespace-nowrap'>
           <div className='flex items-center gap-2'>
-            {/* Ban / Unban */}
-            <button
-              onClick={() => setOpenBan(true)}
-              title={isBanned ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
-              className={`p-1.5 rounded-lg transition-colors ${isBanned
-                  ? 'text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
-                  : 'text-amber-600 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30'
-                }`}
-            >
-              {isBanned ? <FaLockOpen size={14} /> : <FaBan size={14} />}
-            </button>
+            {isDeleted ? (
+              /* Deleted tab: only show restore */
+              <button
+                onClick={() => setOpenRestore(true)}
+                title='Khôi phục'
+                className='p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors flex items-center gap-1.5'
+              >
+                <FaUndo size={14} />
+                <span className='text-xs font-semibold'>Khôi phục</span>
+              </button>
+            ) : (
+              <>
+                {/* View detail */}
+                <button
+                  onClick={() => onViewDetail(user._id)}
+                  title='Xem chi tiết'
+                  className='p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
+                >
+                  <FaEye size={14} />
+                </button>
 
-            {/* Delete */}
-            <button
-              onClick={() => setOpenDelete(true)}
-              title='Xóa người dùng'
-              className='p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors'
-            >
-              <FaTrash size={14} />
-            </button>
+                {/* Ban / Unban */}
+                <button
+                  onClick={() => setOpenBan(true)}
+                  title={isBanned ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+                  className={`p-1.5 rounded-lg transition-colors ${isBanned
+                      ? 'text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
+                      : 'text-amber-600 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30'
+                    }`}
+                >
+                  {isBanned ? <FaLockOpen size={14} /> : <FaBan size={14} />}
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={() => setOpenDelete(true)}
+                  title='Xóa người dùng'
+                  className='p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors'
+                >
+                  <FaTrash size={14} />
+                </button>
+              </>
+            )}
           </div>
 
           {openDelete && (
@@ -139,7 +146,7 @@ export default function UserItem({ user }) {
               handleDelete={() => deleteUserMutation.mutate()}
               isPending={deleteUserMutation.isPending}
               title={'Xác nhận xóa'}
-              subtitle={'Bạn có chắc chắn muốn xóa người dùng này không?'}
+              subtitle={'Bạn có chắc chắn muốn xóa người dùng này không? (có thể khôi phục)'}
             />
           )}
           {openBan && (
@@ -150,6 +157,16 @@ export default function UserItem({ user }) {
               title={isBanned ? 'Xác nhận mở khóa' : 'Xác nhận khóa'}
               subtitle={isBanned ? 'Bạn có chắc chắn muốn mở khóa tài khoản này không?' : 'Bạn có chắc chắn muốn khóa tài khoản này không?'}
               tilteButton={isBanned ? 'Mở khóa' : 'Khóa'}
+            />
+          )}
+          {openRestore && (
+            <ConfirmBox
+              closeModal={() => setOpenRestore(false)}
+              handleDelete={() => restoreMutation.mutate()}
+              isPending={restoreMutation.isPending}
+              title={'Xác nhận khôi phục'}
+              subtitle={'Bạn có chắc chắn muốn khôi phục người dùng này không?'}
+              tilteButton='Khôi phục'
             />
           )}
         </td>
