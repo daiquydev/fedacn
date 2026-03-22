@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaUtensils, FaArrowLeft, FaPlus, FaTrash, FaSave, FaTimes, FaCheck, FaExchangeAlt, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
-import ConfirmBox from '../../../components/GlobalComponents/ConfirmBox';
+import ConfirmBox from '../../components/GlobalComponents/ConfirmBox';
 
 export default function MealPlanEdit() {
   const { id } = useParams();

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaTrash, FaPlus, FaSave, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import EditMealModal from './components/EditMealModal';
-import ConfirmBox from '../../../components/GlobalComponents/ConfirmBox';
+import ConfirmBox from '../../components/GlobalComponents/ConfirmBox';
 
 const EditDayMealSchedule = () => {
   const navigate = useNavigate();
