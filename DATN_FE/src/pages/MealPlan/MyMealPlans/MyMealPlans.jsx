@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { FaCalendarAlt, FaEdit, FaPlus, FaTrash, FaUtensils, FaEye } from 'react-icons/fa'
 import { toast } from 'react-toastify'
 import CreateMealPlanModal from '../components/CreateMealPlanModal/CreateMealPlanModal'
+import DeleteConfirmBox from '../../../components/GlobalComponents/DeleteConfirmBox'
 import {
   applyMealPlan,
   createMealPlan,
@@ -50,6 +51,9 @@ export default function MyMealPlans() {
   const [planToApply, setPlanToApply] = useState(null)
   const [applyLoading, setApplyLoading] = useState(false)
   const [activeSchedule, setActiveSchedule] = useState(null)
+  const [openDeleteBox, setOpenDeleteBox] = useState(false)
+  const [selectedPlanId, setSelectedPlanId] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const createModalRef = useRef(null)
   const editModalRef = useRef(null)
 
@@ -141,15 +145,24 @@ export default function MyMealPlans() {
     }
   }
 
-  const handleDeletePlan = async (planId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa thực đơn này?')) return
+  const handleDeletePlanClick = (planId) => {
+    setSelectedPlanId(planId)
+    setOpenDeleteBox(true)
+  }
+
+  const confirmDeletePlan = async () => {
+    if (!selectedPlanId) return
+    setIsDeleting(true)
     try {
-      await deleteMealPlan(planId)
-      setPlans((prev) => prev.filter((plan) => plan._id !== planId))
+      await deleteMealPlan(selectedPlanId)
+      setPlans((prev) => prev.filter((plan) => plan._id !== selectedPlanId))
       toast.success('Đã xóa thực đơn')
+      setOpenDeleteBox(false)
     } catch (error) {
       console.error('Error deleting meal plan:', error)
       toast.error('Không thể xóa thực đơn')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -299,7 +312,7 @@ export default function MyMealPlans() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeletePlan(plan._id)}
+                      onClick={() => handleDeletePlanClick(plan._id)}
                       className="inline-flex items-center justify-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded-lg"
                     >
                       <FaTrash /> Xóa
@@ -388,6 +401,16 @@ export default function MyMealPlans() {
             </div>
           </div>
         </div>
+      )}
+
+      {openDeleteBox && (
+        <DeleteConfirmBox
+          title='Xóa thực đơn'
+          subtitle='Bạn có chắc chắn muốn xóa thực đơn này?'
+          handleDelete={confirmDeletePlan}
+          closeModal={() => setOpenDeleteBox(false)}
+          isPending={isDeleting}
+        />
       )}
     </div>
   )

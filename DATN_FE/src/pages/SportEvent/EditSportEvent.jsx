@@ -91,6 +91,7 @@ const EditSportEvent = () => {
   })
 
   const [errors, setErrors] = useState({})
+  const [isNavigating, setIsNavigating] = useState(false)
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -135,6 +136,7 @@ const EditSportEvent = () => {
   const updateMutation = useSafeMutation({
     mutationFn: (data) => updateSportEvent(id, data),
     onSuccess: () => {
+      setIsNavigating(true)
       toast.success('🎉 Đã cập nhật sự kiện thành công!')
       setTimeout(() => navigate(`/sport-event/${id}`), 1000)
     },
@@ -269,6 +271,10 @@ const EditSportEvent = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+
+    // Ngăn chặn submit nhiều lần
+    if (updateMutation.isPending || isNavigating) return
+
     if (!validateForm()) {
       toast.error('Vui lòng kiểm tra lại các thông tin bắt buộc')
       return
@@ -730,10 +736,10 @@ const EditSportEvent = () => {
 
               <button
                 type="submit"
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || isNavigating}
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-emerald-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50 flex"
               >
-                {updateMutation.isPending ? (
+                {updateMutation.isPending || isNavigating ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : 'CẬP NHẬT THAY ĐỔI'}
               </button>

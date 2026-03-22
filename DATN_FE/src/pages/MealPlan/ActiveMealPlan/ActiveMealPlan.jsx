@@ -29,6 +29,7 @@ import {
 } from '../../../services/userMealScheduleService'
 import { getRecipeForUser } from '../../../apis/recipeApi'
 import Loading from '../../../components/GlobalComponents/Loading'
+import ConfirmBox from '../../../components/GlobalComponents/ConfirmBox'
 import { getImageUrl } from '../../../utils/imageUrl'
 
 const STATUS_BADGES = {
@@ -385,6 +386,9 @@ const ActiveMealPlan = () => {
   const isFutureSelectedDate = useMemo(() => selectedDate && todayKey && selectedDate > todayKey, [selectedDate, todayKey])
   const navigate = useNavigate()
   const pendingMealDatesRef = useRef(new Set())
+  const [openCancelScheduleBox, setOpenCancelScheduleBox] = useState(false)
+  const [openSkipMealBox, setOpenSkipMealBox] = useState(false)
+  const [selectedMealToSkip, setSelectedMealToSkip] = useState(null)
 
   const fetchActiveSchedule = async () => {
     try {
@@ -838,16 +842,18 @@ const ActiveMealPlan = () => {
     toast.info('Tính năng chia sẻ tiến độ đang được hoàn thiện. Bạn có thể chia sẻ nhanh bằng cách chụp màn hình!')
   }
 
-  const handleCancelSchedule = async () => {
+  const handleCancelScheduleClick = () => {
     if (!scheduleDetail?._id) return
-    const confirmed = window.confirm('Bạn chắc chắn muốn bỏ áp dụng thực đơn này? Những bữa ăn đã lên lịch sẽ bị xóa.')
-    if (!confirmed) return
+    setOpenCancelScheduleBox(true)
+  }
 
+  const confirmCancelSchedule = async () => {
     try {
       setCancelling(true)
       await deleteUserMealSchedule(scheduleDetail._id)
       toast.success('Đã bỏ áp dụng thực đơn hiện tại')
       await fetchActiveSchedule()
+      setOpenCancelScheduleBox(false)
     } catch (error) {
       console.error('Error cancelling meal schedule:', error)
       toast.error('Không thể bỏ áp dụng thực đơn. Vui lòng thử lại.')
@@ -872,18 +878,23 @@ const ActiveMealPlan = () => {
     }
   }
 
-  const handleSkipMeal = async (mealItemId) => {
+  const handleSkipMealClick = (mealItemId) => {
     if (!mealItemId) return
     if (isFutureSelectedDate) {
       toast.info('Không thể bỏ qua bữa ăn ở ngày tương lai.')
       return
     }
-    const confirmed = window.confirm('Bạn muốn bỏ qua bữa ăn này?')
-    if (!confirmed) return
+    setSelectedMealToSkip(mealItemId)
+    setOpenSkipMealBox(true)
+  }
+
+  const confirmSkipMeal = async () => {
+    if (!selectedMealToSkip) return
     try {
-      await skipMealItem(mealItemId)
+      await skipMealItem(selectedMealToSkip)
       toast.info('Đã ghi nhận bữa ăn bị bỏ qua')
       await fetchActiveSchedule()
+      setOpenSkipMealBox(false)
     } catch (error) {
       console.error('Error skipping meal item:', error)
       toast.error('Không thể cập nhật trạng thái bữa ăn')
@@ -1009,7 +1020,7 @@ const ActiveMealPlan = () => {
             </div>
             <button
               type="button"
-              onClick={handleCancelSchedule}
+              onClick={handleCancelScheduleClick}
               disabled={cancelling}
               className="w-full px-4 py-2 rounded-xl border border-white/40 text-white font-semibold hover:bg-white/10 disabled:opacity-60"
             >
@@ -1454,7 +1465,7 @@ const ActiveMealPlan = () => {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleSkipMeal(meal._id)}
+                                    onClick={() => handleSkipMealClick(meal._id)}
                                     disabled={isFutureSelectedDate}
                                     className={`px-4 py-2 border border-amber-500 text-amber-600 rounded-lg text-sm hover:bg-amber-50 ${isFutureSelectedDate ? 'opacity-60 cursor-not-allowed' : ''
                                       }`}
@@ -1692,6 +1703,32 @@ const ActiveMealPlan = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {openCancelScheduleBox && (
+        <ConfirmBox
+          title='Bỏ áp dụng thực đơn'
+          subtitle='Bạn chắc chắn muốn bỏ áp dụng thực đơn này?'
+          description='Những bữa ăn đã lên lịch sẽ bị xóa.'
+          confirmText='Đồng ý bỏ áp dụng'
+          cancelText='Hủy'
+          handleConfirm={confirmCancelSchedule}
+          closeModal={() => setOpenCancelScheduleBox(false)}
+          confirmButtonClass='bg-red-600 hover:bg-red-700'
+          isPending={cancelling}
+        />
+      )}
+
+      {openSkipMealBox && (
+        <ConfirmBox
+          title='Bỏ qua bữa ăn'
+          subtitle='Bạn muốn bỏ qua bữa ăn này?'
+          confirmText='Đồng ý bỏ qua'
+          cancelText='Hủy'
+          handleConfirm={confirmSkipMeal}
+          closeModal={() => setOpenSkipMealBox(false)}
+          isPending={skipping}
+        />
       )}
     </>
   )

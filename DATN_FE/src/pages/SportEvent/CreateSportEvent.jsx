@@ -105,6 +105,7 @@ const CreateSportEvent = () => {
   })
 
   const [errors, setErrors] = useState({})
+  const [isNavigating, setIsNavigating] = useState(false)
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -112,6 +113,7 @@ const CreateSportEvent = () => {
   const createMutation = useSafeMutation({
     mutationFn: (data) => createSportEvent(data),
     onSuccess: (response) => {
+      setIsNavigating(true)
       toast.success('🎉 Đã tạo sự kiện thành công!')
       const eventId = response.data?.result?._id || response.result?._id
       setTimeout(() => navigate(eventId ? `/sport-event/${eventId}` : '/sport-event'), 1500)
@@ -365,6 +367,10 @@ JSON output (chỉ object, không gì khác):
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // Ngăn chặn submit nhiều lần khi đang xử lý
+    if (createMutation.isPending || isNavigating) return
+
     if (!validateForm()) {
       toast.error('Vui lòng kiểm tra lại các thông tin bắt buộc')
       setTimeout(() => {
@@ -859,10 +865,10 @@ JSON output (chỉ object, không gì khác):
             <div className="lg:hidden sticky bottom-4 z-50">
               <button
                 type="submit"
-                disabled={createMutation.isPending}
+                disabled={createMutation.isPending || isNavigating}
                 className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition disabled:opacity-50"
               >
-                {createMutation.isPending ? 'ĐANG TẠO...' : '✨ TẠO SỰ KIỆN NGAY'}
+                {createMutation.isPending || isNavigating ? 'ĐANG TẠO...' : '✨ TẠO SỰ KIỆN NGAY'}
               </button>
             </div>
           </div>
@@ -958,10 +964,10 @@ JSON output (chỉ object, không gì khác):
 
               <button
                 type="submit"
-                disabled={createMutation.isPending}
+                disabled={createMutation.isPending || isNavigating}
                 className="hidden lg:flex w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-green-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50"
               >
-                {createMutation.isPending ? (
+                {createMutation.isPending || isNavigating ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : <>✨ TẠO SỰ KIỆN</>}
               </button>

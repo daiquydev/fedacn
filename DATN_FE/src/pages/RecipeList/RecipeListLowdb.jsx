@@ -12,12 +12,15 @@ import { getRecipesForChef, deleteRecipeForChef } from '../../apis/recipeApi'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
+import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
 
 export default function RecipeListLowdb() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const queryConfig = useQueryConfig()
   const [searchTerm, setSearchTerm] = useState('')
+  const [openDeleteBox, setOpenDeleteBox] = useState(false)
+  const [selectedRecipeId, setSelectedRecipeId] = useState(null)
 
   const { register, handleSubmit } = useForm({
     defaultValues: {
@@ -38,16 +41,23 @@ export default function RecipeListLowdb() {
     onSuccess: () => {
       toast.success('Xóa công thức thành công!')
       queryClient.invalidateQueries(['lowdb-recipes-list'])
+      setOpenDeleteBox(false)
     },
     onError: (error) => {
       toast.error('Có lỗi xảy ra khi xóa công thức')
       console.error('Delete error:', error)
+      setOpenDeleteBox(false)
     }
   })
 
   const handleDeleteRecipe = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa công thức này?')) {
-      deleteRecipeMutation.mutate(id)
+    setSelectedRecipeId(id)
+    setOpenDeleteBox(true)
+  }
+
+  const confirmDelete = () => {
+    if (selectedRecipeId) {
+      deleteRecipeMutation.mutate(selectedRecipeId)
     }
   }
 
@@ -263,6 +273,16 @@ export default function RecipeListLowdb() {
               }).toString()
             })
           }}
+        />
+      )}
+
+      {openDeleteBox && (
+        <DeleteConfirmBox
+          title='Xóa công thức'
+          subtitle='Bạn có chắc chắn muốn xóa công thức này?'
+          handleDelete={confirmDelete}
+          closeModal={() => setOpenDeleteBox(false)}
+          isPending={deleteRecipeMutation.isPending}
         />
       )}
     </div>

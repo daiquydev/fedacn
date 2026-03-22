@@ -93,17 +93,19 @@ export default function CalendarNotifications() {
                     .filter(ev => new Date(ev.endDate) >= now)
                     .map(ev => {
                         const start = new Date(ev.startDate)
+                        const endDateKey = getDateKey(new Date(ev.endDate))
                         return {
                             id: ev._id,
                             type: 'event',
                             title: ev.name,
                             dateKey: getDateKey(start),
+                            endDateKey,
                             startTime: `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
                             location: ev.location || null,
                             navigateTo: `/sport-event/${ev._id}`
                         }
                     })
-                    .filter(ev => ev.dateKey >= from && ev.dateKey <= to)
+                    .filter(ev => ev.dateKey <= to && ev.endDateKey >= from)
                     .sort((a, b) => (a.dateKey + a.startTime).localeCompare(b.dateKey + b.startTime))
                     .slice(0, 6)
 

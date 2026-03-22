@@ -33,6 +33,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
   const [privacy, setPrivacy] = useState(0)
   const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false)
   const [content, setContent] = useState('')
+  const [isSuccess, setIsSuccess] = useState(false)
   const dropdownRef = useRef(null)
 
   // Close privacy dropdown on outside click
@@ -59,6 +60,8 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
   })
 
   const handleSharePost = () => {
+    if (uploadMutation.isPending || isSuccess) return
+
     const body = {
       content: content,
       privacy: privacy,
@@ -67,6 +70,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
 
     uploadMutation.mutate(body, {
       onSuccess: () => {
+        setIsSuccess(true)
         toast.success('Chia sẻ bài viết thành công')
         newSocket.emit('share post', {
           content: 'Đã chia sẻ bài viết của bạn',
@@ -200,7 +204,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
 
         {/* ── Footer / Submit ── */}
         <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-          {uploadMutation.isPending ? (
+          {uploadMutation.isPending || isSuccess ? (
             <button
               disabled
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm bg-gray-400 cursor-not-allowed"

@@ -9,12 +9,14 @@ import {
     adminGetMuscleGroups, adminCreateMuscleGroup, adminUpdateMuscleGroup, adminDeleteMuscleGroup,
     adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise
 } from '../../apis/adminWorkoutApi'
+import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
 
 // ===================== EQUIPMENT MANAGEMENT =====================
 function EquipmentManager() {
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [deleteId, setDeleteId] = useState(null)
     const [form, setForm] = useState({ name: '', name_en: '', image_url: '', description: '' })
 
     const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
@@ -119,7 +121,7 @@ function EquipmentManager() {
                                         <button onClick={() => startEdit(item)} className='px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 text-xs'>
                                             <FaEdit className='inline mr-1' />Sửa
                                         </button>
-                                        <button onClick={() => window.confirm('Xóa thiết bị này?') && deleteMut.mutate(item._id)}
+                                        <button onClick={() => setDeleteId(item._id)}
                                             className='px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-600 text-xs'>
                                             <FaTrash className='inline mr-1' />Xóa
                                         </button>
@@ -130,6 +132,20 @@ function EquipmentManager() {
                     </table>
                 </div>
             )}
+            
+            {deleteId && (
+                <DeleteConfirmBox
+                    title="Xóa thiết bị"
+                    subtitle="Bạn có chắc chắn muốn xóa thiết bị này không?"
+                    onConfirm={() => {
+                        deleteMut.mutate(deleteId, {
+                            onSuccess: () => setDeleteId(null)
+                        })
+                    }}
+                    onCancel={() => setDeleteId(null)}
+                    isLoading={deleteMut.isPending}
+                />
+            )}
         </div>
     )
 }
@@ -139,6 +155,7 @@ function MuscleGroupManager() {
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [deleteId, setDeleteId] = useState(null)
     const [form, setForm] = useState({ name: '', name_en: '', body_part_ids: '', description: '' })
 
     const { data, isLoading } = useQuery({ queryKey: ['admin-muscle-groups'], queryFn: adminGetMuscleGroups })
@@ -238,7 +255,7 @@ function MuscleGroupManager() {
                                         <button onClick={() => startEdit(item)} className='px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 text-xs'>
                                             <FaEdit className='inline mr-1' />Sửa
                                         </button>
-                                        <button onClick={() => window.confirm('Xóa nhóm cơ này?') && deleteMut.mutate(item._id)}
+                                        <button onClick={() => setDeleteId(item._id)}
                                             className='px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-600 text-xs'>
                                             <FaTrash className='inline mr-1' />Xóa
                                         </button>
@@ -249,6 +266,20 @@ function MuscleGroupManager() {
                     </table>
                 </div>
             )}
+
+            {deleteId && (
+                <DeleteConfirmBox
+                    title="Xóa nhóm cơ"
+                    subtitle="Bạn có chắc chắn muốn xóa nhóm cơ này không?"
+                    onConfirm={() => {
+                        deleteMut.mutate(deleteId, {
+                            onSuccess: () => setDeleteId(null)
+                        })
+                    }}
+                    onCancel={() => setDeleteId(null)}
+                    isLoading={deleteMut.isPending}
+                />
+            )}
         </div>
     )
 }
@@ -258,6 +289,7 @@ function ExerciseManager() {
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [deleteId, setDeleteId] = useState(null)
     const [search, setSearch] = useState('')
     const [page, setPage] = useState(1)
     const initForm = {
@@ -518,7 +550,7 @@ function ExerciseManager() {
                                         <button onClick={() => startEdit(ex)} className='px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 text-xs'>
                                             <FaEdit className='inline' />
                                         </button>
-                                        <button onClick={() => window.confirm('Xóa bài tập này?') && deleteMut.mutate(ex._id)}
+                                        <button onClick={() => setDeleteId(ex._id)}
                                             className='px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-600 text-xs'>
                                             <FaTrash className='inline' />
                                         </button>
@@ -535,6 +567,20 @@ function ExerciseManager() {
                         </div>
                     )}
                 </div>
+            )}
+
+            {deleteId && (
+                <DeleteConfirmBox
+                    title="Xóa bài tập"
+                    subtitle="Bạn có chắc chắn muốn xóa bài tập này không?"
+                    onConfirm={() => {
+                        deleteMut.mutate(deleteId, {
+                            onSuccess: () => setDeleteId(null)
+                        })
+                    }}
+                    onCancel={() => setDeleteId(null)}
+                    isLoading={deleteMut.isPending}
+                />
             )}
         </div>
     )

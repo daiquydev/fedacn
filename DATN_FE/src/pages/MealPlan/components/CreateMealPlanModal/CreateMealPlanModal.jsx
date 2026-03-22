@@ -4,6 +4,7 @@ import { FaPlus, FaTrash, FaImage, FaLink, FaUtensils, FaCalendarDay, FaCopy, Fa
 import { MdFastfood } from 'react-icons/md'
 import { MEAL_PLAN_CATEGORIES } from '../../../../constants/mealPlan'
 import { getImageUrl } from '../../../../utils/imageUrl'
+import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
 import http from '../../../../utils/http'
 
 const MEAL_TYPES = {
@@ -179,6 +180,8 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
   const descriptionInputRef = useRef(null)
   const daySectionRef = useRef(null)
   const highlightTimeoutRef = useRef(null)
+  const [openDeleteCoreMealBox, setOpenDeleteCoreMealBox] = useState(false)
+  const [deleteCoreMealParams, setDeleteCoreMealParams] = useState(null)
 
   const focusField = (ref) => {
     if (!ref?.current) return
@@ -1529,8 +1532,9 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                                 type="button"
                                 onClick={() => {
                                   if (isCoreMeal) {
-                                    const confirmed = window.confirm('Bữa ăn mặc định sẽ bị xóa khỏi ngày này. Bạn có chắc chắn?')
-                                    if (!confirmed) return
+                                    setDeleteCoreMealParams({ dayNumber: activeDayData.day_number, mealIndex })
+                                    setOpenDeleteCoreMealBox(true)
+                                    return
                                   }
                                   removeMealFromDay(activeDayData.day_number, mealIndex, { allowCoreRemoval: true })
                                 }}
@@ -1968,6 +1972,21 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
           )}
         </div>
       </div>
+
+      {openDeleteCoreMealBox && (
+        <ConfirmBox
+          title='Xóa bữa ăn mặc định'
+          subtitle='Bữa ăn mặc định sẽ bị xóa khỏi ngày này. Bạn có chắc chắn?'
+          confirmText='Đồng ý xóa'
+          cancelText='Hủy'
+          handleConfirm={() => {
+             removeMealFromDay(deleteCoreMealParams.dayNumber, deleteCoreMealParams.mealIndex, { allowCoreRemoval: true })
+             setOpenDeleteCoreMealBox(false)
+          }}
+          closeModal={() => setOpenDeleteCoreMealBox(false)}
+          confirmButtonClass='bg-red-600 hover:bg-red-700'
+        />
+      )}
     </form>
   )
-}
+}

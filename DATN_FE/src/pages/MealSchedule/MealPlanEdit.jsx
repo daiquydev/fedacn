@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaUtensils, FaArrowLeft, FaPlus, FaTrash, FaSave, FaTimes, FaCheck, FaExchangeAlt, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import ConfirmBox from '../../../components/GlobalComponents/ConfirmBox';
 
 export default function MealPlanEdit() {
   const { id } = useParams();
@@ -11,6 +12,7 @@ export default function MealPlanEdit() {
   const [currentDay, setCurrentDay] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [openCancelBox, setOpenCancelBox] = useState(false);
 
   // Giả lập API lấy dữ liệu thực đơn
   useEffect(() => {
@@ -214,12 +216,14 @@ export default function MealPlanEdit() {
 
   const handleCancel = () => {
     if (hasChanges) {
-      if (window.confirm("Bạn có chắc muốn hủy các thay đổi?")) {
-        navigate(`/schedule/eat-plan`);
-      }
+      setOpenCancelBox(true);
     } else {
       navigate(`/schedule/eat-plan`);
     }
+  };
+
+  const confirmCancel = () => {
+    navigate(`/schedule/eat-plan`);
   };
 
   if (loading) {
@@ -606,6 +610,18 @@ export default function MealPlanEdit() {
           </div>
         </div>
       </div>
+
+      {openCancelBox && (
+        <ConfirmBox
+          title='Hủy bỏ thay đổi'
+          subtitle='Bạn có chắc muốn hủy các thay đổi?'
+          confirmText='Đồng ý hủy'
+          cancelText='Tiếp tục chỉnh sửa'
+          handleConfirm={confirmCancel}
+          closeModal={() => setOpenCancelBox(false)}
+          confirmButtonClass='bg-red-600 hover:bg-red-700'
+        />
+      )}
     </div>
   );
 }

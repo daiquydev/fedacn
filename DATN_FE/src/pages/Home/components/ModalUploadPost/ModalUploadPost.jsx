@@ -35,6 +35,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   const [showImagePopup, setShowImagePopup] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
   const [content, setContent] = useState(initialContent)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const handleImageClick = () => inputRef.current.click()
   const handleImageChange = (e) => setImage((prev) => [...prev, ...e.target.files])
@@ -104,7 +105,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
 
   const handleUpload = async () => {
     // Prevent duplicate submissions
-    if (isSubmittingRef.current || uploadMutation.isPending) return
+    if (isSubmittingRef.current || uploadMutation.isPending || isSuccess) return
     isSubmittingRef.current = true
 
     if (image.length > 0) {
@@ -137,6 +138,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
 
     uploadMutation.mutate(formData, {
       onSuccess: () => {
+        setIsSuccess(true)
         queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
         toast.success('Đăng bài viết thành công')
         setContent('')
@@ -334,7 +336,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
 
         {/* ── Footer / Submit ── */}
         <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-          {uploadMutation.isPending ? (
+          {uploadMutation.isPending || isSuccess ? (
             <button
               disabled
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm bg-gray-400 cursor-not-allowed"

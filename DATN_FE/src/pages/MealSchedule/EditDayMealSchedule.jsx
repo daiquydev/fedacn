@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaTrash, FaPlus, FaSave, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import EditMealModal from './components/EditMealModal';
+import ConfirmBox from '../../../components/GlobalComponents/ConfirmBox';
 
 const EditDayMealSchedule = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const EditDayMealSchedule = () => {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
+  const [openCancelBox, setOpenCancelBox] = useState(false);
 
   useEffect(() => {
     // Fetch day data
@@ -134,12 +136,14 @@ const EditDayMealSchedule = () => {
 
   const handleCancelChanges = () => {
     if (unsavedChanges) {
-      if (window.confirm('Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn hủy bỏ các thay đổi?')) {
-        navigate(`/schedule/eat-schedule/day/${dayData.date}`);
-      }
+      setOpenCancelBox(true);
     } else {
       navigate(`/schedule/eat-schedule/day/${dayData.date}`);
     }
+  };
+
+  const confirmCancelChanges = () => {
+    navigate(`/schedule/eat-schedule/day/${dayData.date}`);
   };
 
   const calculateNutrition = () => {
@@ -320,6 +324,18 @@ const EditDayMealSchedule = () => {
             }
           }}
           isNew={false}
+        />
+      )}
+
+      {openCancelBox && (
+        <ConfirmBox
+          title='Hủy bỏ thay đổi'
+          subtitle='Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn hủy bỏ các thay đổi?'
+          confirmText='Đồng ý hủy'
+          cancelText='Tiếp tục chỉnh sửa'
+          handleConfirm={confirmCancelChanges}
+          closeModal={() => setOpenCancelBox(false)}
+          confirmButtonClass='bg-red-600 hover:bg-red-700'
         />
       )}
     </div>

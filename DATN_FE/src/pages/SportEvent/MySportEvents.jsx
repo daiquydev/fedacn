@@ -1,5 +1,6 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState } from 'react'
+import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -24,6 +25,8 @@ const MySportEvents = () => {
   const queryClient = useQueryClient()
 
   const [activeTab, setActiveTab] = useState('created') // 'created' or 'joined'
+  const [openDeleteBox, setOpenDeleteBox] = useState(false)
+  const [selectedEventInfo, setSelectedEventInfo] = useState({ id: null, name: '' })
 
   // Fetch created events
   const {
@@ -54,15 +57,22 @@ const MySportEvents = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['myCreatedEvents'])
       toast.success('Đã xóa sự kiện thành công!')
+      setOpenDeleteBox(false)
     },
     onError: (error) => {
       toast.error(error?.response?.data?.message || 'Không thể xóa sự kiện')
+      setOpenDeleteBox(false)
     }
   })
 
-  const handleDelete = (eventId, eventName) => {
-    if (window.confirm(`Bạn chắc chắn muốn xóa sự kiện "${eventName}"?`)) {
-      deleteMutation.mutate(eventId)
+  const handleDeleteClick = (eventId, eventName) => {
+    setSelectedEventInfo({ id: eventId, name: eventName })
+    setOpenDeleteBox(true)
+  }
+
+  const confirmDelete = () => {
+    if (selectedEventInfo.id) {
+      deleteMutation.mutate(selectedEventInfo.id)
     }
   }
 
@@ -167,7 +177,7 @@ const MySportEvents = () => {
                     Sửa
                   </button>
                   <button
-                    onClick={() => handleDelete(event._id, event.name)}
+                    onClick={() => handleDeleteClick(event._id, event.name)}
                     disabled={deleteMutation.isPending}
                     className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition disabled:opacity-50"
                   >
@@ -322,6 +332,16 @@ const MySportEvents = () => {
           )}
         </div>
       </div>
+
+      {openDeleteBox && (
+        <DeleteConfirmBox
+          title='Xóa sự kiện'
+          subtitle={`Bạn chắc chắn muốn xóa sự kiện "${selectedEventInfo.name}"?`}
+          handleDelete={confirmDelete}
+          closeModal={() => setOpenDeleteBox(false)}
+          isPending={deleteMutation.isPending}
+        />
+      )}
     </div>
   )
 }

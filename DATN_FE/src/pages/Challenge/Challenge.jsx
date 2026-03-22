@@ -22,6 +22,7 @@ import {
   deleteSavedWorkout as apiDeleteSavedWorkout,
   updateSavedWorkoutSchedule as apiUpdateSavedWorkoutSchedule
 } from '../../apis/savedWorkoutApi'
+import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 
 // Fallback muscle labels for head/neck (non-selectable)
 const FALLBACK_LABELS = { 'head': 'Đầu', 'neck': 'Cổ' }
@@ -1859,6 +1860,7 @@ function computeMetrics(metrics) {
 export default function Challenge() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [openQuitConfirm, setOpenQuitConfirm] = useState(false)
 
   // Mode: null (selecting), 'normal', 'smart', 'from_calculator'
   const [mode, setMode] = useState(null)
@@ -2196,13 +2198,16 @@ export default function Challenge() {
   }
 
   const handleQuit = () => {
-    if (window.confirm('Bạn có chắc muốn bỏ phiên tập này?')) {
-      toast('Đã hủy phiên tập', { icon: '👋' })
-      setMode(null); setCurrentStep(0); setSmartStep('metrics')
-      setSelectedEquipment([]); setSelectedMuscles([]); setSelectedExercises([])
-      setSessionId(null); setPreparedSets(null); setSuggestData(null); setKcalResult(null)
-      setShowSaveModal(false); setCurrentExerciseSetsToSave(null)
-    }
+    setOpenQuitConfirm(true)
+  }
+
+  const confirmQuit = () => {
+    toast('Đã hủy phiên tập', { icon: '👋' })
+    setMode(null); setCurrentStep(0); setSmartStep('metrics')
+    setSelectedEquipment([]); setSelectedMuscles([]); setSelectedExercises([])
+    setSessionId(null); setPreparedSets(null); setSuggestData(null); setKcalResult(null)
+    setShowSaveModal(false); setCurrentExerciseSetsToSave(null)
+    setOpenQuitConfirm(false)
   }
 
   const resetToMenu = () => {
@@ -2419,6 +2424,17 @@ export default function Challenge() {
           onClose={() => setShowSavedModal(false)}
           onDelete={(id) => deleteSavedWorkoutMutation.mutate(id)}
           onUpdateSchedule={(id, schedule) => updateScheduleMutation.mutate({ id, schedule })}
+        />
+      )}
+      {openQuitConfirm && (
+        <ConfirmBox
+          title='Bỏ phiên tập'
+          subtitle='Bạn có chắc muốn bỏ phiên tập này?'
+          confirmText='Bỏ tập'
+          cancelText='Tiếp tục'
+          handleConfirm={confirmQuit}
+          closeModal={() => setOpenQuitConfirm(false)}
+          confirmButtonClass='bg-red-600 hover:bg-red-700'
         />
       )}
     </div>
