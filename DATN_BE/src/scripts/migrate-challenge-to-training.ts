@@ -13,7 +13,7 @@ async function migrate() {
     }
 
     await mongoose.connect(MONGODB_URL)
-    const db = mongoose.connection.db
+    const db = mongoose.connection.db!
     console.log('Connected to MongoDB')
 
     // 1. Rename collections
