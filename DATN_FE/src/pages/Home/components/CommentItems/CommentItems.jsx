@@ -1,6 +1,7 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import moment from 'moment'
 import useravatar from '../../../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../../../utils/imageUrl'
 import { useContext, useState } from 'react'
 import InputEmoji from '../../../../components/InputComponents/InputEmoji'
 import ShowMoreContent from '../../../../components/GlobalComponents/ShowMoreContent/ShowMoreContent'
@@ -84,7 +85,7 @@ export default function CommentItems({ comment, post }) {
           setContent('')
         },
         onError: () => {
-          console.log('error')
+          toast.error('Có lỗi xảy ra khi trả lời bình luận')
         }
       }
     )
@@ -125,7 +126,7 @@ export default function CommentItems({ comment, post }) {
           toast.success('Xóa bình luận thành công')
         },
         onError: () => {
-          console.log('error')
+          toast.error('Có lỗi xảy ra khi xóa bình luận')
         }
       }
     )
@@ -136,7 +137,7 @@ export default function CommentItems({ comment, post }) {
       <div onClick={checkNavigateUser} className='inline-block mr-4'>
         <img
           className='rounded-full max-w-none w-12 h-12'
-          src={comment.user.avatar === '' ? useravatar : comment.user.avatar}
+          src={comment.user.avatar === '' ? useravatar : getImageUrl(comment.user.avatar)}
         />
       </div>
       <div className='w-full'>
@@ -230,12 +231,12 @@ function CommentChildItems({ comment, profile, navigate, post }) {
           toast.success('Xóa bình luận thành công')
         },
         onError: () => {
-          console.log('error')
+          toast.error('Có lỗi xảy ra khi xóa bình luận')
         }
       }
     )
   }
-  console.log(comment)
+
   return (
     <div className='mt-4  '>
       <div className=' pb-4 flex justify-between'>
@@ -243,7 +244,7 @@ function CommentChildItems({ comment, profile, navigate, post }) {
           <div onClick={checkNavigateUser} className='mr-4'>
             <img
               className='rounded-full max-w-none w-10 h-10'
-              src={comment.user.avatar === '' ? useravatar : comment.user.avatar}
+              src={comment.user.avatar === '' ? useravatar : getImageUrl(comment.user.avatar)}
             />
           </div>
           <div className='media-body'>

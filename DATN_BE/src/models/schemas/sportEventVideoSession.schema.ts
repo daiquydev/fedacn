@@ -11,7 +11,9 @@ export interface SportEventVideoSession {
     totalSeconds: number // total call seconds
     caloriesBurned: number
     status: 'active' | 'ending' | 'ended'
+    screenshots: string[] // Cloudinary URLs of webcam captures (face detected)
     progressId?: Types.ObjectId // auto-linked sport_event_progress entry
+    is_deleted?: boolean
     createdAt?: Date
     updatedAt?: Date
 }
@@ -61,11 +63,16 @@ const SportEventVideoSessionSchema = new mongoose.Schema<SportEventVideoSession>
             enum: ['active', 'ending', 'ended'],  // 'ending' = trạng thái khóa trung gian, không hiển thị
             default: 'active'
         },
+        screenshots: {
+            type: [String],
+            default: []
+        },
         progressId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'sport_event_progress',
             default: null
-        }
+        },
+        is_deleted: { type: Boolean, default: false }
     },
     {
         timestamps: true,

@@ -5,7 +5,7 @@ import { BiDotsHorizontalRounded } from 'react-icons/bi'
 import ModalChangePass from '../ModalChangePass'
 import ModalRequest from '../ModalRequest'
 import { updateRequest } from '../../../../apis/userApi'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
 export default function ThreeDots({ user }) {
@@ -29,14 +29,12 @@ export default function ThreeDots({ user }) {
       updateRequestMutation.mutate(
         {},
         {
-          onSuccess: (data) => {
-            console.log(data)
+          onSuccess: () => {
             toast.success('Yêu cầu nâng cấp lên đầu bếp thành công, hãy đợi email phản hồi từ chúng tôi')
-            queryClient.invalidateQueries('me')
+            queryClient.invalidateQueries({ queryKey: ['me'] })
             setIsMenu(false)
           },
-          onError: (error) => {
-            console.log(error)
+          onError: () => {
             toast.error('Yêu cầu nâng cấp tài khoản thất bại')
           }
         }

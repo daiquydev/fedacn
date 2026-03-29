@@ -19,7 +19,7 @@ export default function UserRecipe({ user_id }) {
     placeholderData: keepPreviousData
   })
 
-  console.log(queryConfig)
+
 
   return (
     <div className='mb-[30rem] text-gray-900 dark:text-white py-4 mx-3'>

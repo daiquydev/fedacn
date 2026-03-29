@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
-import { } from '@tanstack/react-query'
+
 import moment from 'moment'
 import { Link } from 'react-router-dom'
 import { deleteWorkoutSchedule } from '../../../../apis/workoutScheduleApi'
@@ -26,11 +26,11 @@ export default function WorkoutItem({ workout }) {
   const handleDeleteWorkout = () => {
     deleteWorkOutMutation.mutate(workout._id, {
       onSuccess: () => {
-        queryClient.invalidateQueries('workout-schedule')
+        queryClient.invalidateQueries({ queryKey: ['workout-schedule'] })
         toast.success('Xóa lịch trình thành công')
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Lỗi khi xóa lịch trình')
       }
     })
   }

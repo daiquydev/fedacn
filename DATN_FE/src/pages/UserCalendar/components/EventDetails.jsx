@@ -33,7 +33,7 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return <MdSportsSoccer size={28} className="text-blue-500 dark:text-blue-400" />
-      case 'challenge':
+      case 'training':
         return <FaTrophy size={28} className="text-green-500 dark:text-green-400" />
       case 'mealPlan':
         return <FaUtensils size={28} className="text-orange-500 dark:text-orange-400" />
@@ -48,7 +48,7 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return 'bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700'
-      case 'challenge':
+      case 'training':
         return 'bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700'
       case 'mealPlan':
         return 'bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700'
@@ -63,7 +63,7 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return 'bg-blue-50 dark:bg-gray-800'
-      case 'challenge':
+      case 'training':
         return 'bg-green-50 dark:bg-gray-800'
       case 'mealPlan':
         return 'bg-orange-50 dark:bg-gray-800'
@@ -78,7 +78,7 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return event.category ? `Sự kiện thể thao · ${event.category}` : 'Sự kiện thể thao'
-      case 'challenge':
+      case 'training':
         return 'Thử thách'
       case 'mealPlan':
         return event.mealType ? `Bữa ${event.mealType}` : 'Thực đơn'
@@ -91,15 +91,15 @@ export default function EventDetails({ event, onClose }) {
 
   const getEventLink = () => {
     if (event.type === 'mealPlan') return '/meal-plan/active'
-    if (event.type === 'challenge') return `/challenge/${event.id}`
+    if (event.type === 'training') return `/training/${event.id}`
     if (event.type === 'event') return `/sport-event/${event.id}`
-    if (event.type === 'workout') return '/challenge'
+    if (event.type === 'workout') return '/training'
     return '#'
   }
 
   const handleStartWorkout = () => {
     onClose()
-    navigate('/challenge', { state: { fromWorkoutCalendar: true, workout_id: event.workout_id } })
+    navigate('/training', { state: { fromWorkoutCalendar: true, workout_id: event.workout_id } })
   }
 
   const getStatusLabel = (status) => {
@@ -218,8 +218,8 @@ export default function EventDetails({ event, onClose }) {
                   <div>
                     <p className="font-medium text-gray-700 dark:text-gray-300">Loại sự kiện</p>
                     <span className={`inline-block px-2 py-0.5 rounded text-sm font-medium ${event.eventType === 'Trong nhà'
-                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-                        : 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                      : 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                       }`}>
                       {event.eventType === 'Trong nhà' ? '🏠 Trong nhà' : '🌿 Ngoài trời'}
                     </span>

@@ -11,7 +11,9 @@ import {
   FaTimes,
   FaFilter,
   FaChevronDown,
-  FaSortAmountDown
+  FaSortAmountDown,
+  FaCheck,
+  FaUsers
 } from 'react-icons/fa'
 import { MdSportsSoccer } from 'react-icons/md'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
@@ -99,6 +101,7 @@ const SportEvent = () => {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterJoined, setFilterJoined] = useState(false)
   const [page, setPage] = useState(1)
   const ITEMS_PER_PAGE = 9
 
@@ -138,7 +141,7 @@ const SportEvent = () => {
   const joinEventMutation = useSafeMutation({
     mutationFn: (eventId) => joinSportEvent(eventId),
     onSuccess: () => {
-      queryClient.invalidateQueries(['sportEvents'])
+      queryClient.invalidateQueries({ queryKey: ['sportEvents'] })
       toast.success('Đã tham gia sự kiện!')
     },
     onError: (error) => {
@@ -182,7 +185,7 @@ const SportEvent = () => {
     }
 
     // Filter: Đã tham gia (joined by current user)
-    if (sortBy === 'joined') {
+    if (sortBy === 'joined' || filterJoined) {
       filtered = filtered.filter((event) => event.isJoined === true)
     }
 
@@ -218,12 +221,12 @@ const SportEvent = () => {
     }
 
     return filtered
-  }, [sportEvents, searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, me])
+  }, [sportEvents, searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, filterJoined, me])
 
   // Reset page to 1 when any filter changes
   useEffect(() => {
     setPage(1)
-  }, [searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo])
+  }, [searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, filterJoined])
 
   // Pagination calculations
   const totalPage = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1
@@ -349,6 +352,17 @@ const SportEvent = () => {
                 />
               </div>
               <button
+                onClick={() => setFilterJoined(v => !v)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                  filterJoined
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600'
+                }`}
+              >
+                {filterJoined ? <FaCheck size={10} /> : <FaUsers size={12} />}
+                Đang tham gia
+              </button>
+              <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
                   showAdvanced || sortBy !== 'popular' || filterDateFrom || filterDateTo
@@ -368,7 +382,7 @@ const SportEvent = () => {
             </div>
 
             {/* Active filter chips */}
-            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || filterDateFrom || filterDateTo) && (
+            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || filterDateFrom || filterDateTo || filterJoined) && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {eventType !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
@@ -400,6 +414,12 @@ const SportEvent = () => {
                     <button onClick={() => setFilterDateTo('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
                   </span>
                 )}
+                {filterJoined && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                    ✅ Đang tham gia
+                    <button onClick={() => setFilterJoined(false)} className="hover:text-emerald-900 dark:hover:text-emerald-100"><FaTimes size={9} /></button>
+                  </span>
+                )}
                 <button
                   onClick={() => {
                     setSearchTerm('')
@@ -408,6 +428,7 @@ const SportEvent = () => {
                     setSortBy('popular')
                     setFilterDateFrom('')
                     setFilterDateTo('')
+                    setFilterJoined(false)
                   }}
                   className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                 >
@@ -453,9 +474,9 @@ const SportEvent = () => {
           {/* Row 3: Dynamic Category Pills — always visible */}
           {availableCategories.length > 0 && (
             <div className="px-4 pb-4">
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
                 <button
-                  className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === 'all'
+                  className={`flex items-center shrink-0 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === 'all'
                     ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
                     : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
                     }`}
@@ -470,7 +491,7 @@ const SportEvent = () => {
                   return (
                     <button
                       key={category._id}
-                      className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === category.name
+                      className={`flex items-center shrink-0 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === category.name
                         ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400'
                         : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-red-300'
                         }`}
@@ -573,7 +594,7 @@ const SportEvent = () => {
               {error?.message || 'Vui lòng thử lại sau'}
             </p>
             <button
-              onClick={() => queryClient.invalidateQueries(['sportEvents'])}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['sportEvents'] })}
               className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition"
             >
               Thử lại
@@ -652,6 +673,7 @@ const SportEvent = () => {
                 setSearchTerm('')
                 setSelectedCategory('all')
                 setEventType('all')
+                setFilterJoined(false)
               }}
               className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-semibold transition"
             >

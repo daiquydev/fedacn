@@ -3,15 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaUndo, FaSearch,
     FaFilter, FaUsers, FaMapMarkerAlt, FaRunning, FaHome,
-    FaTimes, FaExclamationTriangle, FaSync, FaChevronDown, FaSortAmountDown
+    FaTimes, FaChevronDown, FaSortAmountDown
 } from 'react-icons/fa'
-import { MdAutoAwesome } from 'react-icons/md'
-import moment from 'moment'
 import toast from 'react-hot-toast'
 import adminSportEventApi from '../../apis/sportEventApi'
 import Loading from '../../components/GlobalComponents/Loading'
-import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader'
+import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
+import EventFormModal from './EventFormModal'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (dateStr) => {
@@ -43,483 +42,7 @@ function StatCard({ icon: Icon, label, value, iconBg, borderColor }) {
     )
 }
 
-// ─── Event Form Modal ─────────────────────────────────────────────────────────
-function EventFormModal({ event, categories, onClose, onSuccess }) {
-    const isEdit = Boolean(event)
-    const defaultValues = {
-        name: event?.name || '',
-        description: event?.description || '',
-        detailedDescription: event?.detailedDescription || '',
-        category: event?.category || '',
-        eventType: event?.eventType || 'Ngoài trời',
-        startDate: event?.startDate ? event.startDate.slice(0, 10) : '',
-        endDate: event?.endDate ? event.endDate.slice(0, 10) : '',
-        eventTime: event?.startDate ? new Date(event.startDate).toTimeString().slice(0, 5) : '08:00',
-        location: event?.location || '',
-        maxParticipants: event?.maxParticipants || 50,
-        targetValue: event?.targetValue || 0,
-        targetUnit: event?.targetUnit || 'km',
-        image: event?.image || '',
-        requirements: event?.requirements || '',
-        benefits: event?.benefits || ''
-    }
 
-    const [form, setForm] = useState(defaultValues)
-    const [errors, setErrors] = useState({})
-    const [submitting, setSubmitting] = useState(false)
-
-    // AI auto-fill state
-    const [showAIModal, setShowAIModal] = useState(false)
-    const [aiDescription, setAiDescription] = useState('')
-    const [aiLoading, setAiLoading] = useState(false)
-
-    // Location autocomplete state
-    const [locationSuggestions, setLocationSuggestions] = useState([])
-    const [showSuggestions, setShowSuggestions] = useState(false)
-
-    // Sync targetUnit when eventType changes to indoor
-    const handleEventTypeChange = (type) => {
-        setForm(prev => ({
-            ...prev,
-            eventType: type,
-            targetUnit: (type === 'Trong nhà' && prev.targetUnit === 'km') ? 'kcal' : prev.targetUnit
-        }))
-    }
-
-    const handleChange = (e) => {
-        const { name, value } = e.target
-        setForm(prev => ({ ...prev, [name]: value }))
-        if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
-
-        // Location autocomplete via Goong API
-        if (name === 'location' && value.length > 2) {
-            fetch(`https://rsapi.goong.io/Place/AutoComplete?api_key=UMRiT4CiOH9UU9Ju9L1YJLSYZM5EQberRoSsyfDW&input=${encodeURIComponent(value)}`)
-                .then(res => res.json())
-                .then(data => { if (data.predictions) { setLocationSuggestions(data.predictions); setShowSuggestions(true) } })
-                .catch(console.error)
-        } else if (name === 'location') { setShowSuggestions(false) }
-    }
-
-    const handleSelectLocation = (address) => {
-        setForm(prev => ({ ...prev, location: address }))
-        setShowSuggestions(false)
-        if (errors.location) setErrors(prev => ({ ...prev, location: '' }))
-    }
-
-    // ── AI Fill Handler ──
-    const handleAIFill = async () => {
-        if (!aiDescription.trim()) { toast.error('Vui lòng nhập mô tả!'); return }
-        setAiLoading(true)
-        try {
-            const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/ai/generate'
-            const today = moment().format('DD/MM/YYYY')
-            const allCatNames = categories.map(c => `${c.name} (${c.type})`).join(', ')
-            const outdoorCats = categories.filter(c => c.type === 'Ngoài trời').map(c => c.name).join(', ')
-            const indoorCats = categories.filter(c => c.type === 'Trong nhà').map(c => c.name).join(', ')
-
-            const prompt = `Hôm nay là ngày ${today}. Múi giờ Việt Nam (UTC+7).
-Người dùng muốn tạo một sự kiện thể thao. Dưới đây là mô tả sơ bộ:
-"${aiDescription.trim()}"
-Hãy điền đầy đủ các trường sau thành JSON object hợp lệ. Quy tắc:
-1. Nếu mô tả có thông tin rõ → dùng nó. Nếu không → suy luận hợp lý.
-2. Ngày: DD/MM/YYYY. startDate >= ${today}. endDate >= startDate.
-3. eventType: "Ngoài trời" hoặc "Trong nhà".
-   - Ngoài trời: ${outdoorCats}
-   - Trong nhà: ${indoorCats}
-4. category: một trong: ${allCatNames}. Chỉ điền tên.
-5. targetUnit: "km", "kcal", "phút", "giờ".
-6. image: để ''
-7. description: tối đa 150 ký tự, tiếng Việt.
-8. detailedDescription: chi tiết hơn, tiếng Việt.
-9. requirements, benefits: ngắn gọn, tiếng Việt.
-10. maxParticipants: 20-500.
-11. Địa điểm: thực tế tại TP.HCM nếu không nêu.
-12. Chỉ trả về JSON object, không markdown.
-JSON: { "name", "eventType", "category", "startDate", "endDate", "eventTime": "HH:mm", "location", "maxParticipants", "targetValue", "targetUnit", "image", "description", "detailedDescription", "requirements", "benefits" }`
-
-            const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) })
-            if (!response.ok) throw new Error(`HTTP ${response.status}`)
-            const data = await response.json()
-            const cleaned = (data?.text || '').replace(/```(?:json)?\n?/gi, '').replace(/```/g, '').trim()
-            const parsed = JSON.parse(cleaned)
-
-            setForm(prev => {
-                const u = { ...prev }
-                if (parsed.name) u.name = parsed.name
-                if (parsed.eventType === 'Ngoài trời' || parsed.eventType === 'Trong nhà') u.eventType = parsed.eventType
-                if (parsed.category) { const m = categories.find(c => c.name === parsed.category); if (m) u.category = m.name }
-                // Convert DD/MM/YYYY to YYYY-MM-DD for date input
-                if (parsed.startDate) { const [d, m, y] = parsed.startDate.split('/'); u.startDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` }
-                if (parsed.endDate) { const [d, m, y] = parsed.endDate.split('/'); u.endDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` }
-                if (parsed.eventTime) u.eventTime = parsed.eventTime
-                if (parsed.location) u.location = parsed.location
-                if (parsed.maxParticipants) u.maxParticipants = Number(parsed.maxParticipants)
-                if (parsed.targetValue !== undefined) u.targetValue = Number(parsed.targetValue)
-                if (['km', 'kcal', 'phút', 'giờ'].includes(parsed.targetUnit)) u.targetUnit = parsed.targetUnit
-                if (parsed.description) u.description = parsed.description.slice(0, 150)
-                if (parsed.detailedDescription) u.detailedDescription = parsed.detailedDescription
-                if (parsed.requirements) u.requirements = parsed.requirements
-                if (parsed.benefits) u.benefits = parsed.benefits
-                return u
-            })
-            setErrors({})
-            setShowAIModal(false)
-            setAiDescription('')
-            toast.success('✨ AI đã điền xong các trường!')
-        } catch (err) {
-            toast.error(`❌ AI gặp lỗi: ${err.message}`)
-        } finally { setAiLoading(false) }
-    }
-
-    const validate = () => {
-        const errs = {}
-        if (!form.name.trim()) errs.name = 'Tên sự kiện không được để trống'
-        if (!form.category.trim()) errs.category = 'Danh mục không được để trống'
-        if (!form.startDate) errs.startDate = 'Vui lòng chọn ngày bắt đầu'
-        if (!form.endDate) errs.endDate = 'Vui lòng chọn ngày kết thúc'
-        if (form.startDate && form.endDate && new Date(form.endDate) <= new Date(form.startDate)) {
-            errs.endDate = 'Ngày kết thúc phải sau ngày bắt đầu'
-        }
-        if (form.eventType === 'Ngoài trời' && !form.location.trim()) errs.location = 'Địa điểm không được để trống'
-        if (!form.maxParticipants || Number(form.maxParticipants) < 1) errs.maxParticipants = 'Tối thiểu 1 người'
-        return errs
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        const errs = validate()
-        if (Object.keys(errs).length > 0) { setErrors(errs); return }
-
-        setSubmitting(true)
-        try {
-            // Combine date + time into ISO strings
-            const timeStr = form.eventTime || '00:00'
-            const startISO = new Date(`${form.startDate}T${timeStr}:00`).toISOString()
-            const endISO = new Date(`${form.endDate}T23:59:00`).toISOString()
-
-            const finalUnit = (form.eventType === 'Trong nhà' && form.targetUnit === 'km') ? 'kcal' : form.targetUnit
-
-            const payload = {
-                name: form.name,
-                description: form.description,
-                detailedDescription: form.detailedDescription,
-                category: form.category,
-                eventType: form.eventType,
-                startDate: startISO,
-                endDate: endISO,
-                location: form.eventType === 'Trong nhà' ? (form.location?.trim() || 'Video call trực tuyến') : form.location,
-                maxParticipants: Number(form.maxParticipants),
-                targetValue: Number(form.targetValue),
-                targetUnit: finalUnit,
-                image: form.image,
-                requirements: form.requirements,
-                benefits: form.benefits
-            }
-
-            if (isEdit) {
-                await adminSportEventApi.update(event._id, payload)
-                toast.success('Cập nhật sự kiện thành công!')
-            } else {
-                await adminSportEventApi.create(payload)
-                toast.success('Tạo sự kiện thành công!')
-            }
-            onSuccess()
-        } catch (err) {
-            toast.error(err?.response?.data?.message || 'Có lỗi xảy ra')
-        } finally {
-            setSubmitting(false)
-        }
-    }
-
-    const inputCls = (name) =>
-        `w-full px-4 py-3 border-2 rounded-xl dark:bg-gray-700 dark:text-white text-sm outline-none focus:ring-2 transition-all ${errors[name] ? 'border-red-400 focus:ring-red-300' : 'border-gray-200 dark:border-gray-600 focus:ring-emerald-400 focus:border-emerald-400'}`
-    const labelCls = 'block text-sm font-bold text-gray-600 dark:text-gray-300 mb-1'
-    const sectionCls = 'bg-gray-50 dark:bg-gray-700/40 rounded-xl p-4 space-y-4'
-
-    // Filter categories by eventType
-    const filteredCategories = categories.filter(c => c.type === form.eventType)
-
-    return (
-        <>
-        {/* AI Modal Popup */}
-        {showAIModal && (
-            <div className='fixed inset-0 z-[60] flex items-center justify-center p-4' style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.55)' }}>
-                <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden'>
-                    <div className='relative bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-5 text-white'>
-                        <div className='flex items-center gap-3'>
-                            <div className='w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center'><MdAutoAwesome className='text-xl' /></div>
-                            <div>
-                                <h3 className='font-black text-base'>AI Điền Tự Động</h3>
-                                <p className='text-purple-100 text-xs'>Mô tả sự kiện → AI tự điền toàn bộ form</p>
-                            </div>
-                        </div>
-                        <button onClick={() => { setShowAIModal(false); setAiDescription('') }}
-                            className='absolute top-3 right-3 w-7 h-7 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition'>
-                            <FaTimes className='text-xs' />
-                        </button>
-                    </div>
-                    <div className='p-5 space-y-4'>
-                        <div>
-                            <label className='block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2'>Mô tả sơ bộ về sự kiện</label>
-                            <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={4}
-                                placeholder='Ví dụ: "Giải chạy bộ bán marathon tại công viên Tao Đàn, TP.HCM, khoảng 100 người..."'
-                                className='w-full px-4 py-3 rounded-xl border-2 border-purple-100 dark:border-purple-900 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none resize-none transition text-sm' />
-                            <p className='text-xs text-gray-400 mt-1'>Càng chi tiết, AI càng điền chính xác hơn.</p>
-                        </div>
-                        <div className='bg-purple-50 dark:bg-purple-900/20 rounded-xl p-3 border border-purple-100 dark:border-purple-800'>
-                            <p className='text-xs font-bold text-purple-700 dark:text-purple-300 mb-1'>💡 Gợi ý:</p>
-                            <ul className='text-xs text-purple-600 dark:text-purple-400 space-y-0.5'>
-                                <li>• Loại thể thao, địa điểm, số người, thời gian, mục tiêu</li>
-                            </ul>
-                        </div>
-                        <button onClick={handleAIFill} disabled={aiLoading || !aiDescription.trim()}
-                            className='w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm'
-                            style={{ background: aiLoading || !aiDescription.trim() ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #4338ca)' }}>
-                            {aiLoading ? (<><div className='w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin' /> AI đang phân tích...</>) : (<><MdAutoAwesome /> Tạo với AI</>)}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4' onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col'>
-                {/* Header */}
-                <div className='flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-200 dark:border-gray-700 shrink-0'>
-                    <div className='flex items-center gap-3'>
-                        <div className='p-2 bg-blue-100 dark:bg-blue-900 rounded-lg'><FaCalendarAlt className='text-blue-600 dark:text-blue-300' /></div>
-                        <h2 className='text-base font-bold text-gray-800 dark:text-white'>{isEdit ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới'}</h2>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        {!isEdit && (
-                            <button type='button' onClick={() => setShowAIModal(true)}
-                                className='flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white transition-all active:scale-95 hover:shadow-lg'
-                                style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)' }}>
-                                <MdAutoAwesome className='text-sm' /> AI Điền
-                            </button>
-                        )}
-                        <button onClick={onClose} className='p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors'><FaTimes className='text-gray-500' /></button>
-                    </div>
-                </div>
-
-                {/* Scrollable body */}
-                <form onSubmit={handleSubmit} className='overflow-y-auto flex-1 px-6 py-4 space-y-5'>
-
-                    {/* ── 1. Thông tin chung ── */}
-                    <div>
-                        <p className='text-xs font-bold text-gray-400 uppercase tracking-widest mb-3'>1. Thông tin chung</p>
-                        <div className={sectionCls}>
-                            {/* Tên sự kiện */}
-                            <div>
-                                <label className={labelCls}>Tên sự kiện <span className='text-red-500'>*</span></label>
-                                <input name='name' value={form.name} onChange={handleChange} className={inputCls('name')} placeholder='Nhập tên sự kiện...' />
-                                {errors.name && <p className='text-red-500 text-xs mt-0.5'>{errors.name}</p>}
-                            </div>
-
-                            {/* Hình thức tổ chức (button cards) */}
-                            <div>
-                                <label className={labelCls}>Hình thức tổ chức <span className='text-red-500'>*</span></label>
-                                <div className='grid grid-cols-2 gap-3 mt-1'>
-                                    <button type='button' onClick={() => handleEventTypeChange('Ngoài trời')}
-                                        className={`flex flex-col items-center gap-1.5 py-3 px-4 rounded-xl border-2 transition-all text-sm font-semibold ${form.eventType === 'Ngoài trời' ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'border-gray-200 dark:border-slate-600 text-gray-500 hover:border-green-300'}`}>
-                                        <span className='text-2xl'>🌿</span>
-                                        <span>Ngoài trời</span>
-                                        <span className='text-xs text-gray-400 font-normal'>Chạy bộ, đạp xe, leo núi...</span>
-                                    </button>
-                                    <button type='button' onClick={() => handleEventTypeChange('Trong nhà')}
-                                        className={`flex flex-col items-center gap-1.5 py-3 px-4 rounded-xl border-2 transition-all text-sm font-semibold ${form.eventType === 'Trong nhà' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'border-gray-200 dark:border-slate-600 text-gray-500 hover:border-blue-300'}`}>
-                                        <span className='text-2xl'>🏠</span>
-                                        <span>Trong nhà</span>
-                                        <span className='text-xs text-gray-400 font-normal'>Gym, yoga, bơi lội...</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Danh mục */}
-                            <div>
-                                <label className={labelCls}>Danh mục thể thao <span className='text-red-500'>*</span></label>
-                                {filteredCategories.length > 0 ? (
-                                    <select name='category' value={form.category} onChange={handleChange} className={inputCls('category')}>
-                                        <option value=''>-- Chọn danh mục --</option>
-                                        {filteredCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                                    </select>
-                                ) : (
-                                    <input name='category' value={form.category} onChange={handleChange} className={inputCls('category')} placeholder='Nhập tên danh mục...' />
-                                )}
-                                {errors.category && <p className='text-red-500 text-xs mt-0.5'>{errors.category}</p>}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── 2. Thời gian & Địa điểm ── */}
-                    <div>
-                        <p className='text-xs font-bold text-gray-400 uppercase tracking-widest mb-3'>2. Thời gian &amp; Địa điểm</p>
-                        <div className={sectionCls}>
-                            {/* Ngày + Giờ */}
-                            <div className='grid grid-cols-3 gap-3'>
-                                <div>
-                                    <label className={labelCls}>Ngày bắt đầu <span className='text-red-500'>*</span></label>
-                                    <input type='date' name='startDate' value={form.startDate} onChange={handleChange} className={inputCls('startDate')} />
-                                    {errors.startDate && <p className='text-red-500 text-xs mt-0.5'>{errors.startDate}</p>}
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Ngày kết thúc <span className='text-red-500'>*</span></label>
-                                    <input type='date' name='endDate' value={form.endDate} onChange={handleChange} className={inputCls('endDate')} />
-                                    {errors.endDate && <p className='text-red-500 text-xs mt-0.5'>{errors.endDate}</p>}
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Thời điểm <span className='text-red-500'>*</span></label>
-                                    <input type='time' name='eventTime' value={form.eventTime} onChange={handleChange} className={inputCls('eventTime')} />
-                                </div>
-                            </div>
-
-                            {/* Địa điểm */}
-                            <div className='relative'>
-                                <label className={labelCls}>Địa điểm <span className='text-red-500'>*</span></label>
-                                <input name='location' value={form.location} onChange={handleChange}
-                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                    className={inputCls('location')} placeholder='Nhập địa điểm...' />
-                                {showSuggestions && locationSuggestions.length > 0 && (
-                                    <div className='absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-y-auto'>
-                                        {locationSuggestions.map((sl, i) => (
-                                            <div key={i} className='px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 last:border-0'
-                                                onClick={() => handleSelectLocation(sl.description)}>
-                                                📍 {sl.description}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {errors.location && <p className='text-red-500 text-xs mt-0.5'>{errors.location}</p>}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── 3. Mục tiêu & Sức chứa ── */}
-                    <div>
-                        <p className='text-xs font-bold text-gray-400 uppercase tracking-widest mb-3'>3. Mục tiêu &amp; Sức chứa</p>
-                        <div className={sectionCls}>
-                            <div className='grid grid-cols-2 gap-4'>
-                                {/* Số người tối đa */}
-                                <div>
-                                    <label className={labelCls}>Số người tối đa <span className='text-red-500'>*</span></label>
-                                    <div className='flex items-center border border-gray-300 dark:border-slate-600 rounded-lg overflow-hidden dark:bg-slate-700'>
-                                        <button type='button'
-                                            onClick={() => setForm(p => ({ ...p, maxParticipants: Math.max(1, Number(p.maxParticipants) - 10) }))}
-                                            className='px-3 py-2 bg-gray-100 dark:bg-slate-600 font-bold text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-slate-500 transition'>−</button>
-                                        <input type='number' name='maxParticipants' value={form.maxParticipants} onChange={handleChange} min='1'
-                                            className='flex-1 py-2 bg-transparent dark:text-white text-center font-bold text-sm focus:outline-none' />
-                                        <button type='button'
-                                            onClick={() => setForm(p => ({ ...p, maxParticipants: Number(p.maxParticipants) + 10 }))}
-                                            className='px-3 py-2 bg-gray-100 dark:bg-slate-600 font-bold text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-slate-500 transition'>+</button>
-                                    </div>
-                                    {errors.maxParticipants && <p className='text-red-500 text-xs mt-0.5'>{errors.maxParticipants}</p>}
-                                </div>
-
-                                {/* Mục tiêu */}
-                                <div>
-                                    <label className={labelCls}>Mục tiêu sự kiện</label>
-                                    <div className='flex gap-2'>
-                                        <input type='number' name='targetValue' value={form.targetValue} onChange={handleChange} min='0'
-                                            className='flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-orange-300' />
-                                        <select name='targetUnit' value={form.targetUnit} onChange={handleChange}
-                                            className='w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-300'>
-                                            {form.eventType === 'Ngoài trời' && <option value='km'>km</option>}
-                                            <option value='kcal'>kcal</option>
-                                            <option value='phút'>phút</option>
-                                            <option value='giờ'>giờ</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                        </div>
-                    </div>
-
-                    {/* ── 4. Hình ảnh & Mô tả ── */}
-                    <div>
-                        <p className='text-xs font-bold text-gray-400 uppercase tracking-widest mb-3'>4. Hình ảnh &amp; Mô tả</p>
-                        <div className={sectionCls}>
-                            {/* Ảnh bìa — Cloudinary Upload */}
-                            <div>
-                                <CloudinaryImageUploader
-                                    label="Ảnh bìa"
-                                    required
-                                    value={form.image}
-                                    onChange={(url) => setForm(prev => ({ ...prev, image: url }))}
-                                    error={errors.image}
-                                    folder="sport-events"
-                                />
-                            </div>
-
-                            {/* Mô tả ngắn */}
-                            <div>
-                                <label className={labelCls}>Mô tả ngắn <span className='text-red-500'>*</span></label>
-                                <textarea name='description' value={form.description} onChange={handleChange} className={inputCls('description')} rows={2} maxLength={150} placeholder='Mô tả ngắn gọn...' />
-                                <p className='text-right text-xs text-gray-400 mt-0.5'>{form.description.length}/150</p>
-                            </div>
-
-                            {/* Mô tả chi tiết */}
-                            <div>
-                                <label className={labelCls}>Mô tả chi tiết</label>
-                                <textarea name='detailedDescription' value={form.detailedDescription} onChange={handleChange} className={inputCls('detailedDescription')} rows={4} placeholder='Mô tả đầy đủ về sự kiện...' />
-                            </div>
-
-                            {/* Yêu cầu + Lợi ích */}
-                            <div className='grid grid-cols-2 gap-3'>
-                                <div>
-                                    <label className={labelCls}>Yêu cầu tham gia</label>
-                                    <input name='requirements' value={form.requirements} onChange={handleChange} className={inputCls('requirements')} placeholder='Yêu cầu...' />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Lợi ích khi tham gia</label>
-                                    <input name='benefits' value={form.benefits} onChange={handleChange} className={inputCls('benefits')} placeholder='Lợi ích...' />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className='flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-gray-700'>
-                        <button type='button' onClick={onClose}
-                            className='px-5 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors'>
-                            Hủy
-                        </button>
-                        <button type='submit' disabled={submitting}
-                            className='px-5 py-2 text-sm bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2'>
-                            {submitting ? '⏳ Đang xử lý...' : isEdit ? '💾 Lưu thay đổi' : '➕ Tạo sự kiện'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        </>
-    )
-}
-
-// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
-function ConfirmDialog({ title, message, onConfirm, onCancel, danger = true }) {
-    return (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60' onClick={(e) => e.target === e.currentTarget && onCancel()}>
-            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4'>
-                <div className='flex items-center gap-3 mb-3'>
-                    <div className={`p-2 rounded-full ${danger ? 'bg-red-100 dark:bg-red-900' : 'bg-yellow-100 dark:bg-yellow-900'}`}>
-                        <FaExclamationTriangle className={`text-lg ${danger ? 'text-red-600' : 'text-yellow-600'}`} />
-                    </div>
-                    <h3 className='text-base font-bold text-gray-800 dark:text-white'>{title}</h3>
-                </div>
-                <p className='text-sm text-gray-600 dark:text-gray-400 ml-11 mb-5'>{message}</p>
-                <div className='flex justify-end gap-3'>
-                    <button onClick={onCancel} className='px-4 py-2 text-sm bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors'>
-                        Hủy
-                    </button>
-                    <button onClick={onConfirm} className={`px-4 py-2 text-sm text-white rounded-lg font-medium transition-colors ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}>
-                        Xác nhận
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminSportEvent() {
@@ -1038,21 +561,37 @@ export default function AdminSportEvent() {
                                                     const end = new Date(ev.endDate)
                                                     const isEvEnded = now > end
                                                     const isEvUpcoming = now < start
-                                                    const totalDur = end - start
-                                                    const elapsed = now - start
-                                                    const timePct = isEvEnded ? 100 : isEvUpcoming ? 0 : Math.min(Math.round((elapsed / totalDur) * 100), 100)
-                                                    const barColor = isEvEnded ? 'bg-gray-400' : timePct > 75 ? 'bg-amber-500' : 'bg-emerald-500'
+
+                                                    // Tiến độ thực tế từ participants (từ backend aggregate)
+                                                    const pct = ev.progressPercent ?? 0
+                                                    const total = ev.progressTotal ?? 0
+                                                    const target = ev.targetValue || 0
+                                                    const unit = ev.targetUnit || ''
+                                                    const barColor = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-500'
+
+                                                    const statusLabel = isEvEnded ? 'Đã kết thúc' : isEvUpcoming ? 'Sắp diễn ra' : 'Đang diễn ra'
+                                                    const statusColor = isEvEnded ? 'text-gray-400' : isEvUpcoming ? 'text-amber-500' : 'text-emerald-600'
+
                                                     return (
-                                                        <div>
+                                                        <div className='min-w-[110px]'>
                                                             <div className='flex items-center justify-between text-xs mb-1'>
-                                                                <span className='text-gray-500 dark:text-gray-400'>{timePct}%</span>
-                                                                <span className={`text-[10px] font-semibold ${isEvEnded ? 'text-gray-400' : isEvUpcoming ? 'text-amber-500' : 'text-emerald-600'}`}>
-                                                                    {isEvEnded ? 'Xong' : isEvUpcoming ? 'Chờ' : 'Live'}
+                                                                <span className='font-semibold text-gray-700 dark:text-gray-200'>
+                                                                    {target > 0 ? (
+                                                                        <>{Number(total).toFixed(total % 1 === 0 ? 0 : 1)}<span className='text-gray-400 font-normal ml-0.5'>{unit}</span></>
+                                                                    ) : '—'}
+                                                                </span>
+                                                                <span className={`text-[10px] font-semibold ${statusColor}`}>
+                                                                    {statusLabel}
                                                                 </span>
                                                             </div>
-                                                            <div className='w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5'>
-                                                                <div className={`${barColor} h-1.5 rounded-full transition-all`} style={{ width: `${timePct}%` }} />
-                                                            </div>
+                                                            {target > 0 && (
+                                                                <>
+                                                                    <div className='w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5'>
+                                                                        <div className={`${barColor} h-1.5 rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                                                                    </div>
+                                                                    <p className='text-[10px] text-gray-400 mt-0.5'>{pct}% / {target} {unit}</p>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     )
                                                 })()}
@@ -1159,16 +698,18 @@ export default function AdminSportEvent() {
 
             {/* Confirm Dialog */}
             {confirmAction && (
-                <ConfirmDialog
+                <ConfirmBox
                     title={confirmAction.type === 'delete' ? 'Xóa sự kiện?' : 'Khôi phục sự kiện?'}
-                    message={
+                    subtitle={
                         confirmAction.type === 'delete'
                             ? `Bạn có chắc muốn xóa sự kiện "${confirmAction.event.name}"? Người dùng sẽ không thể xem sự kiện này nữa.`
                             : `Bạn có chắc muốn khôi phục sự kiện "${confirmAction.event.name}"?`
                     }
                     danger={confirmAction.type === 'delete'}
-                    onConfirm={handleConfirm}
-                    onCancel={() => setConfirmAction(null)}
+                    handleDelete={handleConfirm}
+                    closeModal={() => setConfirmAction(null)}
+                    isPending={softDeleteMutation.isPending || restoreMutation.isPending}
+                    tilteButton={confirmAction.type === 'delete' ? 'Xóa' : 'Khôi phục'}
                 />
             )}
         </div>

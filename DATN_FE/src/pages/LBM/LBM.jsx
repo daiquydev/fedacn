@@ -8,7 +8,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaLBM } from '../../utils/rules'
 import { useContext, useState } from 'react'
 import { calculateLBM, saveLBMData } from '../../apis/calculatorApi'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
 import { AppContext } from '../../contexts/app.context'
@@ -42,7 +42,6 @@ export default function LBM() {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     setDataLBM(data)
     calculateLBMMutation.mutate(data, {
       onSuccess: (res) => {
@@ -57,7 +56,7 @@ export default function LBM() {
           }
         })
       },
-      onError: () => { console.log('error') }
+      onError: () => { toast.error('Có lỗi xảy ra khi tính LBM') }
     })
   })
 

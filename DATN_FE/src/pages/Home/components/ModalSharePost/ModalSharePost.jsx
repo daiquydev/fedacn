@@ -1,11 +1,12 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import useravatar from '../../../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../../../utils/imageUrl'
 import { MdEmojiEmotions } from 'react-icons/md'
 import { useContext, useEffect, useRef, useState } from 'react'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import moment from 'moment'
-import { } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { sharePost } from '../../../../apis/postApi'
 import toast from 'react-hot-toast'
 import postSound from '../../../../assets/sounds/post.mp3'
@@ -26,6 +27,7 @@ const PRIVACY_OPTIONS = [
 export default function ModalSharePost({ handleCloseSharePost, post }) {
   const { profile } = useContext(AppContext)
   const { newSocket } = useContext(SocketContext)
+  const queryClient = useQueryClient()
   const [play] = useSound(postSound)
   const theme = localStorage.getItem('theme')
 
@@ -72,6 +74,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
       onSuccess: () => {
         setIsSuccess(true)
         toast.success('Chia sẻ bài viết thành công')
+        queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
         newSocket.emit('share post', {
           content: 'Đã chia sẻ bài viết của bạn',
           to: post.user._id,
@@ -83,7 +86,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
         handleCloseSharePost()
       },
       onError: () => {
-        console.log('error')
+        toast.error('Có lỗi xảy ra khi chia sẻ bài viết')
       }
     })
   }
@@ -119,7 +122,7 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
           {/* ── Author row ── */}
           <div className="flex items-center gap-3 px-5 pt-4 pb-2">
             <img
-              src={profile?.avatar === '' ? useravatar : profile?.avatar}
+              src={profile?.avatar === '' ? useravatar : getImageUrl(profile?.avatar)}
               alt={profile?.name}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-red-400"
             />
@@ -236,7 +239,7 @@ function CheckTypeOfPost({ post }) {
         <div className='flex items-center gap-2 px-3 py-2'>
           <img
             className='rounded-full w-7 h-7 object-cover'
-            src={post.user.avatar === '' ? useravatar : post.user.avatar}
+            src={post.user.avatar === '' ? useravatar : getImageUrl(post.user.avatar)}
           />
           <div>
             <span className='text-xs font-bold text-gray-800 dark:text-white'>{post.user.name}</span>
@@ -253,7 +256,7 @@ function CheckTypeOfPost({ post }) {
       <div className='flex items-center gap-2 px-3 py-2'>
         <img
           className='rounded-full w-7 h-7 object-cover'
-          src={post.parent_user.avatar === '' ? useravatar : post.parent_user.avatar}
+          src={post.parent_user.avatar === '' ? useravatar : getImageUrl(post.parent_user.avatar)}
         />
         <div>
           <span className='text-xs font-bold text-gray-800 dark:text-white'>{post.parent_user.name}</span>
@@ -270,7 +273,7 @@ function CheckLengthOfImages({ images }) {
   if (!images || images.length === 0) return null
   return (
     <div className='h-32 overflow-hidden'>
-      <img className='w-full h-full object-cover' src={images[0]} />
+      <img className='w-full h-full object-cover' src={getImageUrl(images[0])} />
     </div>
   )
 }

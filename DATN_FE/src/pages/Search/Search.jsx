@@ -8,11 +8,12 @@ import { searchAll } from '../../apis/searchApi'
 import PostCard from '../../components/CardComponents/PostCard'
 import { useNavigate } from 'react-router-dom'
 import useravatar from '../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../utils/imageUrl'
 
 export default function Search() {
   const { searchQuery } = useContext(AppContext)
 
-  console.log(searchQuery)
+
   const navigate = useNavigate()
 
   const { data, isLoading } = useQuery({
@@ -41,7 +42,7 @@ export default function Search() {
     )
   }
 
-  console.log(data)
+
   return (
     <div className='h-full text-gray-900 dark:text-white py-4'>
       {isLoading ? (
@@ -99,7 +100,7 @@ export default function Search() {
                           <div className='flex flex-col pt-5 items-center pb-5'>
                             <img
                               className='w-24 h-24 mb-3 object-cover rounded-full shadow-lg'
-                              src={user.avatar === '' ? useravatar : user.avatar}
+                              src={user.avatar === '' ? useravatar : getImageUrl(user.avatar)}
                               alt='avatar'
                             />
                             <h5 className='mb-1 text-xl font-medium text-gray-900 dark:text-white'>{user.name}</h5>

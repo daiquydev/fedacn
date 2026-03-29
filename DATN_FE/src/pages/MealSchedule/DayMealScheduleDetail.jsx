@@ -4,6 +4,7 @@ import { FaArrowLeft, FaCalendarDay, FaCheckCircle, FaUtensils, FaPlusCircle, Fa
 import MealCard from './components/MealCard';
 import EditMealModal from './components/EditMealModal';
 import MealNoteModal from './components/MealNoteModal';
+import { getDateMealItem, getListMealSchedules } from '../../apis/mealScheduleApi';
 
 export default function DayMealScheduleDetail() {
   const { date } = useParams(); // Format: YYYY-MM-DD
@@ -12,19 +13,15 @@ export default function DayMealScheduleDetail() {
   const [dayData, setDayData] = useState(null);
   const [mealPlan, setMealPlan] = useState(null);
   
-  // State for modals
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [alternativesModalOpen, setAlternativesModalOpen] = useState(false);
   
-  // Format the date from URL param
   const formatDisplayDate = () => {
     if (!date) return '';
-    
     const [year, month, day] = date.split('-');
     const dateObj = new Date(year, month - 1, day);
-    
     return dateObj.toLocaleDateString('vi-VN', {
       weekday: 'long',
       year: 'numeric',
@@ -33,120 +30,99 @@ export default function DayMealScheduleDetail() {
     });
   };
   
-  // Check if the date is today
   const isToday = () => {
     if (!date) return false;
-    
     const [year, month, day] = date.split('-');
     const dateObj = new Date(year, month - 1, day);
     const today = new Date();
-    
     return dateObj.getDate() === today.getDate() &&
       dateObj.getMonth() === today.getMonth() &&
       dateObj.getFullYear() === today.getFullYear();
   };
   
-  // Mô phỏng fetch dữ liệu
+  // Lấy dữ liệu bữa ăn từ database
   useEffect(() => {
-    setTimeout(() => {
-      // Mock data for the selected day
-      const mockDayData = {
-        date: date,
-        isComplete: false,
-        completion: 60,
-        mealPlanId: 1,
-        dayNumber: 3, // Day 3 of the plan
-        meals: [
-          {
-            id: 1,
-            type: 'Sáng',
-            name: 'Yến mạch nấu với sữa hạnh nhân + 1 quả chuối + 5 quả hạnh nhân',
-            calories: 320,
-            completed: true,
-            time: '7:00 - 8:00',
-            note: 'Cảm thấy ngon và no lâu, nhưng lần sau nên thêm một ít mật ong',
+    const fetchDayData = async () => {
+      try {
+        setLoading(true);
+
+        // Lấy danh sách thực đơn để tìm meal plan hiện tại
+        const schedulesRes = await getListMealSchedules({ page: 1, limit: 10 });
+        const schedules = schedulesRes?.data?.result?.meal_schedules || schedulesRes?.data?.result || [];
+        const activePlan = schedules[0]; // Lấy plan đầu tiên
+
+        if (activePlan) {
+          const planId = activePlan._id || activePlan.id;
+          
+          // Lấy meals cho ngày được chọn
+          const mealItemsRes = await getDateMealItem({
+            meal_schedule_id: planId,
+            date: date
+          });
+          const mealItems = mealItemsRes?.data?.result || [];
+
+          const meals = mealItems.map((item, index) => ({
+            id: item._id || `meal-${index}`,
+            type: item.meal_type === 0 ? 'Sáng' : item.meal_type === 1 ? 'Trưa' : item.meal_type === 2 ? 'Tối' : 'Snack',
+            name: item.meal_name || '',
+            calories: item.energy || 0,
+            completed: item.is_completed || false,
+            time: item.time || '',
+            note: item.note || '',
             nutrients: {
-              protein: 12,
-              carbs: 45,
-              fat: 10
+              protein: item.protein || 0,
+              carbs: item.carbs || 0,
+              fat: item.fat || 0
             },
-            alternatives: [
-              { id: 101, name: 'Bánh mì nguyên cám với trứng và bơ', calories: 350 },
-              { id: 102, name: 'Sinh tố protein với các loại quả mọng', calories: 300 }
-            ]
-          },
-          {
-            id: 2,
-            type: 'Trưa',
-            name: 'Salad gà nướng với rau xanh, cà chua, dưa chuột, dầu olive',
-            calories: 450,
-            completed: true,
-            time: '12:00 - 13:00',
-            nutrients: {
-              protein: 35,
-              carbs: 25,
-              fat: 20
-            },
-            alternatives: [
-              { id: 201, name: 'Cơm gạo lứt với thịt gà và rau luộc', calories: 420 },
-              { id: 202, name: 'Bún trộn thịt bò và rau sống', calories: 430 }
-            ]
-          },
-          {
-            id: 3,
-            type: 'Tối',
-            name: 'Cá hồi nướng với măng tây và khoai lang nướng',
-            calories: 480,
-            completed: false,
-            time: '18:30 - 19:30',
-            nutrients: {
-              protein: 30,
-              carbs: 40,
-              fat: 15
-            },
-            alternatives: [
-              { id: 301, name: 'Đậu hũ sốt cà chua với cơm gạo lứt', calories: 400 },
-              { id: 302, name: 'Súp rau củ với thịt gà xé', calories: 350 }
-            ]
-          },
-          {
-            id: 4,
-            type: 'Snack',
-            name: 'Sữa chua Hy Lạp với hỗn hợp quả mọng',
-            calories: 180,
-            completed: false,
-            time: '15:30 - 16:00',
-            nutrients: {
-              protein: 15,
-              carbs: 15,
-              fat: 5
-            },
-            alternatives: [
-              { id: 401, name: 'Một nắm hạt hỗn hợp', calories: 160 },
-              { id: 402, name: 'Táo xanh với bơ đậu phộng', calories: 200 }
-            ]
-          }
-        ]
-      };
-      
-      // Mock data for the meal plan
-      const mockMealPlan = {
-        id: 1,
-        title: 'Thực đơn giảm cân 7 ngày',
-        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-        startDate: '2025-05-01T00:00:00Z',
-        endDate: '2025-05-07T23:59:59Z',
-        duration: 7,
-        progress: 40,
-        completedDays: 2,
-        totalDays: 7,
-        totalCalories: 1430
-      };
-      
-      setDayData(mockDayData);
-      setMealPlan(mockMealPlan);
-      setLoading(false);
-    }, 800);
+            alternatives: []
+          }));
+
+          const completedCount = meals.filter(m => m.completed).length;
+          const completion = meals.length > 0 ? Math.round((completedCount / meals.length) * 100) : 0;
+
+          setDayData({
+            date: date,
+            isComplete: completion === 100,
+            completion: completion,
+            mealPlanId: planId,
+            dayNumber: 1,
+            meals: meals
+          });
+
+          const startDate = activePlan.start_date || activePlan.startDate;
+          const endDate = activePlan.end_date || activePlan.endDate;
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+          setMealPlan({
+            id: planId,
+            title: activePlan.name || activePlan.title || 'Thực đơn',
+            image: activePlan.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+            startDate: startDate,
+            endDate: endDate,
+            duration: totalDays,
+            progress: 0,
+            completedDays: 0,
+            totalDays: totalDays,
+            totalCalories: meals.reduce((sum, m) => sum + m.calories, 0)
+          });
+        } else {
+          // Không có meal plan
+          setDayData({ date, isComplete: false, completion: 0, mealPlanId: null, dayNumber: 0, meals: [] });
+          setMealPlan({ id: null, title: 'Chưa có thực đơn', image: '', startDate: '', endDate: '', duration: 0, progress: 0, completedDays: 0, totalDays: 0, totalCalories: 0 });
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu ngày:', error);
+        setDayData({ date, isComplete: false, completion: 0, mealPlanId: null, dayNumber: 0, meals: [] });
+        setMealPlan({ id: null, title: 'Lỗi tải dữ liệu', image: '', startDate: '', endDate: '', duration: 0, progress: 0, completedDays: 0, totalDays: 0, totalCalories: 0 });
+        setLoading(false);
+      }
+    };
+
+    fetchDayData();
   }, [date]);
   
   // Handle marking a meal as complete

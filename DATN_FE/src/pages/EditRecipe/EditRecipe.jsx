@@ -11,7 +11,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaUpdateRecipe } from '../../utils/rules'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -38,7 +38,7 @@ export default function EditRecipe() {
     placeholderData: keepPreviousData
   })
   const recipe = data?.data.result[0]
-  // console.log(recipe)
+
 
   const {
     register,
@@ -61,7 +61,7 @@ export default function EditRecipe() {
       processing_food: 'DEFAULT'
     }
   })
-  // console.log(id)
+
 
   const editRecipeMutation = useSafeMutation({
     mutationFn: (body) => updateRecipeForChef(id, body)
@@ -71,7 +71,6 @@ export default function EditRecipe() {
       delete data.image
     }
 
-    console.log(data)
 
     var formData = new FormData()
 
@@ -86,16 +85,15 @@ export default function EditRecipe() {
     }
 
     editRecipeMutation.mutate(formData, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         toast.success('Chỉnh sửa bài viết thành công')
         handleCloseEdit()
         queryClient.invalidateQueries({
           queryKey: ['recipe-info']
         })
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Chỉnh sửa bài viết thất bại')
       }
     })
   })

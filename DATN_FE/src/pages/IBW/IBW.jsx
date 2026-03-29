@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaIBW } from '../../utils/rules'
 import { useContext, useState } from 'react'
-import { } from '@tanstack/react-query'
+
 import { calculateIBW, saveIBWData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -42,7 +42,6 @@ export default function IBW() {
 
   const onSubmit = handleSubmit((data) => {
 
-    console.log(data)
     setDataIBW(data)
     calculateIBWMutation.mutate(data, {
       onSuccess: (res) => {
@@ -57,7 +56,7 @@ export default function IBW() {
           }
         })
       },
-      onError: () => { console.log('error') }
+      onError: () => { toast.error('Có lỗi xảy ra khi tính IBW') }
     })
   })
   return (

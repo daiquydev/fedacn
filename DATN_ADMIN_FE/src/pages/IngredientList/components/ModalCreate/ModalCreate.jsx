@@ -37,15 +37,13 @@ export default function ModalCreate({ handleCloseModalCreate }) {
     mutationFn: (body) => createIngredientsForWritter(body)
   })
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     createIngredientMutation.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         handleCloseModalCreate()
         toast.success('Tạo nguyên liệu thành công')
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Tạo nguyên liệu thất bại')
       }
     })
   })

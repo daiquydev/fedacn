@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form'
 import { schemaWaterPerDay } from '../../utils/rules'
 import { useContext, useState } from 'react'
 import { calculateWaterIntake } from '../../apis/calculatorApi'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -43,17 +43,15 @@ export default function WaterPerDay() {
 
   const [dataWater, setDataWater] = useState({})
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     setDataWater(data)
     calculateWaterMutation.mutate(data, {
       onSuccess: (data) => {
-        console.log(data)
         handleOpenModal()
         setDataWater((prev) => ({ ...prev, water: data.data.result }))
         toast.success('Tính toán lượng nước cần uống thành công')
       },
       onError: () => {
-        console.log('error')
+        toast.error('Có lỗi xảy ra khi tính lượng nước')
       }
     })
   })
@@ -305,7 +303,7 @@ export default function WaterPerDay() {
             closeModal={handleCloseModal}
             title='Lượng nước cần uống mỗi ngày'
             helptext='Lưu ý: Đây chỉ là một con số ước lượng, bạn cần tư vấn thêm từ chuyên gia dinh dưỡng để có lượng nước cần uống chính xác.'
-            isPending={calculateWaterMutation.isLoading}
+            isPending={calculateWaterMutation.isPending}
             data={calculateWaterMutation.data}
             unit='lít'
           />

@@ -12,8 +12,6 @@ import { queryClient } from '../../../../main'
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
 export default function ModalCreateWritter({ handleCloseModal }) {
-  // name, email, user_name, role
-
   const {
     register,
     handleSubmit,
@@ -28,14 +26,12 @@ export default function ModalCreateWritter({ handleCloseModal }) {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     const body = {
       ...data,
       role: 3
     }
     registerAccountMutation.mutate(body, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         toast.success('Tạo người viết bài thành công')
         handleCloseModal()
         queryClient.invalidateQueries({

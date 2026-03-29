@@ -6,6 +6,7 @@ import { IoIosFitness } from 'react-icons/io';
 import moment from 'moment';
 import toast from 'react-hot-toast';
 import { getJoinedEvents } from '../../../apis/sportEventApi';
+import DeleteConfirmBox from '../../../components/GlobalComponents/DeleteConfirmBox';
 
 const getCategoryIcon = (category) => {
   switch (category?.toLowerCase()) {
@@ -65,8 +66,6 @@ export default function JoinedEvents() {
 
   const handleLeaveEvent = () => {
     if (!eventToLeave) return;
-
-    console.log(`Leaving event ${eventToLeave.id}...`);
 
     const eventIndex = allSportEvents.findIndex(e => e.id === eventToLeave.id);
     if (eventIndex !== -1) {
@@ -199,28 +198,13 @@ export default function JoinedEvents() {
       )}
 
       {showConfirmLeave && eventToLeave && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full">
-            <h3 className="text-lg font-semibold mb-4">Xác nhận Rời khỏi Sự kiện</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Bạn có chắc chắn muốn rời khỏi sự kiện "<span className="font-medium">{eventToLeave.name}</span>" không?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowConfirmLeave(false)}
-                className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLeaveEvent}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Xác nhận Rời
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmBox
+          title='Xác nhận Rời khỏi Sự kiện'
+          subtitle={<>Bạn có chắc chắn muốn rời khỏi sự kiện "<span className="font-medium">{eventToLeave.name}</span>" không?</>}
+          handleDelete={handleLeaveEvent}
+          closeModal={() => setShowConfirmLeave(false)}
+          tilteButton='Xác nhận Rời'
+        />
       )}
     </div>
   );

@@ -366,9 +366,8 @@ export default function RecipeDetail() {
                           }
                         }))}
                         servings={1}
-                        onServingsChange={(newServings) => {
+                        onServingsChange={() => {
                           // Handle servings change if needed
-                          console.log('New servings:', newServings);
                         }}
                       />
                     </div>
@@ -385,8 +384,7 @@ export default function RecipeDetail() {
                           instructions={recipe?.content?.split('\n').filter((line) => line.trim()) || []}
                           cookingTime={recipe?.time || 0}
                           prepTime={5} // Default prep time
-                          onStepComplete={(stepIndex, isCompleted) => {
-                            console.log(`Step ${stepIndex + 1} ${isCompleted ? 'completed' : 'uncompleted'}`)
+                          onStepComplete={() => {
                           }}
                           autoTimer={true}
                         />

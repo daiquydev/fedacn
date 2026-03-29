@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaBMI } from '../../utils/rules'
 import { useContext, useState } from 'react'
-import { } from '@tanstack/react-query'
+
 import { calculateBMI, saveBMIData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -47,7 +47,6 @@ export default function BMI() {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     const newData = { ...data, height: convertCentimeterToMeter(data.height) }
     setDataBMI(newData)
     setFormValues({ weight: data.weight, height: data.height })
@@ -64,7 +63,7 @@ export default function BMI() {
           }
         })
       },
-      onError: () => { console.log('error') }
+      onError: () => { toast.error('Có lỗi xảy ra khi tính BMI') }
     })
   })
 

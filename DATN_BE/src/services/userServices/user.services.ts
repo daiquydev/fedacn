@@ -25,8 +25,7 @@ import UserModel from '~/models/schemas/user.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import WorkoutScheduleModel from '~/models/schemas/workoutSchedule.schema'
-import HabitChallengeParticipantModel from '~/models/schemas/habitChallengeParticipant.schema'
-import HabitChallengeModel from '~/models/schemas/habitChallenge.schema'
+
 import { comparePassword, hashPassword } from '~/utils/crypto'
 
 import { ErrorWithStatus } from '~/utils/error'
@@ -946,9 +945,7 @@ class UsersService {
       joinedEventsCount,
       recentEvents,
       workoutSchedules,
-      totalKcalResult,
-      challengeParticipations,
-      recentChallenges
+      totalKcalResult
     ] = await Promise.all([
       // Count sport events user has joined
       SportEventModel.countDocuments({
@@ -970,25 +967,7 @@ class UsersService {
       SportEventProgressModel.aggregate([
         { $match: { userId: userId } },
         { $group: { _id: null, totalKcal: { $sum: '$calories' } } }
-      ]),
-      // Active habit challenge participations count
-      HabitChallengeParticipantModel.countDocuments({
-        user_id: userId,
-        status: 'in_progress'
-      }),
-      // Recent 3 habit challenges user is participating in
-      HabitChallengeParticipantModel.find({ user_id: userId })
-        .sort({ joined_at: -1 })
-        .limit(3)
-        .select('challenge_id')
-        .lean()
-        .then(async (participants) => {
-          if (!participants.length) return []
-          const challengeIds = participants.map((p) => p.challenge_id)
-          return HabitChallengeModel.find({ _id: { $in: challengeIds } })
-            .select('title description habitType frequency startDate endDate')
-            .lean()
-        })
+      ])
     ])
 
     // Sum kcal from workout schedules total_calo_burn
@@ -1009,9 +988,9 @@ class UsersService {
         schedules_count: workoutSchedules,
         total_kcal: workoutKcal
       },
-      challenges: {
-        active_count: challengeParticipations,
-        recent: recentChallenges
+      trainings: {
+        active_count: 0,
+        recent: []
       },
       total_kcal_burned: sportKcal + workoutKcal
     }

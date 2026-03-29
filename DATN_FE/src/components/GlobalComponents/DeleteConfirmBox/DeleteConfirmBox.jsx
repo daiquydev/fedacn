@@ -2,7 +2,7 @@ import { IoIosWarning } from 'react-icons/io'
 import Loading from '../Loading'
 import ModalLayout from '../../../layouts/ModalLayout'
 
-export default function DeleteConfirmBox({ title, subtitle, type = 'submit', handleDelete, closeModal, isPending }) {
+export default function DeleteConfirmBox({ title, subtitle, type = 'submit', handleDelete, closeModal, isPending, tilteButton = 'Xóa', danger = true }) {
   return (
     <ModalLayout closeModal={closeModal} title={title} icon={IoIosWarning} size='sm'>
       <div className='p-5'>
@@ -26,9 +26,13 @@ export default function DeleteConfirmBox({ title, subtitle, type = 'submit', han
             <button
               type={type}
               onClick={handleDelete}
-              className='px-5 py-2 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 transition-all duration-300 shadow-lg shadow-red-500/20'
+              className={`px-5 py-2 rounded-xl font-bold text-white text-sm transition-all duration-300 shadow-lg ${
+                danger
+                  ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/20'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/20'
+              }`}
             >
-              Xóa
+              {tilteButton}
             </button>
           )}
         </div>

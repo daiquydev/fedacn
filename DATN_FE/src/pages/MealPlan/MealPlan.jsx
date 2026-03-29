@@ -96,8 +96,7 @@ export default function MealPlan() {
     setShowCreateRecipeModal(false)
   }
 
-  const handleRecipeCreated = (newRecipe) => {
-    console.log('Recipe created:', newRecipe)
+  const handleRecipeCreated = () => {
     // Optionally refresh meal plans or show success message
   }
 

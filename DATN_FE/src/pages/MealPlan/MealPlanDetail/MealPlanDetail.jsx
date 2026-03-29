@@ -765,7 +765,7 @@ export default function MealPlanDetail() {
                 </div>
                 <div className="flex items-center">
                   <img
-                    src={mealPlan.author.avatar}
+                    src={getImageUrl(mealPlan.author.avatar)}
                     alt={mealPlan.author.name}
                     className="w-8 h-8 rounded-full mr-2"
                   />

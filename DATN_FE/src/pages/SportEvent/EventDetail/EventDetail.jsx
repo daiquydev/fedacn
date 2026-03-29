@@ -8,6 +8,8 @@ import {
 import { MdSportsSoccer, MdLeaderboard } from 'react-icons/md'
 import moment from 'moment'
 import { getSportEvent, joinSportEvent, leaveSportEvent, getUserProgress, getLeaderboard } from '../../../apis/sportEventApi'
+import { getImageUrl } from '../../../utils/imageUrl'
+import useravatar from '../../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
 
 export default function EventDetail() {
@@ -33,13 +35,8 @@ export default function EventDetail() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🔍 Fetching event with ID:', id)
-
       const response = await getSportEvent(id)
-      console.log('📦 Full Response:', response)
-      console.log('📦 Response keys:', Object.keys(response))
-      console.log('📦 Response.data:', response.data)
-      console.log('📦 Response.data?.result:', response.data?.result)
+
 
       let eventData = response.data?.result
 
@@ -49,8 +46,7 @@ export default function EventDetail() {
         eventData = response.result || response.data
       }
 
-      console.log('📍 EventData:', eventData)
-      console.log('📍 EventData._id:', eventData?._id)
+
 
       if (!eventData || !eventData._id) {
         setError('Sự kiện không tồn tại.')
@@ -74,7 +70,7 @@ export default function EventDetail() {
       const response = await getUserProgress(id)
       setMyProgress(response.data?.result || null)
     } catch (err) {
-      console.log('Could not fetch user progress (may not be participant)')
+      // User may not be a participant — ignore silently
     }
   }
 
@@ -85,7 +81,7 @@ export default function EventDetail() {
       const response = await getLeaderboard(id)
       setLeaderboardData(response.data?.result?.leaderboard || [])
     } catch (err) {
-      console.log('Could not fetch leaderboard')
+      // Leaderboard may not be available yet
     } finally {
       setProgressLoading(false)
     }
@@ -394,7 +390,7 @@ export default function EventDetail() {
                       <div className="flex items-center mt-1">
                         {event.createdBy?.avatar && (
                           <img
-                            src={event.createdBy.avatar}
+                            src={getImageUrl(event.createdBy.avatar) || useravatar}
                             alt={event.createdBy.name}
                             className="w-8 h-8 rounded-full mr-2"
                           />
@@ -420,7 +416,7 @@ export default function EventDetail() {
                         <div key={participant._id} className="flex items-center">
                           {participant.avatar && (
                             <img
-                              src={participant.avatar}
+                              src={getImageUrl(participant.avatar) || useravatar}
                               alt={participant.name}
                               className="w-8 h-8 rounded-full mr-2"
                             />
@@ -513,13 +509,13 @@ export default function EventDetail() {
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-500 dark:text-gray-400">Đã đạt</span>
                           <span className="font-bold text-gray-900 dark:text-white">
-                            {myTotalProgress.toFixed(1)} {event.targetUnit}
+                            {myTotalProgress.toFixed(2)} {event.targetUnit}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-500 dark:text-gray-400">Mục tiêu cá nhân</span>
                           <span className="font-bold text-gray-900 dark:text-white">
-                            {perPersonTarget.toFixed(1)} {event.targetUnit}
+                            {perPersonTarget.toFixed(2)} {event.targetUnit}
                           </span>
                         </div>
                         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
@@ -622,7 +618,7 @@ export default function EventDetail() {
                                 {index >= 3 && <span className="text-sm font-bold text-gray-500 dark:text-gray-400">{index + 1}</span>}
                               </div>
                               <img
-                                src={entry.avatar || 'https://via.placeholder.com/32'}
+                                src={entry.avatar ? getImageUrl(entry.avatar) : useravatar}
                                 alt={entry.name}
                                 className="w-7 h-7 rounded-full mr-2 flex-shrink-0"
                               />
@@ -630,7 +626,7 @@ export default function EventDetail() {
                             </div>
                             <div className="flex flex-col items-end ml-2 flex-shrink-0">
                               <span className="text-xs font-bold text-green-600 dark:text-green-400">
-                                {entry.totalProgress?.toFixed(1)} {event.targetUnit}
+                                {entry.totalProgress?.toFixed(2)} {event.targetUnit}
                               </span>
                               {event.targetValue > 0 && (
                                 <div className="flex items-center gap-1 mt-0.5">

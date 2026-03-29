@@ -20,7 +20,6 @@ export default function AlbumList() {
     },
     placeholderData: keepPreviousData
   })
-  console.log(data)
 
   const handleChangeSort = (e) => {
     navigate({

@@ -18,7 +18,6 @@ export default function ReportDetail() {
     placeholderData: keepPreviousData
   })
 
-  console.log(data)
   return (
     <div>
       {isLoading ? (

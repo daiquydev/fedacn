@@ -32,11 +32,10 @@ export default function UserAvatar() {
       onSuccess: (data) => {
         setIsAuthenticated(false)
         setProfile(null)
-        console.log(data.data.message)
         toast.success(data.data.message)
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Đăng xuất thất bại')
       }
     })
   }

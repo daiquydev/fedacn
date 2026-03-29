@@ -133,8 +133,7 @@ export default function CreateItemSchedule({ meal }) {
     // call api add activity
 
     createMealItemMutation.mutate(arrayMealItems, {
-      onSuccess: async (data) => {
-        console.log(data)
+      onSuccess: async () => {
         toast.success('Thêm hoạt động thành công')
         setMealState([])
         await Promise.all([
@@ -147,7 +146,7 @@ export default function CreateItemSchedule({ meal }) {
         ])
       },
       onError: () => {
-        console.log('error')
+        toast.error('Lỗi khi thêm món ăn')
       }
     })
   }
@@ -481,10 +480,9 @@ const IngredientItem = ({ ingredient, setMealState }) => {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     // newQuantity là bằng quantity / 100 và chuyển đổi thành số thập phân
     const newQuantity = parseFloat(data.quantity) / 100
-    console.log(newQuantity)
+
 
     const dataWithId = {
       id: uuidv4(),
@@ -496,7 +494,6 @@ const IngredientItem = ({ ingredient, setMealState }) => {
       fat: parseFloat((ingredient.fat * newQuantity).toFixed(1)),
       carb: parseFloat((ingredient.carbohydrate * newQuantity).toFixed(1))
     }
-    console.log(dataWithId)
 
     setMealState((prev) => [...prev, dataWithId])
     setOpenModal(false)

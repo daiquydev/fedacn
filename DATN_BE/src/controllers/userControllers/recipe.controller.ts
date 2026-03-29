@@ -413,9 +413,6 @@ export const createRecipeController = async (req: Request, res: Response) => {
     const parsedTags = safeParseArrayPayload(tags)
     const normalizedInstructions = normalizeInstructionPayload(instructions)
 
-    console.log('🔍 DEBUG - Instructions received:', instructions)
-    console.log('🔍 DEBUG - Normalized instructions:', normalizedInstructions)
-
     if (normalizedInstructions.length === 0) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         message: RECIPE_MESSAGE.INSTRUCTIONS_REQUIRED
@@ -459,8 +456,6 @@ export const createRecipeController = async (req: Request, res: Response) => {
       fat: Number(fat) || 0,
       carbohydrate: Number(carbohydrate) || 0
     }
-
-    console.log('🔍 DEBUG - Recipe data being saved:', JSON.stringify(recipeData, null, 2))
 
     const result = await recipeService.createRecipeForUserService(recipeData)
 

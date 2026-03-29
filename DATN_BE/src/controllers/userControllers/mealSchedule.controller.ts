@@ -72,7 +72,6 @@ export const updateMealScheduleController = async (req: Request, res: Response) 
 
 export const createMealItemsController = async (req: Request, res: Response) => {
   const arrayMealItems = req.body
-  console.log(arrayMealItems)
   const user = req.decoded_authorization as TokenPayload
   const result = await mealScheduleServices.createMealScheduleItemService({
     arrayMealItems: arrayMealItems.map(

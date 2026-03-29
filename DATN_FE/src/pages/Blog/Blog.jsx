@@ -23,20 +23,12 @@ export default function Blog() {
   const fetchBlog = async ({ pageParam }) => {
     return await getBlogsForUser({ page: pageParam, ...queryConfig })
   }
-  // const { data: blogData, isFetching } = useQuery({
-  //   queryKey: ['blogs-list-user', queryConfig],
-  //   queryFn: () => {
-  //     return getBlogsForUser(queryConfig)
-  //   },
-  //   placeholderData: keepPreviousData,
-  //,
 
   const { data, fetchNextPage, isFetchingNextPage, hasNextPage, isLoading } = useInfiniteQuery({
     queryKey: ['blogs-list-user', queryConfig],
     queryFn: fetchBlog,
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      // const nextPage = lastPage.data.result.blogs.length ? allPages.length + 1 : undefined
       const nextPage = lastPage.data.result.page + 1
       if (nextPage > lastPage.data.result.totalPage) return undefined
       return nextPage
@@ -54,9 +46,7 @@ export default function Blog() {
     })
   }
 
-  // viết hàm lấy id category từ các thẻ input radio mỗi khi click vào
   const handleClickCategory = (e) => {
-    console.log(e.target.id)
     if (e.target.id === 'tat-ca') {
       navigate({
         pathname: '/blog',

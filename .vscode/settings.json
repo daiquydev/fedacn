@@ -1,5 +1,5 @@
 {
-    "workbench.preferredDarkColorTheme": "Default Light+",
+    "workbench.preferredDarkColorTheme": "Light+",
     "editor.allowVariableFontsInAccessibilityMode": true,
     "editor.autoClosingBrackets": "languageDefined",
     "editor.codeActions.triggerOnFocusChange": true,
@@ -11,7 +11,7 @@
     "editor.experimental.preferTreeSitter.regex": true,
     "editor.experimental.preferTreeSitter.ini": true,
     "editor.experimental.preferTreeSitter.css": true,
-    "editor.experimentalGpuAcceleration": "on",
+    "editor.experimentalGpuAcceleration": "off",
     "agCockpit.criticalThreshold": 30,
     "agCockpit.refreshInterval": 2000
 }

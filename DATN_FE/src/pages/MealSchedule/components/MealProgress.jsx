@@ -1,52 +1,84 @@
 import { useState, useEffect } from 'react';
 import { FaChartLine, FaCalendarCheck, FaFire, FaRegCalendarAlt, FaCheckCircle, FaTrophy } from 'react-icons/fa';
+import { getMealSchedules } from '../../../apis/mealScheduleApi';
 
 export default function MealProgress({ mealPlanId }) {
   const [loading, setLoading] = useState(true);
   const [progressData, setProgressData] = useState(null);
   const [selectedTab, setSelectedTab] = useState('overview');
 
-  // Mô phỏng fetch dữ liệu
+  // Lấy dữ liệu tiến độ từ database
   useEffect(() => {
-    setTimeout(() => {
-      // Mock progress data
-      const mockProgressData = {
-        overview: {
-          planName: 'Thực đơn giảm cân 7 ngày',
-          startDate: '2025-05-01T00:00:00Z',
-          endDate: '2025-05-07T23:59:59Z',
-          completedDays: 4,
-          totalDays: 7,
-          completionRate: 57,
-          totalCaloriesBurned: 4250,
-          averageCompletion: 85
-        },
-        weeklyData: [
-          { day: 'T5', date: '01/05', completion: 100, calories: 1430 },
-          { day: 'T6', date: '02/05', completion: 90, calories: 1380 },
-          { day: 'T7', date: '03/05', completion: 75, calories: 1400 },
-          { day: 'CN', date: '04/05', completion: 80, calories: 1410 },
-          { day: 'T2', date: '05/05', completion: 0, calories: 1450 },
-          { day: 'T3', date: '06/05', completion: 0, calories: 1420 },
-          { day: 'T4', date: '07/05', completion: 0, calories: 1400 }
-        ],
-        achievements: [
-          { id: 1, title: 'Ngày đầu tiên', description: 'Hoàn thành ngày đầu tiên của kế hoạch', achieved: true, date: '2024-01-10T20:15:30Z' },
-          { id: 2, title: 'Liên tiếp 3 ngày', description: 'Hoàn thành các bữa ăn trong 3 ngày liên tiếp', achieved: true, date: '2024-01-12T21:30:45Z' },
-          { id: 3, title: 'Nửa chặng đường', description: 'Hoàn thành một nửa kế hoạch', achieved: false, date: null },
-          { id: 4, title: 'Hoàn thành', description: 'Hoàn thành toàn bộ kế hoạch ăn uống', achieved: false, date: null }
-        ],
-        mealTypeCompletion: {
-          Sáng: 90,
-          Trưa: 85,
-          Tối: 70,
-          Snack: 60
+    const fetchProgress = async () => {
+      try {
+        setLoading(true);
+        if (!mealPlanId) {
+          setLoading(false);
+          return;
         }
-      };
 
-      setProgressData(mockProgressData);
-      setLoading(false);
-    }, 800);
+        const response = await getMealSchedules(mealPlanId);
+        const plan = response?.data?.result || {};
+
+        const startDate = plan.start_date || plan.startDate || new Date().toISOString();
+        const endDate = plan.end_date || plan.endDate || new Date().toISOString();
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const now = new Date();
+        const daysPassed = Math.max(0, Math.ceil((now - start) / (1000 * 60 * 60 * 24)));
+        const completedDays = Math.min(daysPassed, totalDays);
+        const completionRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+        // Build weekly data from plan
+        const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const weeklyData = [];
+        for (let i = 0; i < Math.min(totalDays, 7); i++) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          const isPast = d < now;
+          weeklyData.push({
+            day: dayNames[d.getDay()],
+            date: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+            completion: isPast ? (plan.daily_completion?.[i] || 0) : 0,
+            calories: plan.daily_calories?.[i] || plan.weight_target || 0
+          });
+        }
+
+        setProgressData({
+          overview: {
+            planName: plan.name || plan.title || 'Thực đơn',
+            startDate,
+            endDate,
+            completedDays,
+            totalDays,
+            completionRate,
+            totalCaloriesBurned: plan.total_calories_consumed || 0,
+            averageCompletion: plan.average_completion || completionRate
+          },
+          weeklyData: weeklyData.length > 0 ? weeklyData : dayNames.map(d => ({ day: d, date: '', completion: 0, calories: 0 })),
+          achievements: [
+            { id: 1, title: 'Ngày đầu tiên', description: 'Hoàn thành ngày đầu tiên của kế hoạch', achieved: completedDays >= 1, date: completedDays >= 1 ? start.toISOString() : null },
+            { id: 2, title: 'Liên tiếp 3 ngày', description: 'Hoàn thành các bữa ăn trong 3 ngày liên tiếp', achieved: completedDays >= 3, date: completedDays >= 3 ? new Date(start.getTime() + 2 * 86400000).toISOString() : null },
+            { id: 3, title: 'Nửa chặng đường', description: 'Hoàn thành một nửa kế hoạch', achieved: completedDays >= totalDays / 2, date: null },
+            { id: 4, title: 'Hoàn thành', description: 'Hoàn thành toàn bộ kế hoạch ăn uống', achieved: completedDays >= totalDays, date: null }
+          ],
+          mealTypeCompletion: {
+            Sáng: plan.meal_type_completion?.morning || 0,
+            Trưa: plan.meal_type_completion?.lunch || 0,
+            Tối: plan.meal_type_completion?.evening || 0,
+            Snack: plan.meal_type_completion?.snack || 0
+          }
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải tiến độ:', error);
+        setProgressData(null);
+        setLoading(false);
+      }
+    };
+
+    fetchProgress();
   }, [mealPlanId]);
 
   if (loading) {

@@ -5,7 +5,8 @@ import {
     completeActivityController,
     discardActivityController,
     getActivityController,
-    getUserActivitiesController
+    getUserActivitiesController,
+    softDeleteActivityController
 } from '~/controllers/userControllers/activityTracking.controller'
 import { verifyToken } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -19,5 +20,6 @@ activityTrackingRouter.get('/:id', verifyToken, wrapRequestHandler(getActivityCo
 activityTrackingRouter.put('/:id', verifyToken, wrapRequestHandler(updateActivityController))
 activityTrackingRouter.post('/:id/complete', verifyToken, wrapRequestHandler(completeActivityController))
 activityTrackingRouter.post('/:id/discard', verifyToken, wrapRequestHandler(discardActivityController))
+activityTrackingRouter.patch('/:id/soft-delete', verifyToken, wrapRequestHandler(softDeleteActivityController))
 
 export default activityTrackingRouter

@@ -11,7 +11,7 @@ import { schemaCreateBlog } from '../../utils/rules'
 import { useQuery } from '@tanstack/react-query'
 import { getBlogForChef, getCategoryBlogs, updateBlogForChef } from '../../apis/blogApi'
 import Loading from '../../components/GlobalComponents/Loading'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -58,18 +58,16 @@ export default function EditBlog() {
     mutationFn: (body) => updateBlogForChef(id, body)
   })
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     editBlogMutation.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         toast.success('Chỉnh sửa bài viết thành công')
         handleCloseEdit()
         queryClient.invalidateQueries({
           queryKey: ['blog-info']
         })
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Chỉnh sửa bài viết thất bại')
       }
     })
   })

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaSearch, FaFilter, FaHeart, FaBookmark, FaEllipsisV, FaEdit, FaTrash, FaShare, FaRegCalendarAlt, FaUtensils, FaFire, FaCheck } from 'react-icons/fa';
+import { getListMealSchedules, deleteMealSchedule } from '../../apis/mealScheduleApi';
 
 export default function MealPlanManagement() {
   const navigate = useNavigate();
@@ -10,91 +11,56 @@ export default function MealPlanManagement() {
   const [filterType, setFilterType] = useState('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
-  // Mô phỏng fetch dữ liệu
+  // Lấy danh sách thực đơn từ database
   useEffect(() => {
-    setTimeout(() => {
-      const mockMealPlans = [
-        {
-          id: 1,
-          title: 'Thực đơn giảm cân 7 ngày',
-          description: 'Thực đơn giảm cân lành mạnh với nhiều protein và ít carb để hỗ trợ giảm cân nhanh chóng',
-          image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-          type: 'Giảm cân',
-          duration: 7,
-          totalCalories: 1430,
-          author: 'Jane Fitness',
-          authorId: 101,
-          authorAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-          createdAt: '2024-01-05T12:30:00Z',
-          bookmarked: true,
-          likes: 342,
-          active: true,
-          progress: 40,
-          daysCompleted: 4,
-          startDate: '2024-01-10T00:00:00Z'
-        },
-        {
-          id: 2,
-          title: 'Thực đơn tăng cơ 14 ngày',
-          description: 'Thực đơn giàu protein với lượng calo cao giúp tăng cơ hiệu quả kết hợp với tập luyện',
-          image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
-          type: 'Tăng cơ',
-          duration: 14,
-          totalCalories: 2100,
-          author: 'Alex Strength',
-          authorId: 102,
-          authorAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-          createdAt: '2023-12-20T10:15:00Z',
-          bookmarked: false,
-          likes: 256,
-          active: false,
-          progress: 0,
-          daysCompleted: 0,
-          startDate: null
-        },
-        {
-          id: 3,
-          title: 'Thực đơn Keto 30 ngày',
-          description: 'Thực đơn ít carb, giàu chất béo lành mạnh theo phương pháp Keto giúp đốt mỡ nhanh',
-          image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061',
-          type: 'Keto',
-          duration: 30,
-          totalCalories: 1800,
-          author: 'Maria Nutrition',
-          authorId: 103,
-          authorAvatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-          createdAt: '2023-11-15T09:45:00Z',
-          bookmarked: true,
-          likes: 528,
-          active: false,
-          progress: 0,
-          daysCompleted: 0,
-          startDate: null
-        },
-        {
-          id: 4,
-          title: 'Thực đơn ăn sạch 21 ngày',
-          description: 'Thực đơn lành mạnh với thực phẩm tự nhiên, không chế biến sẵn giúp detox cơ thể',
-          image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
-          type: 'Ăn sạch',
-          duration: 21,
-          totalCalories: 1650,
-          author: 'Tom Healthy',
-          authorId: 104,
-          authorAvatar: 'https://randomuser.me/api/portraits/men/22.jpg',
-          createdAt: '2023-12-05T11:20:00Z',
-          bookmarked: false,
-          likes: 312,
-          active: false,
-          progress: 0,
-          daysCompleted: 0,
-          startDate: null
-        }
-      ];
+    const fetchMealPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await getListMealSchedules({ page: 1, limit: 50 });
+        const schedules = response?.data?.result?.meal_schedules || response?.data?.result || [];
 
-      setMealPlans(mockMealPlans);
-      setLoading(false);
-    }, 800);
+        const plans = schedules.map(schedule => {
+          const startDate = schedule.start_date || schedule.startDate;
+          const endDate = schedule.end_date || schedule.endDate;
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          const now = new Date();
+          const isActive = now >= start && now <= end;
+          const daysPassed = Math.max(0, Math.ceil((now - start) / (1000 * 60 * 60 * 24)));
+          const progress = isActive && totalDays > 0 ? Math.min(Math.round((daysPassed / totalDays) * 100), 100) : 0;
+
+          return {
+            id: schedule._id || schedule.id,
+            title: schedule.name || schedule.title || 'Thực đơn',
+            description: schedule.description || '',
+            image: schedule.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+            type: schedule.purpose === 0 ? 'Giảm cân' : schedule.purpose === 1 ? 'Tăng cơ' : schedule.purpose === 2 ? 'Keto' : 'Ăn sạch',
+            duration: totalDays,
+            totalCalories: schedule.weight_target || 0,
+            author: schedule.user_id?.name || '',
+            authorId: schedule.user_id?._id || '',
+            authorAvatar: schedule.user_id?.avatar || '',
+            createdAt: schedule.created_at || schedule.createdAt || '',
+            bookmarked: schedule.is_bookmarked || false,
+            likes: schedule.like_count || 0,
+            active: isActive,
+            progress: progress,
+            daysCompleted: Math.min(daysPassed, totalDays),
+            startDate: startDate
+          };
+        });
+
+        setMealPlans(plans);
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách thực đơn:', error);
+        setMealPlans([]);
+        setLoading(false);
+      }
+    };
+
+    fetchMealPlans();
   }, []);
 
   // Filter meal plans based on search query and filter type

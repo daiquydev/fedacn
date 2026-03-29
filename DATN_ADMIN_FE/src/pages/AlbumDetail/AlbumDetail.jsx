@@ -33,8 +33,6 @@ export default function AlbumDetail() {
     placeholderData: keepPreviousData
   })
 
-  console.log(recipeData)
-
   return (
     <div className='h-full mb-[30rem] text-gray-900 dark:text-white py-4 mx-3'>
       <div className='mx-2'>

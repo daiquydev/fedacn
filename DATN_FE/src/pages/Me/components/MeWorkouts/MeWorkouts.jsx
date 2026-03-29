@@ -92,7 +92,7 @@ export default function MeWorkouts({ isOwner = true }) {
         {isOwner && (
           <>
             <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tạo lịch bài tập để theo dõi tiến trình!</p>
-            <Link to='/challenge' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+            <Link to='/training' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
               Tạo lịch tập <FaArrowRight />
             </Link>
           </>

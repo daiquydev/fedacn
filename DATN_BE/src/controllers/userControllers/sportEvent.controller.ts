@@ -51,8 +51,6 @@ export const createSportEventController = async (req: Request, res: Response) =>
   try {
     const { name, description, detailedDescription, category, startDate, endDate, location, maxParticipants, image, eventType, targetValue, targetUnit, requirements, benefits } = req.body
     const decoded = (req as any).decoded
-    console.log('📋 Create Sport Event - Decoded token:', { user_id: decoded?.user_id, role: decoded?.role })
-
     const userId = decoded?.user_id
 
     if (!userId) {

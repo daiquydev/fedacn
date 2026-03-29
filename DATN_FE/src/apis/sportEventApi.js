@@ -164,3 +164,11 @@ export const getActiveVideoSession = (eventId) =>
 // Get aggregate stats (totalSessions, totalActiveSeconds, totalCalories)
 export const getVideoSessionStats = (eventId) =>
     http.get(`/sport-events/${eventId}/video-sessions/stats`)
+
+// Soft-delete activity (outdoor)
+export const softDeleteActivity = (eventId, activityId) =>
+    http.patch(`/sport-events/${eventId}/activities/${activityId}/soft-delete`)
+
+// Soft-delete video session (indoor)
+export const softDeleteVideoSession = (eventId, vsId) =>
+    http.patch(`/sport-events/${eventId}/video-sessions/${vsId}/soft-delete`)

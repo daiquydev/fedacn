@@ -4,12 +4,13 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FaCheckCircle, FaUserPlus, FaUserCheck } from 'react-icons/fa'
-import { MdArticle, MdSportsSoccer, MdFitnessCenter, MdFlag } from 'react-icons/md'
+import { MdArticle, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md'
 import { HiClock } from 'react-icons/hi'
 import toast from 'react-hot-toast'
 
 import useravatar from '../../assets/images/useravatar.jpg'
 import avatarbg from '../../assets/images/avatarbg.jpg'
+import { getImageUrl } from '../../utils/imageUrl'
 import { followUser, getProfile, unfollowUser } from '../../apis/userApi'
 import { queryClient } from '../../main'
 import { AppContext } from '../../contexts/app.context'
@@ -20,13 +21,12 @@ import Loading from '../../components/GlobalComponents/Loading'
 const UserPost = lazy(() => import('./components/UserPost/UserPost'))
 const MeSportEvents = lazy(() => import('../Me/components/MeSportEvents/MeSportEvents'))
 const MeWorkouts = lazy(() => import('../Me/components/MeWorkouts/MeWorkouts'))
-const MeChallenges = lazy(() => import('../Me/components/MeChallenges/MeChallenges'))
+
 
 const TABS = [
   { key: 'posts', label: 'Bài viết', icon: MdArticle },
   { key: 'sports', label: 'Thể thao', icon: MdSportsSoccer },
-  { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter },
-  { key: 'challenges', label: 'Thử thách', icon: MdFlag }
+  { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter }
 ]
 
 const fadeInUp = {
@@ -125,8 +125,6 @@ export default function UserProfile() {
         return <MeSportEvents />
       case 'workouts':
         return <MeWorkouts isOwner={false} />
-      case 'challenges':
-        return <MeChallenges />
       default:
         return <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />
     }
@@ -195,7 +193,7 @@ export default function UserProfile() {
             animate={{ scale: 1 }}
             transition={{ duration: 1.5 }}
             alt='cover background'
-            src={profileOwner?.cover_avatar ? profileOwner.cover_avatar : avatarbg}
+            src={profileOwner?.cover_avatar ? getImageUrl(profileOwner.cover_avatar) : avatarbg}
             className='w-full h-full object-cover filter brightness-[0.8]'
           />
           <div className='absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70' />
@@ -216,7 +214,7 @@ export default function UserProfile() {
             >
               <img
                 className='h-full w-full object-cover'
-                src={profileOwner?.avatar ? profileOwner.avatar : useravatar}
+                src={profileOwner?.avatar ? getImageUrl(profileOwner.avatar) : useravatar}
                 alt='avatar'
               />
             </motion.div>
@@ -279,11 +277,10 @@ export default function UserProfile() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200 rounded-lg mx-0.5 ${
-                    isActive
-                      ? 'text-emerald-700 dark:text-emerald-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                  }`}
+                  className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200 rounded-lg mx-0.5 ${isActive
+                    ? 'text-emerald-700 dark:text-emerald-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                    }`}
                 >
                   <Icon className={`text-lg ${isActive ? 'text-emerald-600 dark:text-emerald-400' : ''}`} />
                   <span>{tab.label}</span>

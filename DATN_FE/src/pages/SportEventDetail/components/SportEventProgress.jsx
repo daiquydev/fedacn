@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart,
   Bar,
@@ -9,7 +9,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell
+  Cell,
+  LabelList
 } from 'recharts'
 import {
   FaFire,
@@ -17,16 +18,22 @@ import {
   FaClock,
   FaTrophy,
   FaRunning,
-  FaWalking,
-  FaBicycle,
   FaMapMarkerAlt,
-  FaShareAlt
+  FaShareAlt,
+  FaBolt,
+  FaChartLine,
+  FaTrash
 } from 'react-icons/fa'
 import { MdOutlineHistoryEdu } from 'react-icons/md'
 import moment from 'moment'
-import { getUserActivities } from '../../../apis/sportEventApi'
+import toast from 'react-hot-toast'
+import { getUserActivities, softDeleteActivity } from '../../../apis/sportEventApi'
+import sportCategoryApi from '../../../apis/sportCategoryApi'
+import { getSportIcon } from '../../../utils/sportIcons'
 import ActivityShareModal from '../../../components/SportEvent/ActivityShareModal'
-import { ActivityRings } from '../../../components/SportEvent/ProgressRing'
+import ActivityDetailModal from '../../../components/SportEvent/ActivityDetailModal'
+import ProgressRing from '../../../components/SportEvent/ProgressRing'
+import TimeRangeDropdown from '../../../components/SportEvent/TimeRangeDropdown'
 
 // Simple stat card — now clickable to select chart metric
 const StatCard = ({ icon, label, value, subValue, colorClass, isActive, onClick }) => (
@@ -49,35 +56,43 @@ const StatCard = ({ icon, label, value, subValue, colorClass, isActive, onClick 
   </div>
 )
 
-const TIME_FILTERS = [
-  { key: '1d', label: '1 ngày' },
-  { key: '7d', label: '7 ngày' },
-  { key: '1m', label: '1 tháng' },
-  { key: '6m', label: '6 tháng' },
-  { key: '1y', label: '1 năm' },
-  { key: 'all', label: 'Tất cả' }
-]
+const FILTER_LABELS = {
+  '24h': '24 giờ gần nhất',
+  '7d': '7 ngày gần nhất',
+  '1m': '1 tháng gần nhất',
+  '6m': '6 tháng gần nhất',
+  '1y': '1 năm gần nhất',
+  'all': 'Toàn bộ thời gian'
+}
 
 // metric key -> chart data field and display
 const METRIC_CONFIG = {
   progress: { field: 'value', label: (unit) => unit, color: '#EF4444' },
   distance: { field: 'distance', label: () => 'km', color: '#3B82F6' },
-  calories: { field: 'calories', label: () => 'kcal', color: '#F97316' }
+  calories: { field: 'calories', label: () => 'kcal', color: '#F97316' },
+  sessions: { field: 'sessions', label: () => 'lần', color: '#10B981' },
+  speed: { field: 'avgSpeed', label: () => 'km/h', color: '#8B5CF6' }
 }
 
-const ACTIVITY_TYPE_ICONS = {
-  running: <FaRunning />,
-  walking: <FaWalking />,
-  cycling: <FaBicycle />
-}
+// Category icon is now fetched from Admin's Sport Category config
 
-function formatActivityDuration(seconds) {
-  if (!seconds) return '0:00'
+// Định dạng giây → chuỗi rõ đơn vị: "48p 00s" hoặc "1g 01p 01s"
+function formatDuration(seconds) {
+  if (!seconds) return '0p 00s'
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = Math.floor(seconds % 60)
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  return `${m}:${String(s).padStart(2, '0')}`
+  if (h > 0) return `${h}g ${String(m).padStart(2, '0')}p ${String(s).padStart(2, '0')}s`
+  return `${m}p ${String(s).padStart(2, '0')}s`
+}
+
+// Pace: phút/km → "5p 30s/km"
+function formatPace(totalSeconds, distanceKm) {
+  if (!distanceKm || distanceKm <= 0) return '—'
+  const paceSeconds = totalSeconds / distanceKm
+  const pm = Math.floor(paceSeconds / 60)
+  const ps = Math.floor(paceSeconds % 60)
+  return `${pm}p ${String(ps).padStart(2, '0')}s/km`
 }
 
 export default function SportEventProgress({
@@ -85,13 +100,46 @@ export default function SportEventProgress({
   userProgress
 }) {
   const [timeFilter, setTimeFilter] = useState('7d')
+  const [customRange, setCustomRange] = useState(null) // { startDate, endDate }
   const [highlightDate, setHighlightDate] = useState(null)
   const [activeMetric, setActiveMetric] = useState('progress') // 'progress' | 'distance' | 'calories'
   const [shareActivity, setShareActivity] = useState(null) // activity to share
+  const [selectedActivityId, setSelectedActivityId] = useState(null)
+  const [isCompletionModal, setIsCompletionModal] = useState(false)
+  const [deleteActivity, setDeleteActivity] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const navigate = useNavigate()
   const { id } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient = useQueryClient()
   const activityListRef = useRef(null)
   const activityItemRefs = useRef({})
+
+  // Fetch sport categories to get the correct icon for this event's category
+  const { data: categoriesData } = useQuery({
+    queryKey: ['sportCategories'],
+    queryFn: () => sportCategoryApi.getAll(),
+    staleTime: 60 * 1000
+  })
+  const categoryIconKey = useMemo(() => {
+    const cats = categoriesData?.data?.result || categoriesData?.data || []
+    const matched = cats.find(c => c.name === event?.category)
+    return matched?.icon || 'sport'
+  }, [categoriesData, event?.category])
+  const CategoryIcon = getSportIcon(categoryIconKey)
+
+  // Auto-open modal when redirected from GPS tracking completion
+  useEffect(() => {
+    const completedId = searchParams.get('completed')
+    if (completedId) {
+      setSelectedActivityId(completedId)
+      setIsCompletionModal(true)
+      // Clean up the URL param without causing navigation
+      searchParams.delete('completed')
+      searchParams.delete('tab')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch user's GPS activities for this event
   const { data: activitiesData } = useQuery({
@@ -108,14 +156,49 @@ export default function SportEventProgress({
     setShareActivity(activity)
   }
 
-  // Aggregate stats from GPS activities (for outdoor events)
-  const gpsStats = useMemo(() => {
-    if (!completedActivities.length) return null
-    const totalDistance = completedActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
-    const totalCalories = completedActivities.reduce((sum, a) => sum + Math.round(a.calories), 0)
-    const totalDuration = completedActivities.reduce((sum, a) => sum + a.totalDuration, 0)
+  // Filter GPS activities by time range
+  const filteredActivities = useMemo(() => {
+    if (customRange) {
+      const start = moment(customRange.startDate).startOf('day')
+      const end = moment(customRange.endDate).endOf('day')
+      return completedActivities.filter(a => moment(a.startTime).isBetween(start, end, null, '[]'))
+    }
+    if (timeFilter === 'all') return completedActivities
+    let cutoff
+    switch (timeFilter) {
+      case '24h': cutoff = moment().subtract(24, 'hours'); break
+      case '7d': cutoff = moment().subtract(7, 'days'); break
+      case '1m': cutoff = moment().subtract(1, 'month'); break
+      case '6m': cutoff = moment().subtract(6, 'months'); break
+      case '1y': cutoff = moment().subtract(1, 'year'); break
+      default: return completedActivities
+    }
+    return completedActivities.filter(a => moment(a.startTime).isAfter(cutoff))
+  }, [completedActivities, timeFilter, customRange])
 
-    // Weekly Streak calculation
+  // Today's GPS stats for the top banner (always today, unaffected by filter)
+  const todayGpsStats = useMemo(() => {
+    const today = moment().startOf('day')
+    const todaysActivities = completedActivities.filter(a => moment(a.startTime).isSame(today, 'day'))
+
+    const distance = todaysActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
+    const duration = todaysActivities.reduce((sum, a) => sum + a.totalDuration, 0)
+    return {
+      totalSessions: todaysActivities.length,
+      totalDistance: distance.toFixed(2),
+      totalDuration: formatDuration(duration)
+    }
+  }, [completedActivities])
+
+  // Aggregate stats from filtered GPS activities (react to time filter)
+  const gpsStats = useMemo(() => {
+    if (!filteredActivities.length) return null
+    const totalDistance = filteredActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
+    const totalCalories = filteredActivities.reduce((sum, a) => sum + Math.round(a.calories), 0)
+    const totalDuration = filteredActivities.reduce((sum, a) => sum + a.totalDuration, 0)
+    const avgSpeed = totalDuration > 0 ? (totalDistance / (totalDuration / 3600)).toFixed(2) : 0
+
+    // Weekly Streak (always from all activities)
     const weekSet = new Set()
     completedActivities.forEach(a => {
       weekSet.add(moment(a.startTime).format('YYYY-[W]WW'))
@@ -128,13 +211,14 @@ export default function SportEventProgress({
     }
 
     return {
-      totalSessions: completedActivities.length,
-      totalDistance: totalDistance.toFixed(1),
+      totalSessions: filteredActivities.length,
+      totalDistance: totalDistance.toFixed(2),
       totalCalories,
-      totalDuration: formatActivityDuration(totalDuration),
+      totalDuration: formatDuration(totalDuration),
+      avgSpeed,
       weeklyStreak: streak
     }
-  }, [completedActivities])
+  }, [filteredActivities, completedActivities])
 
   // Calculate stats from userProgress — with NaN/zero guards
   const stats = useMemo(() => {
@@ -142,17 +226,38 @@ export default function SportEventProgress({
     const { totalProgress, totalDistance, totalCalories, totalEntries } = userProgress
     const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
     const perPersonTarget = (event?.targetValue && event.targetValue > 0) ? event.targetValue / maxParticipants : 0
-    const rawPercent = perPersonTarget > 0 ? Math.round((totalProgress / perPersonTarget) * 100) : 0
-    const progressPercent = isNaN(rawPercent) ? 0 : Math.min(rawPercent, 100)
+    const rawPercent = perPersonTarget > 0 ? (totalProgress / perPersonTarget) * 100 : 0
+    const progressPercent = isNaN(rawPercent) ? 0 : Math.min(Math.round(rawPercent), 100)
     return {
       totalProgress,
       progressPercent,
       perPersonTarget,
-      totalDistance: totalDistance?.toFixed(1) || 0,
+      totalDistance: totalDistance?.toFixed(2) || 0,
       totalCalories: totalCalories || 0,
       totalEntries
     }
   }, [userProgress, event])
+
+  // Handle time filter change from dropdown
+  const handleTimeChange = useCallback((filterObj) => {
+    if (filterObj.period) {
+      setTimeFilter(filterObj.period)
+      setCustomRange(null)
+    } else if (filterObj.startDate && filterObj.endDate) {
+      setTimeFilter('custom')
+      setCustomRange({ startDate: filterObj.startDate, endDate: filterObj.endDate })
+    }
+  }, [])
+
+  // Filter subtitle
+  const filterSubtitle = useMemo(() => {
+    if (customRange) {
+      const s = moment(customRange.startDate).format('DD/MM/YYYY')
+      const e = moment(customRange.endDate).format('DD/MM/YYYY')
+      return `${s} → ${e}`
+    }
+    return FILTER_LABELS[timeFilter] || ''
+  }, [timeFilter, customRange])
 
   // Chart data computation
   const chartData = useMemo(() => {
@@ -162,21 +267,60 @@ export default function SportEventProgress({
       const divisor = activeMetric === 'distance' ? 1000 : 1
       const precision = activeMetric === 'distance' ? 2 : 0
 
-      // Group by date
+      // Group by date with all 4 metrics
       const dayMap = {}
       completedActivities.forEach(a => {
         const d = moment(a.startTime).format('DD/MM')
         const fd = moment(a.startTime).format('YYYY-MM-DD')
-        const v = parseFloat((a[field] / divisor).toFixed(precision))
-        if (!dayMap[fd]) dayMap[fd] = { date: d, fullDate: fd, value: 0 }
-        dayMap[fd].value += v
+        if (!dayMap[fd]) dayMap[fd] = { distance: 0, calories: 0, sessions: 0, duration: 0 }
+        dayMap[fd].distance += (a.totalDistance / 1000)
+        dayMap[fd].calories += Math.round(a.calories)
+        dayMap[fd].sessions += 1
+        dayMap[fd].duration += a.totalDuration
       })
+
+      Object.keys(dayMap).forEach(fd => {
+        const { distance, duration } = dayMap[fd]
+        dayMap[fd].avgSpeed = duration > 0 ? Number((distance / (duration / 3600)).toFixed(2)) : 0
+        dayMap[fd].distance = Number(distance.toFixed(2))
+      })
+
+      const getValue = (fd) => {
+        if (!dayMap[fd]) return 0
+        switch (activeMetric) {
+          case 'distance': return dayMap[fd].distance
+          case 'calories': return dayMap[fd].calories
+          case 'sessions': return dayMap[fd].sessions
+          case 'speed': return dayMap[fd].avgSpeed
+          default: return 0
+        }
+      }
+
+      // Custom date range
+      if (customRange) {
+        const start = moment(customRange.startDate)
+        const end = moment(customRange.endDate)
+        const totalDays = end.diff(start, 'days') + 1
+        return Array.from({ length: totalDays }, (_, i) => {
+          const d = moment(start).add(i, 'days')
+          const fd = d.format('YYYY-MM-DD')
+          return {
+            date: d.format('DD/MM'),
+            fullDate: fd,
+            value: getValue(fd),
+            distance: dayMap[fd]?.distance || 0,
+            calories: dayMap[fd]?.calories || 0,
+            sessions: dayMap[fd]?.sessions || 0,
+            avgSpeed: dayMap[fd]?.avgSpeed || 0
+          }
+        }).filter((_, i, arr) => arr.length <= 30 || i % Math.ceil(arr.length / 30) === 0)
+      }
 
       // Apply time filter
       const now = moment()
       let days = 7
       switch (timeFilter) {
-        case '1d': days = 1; break
+        case '24h': days = 1; break
         case '7d': days = 7; break
         case '1m': days = 30; break
         case '6m': days = 180; break
@@ -184,25 +328,63 @@ export default function SportEventProgress({
         default: days = 365
       }
 
-      const result = Array.from({ length: timeFilter === 'all' ? 365 : days }, (_, i) => {
+      return Array.from({ length: timeFilter === 'all' ? 365 : days }, (_, i) => {
         const d = moment().subtract(days - 1 - i, 'days')
         const fd = d.format('YYYY-MM-DD')
         return {
           date: d.format('DD/MM'),
           fullDate: fd,
-          value: dayMap[fd]?.value || 0
+          value: getValue(fd),
+          distance: dayMap[fd]?.distance || 0,
+          calories: dayMap[fd]?.calories || 0,
+          sessions: dayMap[fd]?.sessions || 0,
+          avgSpeed: dayMap[fd]?.avgSpeed || 0
         }
       }).filter((_, i, arr) => timeFilter === 'all' || arr.length <= 30 || i % Math.ceil(arr.length / 30) === 0)
-
-      return result
     }
 
     // Default: use progressHistory
     if (!userProgress?.progressHistory) return []
 
+    // Custom date range
+    if (customRange) {
+      const start = moment(customRange.startDate)
+      const end = moment(customRange.endDate)
+      const totalDays = end.diff(start, 'days') + 1
+
+      if (totalDays > 90) {
+        // Group by month
+        const monthMap = {}
+        userProgress.progressHistory.forEach(entry => {
+          const em = moment(entry.date)
+          if (em.isBetween(start, end, 'day', '[]')) {
+            const key = em.format('MM/YY')
+            if (!monthMap[key]) monthMap[key] = { date: key, fullDate: em.format('YYYY-MM'), value: 0 }
+            monthMap[key].value += entry.value
+          }
+        })
+        return Object.values(monthMap)
+      }
+
+      const arr = Array.from({ length: totalDays }, (_, i) => {
+        const d = moment(start).add(i, 'days')
+        return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0 }
+      })
+      userProgress.progressHistory.forEach(entry => {
+        const entryDate = moment(entry.date).format('YYYY-MM-DD')
+        const day = arr.find(d => d.fullDate === entryDate)
+        if (day) day.value += entry.value
+      })
+      if (arr.length > 30) {
+        const step = Math.ceil(arr.length / 30)
+        return arr.filter((_, i) => i % step === 0)
+      }
+      return arr
+    }
+
     const getDays = () => {
       switch (timeFilter) {
-        case '1d': return 1
+        case '24h': return 1
         case '7d': return 7
         case '1m': return 30
         case '6m': return 180
@@ -250,7 +432,7 @@ export default function SportEventProgress({
       return weeks
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProgress, timeFilter, activeMetric, completedActivities])
+  }, [userProgress, timeFilter, activeMetric, completedActivities, customRange])
 
   // Chart bar click → scroll to activity
   const handleBarClick = (data) => {
@@ -272,7 +454,11 @@ export default function SportEventProgress({
 
   // Determine displayed stats — prefer GPS data for outdoor events
   const isOutdoor = event?.eventType === 'Ngoài trời'
-  const displayProgress = stats?.totalProgress
+  // Progress = all-time total (never affected by time filter dropdown)
+  const allTimeGpsDistance = isOutdoor
+    ? Number((completedActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000).toFixed(2))
+    : null
+  const displayProgress = isOutdoor ? (allTimeGpsDistance || 0) : stats?.totalProgress
   const displayDistance = isOutdoor && gpsStats ? gpsStats.totalDistance : stats?.totalDistance
   const displayCalories = isOutdoor && gpsStats ? gpsStats.totalCalories : stats?.totalCalories
   const displaySessions = isOutdoor && gpsStats ? gpsStats.totalSessions : stats?.totalEntries
@@ -285,6 +471,7 @@ export default function SportEventProgress({
           activity={shareActivity}
           event={event}
           eventId={id}
+          userProgress={userProgress}
           onClose={() => setShareActivity(null)}
         />
       )}
@@ -292,10 +479,10 @@ export default function SportEventProgress({
       {/* Activity Tracking Button - only for outdoor events */}
       {isOutdoor && (
         <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 shadow-lg text-white">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold mb-1">🏃 Theo dõi hoạt động GPS</h3>
-              <p className="text-sm opacity-90">Bắt đầu theo dõi quãng đường và tốc độ bằng GPS</p>
+              <p className="text-sm opacity-90">Bắt đầu theo dõi quãng đường và tốc độ bằng GPS cho ngày hôm nay</p>
             </div>
             <div className="flex items-center gap-3">
               {gpsStats?.weeklyStreak > 0 && (
@@ -313,18 +500,18 @@ export default function SportEventProgress({
               </button>
             </div>
           </div>
-          {gpsStats && (
+          {todayGpsStats && (
             <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold">{gpsStats.totalSessions}</p>
-                <p className="text-xs opacity-80">Buổi tập</p>
+                <p className="text-2xl font-bold">{todayGpsStats.totalSessions}</p>
+                <p className="text-xs opacity-80">Lần hoạt động</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{gpsStats.totalDistance}</p>
+                <p className="text-2xl font-bold">{todayGpsStats.totalDistance}</p>
                 <p className="text-xs opacity-80">km tổng</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{gpsStats.totalDuration}</p>
+                <p className="text-2xl font-bold">{todayGpsStats.totalDuration}</p>
                 <p className="text-xs opacity-80">Thời gian</p>
               </div>
             </div>
@@ -332,116 +519,129 @@ export default function SportEventProgress({
         </div>
       )}
 
-      {/* 1. Activity Rings Hero — Apple Fitness style */}
+      {/* 1. Progress Overview - Independent of Time Filter */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 px-6 py-4">
-          <h3 className="text-lg font-bold text-white">📊 Thống kê hoạt động</h3>
-          <p className="text-white/70 text-sm">Mục tiêu cá nhân: {stats?.perPersonTarget > 0 ? `${stats.perPersonTarget.toFixed(1)} ${event.targetUnit}` : 'Chưa thiết lập'}</p>
+        <div className="p-6 flex flex-col md:flex-row items-center gap-8">
+          <div className="relative flex-shrink-0">
+            <ProgressRing
+              size={180}
+              strokeWidth={16}
+              percent={stats?.progressPercent || 0}
+              color="#ef4444"
+              colorEnd={stats?.progressPercent >= 100 ? '#22c55e' : '#f97316'}
+              label={`${stats?.progressPercent || 0}%`}
+              sublabel="hoàn thành"
+              showPercent={false}
+            />
+          </div>
+          <div className="flex-1 w-full">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Tiến độ tổng quan</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              Mục tiêu cá nhân:{' '}
+              <span className="font-semibold text-gray-700 dark:text-gray-300">
+                {stats?.perPersonTarget > 0 ? `${stats.perPersonTarget.toFixed(2)} ${event.targetUnit}` : 'Chưa thiết lập'}
+              </span>
+            </p>
+            <div
+              onClick={() => setActiveMetric('progress')}
+              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all max-w-sm ${activeMetric === 'progress'
+                ? 'border-red-400 bg-red-50 dark:bg-red-900/20 shadow-md ring-1 ring-red-400'
+                : 'border-gray-100 dark:border-gray-700 hover:border-red-200 bg-gray-50 dark:bg-gray-800/50'
+                }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500" />
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ đạt được</span>
+              </div>
+              <p className="text-2xl font-black text-gray-800 dark:text-white">
+                {Number(displayProgress || 0).toFixed(2)} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Activity Stats — Dropdown in header */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mt-8">
+        <div className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Thống kê chi tiết</h3>
+            {filterSubtitle && <p className="text-gray-500 text-xs mt-0.5">📅 {filterSubtitle}</p>}
+          </div>
+          <TimeRangeDropdown
+            value={timeFilter}
+            onChange={handleTimeChange}
+            accentColor="blue"
+          />
         </div>
         <div className="p-6">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            {/* Activity Rings */}
-            <div className="relative flex-shrink-0">
-              <ActivityRings
-                size={180}
-                strokeWidth={14}
-                gap={5}
-                rings={[
-                  {
-                    percent: stats?.progressPercent || 0,
-                    color: '#ef4444',
-                    colorEnd: stats?.progressPercent >= 100 ? '#22c55e' : '#f97316',
-                    label: `${event.targetUnit}`
-                  },
-                  {
-                    percent: displayDistance > 0 ? Math.min((parseFloat(displayDistance) / (parseFloat(stats?.perPersonTarget || 1))) * 100, 100) : 0,
-                    color: '#3b82f6',
-                    colorEnd: '#06b6d4',
-                    label: 'km'
-                  },
-                  {
-                    percent: displayCalories > 0 ? Math.min(displayCalories / 10, 100) : 0,
-                    color: '#f97316',
-                    colorEnd: '#eab308',
-                    label: 'kcal'
-                  }
-                ]}
-                centerContent={
-                  <div className="text-center">
-                    <p className="text-2xl font-black text-gray-800 dark:text-white">{stats?.progressPercent || 0}%</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">hoàn thành</p>
-                  </div>
-                }
-              />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Distance stat */}
+            <div
+              onClick={() => setActiveMetric('distance')}
+              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${activeMetric === 'distance'
+                ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-1 ring-blue-400'
+                : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 bg-white dark:bg-gray-800'
+                }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Quãng đường</span>
+              </div>
+              <p className="text-xl font-black text-gray-800 dark:text-white">
+                {displayDistance} <span className="text-sm font-medium text-gray-400">km</span>
+              </p>
             </div>
 
-            {/* Ring Legend + Stats */}
-            <div className="flex-1 grid grid-cols-2 gap-3 w-full">
-              {/* Progress stat */}
-              <div
-                onClick={() => setActiveMetric('progress')}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  activeMetric === 'progress'
-                    ? 'border-red-400 bg-red-50 dark:bg-red-900/20 shadow-md'
-                    : 'border-gray-100 dark:border-gray-700 hover:border-red-200 bg-white dark:bg-gray-800'
+            {/* Calories stat */}
+            <div
+              onClick={() => setActiveMetric('calories')}
+              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${activeMetric === 'calories'
+                ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 shadow-md ring-1 ring-orange-400'
+                : 'border-gray-100 dark:border-gray-700 hover:border-orange-200 bg-white dark:bg-gray-800'
                 }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500" />
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ</span>
-                </div>
-                <p className="text-xl font-black text-gray-800 dark:text-white">
-                  {displayProgress || 0} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">{stats?.progressPercent || 0}% hoàn thành</p>
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" />
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
               </div>
+              <p className="text-xl font-black text-gray-800 dark:text-white">
+                {displayCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
+              </p>
+            </div>
 
-              {/* Distance stat */}
-              <div
-                onClick={() => setActiveMetric('distance')}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  activeMetric === 'distance'
-                    ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md'
-                    : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 bg-white dark:bg-gray-800'
+            {/* Sessions stat */}
+            <div
+              onClick={() => setActiveMetric('sessions')}
+              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${activeMetric === 'sessions'
+                ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 shadow-md ring-1 ring-emerald-400'
+                : 'border-gray-100 dark:border-gray-700 hover:border-emerald-200 bg-white dark:bg-gray-800'
                 }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Quãng đường</span>
-                </div>
-                <p className="text-xl font-black text-gray-800 dark:text-white">
-                  {displayDistance} <span className="text-sm font-medium text-gray-400">km</span>
-                </p>
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Lần hoạt động</span>
               </div>
+              <p className="text-xl font-black text-gray-800 dark:text-white">
+                {displaySessions || 0} <span className="text-sm font-medium text-gray-400">lần</span>
+              </p>
+            </div>
 
-              {/* Calories stat */}
-              <div
-                onClick={() => setActiveMetric('calories')}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  activeMetric === 'calories'
-                    ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 shadow-md'
-                    : 'border-gray-100 dark:border-gray-700 hover:border-orange-200 bg-white dark:bg-gray-800'
+            {/* Speed stat */}
+            <div
+              onClick={() => isOutdoor && setActiveMetric('speed')}
+              className={`p-4 rounded-2xl border-2 transition-all ${!isOutdoor ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeMetric === 'speed'
+                ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/20 shadow-md ring-1 ring-purple-400'
+                : 'border-gray-100 dark:border-gray-700 hover:border-purple-200 bg-white dark:bg-gray-800'
                 }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" />
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
-                </div>
-                <p className="text-xl font-black text-gray-800 dark:text-white">
-                  {displayCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
-                </p>
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Vận tốc TB</span>
               </div>
-
-              {/* Sessions stat */}
-              <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-violet-500" />
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Hoạt động</span>
-                </div>
-                <p className="text-xl font-black text-gray-800 dark:text-white">
-                  {displaySessions || 0} <span className="text-sm font-medium text-gray-400">buổi</span>
-                </p>
-              </div>
+              <p className="text-xl font-black text-gray-800 dark:text-white">
+                {isOutdoor && gpsStats ? gpsStats.avgSpeed : 0} <span className="text-sm font-medium text-gray-400">km/h</span>
+              </p>
             </div>
           </div>
         </div>
@@ -450,71 +650,194 @@ export default function SportEventProgress({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 2. Chart Section */}
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-                Lịch sử{' '}
-                <span className="text-sm font-normal text-gray-400">
-                  ({activeMetric === 'progress' ? event.targetUnit : activeMetric === 'distance' ? 'km' : 'kcal'})
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+            {/* Chart Header */}
+            <div className="px-6 pt-6 pb-2 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg"
+                  style={{ background: `linear-gradient(135deg, ${barColor}, ${barColor}99)` }}>
+                  <FaChartLine />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                    Lịch sử
+                    <span className="text-sm font-normal text-gray-400 ml-1">({metricUnit})</span>
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {timeFilter === '24h'
+                      ? 'Hiển thị từng hoạt động trong 24 giờ qua'
+                      : 'Nhấn vào cột để xem chi tiết ngày đó'}
+                  </p>
+                </div>
+              </div>
+              {/* Legend dots */}
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: barColor }} />
+                  Có dữ liệu
                 </span>
-              </h3>
-              <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                {TIME_FILTERS.map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setTimeFilter(f.key)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${timeFilter === f.key
-                      ? 'bg-red-500 text-white shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                      }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-600" />
+                  Không có
+                </span>
               </div>
             </div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis
-                    dataKey="date"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#6B7280', fontSize: 11 }}
-                    dy={10}
-                    interval={chartData.length > 10 ? Math.floor(chartData.length / 7) : 0}
-                  />
-                  <YAxis hide />
-                  <Tooltip
-                    cursor={{ fill: 'transparent' }}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                            {`${payload[0].value} ${metricUnit}`}
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <Bar
-                    dataKey="value"
-                    radius={[4, 4, 0, 0]}
-                    onClick={(data) => handleBarClick(data)}
-                    style={{ cursor: 'pointer' }}
+
+            <div className="px-6 pb-6 pt-2">
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 28, right: 8, left: -8, bottom: 4 }}
+                    barCategoryGap="20%"
                   >
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.fullDate === highlightDate ? '#3B82F6' : (entry.value > 0 ? barColor : '#F3F4F6')}
+                    <defs>
+                      <linearGradient id="barGradientRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#EF4444" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#F97316" stopOpacity={0.85} />
+                      </linearGradient>
+                      <linearGradient id="barGradientBlue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#06B6D4" stopOpacity={0.85} />
+                      </linearGradient>
+                      <linearGradient id="barGradientOrange" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#F97316" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#FBBF24" stopOpacity={0.85} />
+                      </linearGradient>
+                      <linearGradient id="barGradientGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#14B8A6" stopOpacity={0.85} />
+                      </linearGradient>
+                      <linearGradient id="barGradientPurple" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8B5CF6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#6366F1" stopOpacity={0.85} />
+                      </linearGradient>
+                      <linearGradient id="barGradientHighlight" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8B5CF6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#A78BFA" stopOpacity={0.9} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="4 4"
+                      vertical={false}
+                      stroke="#E5E7EB"
+                      strokeOpacity={0.6}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#9CA3AF', fontSize: 11, fontWeight: 500 }}
+                      dy={8}
+                      interval={chartData.length > 10 ? Math.floor(chartData.length / 7) : 0}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                      width={40}
+                      tickFormatter={(v) => {
+                        if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
+                        return v % 1 === 0 ? v : v.toFixed(1)
+                      }}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(99, 102, 241, 0.06)', radius: 8 }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const d = payload[0].payload
+                          if (isOutdoor) {
+                            const dayActs = completedActivities.filter(a => moment(a.startTime).format('YYYY-MM-DD') === d.fullDate)
+                            const dist = d.distance != null ? d.distance : Number((dayActs.reduce((s, a) => s + a.totalDistance / 1000, 0)).toFixed(2))
+                            const cal = d.calories != null ? d.calories : dayActs.reduce((s, a) => s + Math.round(a.calories), 0)
+                            const sess = d.sessions != null ? d.sessions : dayActs.length
+                            const dur = dayActs.reduce((s, a) => s + a.totalDuration, 0)
+                            const spd = d.avgSpeed != null ? d.avgSpeed : (dur > 0 ? Number((dist / (dur / 3600)).toFixed(2)) : 0)
+                            return (
+                              <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 shadow-2xl rounded-2xl border border-gray-100/50 dark:border-gray-700/50 text-sm min-w-[180px]">
+                                <p className="font-bold text-gray-800 dark:text-white mb-3 pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full" style={{ background: barColor }} />
+                                  {d.date}
+                                </p>
+                                <div className="space-y-2">
+                                  <p className="flex justify-between items-center gap-4">
+                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><FaRoad className="text-blue-400 text-[10px]" />Quãng đường</span>
+                                    <span className="font-bold text-blue-500">{dist} km</span>
+                                  </p>
+                                  <p className="flex justify-between items-center gap-4">
+                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><FaFire className="text-orange-400 text-[10px]" />Calories</span>
+                                    <span className="font-bold text-orange-500">{cal} kcal</span>
+                                  </p>
+                                  <p className="flex justify-between items-center gap-4">
+                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><FaRunning className="text-emerald-400 text-[10px]" />Hoạt động</span>
+                                    <span className="font-bold text-emerald-500">{sess} lần</span>
+                                  </p>
+                                  <p className="flex justify-between items-center gap-4">
+                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><FaBolt className="text-indigo-400 text-[10px]" />Vận tốc TB</span>
+                                    <span className="font-bold text-indigo-500">{spd} km/h</span>
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          }
+                          return (
+                            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 shadow-2xl rounded-2xl border border-gray-100/50 dark:border-gray-700/50 text-sm">
+                              <p className="font-bold text-gray-800 dark:text-white mb-2 pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ background: barColor }} />
+                                {d.date}
+                              </p>
+                              <p className="font-bold" style={{ color: barColor }}>{d.value} {metricUnit}</p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Bar
+                      dataKey="value"
+                      radius={[6, 6, 0, 0]}
+                      onClick={(data) => handleBarClick(data)}
+                      style={{ cursor: 'pointer' }}
+                      animationDuration={800}
+                      animationEasing="ease-out"
+                    >
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        style={{ fontSize: 10, fontWeight: 600, fill: '#6B7280' }}
+                        formatter={(v) => {
+                          if (!v || v <= 0) return ''
+                          if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
+                          return v % 1 === 0 ? v : v.toFixed(1)
+                        }}
+                        offset={6}
                       />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+                      {chartData.map((entry, index) => {
+                        const gradientMap = {
+                          progress: 'url(#barGradientRed)',
+                          distance: 'url(#barGradientBlue)',
+                          calories: 'url(#barGradientOrange)',
+                          sessions: 'url(#barGradientGreen)',
+                          speed: 'url(#barGradientPurple)'
+                        }
+                        const isHighlighted = entry.fullDate === highlightDate
+                        const isEmpty = !entry.value || entry.value <= 0
+                        let fill = isEmpty ? '#F3F4F6' : (gradientMap[activeMetric] || 'url(#barGradientRed)')
+                        if (isHighlighted) fill = 'url(#barGradientHighlight)'
+                        return (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={fill}
+                          />
+                        )
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -537,43 +860,67 @@ export default function SportEventProgress({
                   {completedActivities.map((activity) => {
                     const actDate = moment(activity.startTime).format('YYYY-MM-DD')
                     const isHighlighted = highlightDate === actDate
+                    const distKm = activity.totalDistance / 1000
+                    const speedKmh = activity.avgSpeed ? (activity.avgSpeed * 3.6) : (activity.totalDuration > 0 ? (distKm / (activity.totalDuration / 3600)) : 0)
+                    const pace = formatPace(activity.totalDuration, distKm)
                     return (
                       <div
                         key={activity._id}
                         ref={el => { activityItemRefs.current[activity._id] = el }}
                         data-date={actDate}
-                        onClick={() => navigate(`/sport-event/${id}/activity/${activity._id}`)}
-                        className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${isHighlighted
+                        onClick={() => { setSelectedActivityId(activity._id); setIsCompletionModal(false) }}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${isHighlighted
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-400'
                           : 'border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-gray-200 dark:hover:border-gray-600'
                           }`}
                       >
-                        {/* Activity type icon */}
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 text-lg flex-shrink-0">
-                          {ACTIVITY_TYPE_ICONS[activity.activityType] || <FaRunning />}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                            {event?.category || activity.activityType} — {(activity.totalDistance / 1000).toFixed(2)} km
-                          </h4>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                            <span className="flex items-center gap-0.5"><FaClock className="text-[10px]" />{formatActivityDuration(activity.totalDuration)}</span>
-                            <span className="flex items-center gap-0.5"><FaFire className="text-[10px]" />{Math.round(activity.calories)} kcal</span>
+                        {/* Row 1: icon + title + date + share */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 text-lg flex-shrink-0">
+                            <CategoryIcon />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                                {event?.category || activity.activityType}
+                              </h4>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <span className="text-xs text-gray-400">
+                                  {moment(activity.startTime).format('DD/MM HH:mm')}
+                                </span>
+                                <button
+                                  onClick={(e) => handleShare(e, activity)}
+                                  title="Chia sẻ lên cộng đồng"
+                                  className="p-1.5 rounded-lg transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-orange-100 hover:text-orange-500 dark:hover:bg-orange-900/20"
+                                >
+                                  <FaShareAlt className="text-xs" />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDeleteActivity(activity) }}
+                                  title="Xóa hoạt động"
+                                  className="p-1.5 rounded-lg transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/20"
+                                >
+                                  <FaTrash className="text-xs" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Date + Share button */}
-                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                          <span className="text-xs text-gray-400">{moment(activity.startTime).format('DD/MM')}</span>
-                          <button
-                            onClick={(e) => handleShare(e, activity)}
-                            title="Chia sẻ lên cộng đồng"
-                            className="p-1.5 rounded-lg transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-orange-100 hover:text-orange-500 dark:hover:bg-orange-900/20"
-                          >
-                            <FaShareAlt className="text-xs" />
-                          </button>
+                        {/* Row 2: stats chips */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 pl-[52px] text-xs text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <FaRoad className="text-[10px] text-blue-400" />
+                            {distKm.toFixed(2)} km
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FaBolt className="text-[10px] text-purple-400" />
+                            {Number(speedKmh).toFixed(2)} km/h
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FaFire className="text-[10px] text-orange-400" />
+                            {Math.round(activity.calories)} kcal
+                          </span>
                         </div>
                       </div>
                     )
@@ -584,6 +931,71 @@ export default function SportEventProgress({
           </div>
         )}
       </div>
+
+      {/* Activity Detail Modal */}
+      {selectedActivityId && (
+        <ActivityDetailModal
+          activityId={selectedActivityId}
+          eventId={id}
+          event={event}
+          isCompletion={isCompletionModal}
+          onClose={() => { setSelectedActivityId(null); setIsCompletionModal(false) }}
+          onShare={(activity) => {
+            setSelectedActivityId(null)
+            setIsCompletionModal(false)
+            setShareActivity(activity)
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteActivity && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => !isDeleting && setDeleteActivity(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                <FaTrash className="text-red-500 text-xl" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Xóa hoạt động?</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <strong>{event?.category || deleteActivity.activityType} — {(deleteActivity.totalDistance / 1000).toFixed(2)} km</strong>
+              </p>
+              <p className="text-xs text-gray-400 mb-6">
+                {moment(deleteActivity.startTime).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteActivity.totalDuration)} • {Math.round(deleteActivity.calories)} kcal
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteActivity(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  setIsDeleting(true)
+                  try {
+                    await softDeleteActivity(id, deleteActivity._id)
+                    queryClient.invalidateQueries({ queryKey: ['userActivities', id] })
+                    queryClient.invalidateQueries({ queryKey: ['userProgress', id] })
+                    toast.success('Đã xóa hoạt động')
+                    setDeleteActivity(null)
+                  } catch (err) {
+                    toast.error(err?.response?.data?.message || 'Xóa thất bại')
+                  } finally {
+                    setIsDeleting(false)
+                  }
+                }}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Đang xóa...' : 'Xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

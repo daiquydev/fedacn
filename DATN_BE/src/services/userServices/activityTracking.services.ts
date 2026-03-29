@@ -214,12 +214,43 @@ class ActivityTrackingService {
         return activity
     }
 
+    // Soft-delete an activity
+    async softDeleteActivityService(activityId: string, userId: string) {
+        const activity = await ActivityTrackingModel.findOne({
+            _id: activityId,
+            userId,
+            is_deleted: { $ne: true }
+        })
+        if (!activity) throw new Error('Hoạt động không tồn tại')
+
+        activity.is_deleted = true
+        await activity.save()
+
+        // Also soft-delete related sport_event_progress if this was event-linked
+        if (activity.eventId) {
+            await SportEventProgressModel.updateMany(
+                {
+                    eventId: activity.eventId,
+                    userId: activity.userId,
+                    date: {
+                        $gte: new Date(activity.startTime.getTime() - 60000),
+                        $lte: new Date((activity.endTime || activity.startTime).getTime() + 60000)
+                    }
+                },
+                { is_deleted: true }
+            )
+        }
+
+        return activity
+    }
+
     // Get user's activities for an event
     async getUserActivitiesService(eventId: string, userId: string) {
         const activities = await ActivityTrackingModel.find({
             eventId,
             userId,
-            status: { $in: ['completed', 'active', 'paused'] }
+            status: { $in: ['completed', 'active', 'paused'] },
+            is_deleted: { $ne: true }
         })
             .sort({ createdAt: -1 })
             .select('-gpsRoute')

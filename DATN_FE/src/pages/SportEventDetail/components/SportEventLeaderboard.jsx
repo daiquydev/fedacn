@@ -80,7 +80,7 @@ const PodiumStep = ({ participant, rank, connectedIds = new Set(), friendIds = n
         <p className={`font-bold truncate max-w-[120px] ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
           {participant.name} {isMe && '(Bạn)'}
         </p>
-        <p className="text-sm font-semibold text-red-500">{participant.totalProgress}</p>
+        <p className="text-sm font-semibold text-red-500">{Number(participant.totalProgress || 0).toFixed(2)}</p>
       </div>
 
       <div className={`w-full ${heightClass} ${colorClass} rounded-t-lg border-t-4 flex items-end justify-center pb-4 shadow-inner`}>
@@ -183,7 +183,7 @@ export default function SportEventLeaderboard({
               <FaTrophy className="text-blue-400 flex-shrink-0" />
               <span>
                 Mục tiêu mỗi người:{' '}
-                <strong>{(event.targetValue / event.maxParticipants).toFixed(1)} {event.targetUnit}</strong>
+                <strong>{(event.targetValue / event.maxParticipants).toFixed(2)} {event.targetUnit}</strong>
               </span>
             </div>
           )}
@@ -252,11 +252,8 @@ export default function SportEventLeaderboard({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-bold text-gray-900 dark:text-white">{user.totalProgress}</span>
-                      <span className="text-xs text-gray-400 block">/ {perPersonTarget.toFixed(1)} {event.targetUnit}</span>
-                      {user.totalDistance > 0 && (
-                        <span className="text-xs text-gray-500 block">{user.totalDistance.toFixed(1)} km</span>
-                      )}
+                      <span className="font-bold text-gray-900 dark:text-white">{Number(user.totalProgress || 0).toFixed(2)} {event.targetUnit}</span>
+                      <span className="text-xs text-gray-400 block">/ {perPersonTarget.toFixed(2)} {event.targetUnit}</span>
                     </td>
                     <td className="px-6 py-4 w-1/4">
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

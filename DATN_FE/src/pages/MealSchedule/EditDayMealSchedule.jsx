@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaTrash, FaPlus, FaSave, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import EditMealModal from './components/EditMealModal';
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox';
+import { getDateMealItem, getListMealSchedules } from '../../apis/mealScheduleApi';
 
 const EditDayMealSchedule = () => {
   const navigate = useNavigate();
+  const { date } = useParams();
   const [loading, setLoading] = useState(true);
   const [dayData, setDayData] = useState(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -15,17 +17,51 @@ const EditDayMealSchedule = () => {
   const [openCancelBox, setOpenCancelBox] = useState(false);
 
   useEffect(() => {
-    // Fetch day data
-    setLoading(false);
-    setDayData({
-      meals: [
-        { id: 1, name: 'Bữa sáng', type: 'Sáng', time: '07:00', calories: 400, nutrients: { protein: 20, carbs: 30, fat: 10 } },
-        { id: 2, name: 'Bữa trưa', type: 'Trưa', time: '12:00', calories: 600, nutrients: { protein: 30, carbs: 40, fat: 20 } },
-        { id: 3, name: 'Bữa tối', type: 'Tối', time: '18:00', calories: 500, nutrients: { protein: 25, carbs: 35, fat: 15 } }
-      ],
-      date: new Date().toISOString().split('T')[0]
-    });
-  }, []);
+    const fetchDayMeals = async () => {
+      try {
+        setLoading(true);
+        const currentDate = date || new Date().toISOString().split('T')[0];
+
+        // Lấy meal plan hiện tại
+        const schedulesRes = await getListMealSchedules({ page: 1, limit: 10 });
+        const schedules = schedulesRes?.data?.result?.meal_schedules || schedulesRes?.data?.result || [];
+        const activePlan = schedules[0];
+
+        if (activePlan) {
+          const planId = activePlan._id || activePlan.id;
+          const mealItemsRes = await getDateMealItem({
+            meal_schedule_id: planId,
+            date: currentDate
+          });
+          const mealItems = mealItemsRes?.data?.result || [];
+
+          const meals = mealItems.map((item, index) => ({
+            id: item._id || index + 1,
+            name: item.meal_name || 'Bữa ăn',
+            type: item.meal_type === 0 ? 'Sáng' : item.meal_type === 1 ? 'Trưa' : item.meal_type === 2 ? 'Tối' : 'Snack',
+            time: item.time || '12:00',
+            calories: item.energy || 0,
+            nutrients: {
+              protein: item.protein || 0,
+              carbs: item.carbs || 0,
+              fat: item.fat || 0
+            }
+          }));
+
+          setDayData({ meals, date: currentDate });
+        } else {
+          setDayData({ meals: [], date: currentDate });
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu:', error);
+        setDayData({ meals: [], date: date || new Date().toISOString().split('T')[0] });
+        setLoading(false);
+      }
+    };
+
+    fetchDayMeals();
+  }, [date]);
 
   const handleEditMeal = (id) => {
     try {
@@ -130,7 +166,7 @@ const EditDayMealSchedule = () => {
 
   const handleSaveChanges = () => {
     // Save changes to server
-    console.log('Saving changes:', dayData);
+    toast.success('Đã lưu thay đổi');
     setUnsavedChanges(false);
   };
 

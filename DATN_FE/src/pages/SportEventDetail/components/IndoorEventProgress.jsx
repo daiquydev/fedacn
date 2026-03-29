@@ -7,7 +7,7 @@ import {
 } from 'recharts'
 import {
     FaFire, FaClock, FaTrophy, FaVideo, FaPlay,
-    FaHistory, FaCheckCircle, FaDotCircle
+    FaHistory, FaCheckCircle, FaDotCircle, FaShareAlt, FaTrash
 } from 'react-icons/fa'
 import { MdVideocam } from 'react-icons/md'
 import moment from 'moment'
@@ -15,20 +15,26 @@ import toast from 'react-hot-toast'
 
 import {
     getVideoSessions,
-    getVideoSessionStats
+    getVideoSessionStats,
+    softDeleteVideoSession
 } from '../../../apis/sportEventApi'
 import VideoCallModal from '../../../components/SportEvent/VideoCallModal'
 import VideoCallResult from '../../../components/SportEvent/VideoCallResult'
-import { ActivityRings } from '../../../components/SportEvent/ProgressRing'
+import IndoorDetailModal from '../../../components/SportEvent/IndoorDetailModal'
+import IndoorShareModal from '../../../components/SportEvent/IndoorShareModal'
+import ProgressRing from '../../../components/SportEvent/ProgressRing'
+import TimeRangeDropdown from '../../../components/SportEvent/TimeRangeDropdown'
+import MilestoneCelebration, { useMilestoneCelebration } from '../../../components/SportEvent/MilestoneCelebration'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatSeconds(secs) {
-    if (!secs || secs <= 0) return '0:00'
+// Định dạng giây → chuỗi rõ đơn vị: "48p 00s" hoặc "1g 01p 01s"
+function formatDuration(secs) {
+    if (!secs || secs <= 0) return '0p 00s'
     const h = Math.floor(secs / 3600)
     const m = Math.floor((secs % 3600) / 60)
     const s = Math.floor(secs % 60)
-    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-    return `${m}:${String(s).padStart(2, '0')}`
+    if (h > 0) return `${h}g ${String(m).padStart(2, '0')}p ${String(s).padStart(2, '0')}s`
+    return `${m}p ${String(s).padStart(2, '0')}s`
 }
 
 function formatCountdown(secs) {
@@ -39,12 +45,13 @@ function formatCountdown(secs) {
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-const TIME_FILTERS = [
-    { key: '7d', label: '7 ngày' },
-    { key: '1m', label: '1 tháng' },
-    { key: '6m', label: '6 tháng' },
-    { key: 'all', label: 'Tất cả' }
-]
+const FILTER_LABELS = {
+    '24h': '24 giờ gần nhất',
+    '7d': '7 ngày gần nhất',
+    '1m': '1 tháng gần nhất',
+    '6m': '6 tháng gần nhất',
+    'all': 'Toàn bộ thời gian'
+}
 
 // ─── StatCard ─────────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, subValue, colorClass, isActive, onClick }) => (
@@ -74,10 +81,15 @@ export default function IndoorEventProgress({ event, userProgress }) {
 
     // ── UI state
     const [timeFilter, setTimeFilter] = useState('7d')
+    const [customRange, setCustomRange] = useState(null) // { startDate, endDate }
     const [activeMetric, setActiveMetric] = useState('minutes') // 'minutes' | 'calories'
     const [highlightDate, setHighlightDate] = useState(null)
     const [showVideoCall, setShowVideoCall] = useState(false)
     const [callResult, setCallResult] = useState(null)
+    const [selectedSession, setSelectedSession] = useState(null) // For IndoorDetailModal
+    const [shareSession, setShareSession] = useState(null) // For IndoorShareModal
+    const [deleteSession, setDeleteSession] = useState(null) // For delete confirmation
+    const [isDeleting, setIsDeleting] = useState(false)
     const [countdown, setCountdown] = useState(null)
     const countdownRef = useRef(null)
 
@@ -123,12 +135,54 @@ export default function IndoorEventProgress({ event, userProgress }) {
         return () => clearInterval(countdownRef.current)
     }, [getWindowStatus])
 
-    // ── Aggregate stats from video sessions
-    const indoorStats = useMemo(() => {
-        const totalActiveSeconds = endedSessions.reduce((s, v) => s + (v.activeSeconds || 0), 0)
-        const totalCalories = endedSessions.reduce((s, v) => s + (v.caloriesBurned || 0), 0)
+    // ── Filter sessions by time range
+    const filteredSessions = useMemo(() => {
+        if (customRange) {
+            const start = moment(customRange.startDate).startOf('day')
+            const end = moment(customRange.endDate).endOf('day')
+            return endedSessions.filter(s => moment(s.joinedAt).isBetween(start, end, null, '[]'))
+        }
+        if (timeFilter === 'all') return endedSessions
+        const now = moment()
+        let cutoff
+        switch (timeFilter) {
+            case '24h': cutoff = moment().subtract(24, 'hours'); break
+            case '7d': cutoff = moment().subtract(7, 'days'); break
+            case '1m': cutoff = moment().subtract(1, 'month'); break
+            case '6m': cutoff = moment().subtract(6, 'months'); break
+            default: return endedSessions
+        }
+        return endedSessions.filter(s => moment(s.joinedAt).isAfter(cutoff))
+    }, [endedSessions, timeFilter, customRange])
 
-        // Weekly Streak calculation
+    // Today-only stats for the banner (independent of dropdown filter)
+    const todayStats = useMemo(() => {
+        const today = moment().startOf('day')
+        const todaySessions = endedSessions.filter(s => moment(s.joinedAt).isSame(today, 'day'))
+        return {
+            totalSessions: todaySessions.length,
+            totalActiveSeconds: todaySessions.reduce((s, v) => s + (v.activeSeconds || 0), 0),
+            totalCalories: todaySessions.reduce((s, v) => s + (v.caloriesBurned || 0), 0)
+        }
+    }, [endedSessions])
+
+    // All-time stats (từ sự kiện bắt đầu tới giờ, KHÔNG bị filter dropdown)
+    // Dùng cho "Tiến độ tổng quan" — luôn phản ánh toàn bộ tiến độ thực tế
+    const allTimeStats = useMemo(() => ({
+        totalActiveSeconds: endedSessions.reduce((s, v) => s + (v.activeSeconds || 0), 0),
+        totalCalories: endedSessions.reduce((s, v) => s + (v.caloriesBurned || 0), 0),
+    }), [endedSessions])
+
+    // Aggregate stats from filtered sessions (react to time filter)
+    // Chỉ dùng cho "Thống kê chi tiết" và biểu đồ
+    const indoorStats = useMemo(() => {
+        const totalActiveSeconds = filteredSessions.reduce((s, v) => s + (v.activeSeconds || 0), 0)
+        const totalCalories = filteredSessions.reduce((s, v) => s + (v.caloriesBurned || 0), 0)
+        const avgSessionSeconds = filteredSessions.length > 0
+            ? Math.round(totalActiveSeconds / filteredSessions.length)
+            : 0
+
+        // Weekly Streak (luôn tính từ tất cả sessions)
         const weekSet = new Set()
         endedSessions.forEach(s => {
             weekSet.add(moment(s.joinedAt).format('YYYY-[W]WW'))
@@ -141,14 +195,16 @@ export default function IndoorEventProgress({ event, userProgress }) {
         }
 
         return {
-            totalSessions: endedSessions.length,
+            totalSessions: filteredSessions.length,
             totalActiveSeconds,
             totalCalories,
+            avgSessionSeconds,
             weeklyStreak: streak
         }
-    }, [endedSessions])
+    }, [filteredSessions, endedSessions])
 
-    // Progress % from userProgress — with NaN/zero guards
+    // Progress % từ ALL-TIME stats — KHÔNG bị filter dropdown
+    // Đây là tiến độ thực tế từ lúc tham gia sự kiện đến hiện tại
     const progressStats = useMemo(() => {
         if (!event?.targetValue || event.targetValue <= 0) return null
         const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
@@ -158,20 +214,84 @@ export default function IndoorEventProgress({ event, userProgress }) {
         const unit = (event.targetUnit || '').toLowerCase()
         let actualTotal = 0
         if (unit.includes('kcal') || unit.includes('calo')) {
-            actualTotal = indoorStats.totalCalories
+            actualTotal = allTimeStats.totalCalories
         } else {
-            actualTotal = Math.round(indoorStats.totalActiveSeconds / 60)
+            // Đổi giây → phút để so với target (đơn vị thường là phút)
+            actualTotal = Math.round(allTimeStats.totalActiveSeconds / 60)
         }
 
         const rawPct = Math.round((actualTotal / perPersonTarget) * 100)
         const pct = isNaN(rawPct) ? 0 : Math.min(rawPct, 100)
         return { total: actualTotal, pct, perPersonTarget }
-    }, [indoorStats, event])
+    }, [allTimeStats, event])
+
+    // ── Handle time filter change from dropdown
+    const handleTimeChange = useCallback((filterObj) => {
+        if (filterObj.period) {
+            setTimeFilter(filterObj.period)
+            setCustomRange(null)
+        } else if (filterObj.startDate && filterObj.endDate) {
+            setTimeFilter('custom')
+            setCustomRange({ startDate: filterObj.startDate, endDate: filterObj.endDate })
+        }
+    }, [])
+
+    // ── Filter subtitle
+    const filterSubtitle = useMemo(() => {
+        if (customRange) {
+            const s = moment(customRange.startDate).format('DD/MM/YYYY')
+            const e = moment(customRange.endDate).format('DD/MM/YYYY')
+            return `${s} → ${e}`
+        }
+        return FILTER_LABELS[timeFilter] || ''
+    }, [timeFilter, customRange])
 
     // ── Chart data
     const chartData = useMemo(() => {
         const field = activeMetric === 'calories' ? 'caloriesBurned' : 'activeSeconds'
-        const divisor = activeMetric === 'minutes' ? 60 : 1 // convert seconds to minutes
+        const divisor = activeMetric === 'minutes' ? 60 : 1
+
+        // 24h → show per-session bars (individual entries)
+        if (timeFilter === '24h' && !customRange) {
+            const cutoff = moment().subtract(24, 'hours')
+            const recentSessions = endedSessions
+                .filter(s => moment(s.joinedAt).isAfter(cutoff))
+                .sort((a, b) => moment(a.joinedAt).diff(moment(b.joinedAt)))
+            return recentSessions.map(vs => ({
+                date: moment(vs.joinedAt).format('HH:mm'),
+                fullDate: moment(vs.joinedAt).format('YYYY-MM-DD'),
+                value: Math.round((vs[field] || 0) / divisor),
+                calories: vs.caloriesBurned || 0,
+                minutes: Math.round((vs.activeSeconds || 0) / 60),
+                aiPct: vs.totalSeconds > 0 ? Math.round((vs.activeSeconds / vs.totalSeconds) * 100) : 0
+            }))
+        }
+
+        // Custom date range → group by day
+        if (customRange) {
+            const start = moment(customRange.startDate)
+            const end = moment(customRange.endDate)
+            const totalDays = end.diff(start, 'days') + 1
+            const arr = Array.from({ length: totalDays }, (_, i) => {
+                const d = moment(start).add(i, 'days')
+                return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0, calories: 0, minutes: 0, sessions: 0 }
+            })
+            endedSessions.forEach(vs => {
+                const d = moment(vs.joinedAt).format('YYYY-MM-DD')
+                const slot = arr.find(x => x.fullDate === d)
+                if (slot) {
+                    slot.value += Math.round((vs[field] || 0) / divisor)
+                    slot.calories += (vs.caloriesBurned || 0)
+                    slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
+                    slot.sessions += 1
+                }
+            })
+            if (arr.length > 30) {
+                const step = Math.ceil(arr.length / 30)
+                return arr.filter((_, i) => i % step === 0)
+            }
+            return arr
+        }
 
         const getDays = () => {
             switch (timeFilter) {
@@ -186,28 +306,40 @@ export default function IndoorEventProgress({ event, userProgress }) {
 
         const arr = Array.from({ length: days }, (_, i) => {
             const d = moment().subtract(days - 1 - i, 'days')
-            return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0 }
+            return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0, calories: 0, minutes: 0, sessions: 0 }
         })
 
         endedSessions.forEach(vs => {
             const d = moment(vs.joinedAt).format('YYYY-MM-DD')
             const slot = arr.find(x => x.fullDate === d)
-            if (slot) slot.value += Math.round((vs[field] || 0) / divisor)
+            if (slot) {
+                slot.value += Math.round((vs[field] || 0) / divisor)
+                slot.calories += (vs.caloriesBurned || 0)
+                slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
+                slot.sessions += 1
+            }
         })
 
-        // Thin out for large ranges
         if (arr.length > 30) {
             const step = Math.ceil(arr.length / 30)
             return arr.filter((_, i) => i % step === 0)
         }
         return arr
-    }, [endedSessions, timeFilter, activeMetric])
+    }, [endedSessions, timeFilter, activeMetric, customRange])
 
     const handleCallEnded = useCallback((summary) => {
         setCallResult(summary)
         setShowVideoCall(false)
         refetchSessions()
         queryClient.invalidateQueries({ queryKey: ['userProgress', eventId] })
+        // Auto-open detail modal with summary data after a short delay
+        setTimeout(() => {
+            setSelectedSession({
+                ...summary,
+                joinedAt: new Date().toISOString(),
+                screenshots: summary.screenshots || []
+            })
+        }, 300)
     }, [refetchSessions, queryClient, eventId])
 
     const { canJoin, isEnded, secondsBefore } = getWindowStatus()
@@ -215,8 +347,14 @@ export default function IndoorEventProgress({ event, userProgress }) {
     const metricUnit = activeMetric === 'calories' ? 'kcal' : 'phút'
     const barColor = activeMetric === 'calories' ? '#F97316' : '#3B82F6'
 
+    // ── Indoor Milestone Celebration
+    const { celebration: indoorCelebration, closeCelebration: closeIndoorCelebration } =
+        useMilestoneCelebration(eventId, progressStats?.pct || 0, 'indoor')
+
     return (
         <div className="space-y-8 animate-fadeIn">
+            {/* Milestone Celebration */}
+            <MilestoneCelebration milestone={indoorCelebration} isGroup={false} onClose={closeIndoorCelebration} />
 
             {/* ── Video Call Modal ── */}
             {showVideoCall && (
@@ -233,6 +371,32 @@ export default function IndoorEventProgress({ event, userProgress }) {
                     result={callResult}
                     event={event}
                     onClose={() => setCallResult(null)}
+                />
+            )}
+
+            {/* ── Indoor Detail Modal ── */}
+            {selectedSession && (
+                <IndoorDetailModal
+                    session={selectedSession}
+                    event={event}
+                    isCompletion={!!callResult}
+                    onClose={() => { setSelectedSession(null); setCallResult(null) }}
+                    onShare={(session) => {
+                        setSelectedSession(null)
+                        setCallResult(null)
+                        setShareSession(session)
+                    }}
+                />
+            )}
+
+            {/* ── Indoor Share Modal ── */}
+            {shareSession && (
+                <IndoorShareModal
+                    session={shareSession}
+                    event={event}
+                    eventId={eventId}
+                    progressStats={progressStats}
+                    onClose={() => setShareSession(null)}
                 />
             )}
 
@@ -291,162 +455,151 @@ export default function IndoorEventProgress({ event, userProgress }) {
                     )}
                 </div>
 
-                {/* Session stats quick row */}
-                {indoorStats.totalSessions > 0 && (
+                {/* Session stats quick row - today only */}
+                {todayStats.totalSessions > 0 && (
                     <div className="relative mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4 text-center">
                         <div>
-                            <p className="text-2xl font-bold">{indoorStats.totalSessions}</p>
-                            <p className="text-xs opacity-80">Buổi đã tham gia</p>
+                            <p className="text-2xl font-bold">{todayStats.totalSessions}</p>
+                            <p className="text-xs opacity-80">Lần tham gia</p>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{formatSeconds(indoorStats.totalActiveSeconds)}</p>
-                            <p className="text-xs opacity-80">Thời gian active</p>
+                            <p className="text-2xl font-bold">{formatDuration(todayStats.totalActiveSeconds)}</p>
+                            <p className="text-xs opacity-80">Thời gian hôm nay</p>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{indoorStats.totalCalories}</p>
+                            <p className="text-2xl font-bold">{todayStats.totalCalories}</p>
                             <p className="text-xs opacity-80">kcal</p>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* ── Activity Rings Hero — Apple Fitness style ──────────────────── */}
+            {/* ── Progress Overview Block — Independent of filter */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-6 py-4">
-                    <h3 className="text-lg font-bold text-white">📊 Thống kê hoạt động</h3>
-                    <p className="text-white/70 text-sm">Mục tiêu cá nhân: {progressStats?.perPersonTarget > 0 ? `${progressStats.perPersonTarget.toFixed(1)} ${event.targetUnit}` : 'Chưa thiết lập'}</p>
-                </div>
-                <div className="p-6">
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                        {/* Activity Rings */}
-                        <div className="relative flex-shrink-0">
-                            <ActivityRings
-                                size={180}
-                                strokeWidth={14}
-                                gap={5}
-                                rings={[
-                                    {
-                                        percent: progressStats?.pct || 0,
-                                        color: '#6366f1',
-                                        colorEnd: (progressStats?.pct || 0) >= 100 ? '#22c55e' : '#8b5cf6',
-                                        label: event.targetUnit
-                                    },
-                                    {
-                                        percent: indoorStats.totalActiveSeconds > 0 ? Math.min(Math.round(indoorStats.totalActiveSeconds / 60 / (progressStats?.perPersonTarget || 60) * 100), 100) : 0,
-                                        color: '#3b82f6',
-                                        colorEnd: '#06b6d4',
-                                        label: 'phút'
-                                    },
-                                    {
-                                        percent: indoorStats.totalCalories > 0 ? Math.min(indoorStats.totalCalories / 5, 100) : 0,
-                                        color: '#f97316',
-                                        colorEnd: '#eab308',
-                                        label: 'kcal'
-                                    }
-                                ]}
-                                centerContent={
-                                    <div className="text-center">
-                                        <p className="text-2xl font-black text-gray-800 dark:text-white">{progressStats?.pct || 0}%</p>
-                                        <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">hoàn thành</p>
-                                    </div>
-                                }
-                            />
-                        </div>
-
-                        {/* Ring Legend + Stats */}
-                        <div className="flex-1 grid grid-cols-2 gap-3 w-full">
-                            {/* Progress stat */}
-                            <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
-                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ</span>
-                                </div>
-                                <p className="text-xl font-black text-gray-800 dark:text-white">
-                                    {progressStats ? progressStats.total : 0} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
-                                </p>
-                                <p className="text-xs text-gray-400 mt-0.5">{progressStats?.pct || 0}% hoàn thành</p>
+                <div className="p-6 flex flex-col md:flex-row items-center gap-8">
+                    <div className="relative flex-shrink-0">
+                        <ProgressRing
+                            size={180}
+                            strokeWidth={16}
+                            percent={progressStats?.pct || 0}
+                            color="#6366f1"
+                            colorEnd={(progressStats?.pct || 0) >= 100 ? '#22c55e' : '#8b5cf6'}
+                            label={`${progressStats?.pct || 0}%`}
+                            sublabel="hoàn thành"
+                            showPercent={false}
+                        />
+                    </div>
+                    <div className="flex-1 w-full">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Tiến độ tổng quan</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                            Mục tiêu cá nhân:{' '}
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                {progressStats?.perPersonTarget > 0 ? `${progressStats.perPersonTarget.toFixed(2)} ${event.targetUnit}` : 'Chưa thiết lập'}
+                            </span>
+                        </p>
+                        <div className="p-4 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/30 bg-indigo-50 dark:bg-indigo-900/10 max-w-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ đạt được</span>
                             </div>
-
-                            {/* Time stat */}
-                            <div
-                                onClick={() => setActiveMetric('minutes')}
-                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                                    activeMetric === 'minutes'
-                                        ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md'
-                                        : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 bg-white dark:bg-gray-800'
-                                }`}
-                            >
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
-                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Thời gian</span>
-                                </div>
-                                <p className="text-xl font-black text-gray-800 dark:text-white">
-                                    {formatSeconds(indoorStats.totalActiveSeconds)}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-0.5">AI xác nhận có mặt</p>
-                            </div>
-
-                            {/* Calories stat */}
-                            <div
-                                onClick={() => setActiveMetric('calories')}
-                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                                    activeMetric === 'calories'
-                                        ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 shadow-md'
-                                        : 'border-gray-100 dark:border-gray-700 hover:border-orange-200 bg-white dark:bg-gray-800'
-                                }`}
-                            >
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" />
-                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
-                                </div>
-                                <p className="text-xl font-black text-gray-800 dark:text-white">
-                                    {indoorStats.totalCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
-                                </p>
-                            </div>
-
-                            {/* Sessions stat */}
-                            <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
-                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Buổi tham gia</span>
-                                </div>
-                                <p className="text-xl font-black text-gray-800 dark:text-white">
-                                    {indoorStats.totalSessions} <span className="text-sm font-medium text-gray-400">buổi</span>
-                                </p>
-                            </div>
+                            <p className="text-2xl font-black text-gray-800 dark:text-white">
+                                {progressStats ? Number(progressStats.total).toFixed(2) : 0} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── Chart + History ─────────────────────────────────────────────────── */}
+            {/* ── Activity Stats — Dropdown in header */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white">📊 Thống kê chi tiết</h3>
+                        {filterSubtitle && <p className="text-gray-500 text-xs mt-0.5">📅 {filterSubtitle}</p>}
+                    </div>
+                    <TimeRangeDropdown
+                        value={timeFilter}
+                        onChange={handleTimeChange}
+                        accentColor="indigo"
+                    />
+                </div>
+                <div className="p-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Time stat */}
+                        <div
+                            onClick={() => setActiveMetric('minutes')}
+                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${activeMetric === 'minutes'
+                                ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-1 ring-blue-400'
+                                : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 bg-white dark:bg-gray-800'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Thời gian</span>
+                            </div>
+                            <p className="text-xl font-black text-gray-800 dark:text-white">
+                                {formatDuration(indoorStats.totalActiveSeconds)}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">AI xác nhận có mặt</p>
+                        </div>
+
+                        {/* Calories stat */}
+                        <div
+                            onClick={() => setActiveMetric('calories')}
+                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${activeMetric === 'calories'
+                                ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 shadow-md ring-1 ring-orange-400'
+                                : 'border-gray-100 dark:border-gray-700 hover:border-orange-200 bg-white dark:bg-gray-800'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" />
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
+                            </div>
+                            <p className="text-xl font-black text-gray-800 dark:text-white">
+                                {indoorStats.totalCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
+                            </p>
+                        </div>
+
+                        {/* Sessions stat */}
+                        <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-sm transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Lần tham gia</span>
+                            </div>
+                            <p className="text-xl font-black text-gray-800 dark:text-white">
+                                {indoorStats.totalSessions} <span className="text-sm font-medium text-gray-400">buổi</span>
+                            </p>
+                        </div>
+
+                        {/* Avg session time */}
+                        <div className="p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-sm transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">TB/buổi</span>
+                            </div>
+                            <p className="text-xl font-black text-gray-800 dark:text-white">
+                                {formatDuration(indoorStats.avgSessionSeconds)}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">Thời gian trung bình</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Chart + History */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                 {/* Chart */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="mb-4">
                             <h3 className="text-lg font-bold text-gray-800 dark:text-white">
                                 Lịch sử{' '}
                                 <span className="text-sm font-normal text-gray-400">
-                                    ({activeMetric === 'calories' ? 'kcal' : 'phút'})
+                                    ({metricUnit})
                                 </span>
                             </h3>
-                            <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                                {TIME_FILTERS.map(f => (
-                                    <button
-                                        key={f.key}
-                                        onClick={() => setTimeFilter(f.key)}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all
-                      ${timeFilter === f.key
-                                                ? 'bg-blue-500 text-white shadow-sm'
-                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                                            }`}
-                                    >
-                                        {f.label}
-                                    </button>
-                                ))}
-                            </div>
+                            {timeFilter === '24h' && <p className="text-xs text-gray-400 mt-0.5">Hiển thị từng buổi tham gia trong 24 giờ qua</p>}
                         </div>
 
                         <div className="h-64 w-full">
@@ -463,12 +616,26 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                     />
                                     <YAxis hide />
                                     <Tooltip
-                                        cursor={{ fill: 'transparent' }}
+                                        cursor={{ fill: 'rgba(229, 231, 235, 0.4)' }}
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length) {
+                                                const data = payload[0].payload
                                                 return (
-                                                    <div className="bg-gray-800 text-white text-xs py-1 px-2 rounded">
-                                                        {`${payload[0].value} ${metricUnit}`}
+                                                    <div className="bg-white dark:bg-gray-800 p-3 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700 text-sm">
+                                                        <p className="font-bold text-gray-800 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-700 pb-1">{data.date}</p>
+                                                        {timeFilter === '24h' ? (
+                                                            <div className="space-y-1">
+                                                                <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Thời gian:</span> <span className="font-bold text-blue-500">{data.minutes} phút</span></p>
+                                                                <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Calories:</span> <span className="font-bold text-orange-500">{data.calories} kcal</span></p>
+                                                                <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">AI:</span> <span className="font-bold text-indigo-500">{data.aiPct}%</span></p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-1">
+                                                                <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Thời gian:</span> <span className="font-bold text-blue-500">{data.minutes} phút</span></p>
+                                                                <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Calories:</span> <span className="font-bold text-orange-500">{data.calories} kcal</span></p>
+                                                                <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Số buổi:</span> <span className="font-bold text-emerald-500">{data.sessions} lần</span></p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             }
@@ -526,7 +693,8 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                     return (
                                         <div
                                             key={vs._id}
-                                            className={`p-3 rounded-xl border transition-all
+                                            onClick={() => setSelectedSession(vs)}
+                                            className={`p-3 rounded-xl border transition-all cursor-pointer
                         ${isHighlighted
                                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-400'
                                                     : 'border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-gray-200'
@@ -546,16 +714,30 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                                         {moment(vs.joinedAt).format('HH:mm DD/MM/YYYY')}
                                                     </p>
                                                 </div>
-                                                <span className="flex-shrink-0">
+                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setShareSession(vs) }}
+                                                        title="Chia sẻ lên cộng đồng"
+                                                        className="p-1.5 rounded-lg transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-indigo-100 hover:text-indigo-500 dark:hover:bg-indigo-900/20"
+                                                    >
+                                                        <FaShareAlt className="text-xs" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setDeleteSession(vs) }}
+                                                        title="Xóa buổi học"
+                                                        className="p-1.5 rounded-lg transition-all bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/20"
+                                                    >
+                                                        <FaTrash className="text-xs" />
+                                                    </button>
                                                     <FaCheckCircle className="text-green-500 text-base" />
-                                                </span>
+                                                </div>
                                             </div>
 
                                             {/* Stats row */}
-                                            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 pl-11">
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 pl-[44px]">
                                                 <span className="flex items-center gap-1">
                                                     <FaClock className="text-[10px]" />
-                                                    {formatSeconds(vs.activeSeconds)} active
+                                                    {formatDuration(vs.activeSeconds)}
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <FaFire className="text-[10px] text-orange-400" />
@@ -573,6 +755,56 @@ export default function IndoorEventProgress({ event, userProgress }) {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {deleteSession && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => !isDeleting && setDeleteSession(null)}>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="text-center">
+                            <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                                <FaTrash className="text-red-500 text-xl" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Xóa buổi học?</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                                <strong>{deleteSession.sessionId?.title || 'Video Call'}</strong>
+                            </p>
+                            <p className="text-xs text-gray-400 mb-6">
+                                {moment(deleteSession.joinedAt).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteSession.activeSeconds)} • {deleteSession.caloriesBurned} kcal
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setDeleteSession(null)}
+                                disabled={isDeleting}
+                                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setIsDeleting(true)
+                                    try {
+                                        await softDeleteVideoSession(eventId, deleteSession._id)
+                                        queryClient.invalidateQueries({ queryKey: ['videoSessions', eventId] })
+                                        queryClient.invalidateQueries({ queryKey: ['videoSessionStats', eventId] })
+                                        queryClient.invalidateQueries({ queryKey: ['userProgress', eventId] })
+                                        toast.success('Đã xóa buổi học')
+                                        setDeleteSession(null)
+                                    } catch (err) {
+                                        toast.error(err?.response?.data?.message || 'Xóa thất bại')
+                                    } finally {
+                                        setIsDeleting(false)
+                                    }
+                                }}
+                                disabled={isDeleting}
+                                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                            >
+                                {isDeleting ? 'Đang xóa...' : 'Xóa'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

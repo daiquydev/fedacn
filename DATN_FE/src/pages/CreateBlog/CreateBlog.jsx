@@ -11,7 +11,7 @@ import { schemaCreateBlog } from '../../utils/rules'
 import { useQuery } from '@tanstack/react-query'
 import { createBlog, getCategoryBlogs } from '../../apis/blogApi'
 import Loading from '../../components/GlobalComponents/Loading'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
@@ -50,16 +50,14 @@ export default function CreateBlog() {
     mutationFn: (body) => createBlog(body)
   })
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     createBlogMutation.mutate(data, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         reset()
         handleCloseCreate()
         toast.success('Tạo bài viết thành công')
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Tạo bài viết thất bại')
       }
     })
   })

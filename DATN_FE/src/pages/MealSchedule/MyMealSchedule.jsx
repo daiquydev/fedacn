@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaCalendarAlt, FaArrowLeft, FaArrowRight, FaCheckCircle, FaRegClock, FaList, FaRegCalendarCheck, FaExclamationCircle, FaUtensils, FaChartLine, FaCheckSquare, FaBell, FaRegEdit, FaCalendarDay, FaUsers, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import MealProgress from './components/MealProgress';
 import { toast } from 'react-hot-toast';
+import { getListMealSchedules, getDateMealItem } from '../../apis/mealScheduleApi';
 
 export default function MyMealSchedule() {
   const navigate = useNavigate();
@@ -33,56 +34,44 @@ export default function MyMealSchedule() {
   
   // Hàm đánh dấu bữa ăn hoàn thành
   const markMealAsCompleted = (mealId) => {
-    // Cập nhật state với bản sao mới
     const newCompletedMealIds = [...completedMealIdsRef.current, mealId];
     setCompletedMealIds(newCompletedMealIds);
     
-    // Cập nhật meals state
     setCurrentMeals(prevMeals => 
       prevMeals.map(item => 
         item.id === mealId ? { ...item, completed: true } : item
       )
     );
     
-    // Hiển thị thông báo
     toast.success('Đã hoàn thành!');
-    
-    // Force re-render nếu cần
     setForceUpdate(prev => prev + 1);
   };
   
-  // Thêm state riêng biệt để force re-render
   const [forceUpdate, setForceUpdate] = useState(0);
   
-  // Kiểm tra xem bữa ăn có hoàn thành hay không
   const isMealCompleted = (mealId) => {
     return completedMealIds.includes(mealId) && 
            currentMeals.some(meal => meal.id === mealId && meal.completed);
   };
 
-  // Lấy ngày đầu tiên của tuần hiện tại
   function getCurrentWeek() {
     const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
-    const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust for Monday as first day
+    const dayOfWeek = now.getDay();
+    const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
     return new Date(now.setDate(diff));
   }
 
-  // Lấy danh sách các ngày trong tuần
   function getDaysInWeek(startOfWeek) {
     const days = [];
     const start = new Date(startOfWeek);
-    
     for (let i = 0; i < 7; i++) {
       const day = new Date(start);
       day.setDate(day.getDate() + i);
       days.push(day);
     }
-    
     return days;
   }
 
-  // Kiểm tra ngày có phải là hôm nay
   function isToday(date) {
     const today = new Date();
     return date.getDate() === today.getDate() &&
@@ -90,14 +79,12 @@ export default function MyMealSchedule() {
       date.getFullYear() === today.getFullYear();
   }
 
-  // Kiểm tra ngày có nằm trong khoảng áp dụng thực đơn
   function isDateInMealPlan(date, mealPlan) {
     const planStart = new Date(mealPlan.startDate);
     const planEnd = new Date(mealPlan.endDate);
     return date >= planStart && date <= planEnd;
   }
 
-  // Format date
   function formatDate(date) {
     return date.toLocaleDateString('vi-VN', {
       weekday: 'short',
@@ -106,21 +93,18 @@ export default function MyMealSchedule() {
     });
   }
 
-  // Di chuyển đến tuần trước
   function goToPreviousWeek() {
     const prevWeek = new Date(currentWeek);
     prevWeek.setDate(prevWeek.getDate() - 7);
     setCurrentWeek(prevWeek);
   }
 
-  // Di chuyển đến tuần sau
   function goToNextWeek() {
     const nextWeek = new Date(currentWeek);
     nextWeek.setDate(nextWeek.getDate() + 7);
     setCurrentWeek(nextWeek);
   }
 
-  // Xử lý khi chọn ngày
   function handleSelectDay(day) {
     if (selectedPlan) {
       navigate(`/schedule/eat-schedule/day/${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`);
@@ -129,94 +113,98 @@ export default function MyMealSchedule() {
     }
   }
 
-  // Tính ngày trong tuần
   function getDayOfWeek(date) {
     const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
     return days[date.getDay()];
   }
 
-  // Mô phỏng fetch dữ liệu
+  // Lấy dữ liệu thực đơn từ database
   useEffect(() => {
-    setTimeout(() => {
-      const mockData = [
-        {
-          id: 1,
-          title: 'Thực đơn giảm cân 7 ngày',
-          image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-          startDate: '2025-04-02T00:00:00Z',
-          endDate: '2025-04-08T23:59:59Z',
-          duration: 7,
-          progress: 40,
-          completedDays: 2,
-          totalDays: 7,
-          category: 'Giảm cân',
-          calories: 1500,
-          activeDay: '2024-01-15T00:00:00Z',
-          activeUsers: 245,
-          activeUsersTrend: 15, // Tăng 15 người so với hôm qua
-          todayMeals: [
-            {id: 1, type: 'Sáng', name: 'Yến mạch sữa hạnh nhân với trái cây', calories: 350, completed: true, 
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu 50g yến mạch với 250ml sữa hạnh nhân trong 3-5 phút.</li><li>Thêm 1/2 thìa cafe mật ong (tùy chọn).</li><li>Thái chuối thành lát và rắc lên trên.</li><li>Đập nhỏ hạnh nhân và rắc lên trên cùng.</li></ol>'},
-            {id: 2, type: 'Trưa', name: 'Salad gà nướng với rau xanh', calories: 450, completed: false,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp ức gà với muối, tiêu, bột tỏi, và một ít dầu olive trong 15 phút.</li><li>Nướng gà ở 200°C trong 15-20 phút hoặc đến khi chín.</li><li>Để nguội và cắt thành lát nhỏ.</li><li>Trộn rau xanh, cà chua, dưa chuột trong tô lớn.</li><li>Thêm gà nướng đã cắt lát.</li><li>Rưới dầu olive và chanh, thêm muối và tiêu vừa đủ.</li></ol>'},
-            {id: 3, type: 'Tối', name: 'Cá hồi nướng với măng tây', calories: 480, completed: false,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp cá hồi với muối, tiêu, chanh trong 30 phút.</li><li>Nướng cá hồi ở 180°C trong 12-15 phút.</li><li>Cắt khoai lang thành miếng vừa, thấm khô, trộn với dầu olive, muối, tiêu.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút, đảo một lần giữa chừng.</li><li>Luộc măng tây trong 3-4 phút, sau đó ngâm ngay vào nước đá.</li><li>Xào nhanh măng tây với một ít dầu olive và tỏi.</li></ol>'},
-            {id: 4, type: 'Snack', name: 'Sữa chua Hy Lạp với hỗn hợp quả mọng', calories: 180, completed: true,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho 150g sữa chua Hy Lạp vào bát.</li><li>Thêm hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi).</li><li>Có thể thêm một ít hạt chia và mật ong (tùy chọn).</li></ol>'}
-          ]
-        },
-        {
-          id: 2,
-          title: 'Thực đơn tăng cơ 14 ngày',
-          image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
-          startDate: '2025-04-05T00:00:00Z',
-          endDate: '2025-04-18T23:59:59Z',
-          duration: 14,
-          progress: 70,
-          completedDays: 10,
-          totalDays: 14,
-          category: 'Tăng cơ',
-          calories: 2500,
-          activeDay: '2024-01-16T00:00:00Z',
-          activeUsers: 173,
-          activeUsersTrend: -8, // Giảm 8 người so với hôm qua
-          todayMeals: [
-            {id: 1, type: 'Sáng', name: 'Smoothie protein với chuối và bơ', calories: 550, completed: true,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Cho vào máy xay: 1 chuối, 1/2 quả bơ, 1 muỗng bột protein, 240ml sữa hạnh nhân.</li><li>Thêm đá nếu thích đồ uống lạnh.</li><li>Xay đến khi hỗn hợp mịn.</li><li>Có thể thêm mật ong hoặc quế để tăng hương vị.</li></ol>'},
-            {id: 2, type: 'Trưa', name: 'Cơm gạo lứt với ức gà và rau', calories: 650, completed: true,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Nấu gạo lứt với tỉ lệ 1:2 (gạo:nước).</li><li>Ướp ức gà với muối, tiêu, bột tỏi, và dầu olive.</li><li>Nướng hoặc áp chảo ức gà đến khi chín.</li><li>Cắt ức gà thành miếng vừa ăn.</li><li>Xào rau củ với dầu olive và tỏi.</li><li>Trình bày gạo lứt, ức gà và rau củ trên đĩa.</li></ol>'},
-            {id: 3, type: 'Tối', name: 'Bít tết bò với khoai lang nướng', calories: 750, completed: false,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Ướp thịt bò với muối, tiêu, tỏi, và một chút dầu olive trong 30 phút.</li><li>Rửa sạch và cắt khoai lang thành miếng vừa.</li><li>Trộn khoai lang với dầu olive, muối, tiêu, bột paprika.</li><li>Nướng khoai lang ở 200°C trong 25-30 phút.</li><li>Nướng hoặc áp chảo thịt bò theo mức độ chín mong muốn.</li><li>Để thịt nghỉ trong 5 phút trước khi cắt và phục vụ.</li></ol>'},
-            {id: 4, type: 'Snack', name: 'Sữa và một nắm hạt', calories: 300, completed: true,
-             cooking: '<p><strong>Cách chế biến:</strong></p><ol><li>Chuẩn bị một ly sữa tươi hoặc sữa hạnh nhân không đường.</li><li>Trộn các loại hạt như hạnh nhân, hạt điều, óc chó, và hạt bí ngô.</li><li>Có thể rang nhẹ các loại hạt trước khi ăn để tăng hương vị.</li></ol>'}
-          ]
-        }
-      ];
-      
-      // Generate recent days data
-      const today = new Date();
-      const recentDaysData = [];
-      
-      for (let i = 4; i >= 0; i--) {
-        const day = new Date(today);
-        day.setDate(day.getDate() - i);
-        
-        const randomCompletion = Math.floor(Math.random() * 101);
-        const isCompleted = randomCompletion > 70;
-        
-        recentDaysData.push({
-          date: day,
-          percentage: randomCompletion,
-          isCompleted: isCompleted
+    const fetchMealData = async () => {
+      try {
+        setLoading(true);
+        const response = await getListMealSchedules({ page: 1, limit: 20 });
+        const schedules = response?.data?.result?.meal_schedules || response?.data?.result || [];
+
+        // Map API data to component format
+        const mealPlans = schedules.map(schedule => {
+          const startDate = schedule.start_date || schedule.startDate;
+          const endDate = schedule.end_date || schedule.endDate;
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          const now = new Date();
+          const daysPassed = Math.max(0, Math.ceil((now - start) / (1000 * 60 * 60 * 24)));
+          const completedDays = Math.min(daysPassed, totalDays);
+          const progress = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+          return {
+            id: schedule._id || schedule.id,
+            title: schedule.name || schedule.title || 'Thực đơn',
+            image: schedule.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+            startDate: startDate,
+            endDate: endDate,
+            duration: totalDays,
+            progress: Math.min(progress, 100),
+            completedDays: Math.min(completedDays, totalDays),
+            totalDays: totalDays,
+            category: schedule.purpose === 0 ? 'Giảm cân' : schedule.purpose === 1 ? 'Tăng cơ' : 'Duy trì',
+            calories: schedule.weight_target || 0,
+            todayMeals: []
+          };
         });
+
+        // Nếu có meal plan, lấy meals cho ngày hôm nay
+        if (mealPlans.length > 0) {
+          const firstPlan = mealPlans[0];
+          try {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const mealItemsRes = await getDateMealItem({
+              meal_schedule_id: firstPlan.id,
+              date: todayStr
+            });
+            const mealItems = mealItemsRes?.data?.result || [];
+            firstPlan.todayMeals = mealItems.map((item, index) => ({
+              id: item._id || `meal-${index}`,
+              type: item.meal_name?.includes('sáng') ? 'Sáng' : item.meal_name?.includes('trưa') ? 'Trưa' : item.meal_name?.includes('tối') ? 'Tối' : 'Snack',
+              name: item.meal_name || '',
+              calories: item.energy || 0,
+              completed: item.is_completed || false,
+              cooking: ''
+            }));
+          } catch {
+            // Không có meals cho hôm nay, giữ mảng rỗng
+          }
+        }
+
+        // Generate recent days data
+        const today = new Date();
+        const recentDaysData = [];
+        for (let i = 4; i >= 0; i--) {
+          const day = new Date(today);
+          day.setDate(day.getDate() - i);
+          recentDaysData.push({
+            date: day,
+            percentage: 0,
+            isCompleted: false
+          });
+        }
+
+        setRecentDays(recentDaysData);
+        setActiveMealPlans(mealPlans);
+        if (mealPlans.length > 0) {
+          setSelectedPlan(mealPlans[0]);
+          setCurrentMeals(mealPlans[0].todayMeals || []);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu thực đơn:', error);
+        setActiveMealPlans([]);
+        setLoading(false);
       }
-      
-      setRecentDays(recentDaysData);
-      setActiveMealPlans(mockData);
-      setSelectedPlan(mockData[0]);
-      setCurrentMeals(mockData[0].todayMeals);
-      setLoading(false);
-    }, 800);
+    };
+
+    fetchMealData();
   }, []);
 
   // Cập nhật danh sách các ngày trong tuần khi currentWeek thay đổi

@@ -15,7 +15,8 @@ export interface PauseInterval {
 
 export interface ActivityTracking {
     _id?: Types.ObjectId
-    eventId: Types.ObjectId
+    eventId?: Types.ObjectId
+    challengeId?: Types.ObjectId
     userId: Types.ObjectId
     activityType: string
     status: 'active' | 'paused' | 'completed' | 'discarded'
@@ -29,6 +30,7 @@ export interface ActivityTracking {
     calories: number
     gpsRoute: GpsPoint[]
     pauseIntervals: PauseInterval[]
+    is_deleted?: boolean
     createdAt?: Date
     updatedAt?: Date
 }
@@ -54,7 +56,8 @@ const PauseIntervalSchema = new mongoose.Schema(
 
 const ActivityTrackingSchema = new mongoose.Schema<ActivityTracking>(
     {
-        eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'sport_events', required: true },
+        eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'sport_events', default: null },
+        challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'challenges', default: null },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
         activityType: {
             type: String,
@@ -74,7 +77,8 @@ const ActivityTrackingSchema = new mongoose.Schema<ActivityTracking>(
         avgPace: { type: Number, default: 0 },
         calories: { type: Number, default: 0 },
         gpsRoute: [GpsPointSchema],
-        pauseIntervals: [PauseIntervalSchema]
+        pauseIntervals: [PauseIntervalSchema],
+        is_deleted: { type: Boolean, default: false }
     },
     {
         timestamps: true,
@@ -84,6 +88,7 @@ const ActivityTrackingSchema = new mongoose.Schema<ActivityTracking>(
 
 // Indexes
 ActivityTrackingSchema.index({ eventId: 1, userId: 1, status: 1 })
+ActivityTrackingSchema.index({ challengeId: 1, userId: 1, status: 1 })
 ActivityTrackingSchema.index({ userId: 1, createdAt: -1 })
 ActivityTrackingSchema.index({ eventId: 1, status: 1, totalDistance: -1 })
 

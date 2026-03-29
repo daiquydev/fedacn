@@ -8,7 +8,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaBMR } from '../../utils/rules'
 import { useContext, useState } from 'react'
 import { calculateBMR, saveBMRData } from '../../apis/calculatorApi'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import CalculatorModal from '../../components/GlobalComponents/CalculatorModal'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -58,7 +58,7 @@ export default function BMR() {
           }
         })
       },
-      onError: () => { console.log('error') }
+      onError: () => { toast.error('Có lỗi xảy ra khi tính BMR') }
     })
   })
 

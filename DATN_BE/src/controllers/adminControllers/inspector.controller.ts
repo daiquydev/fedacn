@@ -17,7 +17,6 @@ export const getAllPostReportController = async (req: Request, res: Response) =>
 
 export const getPostReportDetailController = async (req: Request, res: Response) => {
   const { id } = req.params
-  console.log('id', id)
   const result = await inspectorService.getPostReportDetailService({ post_id: id })
   return res.json({
     result,

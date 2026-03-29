@@ -30,7 +30,7 @@ export const endVideoSessionController = async (req: Request, res: Response) => 
     try {
         const { eventId, vsId } = req.params
         const userId = (req as any).decoded?.user_id
-        const { activeSeconds, totalSeconds } = req.body
+        const { activeSeconds, totalSeconds, screenshots } = req.body
 
         // Validate input
         if (activeSeconds === undefined || activeSeconds === null) {
@@ -48,7 +48,8 @@ export const endVideoSessionController = async (req: Request, res: Response) => 
             vsId,
             userId,
             Number(activeSeconds),
-            Number(totalSeconds)
+            Number(totalSeconds),
+            Array.isArray(screenshots) ? screenshots : []
         )
 
         return res.json({
@@ -117,6 +118,25 @@ export const getVideoSessionStatsController = async (req: Request, res: Response
         })
     } catch (error) {
         return res.status(500).json({
+            message: (error as Error).message
+        })
+    }
+}
+
+// ─── Soft-delete Video Session ────────────────────────────────────────────────
+export const softDeleteVideoSessionController = async (req: Request, res: Response) => {
+    try {
+        const { eventId, vsId } = req.params
+        const userId = (req as any).decoded?.user_id
+
+        const session = await sportEventVideoSessionService.softDeleteVideoSessionService(eventId, vsId, userId)
+
+        return res.json({
+            result: session,
+            message: 'Đã xóa buổi học thành công'
+        })
+    } catch (error) {
+        return res.status(400).json({
             message: (error as Error).message
         })
     }

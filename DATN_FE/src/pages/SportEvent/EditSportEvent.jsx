@@ -51,7 +51,8 @@ const isPastDate = (dateStr) => {
 
 const parseDateToISO = (dateStr, timeStr = '00:00') => {
   const [d, m, y] = dateStr.split('/')
-  return new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00`).toISOString()
+  // Construct UTC ISO string directly to avoid local timezone shifting date back by 1 day
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00.000Z`
 }
 
 const formatDateInput = (raw) => {
@@ -259,7 +260,7 @@ const EditSportEvent = () => {
   }
 
   const validateForm = () => {
-    const fields = ['name', 'startDate', 'endDate', 'eventTime', 'location', 'description', 'image']
+    const fields = ['name', 'startDate', 'endDate', 'eventTime', ...(newEvent.eventType === 'Ngoài trời' ? ['location'] : []), 'description', 'image']
     const sErr = {}
     fields.forEach(f => {
       const e = validateField(f, newEvent[f])
@@ -288,7 +289,7 @@ const EditSportEvent = () => {
       name: newEvent.name,
       startDate: startISO,
       endDate: endISO,
-      location: newEvent.location,
+      location: newEvent.eventType === 'Trong nhà' ? (newEvent.location?.trim() || 'Video call trực tuyến') : newEvent.location,
       category: newEvent.category,
       maxParticipants: Number(newEvent.maxParticipants),
       targetValue: Number(newEvent.targetValue),

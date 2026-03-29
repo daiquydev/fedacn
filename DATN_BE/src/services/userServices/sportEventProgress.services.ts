@@ -57,7 +57,8 @@ class SportEventProgressService {
   async getUserProgressService(eventId: string, userId: string) {
     const progressHistory = await SportEventProgressModel.find({
       eventId,
-      userId
+      userId,
+      is_deleted: { $ne: true }
     })
       .sort({ date: -1 })
       .exec()
@@ -76,7 +77,7 @@ class SportEventProgressService {
   async getLeaderboardService(eventId: string, sortBy: string = 'totalProgress') {
     // Aggregate progress by user
     const leaderboardData = await SportEventProgressModel.aggregate([
-      { $match: { eventId: new Types.ObjectId(eventId) } },
+      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true } } },
       {
         $group: {
           _id: '$userId',
@@ -144,7 +145,7 @@ class SportEventProgressService {
 
     // Get progress data for all participants
     const progressData = await SportEventProgressModel.aggregate([
-      { $match: { eventId: new Types.ObjectId(eventId) } },
+      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true } } },
       {
         $group: {
           _id: '$userId',
@@ -248,7 +249,7 @@ class SportEventProgressService {
   // Get overall event progress (sum of all participants)
   async getEventOverallProgressService(eventId: string) {
     const result = await SportEventProgressModel.aggregate([
-      { $match: { eventId: new Types.ObjectId(eventId) } },
+      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true } } },
       {
         $group: {
           _id: null,

@@ -58,7 +58,6 @@ export const refreshTokenController = async (req: Request, res: Response) => {
 export const oauthController = async (req: Request, res: Response) => {
   const { code } = req.query
   const result = await authUserService.oauth(code as string)
-  console.log('result', result)
   if (result.user === null) {
     return res.redirect(envConfig.CLIENT_REDIRECT_CALLBACK)
   }

@@ -1,17 +1,17 @@
 import { BsPeopleFill } from 'react-icons/bs'
 import { MdSportsSoccer } from 'react-icons/md'
-import { FaDumbbell, FaFire } from 'react-icons/fa'
-import PieChart from './components/PieChart/PieChart'
-import AIUsageLineChart from './components/AIUsageLineChart/AIUsageLineChart'
-import CommunityLineChart from './components/CommunityLineChart/CommunityLineChart'
-import SportEventPieChart from './components/SportEventPieChart/SportEventPieChart'
-import SportCategoryBarChart from './components/SportCategoryBarChart/SportCategoryBarChart'
-import WorkoutLineChart from './components/WorkoutLineChart/WorkoutLineChart'
+import { FaNewspaper, FaRobot } from 'react-icons/fa'
+import BMIBarChart from './components/PieChart/PieChart'
+import EventTypeDoughnut from './components/EventTypeDoughnut/EventTypeDoughnut'
+import AIUsageSection from './components/AIUsageLineChart/AIUsageLineChart'
+import CommunitySection from './components/CommunitySection/CommunitySection'
+import SportEventCategoryCharts from './components/SportEventCategoryCharts/SportEventCategoryCharts'
+import InfoTooltip from './components/InfoTooltip/InfoTooltip'
 import { dashboard } from '../../apis/adminApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ icon, iconBg, label, total, sub, subLabel }) {
+function StatCard({ icon, iconBg, label, total, sub, subLabel, subText }) {
   return (
     <div className='relative bg-white dark:bg-gray-800 rounded-2xl pt-10 pb-6 px-6 shadow-md border border-gray-100 dark:border-gray-700 my-4'>
       <div
@@ -23,13 +23,13 @@ function StatCard({ icon, iconBg, label, total, sub, subLabel }) {
       <div className='mt-2'>
         <p className='text-base font-bold text-gray-700 dark:text-gray-200 mb-3'>{label}</p>
         <div className='flex items-end gap-2'>
-          <span className='text-3xl font-black text-gray-800 dark:text-white'>{total ?? 0}</span>
+          <span className='text-3xl font-black text-gray-800 dark:text-white'>{(total ?? 0).toLocaleString('vi-VN')}</span>
           <span className='text-sm text-gray-400 mb-1'>{subLabel}</span>
         </div>
         {sub !== undefined && (
           <p className='text-xs text-gray-400 mt-2 flex items-center gap-1'>
-            <span className='inline-block w-1.5 h-1.5 rounded-full bg-green-400' />
-            {sub} đang hoạt động
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${subText ? 'bg-amber-400' : 'bg-green-400'}`} />
+            {sub} {subText || 'đang hoạt động'}
           </p>
         )}
       </div>
@@ -38,24 +38,33 @@ function StatCard({ icon, iconBg, label, total, sub, subLabel }) {
   )
 }
 
-// ─── Mini Community Stat Card ─────────────────────────────────────────────────
-function MiniStatCard({ emoji, label, value, color }) {
+// ─── Group Header ─────────────────────────────────────────────────────────────
+function GroupHeader({ emoji, title, subtitle, infoText }) {
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl px-5 py-4 border-l-4 ${color} shadow-sm border border-gray-100 dark:border-gray-700`}>
-      <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>{emoji} {label}</p>
-      <p className='text-2xl font-black text-gray-800 dark:text-white'>{(value ?? 0).toLocaleString('vi-VN')}</p>
+    <div className='flex items-center gap-3 mb-3 mt-10 px-2'>
+      <span className='text-2xl'>{emoji}</span>
+      <div className='flex-1'>
+        <div className='flex items-center gap-2'>
+          <h2 className='text-lg font-bold text-gray-800 dark:text-gray-100'>{title}</h2>
+          {infoText && <InfoTooltip text={infoText} />}
+        </div>
+        {subtitle && <p className='text-xs text-gray-400'>{subtitle}</p>}
+      </div>
     </div>
   )
 }
 
-// ─── Section Header ───────────────────────────────────────────────────────────
-function SectionHeader({ emoji, title, subtitle }) {
+// ─── Section Header (smaller) ─────────────────────────────────────────────────
+function SectionHeader({ emoji, title, subtitle, infoText }) {
   return (
-    <div className='flex items-center gap-3 mb-2 mt-8 px-2'>
-      <span className='text-2xl'>{emoji}</span>
-      <div>
-        <h2 className='text-lg font-bold text-gray-800 dark:text-gray-100'>{title}</h2>
-        {subtitle && <p className='text-xs text-gray-400'>{subtitle}</p>}
+    <div className='flex items-center gap-2.5 mb-2 mt-6 px-2'>
+      <span className='text-lg'>{emoji}</span>
+      <div className='flex-1'>
+        <div className='flex items-center gap-2'>
+          <h3 className='text-sm font-bold text-gray-700 dark:text-gray-200'>{title}</h3>
+          {infoText && <InfoTooltip text={infoText} />}
+        </div>
+        {subtitle && <p className='text-[11px] text-gray-400'>{subtitle}</p>}
       </div>
     </div>
   )
@@ -81,15 +90,22 @@ export default function Home() {
           <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
           <h1 className='text-3xl font-black text-white mb-2'>Trang Tổng Quan</h1>
           <p className='text-white/80 text-sm max-w-md'>
-            Theo dõi toàn bộ hoạt động: người dùng, cộng đồng, sự kiện thể thao, tập luyện và AI.
+            Theo dõi toàn bộ hoạt động: người dùng, cộng đồng, sự kiện thể thao và AI.
           </p>
         </div>
         <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
         <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
       </div>
 
-      {/* ── Section 1: Stat Cards ──────────────────────────────────── */}
-      <SectionHeader emoji='📈' title='Tổng quan Hệ thống' />
+      {/* ══════════════════════════════════════════════════════════════
+          📈 STAT CARDS — Nhìn nhanh sức khỏe hệ thống
+          ══════════════════════════════════════════════════════════════ */}
+      <GroupHeader
+        emoji='📈'
+        title='Tổng quan Hệ thống'
+        subtitle='Theo dõi quy mô và tăng trưởng nền tảng'
+        infoText='4 chỉ số cốt lõi giúp bạn nắm bắt nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
+      />
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-6'>
         <StatCard
           icon={<BsPeopleFill size={26} />}
@@ -107,68 +123,70 @@ export default function Home() {
           subLabel='sự kiện'
         />
         <StatCard
-          icon={<FaDumbbell size={24} />}
-          iconBg='bg-gradient-to-br from-violet-500 to-purple-700'
-          label='Buổi tập người dùng hoàn thành'
-          total={result?.workoutStats?.totalSessions}
-          subLabel='buổi tập'
+          icon={<FaNewspaper size={24} />}
+          iconBg='bg-gradient-to-br from-blue-400 to-cyan-600'
+          label='Bài viết Cộng đồng'
+          total={community?.totalPosts}
+          sub={community?.reportedPosts}
+          subLabel='bài viết'
+          subText='bị báo cáo'
         />
         <StatCard
-          icon={<FaFire size={24} />}
-          iconBg='bg-gradient-to-br from-rose-400 to-red-600'
-          label='Tổng Kcal người dùng đã đốt'
-          total={result?.workoutStats?.totalKcal?.toLocaleString('vi-VN')}
-          subLabel='kcal'
+          icon={<FaRobot size={24} />}
+          iconBg='bg-gradient-to-br from-indigo-500 to-violet-700'
+          label='Lượt sử dụng AI'
+          total={result?.aiUsage?.total}
+          subLabel='lượt'
         />
       </div>
 
-      {/* ── Section 2: BMI ────────────────────────────────────────── */}
-      <SectionHeader emoji='🏥' title='Phân phối BMI' subtitle='Dựa trên thông tin hồ sơ sức khỏe người dùng' />
-      <div className='grid w-full grid-cols-1 xl:grid-cols-2 gap-2'>
-        <div className='xl:col-span-1'>
-          <PieChart usersBMI={result?.usersBMI} />
+      {/* ══════════════════════════════════════════════════════════════
+          NHÓM 1: 👥 NGƯỜI DÙNG & SỨC KHỎE
+          ══════════════════════════════════════════════════════════════ */}
+      <GroupHeader
+        emoji='👥'
+        title='Người dùng & Sức khỏe'
+        subtitle='Hiểu cộng đồng — ai đang dùng, thể trạng ra sao'
+        infoText='Nhóm biểu đồ này giúp bạn hiểu cấu trúc cộng đồng người dùng: phân bố sức khỏe (BMI) và tỷ lệ sự kiện Ngoài trời/Trong nhà. Dùng để đánh giá nền tảng đang phục vụ đúng đối tượng chưa.'
+      />
+      <div className='grid w-full grid-cols-1 xl:grid-cols-2 gap-3 px-2'>
+        <div>
+          <BMIBarChart usersBMI={result?.usersBMI} />
+        </div>
+        <div>
+          <EventTypeDoughnut sportEvents={result?.sportEvents} />
         </div>
       </div>
 
-      {/* ── Section 2b: AI Usage Line Chart ──────────────────────── */}
-      <SectionHeader emoji='🤖' title='Lượt sử dụng AI' subtitle='Số lần sử dụng AI theo từng tính năng trong 10 ngày gần nhất' />
-      <div className='grid w-full grid-cols-1'>
-        <AIUsageLineChart aiUsage={result?.aiUsage} />
+      {/* ══════════════════════════════════════════════════════════════
+          NHÓM 2: 🏅 CỘNG ĐỒNG & SỰ KIỆN
+          ══════════════════════════════════════════════════════════════ */}
+
+      {/* Community Section (self-contained with merged header + filter) */}
+      <CommunitySection />
+
+      {/* Top Sport Categories */}
+      <SectionHeader
+        emoji='🏆'
+        title='Top Môn Thể thao'
+        subtitle='Xếp hạng môn thể thao theo số sự kiện và lượng người tham gia'
+        infoText='So sánh môn nào có nhiều sự kiện nhất và môn nào thu hút nhiều người tham gia nhất. Nếu 1 môn có nhiều sự kiện nhưng ít người → cần quảng bá hơn. Ngược lại nếu ít sự kiện nhưng nhiều người → cần tạo thêm sự kiện cho môn đó.'
+      />
+      <div className='px-2'>
+        <SportEventCategoryCharts sportEvents={result?.sportEvents} />
       </div>
 
-      {/* ── Section 3: Cộng đồng ──────────────────────────────────── */}
-      <SectionHeader emoji='🗣️' title='Hoạt động Cộng đồng' subtitle='Số liệu bài viết, bình luận, tương tác và báo cáo' />
-      {/* 4 mini stat cards */}
-      <div className='grid grid-cols-2 xl:grid-cols-4 gap-3 px-2 my-3'>
-        <MiniStatCard emoji='📝' label='Tổng bài viết' value={community?.totalPosts} color='border-l-red-400' />
-        <MiniStatCard emoji='💬' label='Tổng bình luận' value={community?.totalComments} color='border-l-blue-400' />
-        <MiniStatCard emoji='❤️' label='Tổng lượt thích' value={community?.totalLikes} color='border-l-orange-400' />
-        <MiniStatCard emoji='🚨' label='Bài viết bị báo cáo' value={community?.reportedPosts} color='border-l-rose-500' />
-      </div>
-      {/* 10-day community line chart */}
-      <div className='grid w-full grid-cols-1'>
-        <CommunityLineChart
-          dailyPosts={community?.dailyPosts}
-          dailyComments={community?.dailyComments}
-          dailyLikes={community?.dailyLikes}
-        />
-      </div>
-
-      {/* ── Section 4: Sự kiện Thể thao ──────────────────────────── */}
-      <SectionHeader emoji='🏅' title='Sự kiện Thể thao' subtitle='Phân loại sự kiện và mức độ tham gia theo thể loại' />
-      <div className='grid w-full grid-cols-1 xl:grid-cols-5 gap-2'>
-        <div className='xl:col-span-2'>
-          <SportEventPieChart sportEvents={result?.sportEvents} />
-        </div>
-        <div className='xl:col-span-3'>
-          <SportCategoryBarChart topCategories={result?.sportEvents?.topCategories} />
-        </div>
-      </div>
-
-      {/* ── Section 5: Tập luyện ──────────────────────────────────── */}
-      <SectionHeader emoji='💪' title='Tập luyện' subtitle='Buổi tập hoàn thành & kcal đốt trong 10 ngày gần nhất' />
-      <div className='grid w-full grid-cols-1'>
-        <WorkoutLineChart dailySessions={result?.workoutStats?.dailySessions} />
+      {/* ══════════════════════════════════════════════════════════════
+          NHÓM 3: 🤖 AI & CÔNG NGHỆ
+          ══════════════════════════════════════════════════════════════ */}
+      <GroupHeader
+        emoji='🤖'
+        title='AI & Công nghệ'
+        subtitle='Hiệu quả sử dụng AI — tính năng nào hữu ích nhất cho người dùng'
+        infoText='Theo dõi mức độ sử dụng các tính năng AI. Tính năng được dùng nhiều nhất → đầu tư phát triển thêm. Tính năng ít dùng → cần cải thiện UX hoặc quảng bá. Dùng bộ lọc thời gian để so sánh xu hướng.'
+      />
+      <div className='px-2'>
+        <AIUsageSection />
       </div>
 
       <div className='h-10' />

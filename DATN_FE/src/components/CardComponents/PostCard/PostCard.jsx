@@ -55,6 +55,7 @@ import { getImageUrl } from '../../../utils/imageUrl'
 import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
 import SportEventPreviewCard, { extractSportEventId, cleanSportEventMarker } from '../../Post/SportEventPreviewCard'
 import ActivityPreviewCard, { extractActivityIds, cleanActivityMarker } from '../../Post/ActivityPreviewCard'
+import ChallengePreviewCard, { extractChallengeId, cleanChallengeMarker } from '../../Post/ChallengePreviewCard'
 
 export default function PostCard({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -253,7 +254,7 @@ function CheckTypeOfPost({
               <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
                 <img
                   className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
-                  src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                  src={data.user.avatar === '' ? useravatar : getImageUrl(data.user.avatar)}
                 />
               </div>
               <div className='flex flex-col'>
@@ -298,7 +299,7 @@ function CheckTypeOfPost({
           </div>
         </div>
         <ShowMoreContent className='px-4 text-sm whitespace-pre-line pb-5 md:px-0'>
-          <p className=''>{cleanActivityMarker(cleanSportEventMarker(data.content))}</p>
+          <p className=''>{cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content)))}</p>
         </ShowMoreContent>
         <CheckLengthOfImages navigate={navigate} data={data} images={data?.images} />
         {/* Sport Event Preview */}
@@ -312,6 +313,10 @@ function CheckTypeOfPost({
             eventId={extractActivityIds(data.content).eventId}
           />
         )}
+        {/* Challenge Preview */}
+        {extractChallengeId(data.content) && (
+          <ChallengePreviewCard challengeId={extractChallengeId(data.content)} />
+        )}
       </>
     )
   }
@@ -324,7 +329,7 @@ function CheckTypeOfPost({
               <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
                 <img
                   className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
-                  src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                  src={data.user.avatar === '' ? useravatar : getImageUrl(data.user.avatar)}
                 />
               </div>
               <div className='flex flex-col'>
@@ -387,7 +392,7 @@ function CheckTypeOfPost({
             <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
               <img
                 className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
-                src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                src={data.user.avatar === '' ? useravatar : getImageUrl(data.user.avatar)}
               />
             </div>
             <div className='flex flex-col'>
@@ -427,8 +432,16 @@ function CheckTypeOfPost({
         </div>
       </div>
       <ShowMoreContent className='px-4  whitespace-pre-line text-sm pb-5 md:px-0'>
-        <p className=''>{cleanActivityMarker(cleanSportEventMarker(data.content))}</p>
+        <p className=''>{cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content)))}</p>
       </ShowMoreContent>
+      {/* Challenge Preview (shared posts) */}
+      {extractChallengeId(data.content) && (
+        <ChallengePreviewCard challengeId={extractChallengeId(data.content)} />
+      )}
+      {/* Sport Event Preview (shared posts) */}
+      {extractSportEventId(data.content) && (
+        <SportEventPreviewCard eventId={extractSportEventId(data.content)} />
+      )}
       <div className='border mt-2 mb-2 dark:border-gray-700 border-red-200 '></div>
       {data.parent_user && data.parent_post && !data.parent_post?.is_banned ? (
         <>
@@ -438,7 +451,7 @@ function CheckTypeOfPost({
                 <div onClick={checkNavigateProfileParentUser} className='inline-block mr-4'>
                   <img
                     className='rounded-full object-cover max-w-none w-10 h-10 md:w-12 md:h-12'
-                    src={data.parent_user.avatar === '' || !data.parent_user.avatar ? useravatar : data.parent_user.avatar}
+                    src={data.parent_user.avatar === '' || !data.parent_user.avatar ? useravatar : getImageUrl(data.parent_user.avatar)}
                   />
                 </div>
                 <div className='flex flex-col'>

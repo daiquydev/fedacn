@@ -1,9 +1,11 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
-import { useState, useContext, useRef, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState, useContext, useRef, useEffect, useMemo } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
 import toast from 'react-hot-toast'
+import goongjs from '@goongmaps/goong-js'
+import '@goongmaps/goong-js/dist/goong-js.css'
 import {
     FaTimes,
     FaShare,
@@ -13,7 +15,8 @@ import {
     FaClock,
     FaTrophy,
     FaGlobeAsia,
-    FaBolt
+    FaBolt,
+    FaRoute
 } from 'react-icons/fa'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { BsLockFill, BsPeopleFill } from 'react-icons/bs'
@@ -24,9 +27,13 @@ import useSound from 'use-sound'
 
 import { AppContext } from '../../contexts/app.context'
 import { createPost } from '../../apis/postApi'
+import { getActivity } from '../../apis/sportEventApi'
+import { getChallengeActivity } from '../../apis/challengeApi'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import postSound from '../../assets/sounds/post.mp3'
+
+goongjs.accessToken = import.meta.env.VITE_GOONG_MAPTILES_KEY
 
 const PRIVACY_OPTIONS = [
     { value: 0, label: 'Công khai', icon: <FaGlobeAsia className="text-green-500" /> },
@@ -45,17 +52,25 @@ function formatDuration(seconds) {
 
 /**
  * Modal chia sẻ tiến độ GPS activity lên cộng đồng.
- * Marker format: [activity:ACTIVITY_ID:EVENT_ID]
+ * Supports both Sport Events (eventId) and Challenges (challengeId).
+ * Marker format: [activity:ACTIVITY_ID:EVENT_ID] or [challenge-activity:ACTIVITY_ID:CHALLENGE_ID]
  */
-export default function ActivityShareModal({ activity, event, eventId, onClose }) {
+export default function ActivityShareModal({ activity, event, eventId, challengeId, challengeVisibility, userProgress, onClose }) {
     const { profile } = useContext(AppContext)
     const navigate = useNavigate()
     const queryClient = useQueryClient()
     const [play] = useSound(postSound)
     const theme = localStorage.getItem('theme')
 
+    // Map challenge visibility to privacy value
+    const visibilityToPrivacy = { 'public': 0, 'friends': 1, 'private': 2 }
+    const isChallenge = !!challengeId && !eventId
+    const defaultPrivacy = isChallenge && challengeVisibility
+        ? (visibilityToPrivacy[challengeVisibility] ?? 0)
+        : 0
+
     const [content, setContent] = useState('')
-    const [privacy, setPrivacy] = useState(0)
+    const [privacy, setPrivacy] = useState(defaultPrivacy)
     const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false)
     const [showEmoji, setShowEmoji] = useState(false)
     const textareaRef = useRef(null)
@@ -88,7 +103,9 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
     })
 
     const handleShare = () => {
-        const marker = `[activity:${activity._id}:${eventId}]`
+        const sourceId = eventId || challengeId
+        const markerType = isChallenge ? 'challenge-activity' : 'activity'
+        const marker = `[${markerType}:${activity._id}:${sourceId}]`
         const fullContent = content.trim()
             ? `${content.trim()}\n${marker}`
             : marker
@@ -113,9 +130,15 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
 
     const selectedPrivacy = PRIVACY_OPTIONS.find((o) => o.value === privacy)
     const distanceKm = activity ? (activity.totalDistance / 1000).toFixed(2) : '0'
-    const progressPercent = event?.targetValue && activity
-        ? Math.min(Math.round((parseFloat(distanceKm) / event.targetValue) * 100), 100)
-        : null
+
+    // Tính progress tích lũy từ userProgress thay vì 1 activity
+    const progressPercent = useMemo(() => {
+        if (!event?.targetValue || !userProgress) return null
+        const maxP = event.maxParticipants > 0 ? event.maxParticipants : 1
+        const perPerson = event.targetValue / maxP
+        if (perPerson <= 0) return null
+        return Math.round((userProgress.totalProgress / perPerson) * 100)
+    }, [event, userProgress])
 
     return (
         <div
@@ -155,19 +178,23 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
                                 {profile?.name}
                             </span>
 
-                            {/* Privacy dropdown */}
+                            {/* Privacy dropdown — locked for challenges */}
                             <div className="relative" ref={dropdownRef}>
                                 <button
-                                    onClick={() => setShowPrivacyDropdown((v) => !v)}
-                                    className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-0.5 rounded-full mt-0.5 transition"
+                                    onClick={() => !isChallenge && setShowPrivacyDropdown((v) => !v)}
+                                    className={`flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full mt-0.5 transition ${isChallenge ? 'cursor-default opacity-80' : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        }`}
+                                    title={isChallenge ? `Chia sẻ theo quyền riêng tư của thử thách (${selectedPrivacy?.label})` : undefined}
                                 >
                                     {selectedPrivacy?.icon}
                                     {selectedPrivacy?.label}
-                                    <svg className="w-3 h-3 opacity-60" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                                    </svg>
+                                    {!isChallenge && (
+                                        <svg className="w-3 h-3 opacity-60" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
                                 </button>
-                                {showPrivacyDropdown && (
+                                {showPrivacyDropdown && !isChallenge && (
                                     <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden min-w-[160px]">
                                         {PRIVACY_OPTIONS.map((opt) => (
                                             <button
@@ -228,6 +255,8 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
                         <ActivityPreviewCardInModal
                             activity={activity}
                             event={event}
+                            eventId={eventId}
+                            challengeId={challengeId}
                             distanceKm={distanceKm}
                             progressPercent={progressPercent}
                         />
@@ -255,10 +284,107 @@ export default function ActivityShareModal({ activity, event, eventId, onClose }
 }
 
 /**
- * Preview card bên trong modal (không clickable).
+ * Preview card bên trong modal — hiển thị stats + bản đồ route GPS.
  */
-function ActivityPreviewCardInModal({ activity, event, distanceKm, progressPercent }) {
+function ActivityPreviewCardInModal({ activity, event, eventId, challengeId, distanceKm, progressPercent }) {
     if (!activity) return null
+
+    const mapContainerRef = useRef(null)
+    const mapRef = useRef(null)
+
+    // Determine which API to use for fetching activity detail
+    const sourceId = eventId || challengeId
+    const isChallenge = !!challengeId && !eventId
+    const canFetchRoute = activity.hasGpsRoute !== false && !!sourceId
+
+    // Fetch full activity data (includes gpsRoute) for the map
+    const { data: activityDetailData } = useQuery({
+        queryKey: ['activityDetail', isChallenge ? 'challenge' : 'event', sourceId, activity._id],
+        queryFn: () => isChallenge
+            ? getChallengeActivity(challengeId, activity._id)
+            : getActivity(eventId, activity._id),
+        enabled: !!activity._id && canFetchRoute,
+        staleTime: 60000,
+        retry: false
+    })
+
+    const activityDetail = activityDetailData?.data?.result
+    const gpsRoute = activityDetail?.gpsRoute || []
+    const hasRoute = gpsRoute.length > 1
+
+    // Initialize Goong Map when gpsRoute is loaded
+    useEffect(() => {
+        if (!hasRoute || !mapContainerRef.current || mapRef.current) return
+
+        const routePositions = gpsRoute.map((p) => [p.lng, p.lat])
+        const lngs = routePositions.map((p) => p[0])
+        const lats = routePositions.map((p) => p[1])
+        const center = [
+            (Math.min(...lngs) + Math.max(...lngs)) / 2,
+            (Math.min(...lats) + Math.max(...lats)) / 2
+        ]
+
+        const map = new goongjs.Map({
+            container: mapContainerRef.current,
+            style: 'https://tiles.goong.io/assets/goong_map_web.json',
+            center,
+            zoom: 14,
+            attributionControl: false,
+            interactive: false // non-interactive for preview
+        })
+
+        map.on('load', () => {
+            // Route polyline
+            map.addSource('route', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: { type: 'LineString', coordinates: routePositions }
+                }
+            })
+
+            map.addLayer({
+                id: 'route-line',
+                type: 'line',
+                source: 'route',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: {
+                    'line-color': '#3b82f6',
+                    'line-width': 4,
+                    'line-opacity': 0.9
+                }
+            })
+
+            // Fit bounds to show full route
+            const bounds = routePositions.reduce(
+                (b, c) => b.extend(c),
+                new goongjs.LngLatBounds(routePositions[0], routePositions[0])
+            )
+            map.fitBounds(bounds, { padding: 30 })
+
+            // Start marker (green)
+            const startEl = document.createElement('div')
+            startEl.style.cssText =
+                'width:12px;height:12px;border-radius:50%;background:#4caf50;border:2px solid #fff;box-shadow:0 0 6px rgba(76,175,80,0.5);'
+            new goongjs.Marker(startEl).setLngLat(routePositions[0]).addTo(map)
+
+            // End marker (red)
+            const endEl = document.createElement('div')
+            endEl.style.cssText =
+                'width:12px;height:12px;border-radius:50%;background:#e74c3c;border:2px solid #fff;box-shadow:0 0 6px rgba(231,76,60,0.5);'
+            new goongjs.Marker(endEl).setLngLat(routePositions[routePositions.length - 1]).addTo(map)
+        })
+
+        mapRef.current = map
+
+        return () => {
+            if (mapRef.current) {
+                mapRef.current.remove()
+                mapRef.current = null
+            }
+        }
+    }, [hasRoute, gpsRoute])
 
     const duration = formatDuration(activity.totalDuration)
     const calories = Math.round(activity.calories || 0)
@@ -272,7 +398,7 @@ function ActivityPreviewCardInModal({ activity, event, distanceKm, progressPerce
 
     // Add speed if available
     if (activity.totalDistance && activity.totalDuration) {
-        const speedKmh = ((activity.totalDistance / 1000) / (activity.totalDuration / 3600)).toFixed(1)
+        const speedKmh = ((activity.totalDistance / 1000) / (activity.totalDuration / 3600)).toFixed(2)
         stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ TB', value: `${speedKmh} km/h` })
     }
 
@@ -302,6 +428,26 @@ function ActivityPreviewCardInModal({ activity, event, distanceKm, progressPerce
                 ))}
             </div>
 
+            {/* GPS Route Map */}
+            <div className="mx-3 mb-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                    <FaRoute className="text-blue-500" size={10} />
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Lộ trình GPS</span>
+                </div>
+                <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: '160px' }}>
+                    {hasRoute ? (
+                        <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 text-gray-400">
+                            <div className="text-center">
+                                <FaRoute className="mx-auto mb-1 text-lg opacity-40" />
+                                <p className="text-[10px]">{canFetchRoute ? 'Đang tải bản đồ...' : 'Không có dữ liệu lộ trình'}</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Event info + progress */}
             {event && (
                 <div className="mx-3 mb-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800">
@@ -313,12 +459,17 @@ function ActivityPreviewCardInModal({ activity, event, distanceKm, progressPerce
                         <>
                             <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-1">
                                 <span>Tiến độ so với mục tiêu</span>
-                                <span className="font-semibold">{progressPercent}%</span>
+                                <span className={`font-semibold ${progressPercent >= 100 ? 'text-green-500' : ''}`}>
+                                    {progressPercent}%
+                                </span>
                             </div>
                             <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-400 transition-all"
-                                    style={{ width: `${progressPercent}%` }}
+                                    className={`h-full rounded-full transition-all ${progressPercent >= 100
+                                        ? 'bg-gradient-to-r from-green-400 to-emerald-500'
+                                        : 'bg-gradient-to-r from-orange-400 to-red-400'
+                                        }`}
+                                    style={{ width: `${Math.min(progressPercent, 100)}%` }}
                                 />
                             </div>
                         </>

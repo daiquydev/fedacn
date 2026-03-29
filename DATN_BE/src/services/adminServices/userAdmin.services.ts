@@ -561,19 +561,34 @@ class UserAdminService {
       SportEventModel.countDocuments({ isDeleted: { $ne: true }, eventType: 'Trong nhà' })
     ])
 
-    // Top 5 thể loại sport theo số người tham gia
-    const topCategories = await SportEventModel.aggregate([
-      { $match: { isDeleted: { $ne: true } } },
-      {
-        $group: {
-          _id: '$category',
-          totalParticipants: { $sum: '$participants' },
-          eventCount: { $sum: 1 }
-        }
-      },
-      { $sort: { totalParticipants: -1 } },
-      { $limit: 5 },
-      { $project: { _id: 0, category: '$_id', totalParticipants: 1, eventCount: 1 } }
+    // Top 5 thể loại sport theo loại hình — đếm sự kiện + số người tham gia thực tế
+    const [topOutdoorCategories, topIndoorCategories] = await Promise.all([
+      SportEventModel.aggregate([
+        { $match: { isDeleted: { $ne: true }, eventType: 'Ngoài trời' } },
+        {
+          $group: {
+            _id: '$category',
+            eventCount: { $sum: 1 },
+            totalParticipants: { $sum: { $size: { $ifNull: ['$participants_ids', []] } } }
+          }
+        },
+        { $sort: { eventCount: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, category: '$_id', eventCount: 1, totalParticipants: 1 } }
+      ]),
+      SportEventModel.aggregate([
+        { $match: { isDeleted: { $ne: true }, eventType: 'Trong nhà' } },
+        {
+          $group: {
+            _id: '$category',
+            eventCount: { $sum: 1 },
+            totalParticipants: { $sum: { $size: { $ifNull: ['$participants_ids', []] } } }
+          }
+        },
+        { $sort: { eventCount: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, category: '$_id', eventCount: 1, totalParticipants: 1 } }
+      ])
     ])
 
     // === WORKOUT SESSIONS ===
@@ -621,7 +636,8 @@ class UserAdminService {
         total: totalEvents,
         outdoor: outdoorEvents,
         indoor: indoorEvents,
-        topCategories
+        topOutdoorCategories,
+        topIndoorCategories
       },
       workoutStats: {
         totalSessions,

@@ -4,7 +4,8 @@ import {
     endVideoSessionController,
     getVideoSessionsController,
     getActiveVideoSessionController,
-    getVideoSessionStatsController
+    getVideoSessionStatsController,
+    softDeleteVideoSessionController
 } from '~/controllers/userControllers/sportEventVideoSession.controller'
 import { verifyToken } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -17,5 +18,6 @@ videoSessionRouter.get('/active', verifyToken, wrapRequestHandler(getActiveVideo
 videoSessionRouter.get('/stats', verifyToken, wrapRequestHandler(getVideoSessionStatsController))
 videoSessionRouter.get('/', verifyToken, wrapRequestHandler(getVideoSessionsController))
 videoSessionRouter.post('/:vsId/end', verifyToken, wrapRequestHandler(endVideoSessionController))
+videoSessionRouter.patch('/:vsId/soft-delete', verifyToken, wrapRequestHandler(softDeleteVideoSessionController))
 
 export default videoSessionRouter

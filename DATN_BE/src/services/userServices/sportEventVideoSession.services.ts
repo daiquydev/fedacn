@@ -97,7 +97,8 @@ class SportEventVideoSessionService {
         vsId: string,
         userId: string,
         activeSeconds: number,
-        totalSeconds: number
+        totalSeconds: number,
+        screenshots: string[] = []
     ) {
         // 1. Atomic lock: chỉ cho phép end session khi status = 'active'
         // Dùng findOneAndUpdate thay vì find + update riêng biệt để tránh race condition
@@ -146,6 +147,7 @@ class SportEventVideoSessionService {
                 activeSeconds: safeActiveSeconds,
                 totalSeconds: safeTotalSeconds,
                 caloriesBurned,
+                screenshots: screenshots.slice(0, 5),
                 progressId: progress._id
             },
             { new: true }
@@ -162,15 +164,40 @@ class SportEventVideoSessionService {
                 progressUnit: event.targetUnit || 'phút',
                 aiAccuracyPercent: safeTotalSeconds > 0
                     ? Math.round((safeActiveSeconds / safeTotalSeconds) * 100)
-                    : 0
+                    : 0,
+                screenshots: screenshots.slice(0, 5)
             }
         }
+    }
+
+    // ─── Soft-delete a Video Session ────────────────────────────────────────────
+    async softDeleteVideoSessionService(eventId: string, vsId: string, userId: string) {
+        const session = await SportEventVideoSessionModel.findOne({
+            _id: vsId,
+            eventId,
+            userId,
+            is_deleted: { $ne: true }
+        })
+        if (!session) throw new Error('Buổi học không tồn tại')
+
+        session.is_deleted = true
+        await session.save()
+
+        // Also soft-delete related sport_event_progress
+        if (session.progressId) {
+            await SportEventProgressModel.updateOne(
+                { _id: session.progressId },
+                { is_deleted: true }
+            )
+        }
+
+        return session
     }
 
     // ─── Get Video Sessions (history) ──────────────────────────────────────────
     async getVideoSessionsService(eventId: string, userId: string) {
         const sessions = await SportEventVideoSessionModel
-            .find({ eventId, userId })
+            .find({ eventId, userId, is_deleted: { $ne: true } })
             .populate('sessionId', 'title sessionNumber sessionDate')
             .sort({ joinedAt: -1 })
             .exec()
@@ -196,7 +223,8 @@ class SportEventVideoSessionService {
                 $match: {
                     eventId: new Types.ObjectId(eventId),
                     userId: new Types.ObjectId(userId),
-                    status: 'ended'
+                    status: 'ended',
+                    is_deleted: { $ne: true }
                 }
             },
             {

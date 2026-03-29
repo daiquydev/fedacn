@@ -11,7 +11,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaCreateRecipe } from '../../utils/rules'
 import { useQuery } from '@tanstack/react-query'
 import Loading from '../../components/GlobalComponents/Loading'
-import { } from '@tanstack/react-query'
+
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
@@ -162,8 +162,7 @@ export default function CreateRecipe() {
     }
 
     createRecipeMutation.mutate(formData, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         reset()
         setIngredients([{ name: '', amount: '', unit: '' }])
         setInstructions([''])
@@ -172,8 +171,7 @@ export default function CreateRecipe() {
         toast.success('Tạo công thức thành công')
         navigate('/recipes/my-recipes')
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
         toast.error('Có lỗi xảy ra khi tạo công thức')
       }
     })
@@ -187,7 +185,7 @@ export default function CreateRecipe() {
   const titleWatch = watch('title')
   const imageWatch = watch('image')
 
-  console.log(imageWatch)
+
 
   const { data: category, isFetching } = useQuery({
     queryKey: ['category-recipe'],

@@ -37,8 +37,7 @@ export default function WritterList() {
     placeholderData: keepPreviousData
   })
 
-  console.log(queryConfig)
-  console.log(data)
+
 
   const handleChangeSort = (e) => {
     navigate({
@@ -51,7 +50,6 @@ export default function WritterList() {
   }
 
   const handleChangeStatus = (e) => {
-    console.log(e.target.value)
     navigate({
       pathname: '/writter',
       search: createSearchParams({
@@ -81,7 +79,7 @@ export default function WritterList() {
     })
   })
 
-  console.log(queryConfig)
+
 
   return (
     <div className='h-screen mb-[30rem] text-gray-900 dark:text-white py-4 mx-3'>

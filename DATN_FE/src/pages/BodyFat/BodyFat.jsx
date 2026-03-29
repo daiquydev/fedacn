@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaBodyFat } from '../../utils/rules'
 import { useContext, useState } from 'react'
-import { } from '@tanstack/react-query'
+
 import { calculateBodyFat, saveBodyFatData } from '../../apis/calculatorApi'
 import toast from 'react-hot-toast'
 import Loading from '../../components/GlobalComponents/Loading'
@@ -43,7 +43,6 @@ export default function BodyFat() {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
     setDataBodyFat(data)
     calculateBodyFatMutation.mutate(data, {
       onSuccess: (res) => {
@@ -58,7 +57,7 @@ export default function BodyFat() {
           }
         })
       },
-      onError: () => { console.log('error') }
+      onError: () => { toast.error('Có lỗi xảy ra khi tính Body Fat') }
     })
   })
   return (

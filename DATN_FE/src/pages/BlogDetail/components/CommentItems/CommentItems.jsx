@@ -2,6 +2,7 @@ import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import moment from 'moment'
 import ShowMoreContent from '../../../../components/GlobalComponents/ShowMoreContent/ShowMoreContent'
 import useravatar from '../../../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../../../utils/imageUrl'
 import { deleteCommentBlog } from '../../../../apis/blogApi'
 import { } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
@@ -29,7 +30,7 @@ export default function CommentItems({ comment }) {
           toast.success('Xóa bình luận thành công')
         },
         onError: () => {
-          console.log('error')
+          toast.error('Có lỗi xảy ra khi xóa bình luận')
         }
       }
     )
@@ -41,7 +42,7 @@ export default function CommentItems({ comment }) {
           <div className='inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white'>
             <img
               className='mr-2 w-6 h-6 rounded-full'
-              src={comment?.user.avatar === '' ? useravatar : comment.user.avatar}
+              src={comment?.user.avatar === '' ? useravatar : getImageUrl(comment.user.avatar)}
               alt='avatar'
             />
             <div

@@ -142,7 +142,7 @@ export default function ActivityResult() {
                     <div className='result-popup-stat'>
                         <span className='result-popup-stat-icon'>🚀</span>
                         <div>
-                            <p className='result-popup-stat-val'>{activity.maxSpeed ? `${(activity.maxSpeed * 3.6).toFixed(1)}` : '0'}</p>
+                            <p className='result-popup-stat-val'>{activity.maxSpeed ? `${(activity.maxSpeed * 3.6).toFixed(2)}` : '0'}</p>
                             <p className='result-popup-stat-lbl'>Max km/h</p>
                         </div>
                     </div>

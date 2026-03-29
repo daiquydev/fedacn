@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, useRef } from 'react';
-import { mockDashboardData } from './mockData';
+import { getPersonalDashboardStats, getCaloriesHistory, getNutritionTrend } from '../../apis/personalDashboardApi';
 import { FaChartLine } from 'react-icons/fa';
 
 // Sử dụng lazy loading đơn giản hơn cho các components
@@ -26,8 +26,6 @@ const DashboardContent = ({ dashboardData }) => {
     overallStatus,
     recommendations
   } = dashboardData;
-
-  console.log('Dữ liệu healthMetricsHistory:', healthMetricsHistory);
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -101,7 +99,6 @@ const UserStats = () => {
   // Xử lý AudioContext howler warning bằng cách kích hoạt khi người dùng tương tác
   useEffect(() => {
     const handleUserInteraction = () => {
-      // Kích hoạt AudioContext nếu nó tồn tại trong window
       if (window.Howler && window.Howler.ctx && window.Howler.ctx.state !== 'running') {
         try {
           window.Howler.ctx.resume().then(() => {
@@ -113,14 +110,12 @@ const UserStats = () => {
       }
     };
 
-    // Áp dụng trình xử lý sự kiện khi component mount
     const container = containerRef.current;
     if (container) {
       container.addEventListener('click', handleUserInteraction);
       container.addEventListener('touchstart', handleUserInteraction);
     }
 
-    // Dọn dẹp khi unmount
     return () => {
       if (container) {
         container.removeEventListener('click', handleUserInteraction);
@@ -130,22 +125,58 @@ const UserStats = () => {
   }, []);
 
   useEffect(() => {
-    // Mô phỏng việc tải dữ liệu từ API
     const fetchData = async () => {
       try {
-        console.log('Tải dữ liệu từ mockDashboardData:', mockDashboardData);
-        
-        // Kiểm tra dữ liệu
-        if (!mockDashboardData || !mockDashboardData.healthMetricsHistory) {
-          console.error('Dữ liệu mock không hợp lệ:', mockDashboardData);
-          throw new Error('Dữ liệu mock không hợp lệ');
-        }
-        
-        // Mô phỏng delay khi gọi API
-        setTimeout(() => {
-          setDashboardData(mockDashboardData);
-          setIsLoading(false);
-        }, 500);
+        // Gọi API thực để lấy dữ liệu dashboard
+        const [statsRes, caloriesRes, nutritionRes] = await Promise.all([
+          getPersonalDashboardStats(),
+          getCaloriesHistory(30),
+          getNutritionTrend(7)
+        ]);
+
+        const stats = statsRes?.result || statsRes || {};
+        const caloriesHistory = caloriesRes?.result || caloriesRes || [];
+        const nutritionTrend = nutritionRes?.result || nutritionRes || [];
+
+        // Map API data to dashboard format expected by child components
+        const dashboardResult = {
+          userProfile: stats.userProfile || stats.user_profile || {
+            name: stats.name || '',
+            weight: stats.weight || 0,
+            height: stats.height || 0,
+            bmi: stats.bmi || 0,
+            goal: stats.goal || {}
+          },
+          healthMetricsHistory: caloriesHistory.map ? caloriesHistory.map(item => ({
+            date: item.date,
+            weight: item.weight || 0,
+            calories: item.calories || item.total_calories || 0,
+            protein: item.protein || 0,
+            carbs: item.carbs || 0,
+            fat: item.fat || 0
+          })) : [],
+          activityHistory: nutritionTrend.map ? nutritionTrend.map(item => ({
+            date: item.date,
+            steps: item.steps || 0,
+            calories: item.calories_burned || item.calories || 0,
+            duration: item.duration || 0,
+            type: item.type || ''
+          })) : [],
+          activitySummary: stats.activitySummary || stats.activity_summary || {
+            totalWorkouts: stats.total_workouts || 0,
+            totalCaloriesBurned: stats.total_calories_burned || 0,
+            totalDuration: stats.total_duration || 0,
+            averageCalories: stats.avg_calories || 0
+          },
+          overallStatus: stats.overallStatus || stats.overall_status || {
+            status: 'good',
+            message: 'Tiếp tục duy trì!'
+          },
+          recommendations: stats.recommendations || []
+        };
+
+        setDashboardData(dashboardResult);
+        setIsLoading(false);
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
         setIsLoading(false);

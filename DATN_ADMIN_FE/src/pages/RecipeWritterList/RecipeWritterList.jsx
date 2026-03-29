@@ -29,7 +29,6 @@ export default function RecipeWritterList() {
     },
     placeholderData: keepPreviousData
   })
-  console.log(data)
 
   // page,
   // limit,

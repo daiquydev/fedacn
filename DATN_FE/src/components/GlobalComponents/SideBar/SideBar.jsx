@@ -2,7 +2,7 @@ import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 // * React icons
-import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie, FaTrophy, FaDumbbell, FaCalculator } from 'react-icons/fa'
+import { FaUtensils, FaCalendarAlt, FaUserFriends, FaChartPie, FaDumbbell, FaCalculator, FaTrophy } from 'react-icons/fa'
 import { BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
 import { MdMenu, MdClose, MdOutlineSpaceDashboard, MdSportsSoccer } from 'react-icons/md'
@@ -126,17 +126,18 @@ export default function SideBar() {
         </NavLink>
       </li>
       <li>
-        <NavLink to={'/challenge'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+        <NavLink to={'/training'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
           <FaDumbbell size={22} className='min-w-max' />
           Tập luyện
         </NavLink>
       </li>
       <li>
-        <NavLink to={'/habit-challenge'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+        <NavLink to={'/challenge'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
           <FaTrophy size={22} className='min-w-max' />
           Thử thách
         </NavLink>
       </li>
+
       {subMenusList.length > 0 && (
         <div className='border-y py-3 border-slate-300 dark:border-slate-700'>
           <small className='pl-3 text-slate-500 dark:text-slate-400 font-medium inline-block mb-2'>

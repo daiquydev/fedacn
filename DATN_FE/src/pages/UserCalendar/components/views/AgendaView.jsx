@@ -14,16 +14,16 @@ export default function AgendaView({ currentDate, calendarItems, onEventClick })
     acc[date].push(event)
     return acc
   }, {})
-  
+
   // Sort dates
   const sortedDates = Object.keys(eventsByDate).sort()
-  
+
   // Get icon based on event type
   const getEventIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'event':
         return <MdSportsSoccer size={20} className="text-blue-500" />
-      case 'challenge':
+      case 'training':
         return <FaTrophy size={20} className="text-green-500" />
       case 'mealPlan':
         return <FaUtensils size={20} className="text-orange-500" />
@@ -31,14 +31,14 @@ export default function AgendaView({ currentDate, calendarItems, onEventClick })
         return <FaCalendarAlt size={20} className="text-gray-500" />
     }
   }
-  
+
   return (
     <div className="agenda-view overflow-auto" style={{ maxHeight: '70vh' }}>
       <div className="p-4">
         <h2 className="text-xl font-bold mb-4">
           Danh sách sự kiện - {format(currentDate, 'MMMM yyyy', { locale: vi })}
         </h2>
-        
+
         {sortedDates.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             Không có sự kiện nào trong khoảng thời gian này
@@ -48,19 +48,19 @@ export default function AgendaView({ currentDate, calendarItems, onEventClick })
             {sortedDates.map(dateStr => {
               const date = new Date(dateStr)
               const isCurrentMonth = isSameMonth(date, currentDate)
-              
+
               // Only show events from the current month
               if (!isCurrentMonth) return null
-              
+
               return (
                 <div key={dateStr} className="border rounded-lg overflow-hidden dark:border-gray-700">
                   <div className="p-3 font-medium bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
                     {format(date, 'EEEE, d MMMM yyyy', { locale: vi })}
                   </div>
-                  
+
                   <div className="divide-y dark:divide-gray-700">
                     {eventsByDate[dateStr].map((event, index) => (
-                      <div 
+                      <div
                         key={`${event.id}-${index}`}
                         className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                         onClick={() => onEventClick(event)}
@@ -69,7 +69,7 @@ export default function AgendaView({ currentDate, calendarItems, onEventClick })
                           {getEventIcon(event.type)}
                           <span className="font-medium">{event.title}</span>
                         </div>
-                        
+
                         <div className="ml-7 text-sm text-gray-600 dark:text-gray-400 space-y-1">
                           {event.startTime && (
                             <div className="flex items-center gap-2">
@@ -80,14 +80,14 @@ export default function AgendaView({ currentDate, calendarItems, onEventClick })
                               </span>
                             </div>
                           )}
-                          
+
                           {event.location && (
                             <div className="flex items-center gap-2">
                               <FaMapMarkerAlt size={14} />
                               <span>{event.location}</span>
                             </div>
                           )}
-                          
+
                           {event.description && (
                             <div className="mt-1 line-clamp-2">{event.description}</div>
                           )}

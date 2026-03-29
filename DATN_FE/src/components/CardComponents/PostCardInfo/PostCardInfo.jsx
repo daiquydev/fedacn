@@ -206,7 +206,7 @@ function CheckTypeOfPost({
               <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
                 <img
                   className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
-                  src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                  src={data.user.avatar === '' ? useravatar : getImageUrl(data.user.avatar)}
                 />
               </div>
               <div className='flex flex-col'>
@@ -259,7 +259,7 @@ function CheckTypeOfPost({
               <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
                 <img
                   className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
-                  src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                  src={data.user.avatar === '' ? useravatar : getImageUrl(data.user.avatar)}
                 />
               </div>
               <div className='flex flex-col'>
@@ -315,7 +315,7 @@ function CheckTypeOfPost({
             <div onClick={checkNavigateProfileUser} className='inline-block mr-4'>
               <img
                 className='rounded-full object-cover max-w-none w-12 h-12 md:w-14 md:h-14'
-                src={data.user.avatar === '' ? useravatar : data.user.avatar}
+                src={data.user.avatar === '' ? useravatar : getImageUrl(data.user.avatar)}
               />
             </div>
             <div className='flex flex-col'>
@@ -364,7 +364,7 @@ function CheckTypeOfPost({
                 <div onClick={checkNavigateProfileParentUser} className='inline-block mr-4'>
                   <img
                     className='rounded-full object-cover max-w-none w-10 h-10 md:w-12 md:h-12'
-                    src={data.parent_user.avatar === '' ? useravatar : data.parent_user.avatar}
+                    src={data.parent_user.avatar === '' ? useravatar : getImageUrl(data.parent_user.avatar)}
                   />
                 </div>
                 <div className='flex flex-col'>

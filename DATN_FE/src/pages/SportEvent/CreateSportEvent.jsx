@@ -58,7 +58,8 @@ const isPastDate = (dateStr) => {
 
 const parseDateToISO = (dateStr, timeStr = '00:00') => {
   const [d, m, y] = dateStr.split('/')
-  return new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00`).toISOString()
+  // Construct UTC ISO string directly to avoid local timezone shifting date back by 1 day
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00.000Z`
 }
 
 // Format digits into DD/MM/YYYY
@@ -367,7 +368,7 @@ JSON output (chỉ object, không gì khác):
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     // Ngăn chặn submit nhiều lần khi đang xử lý
     if (createMutation.isPending || isNavigating) return
 

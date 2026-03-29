@@ -22,8 +22,7 @@ export default function RequestUserList() {
     placeholderData: keepPreviousData
   })
 
-  console.log(queryConfig)
-  console.log(data)
+
 
   const handleChangeType = (e) => {
     navigate({
@@ -55,7 +54,7 @@ export default function RequestUserList() {
     })
   })
 
-  console.log(queryConfig)
+
 
   return (
     <div className='h-screen mb-[30rem] text-gray-900 dark:text-white py-4 mx-3'>

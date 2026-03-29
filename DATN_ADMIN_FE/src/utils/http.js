@@ -46,11 +46,9 @@ class Http {
         return response
       },
       (error) => {
-        console.log(error)
         // Chỉ toast lỗi không phải 422 và 401
         if (![HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized].includes(error.response?.status)) {
           const data = error.response?.data
-          console.log(data)
           const message = data.message || error.message
           toast.error(message)
         }

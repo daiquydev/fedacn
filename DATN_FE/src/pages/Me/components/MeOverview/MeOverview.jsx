@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { FaRunning, FaDumbbell, FaFlag, FaFireAlt, FaChartLine, FaArrowRight } from 'react-icons/fa'
+import { FaRunning, FaDumbbell, FaFireAlt, FaChartLine, FaArrowRight } from 'react-icons/fa'
 import { FaHeartPulse, FaArrowUp, FaArrowDown, FaEquals } from 'react-icons/fa6'
 import { Link } from 'react-router-dom'
 import { getMeStats, currentAccount } from '../../../../apis/userApi'
@@ -171,13 +171,6 @@ export default function MeOverview() {
           value={stats?.workouts?.schedules_count || 0}
           color='text-emerald-600'
           bgColor='bg-emerald-50/80 dark:bg-emerald-900/10'
-        />
-        <StatCard
-          icon={FaFlag}
-          label='Thử thách'
-          value={stats?.challenges?.active_count || 0}
-          color='text-amber-600'
-          bgColor='bg-amber-50/80 dark:bg-amber-900/10'
         />
         <StatCard
           icon={FaFireAlt}

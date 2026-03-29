@@ -23,6 +23,7 @@
     "@tanstack/react-query-devtools": "^5.28.4",
     "@tensorflow/tfjs": "^4.20.0",
     "axios": "^1.6.8",
+    "canvas-confetti": "^1.9.4",
     "chart.js": "^4.4.2",
     "classnames": "^2.5.1",
     "date-fns": "^4.1.0",

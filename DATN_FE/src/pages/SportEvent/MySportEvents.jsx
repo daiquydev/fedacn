@@ -55,7 +55,7 @@ const MySportEvents = () => {
   const deleteMutation = useSafeMutation({
     mutationFn: (eventId) => deleteSportEvent(eventId),
     onSuccess: () => {
-      queryClient.invalidateQueries(['myCreatedEvents'])
+      queryClient.invalidateQueries({ queryKey: ['myCreatedEvents'] })
       toast.success('Đã xóa sự kiện thành công!')
       setOpenDeleteBox(false)
     },

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheckCircle, FaCalendarDay, FaUtensils, FaSearch, FaFilter, FaCalendarAlt, FaTimes, FaChevronLeft, FaChevronRight, FaCalendarCheck } from 'react-icons/fa';
+import { getMealPlanHistory } from '../../apis/personalDashboardApi';
 
 export default function MealCompleted() {
   const navigate = useNavigate();
@@ -8,256 +9,55 @@ export default function MealCompleted() {
   const [completedMeals, setCompletedMeals] = useState([]);
   const [filteredMeals, setFilteredMeals] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all'); // all, week, month, custom
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  // Thêm state mới cho tìm kiếm theo mốc thời gian
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const datePickerRef = useRef(null);
 
-  // State cho calendar
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
 
-  // Mô phỏng fetch dữ liệu
+  // Lấy dữ liệu bữa ăn đã hoàn thành từ database
   useEffect(() => {
-    setTimeout(() => {
-      // Helper để tạo ngày dựa trên số ngày trước đây
-      const daysAgo = (days) => {
-        const date = new Date();
-        date.setDate(date.getDate() - days);
+    const fetchCompletedMeals = async () => {
+      try {
+        setLoading(true);
+        const response = await getMealPlanHistory(1, 100);
+        const history = response?.result || response || [];
 
-        // Format thành YYYY-MM-DD
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
+        // Map API data to component format
+        const meals = history.map((item, index) => {
+          const dateObj = new Date(item.date || item.created_at);
+          const yyyy = dateObj.getFullYear();
+          const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const dd = String(dateObj.getDate()).padStart(2, '0');
 
-        // Format hiển thị
-        const displayDate = `${dd} tháng ${mm}, ${yyyy}`;
+          return {
+            id: item._id || `completed-${index}`,
+            date: `${yyyy}-${mm}-${dd}`,
+            displayDate: `${dd} tháng ${mm}, ${yyyy}`,
+            type: item.meal_type === 0 ? 'Sáng' : item.meal_type === 1 ? 'Trưa' : item.meal_type === 2 ? 'Tối' : item.type || 'Snack',
+            name: item.meal_name || item.name || '',
+            calories: item.energy || item.calories || 0,
+            time: item.time || '',
+            note: item.note || ''
+          };
+        });
 
-        return {
-          dateString: `${yyyy}-${mm}-${dd}`,
-          displayDate
-        };
-      };
+        setCompletedMeals(meals);
+        setFilteredMeals(meals);
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu:', error);
+        setCompletedMeals([]);
+        setFilteredMeals([]);
+        setLoading(false);
+      }
+    };
 
-      // Mock data trong vòng 30 ngày
-      const mockCompletedMeals = [
-        {
-          id: 1,
-          date: daysAgo(2).dateString,
-          displayDate: daysAgo(2).displayDate,
-          type: 'Sáng',
-          name: 'Yến mạch với sữa hạnh nhân và chuối',
-          calories: 320,
-          time: '7:30',
-          note: 'Thêm chút mật ong làm món ăn ngon hơn rất nhiều',
-        },
-        {
-          id: 2,
-          date: daysAgo(2).dateString,
-          displayDate: daysAgo(2).displayDate,
-          type: 'Trưa',
-          name: 'Salad gà nướng với rau xanh và sốt dầu olive',
-          calories: 450,
-          time: '12:15',
-        },
-        {
-          id: 3,
-          date: daysAgo(3).dateString,
-          displayDate: daysAgo(3).displayDate,
-          type: 'Tối',
-          name: 'Cá hồi nướng với măng tây và khoai lang',
-          calories: 480,
-          time: '19:00',
-          note: 'Nên ướp cá hồi với chanh và tiêu trước khi nướng',
-        },
-        {
-          id: 4,
-          date: daysAgo(3).dateString,
-          displayDate: daysAgo(3).displayDate,
-          type: 'Snack',
-          name: 'Sữa chua Hy Lạp với hỗn hợp quả mọng',
-          calories: 180,
-          time: '15:30',
-        },
-        {
-          id: 5,
-          date: daysAgo(5).dateString,
-          displayDate: daysAgo(5).displayDate,
-          type: 'Sáng',
-          name: 'Bánh mì nguyên cám với trứng và bơ',
-          calories: 380,
-          time: '7:45',
-        },
-        {
-          id: 6,
-          date: daysAgo(5).dateString,
-          displayDate: daysAgo(5).displayDate,
-          type: 'Trưa',
-          name: 'Cơm gạo lứt với thịt gà và rau luộc',
-          calories: 420,
-          time: '12:30',
-        },
-        {
-          id: 7,
-          date: daysAgo(7).dateString,
-          displayDate: daysAgo(7).displayDate,
-          type: 'Tối',
-          name: 'Súp rau củ với thịt gà xé',
-          calories: 350,
-          time: '18:45',
-          note: 'Món này khá ngon và dễ ăn, phù hợp cho bữa tối',
-        },
-        {
-          id: 8,
-          date: daysAgo(8).dateString,
-          displayDate: daysAgo(8).displayDate,
-          type: 'Snack',
-          name: 'Táo xanh với bơ đậu phộng',
-          calories: 200,
-          time: '16:00',
-        },
-        // Thêm mockdata mới
-        {
-          id: 9,
-          date: daysAgo(1).dateString,
-          displayDate: daysAgo(1).displayDate,
-          type: 'Sáng',
-          name: 'Smoothie chuối với bột protein và hạt chia',
-          calories: 290,
-          time: '7:15',
-          note: 'Rất tốt trước khi tập thể dục buổi sáng',
-        },
-        {
-          id: 10,
-          date: daysAgo(1).dateString,
-          displayDate: daysAgo(1).displayDate,
-          type: 'Trưa',
-          name: 'Bún trộn thịt bò và rau sống',
-          calories: 420,
-          time: '12:30',
-        },
-        {
-          id: 11,
-          date: daysAgo(1).dateString,
-          displayDate: daysAgo(1).displayDate,
-          type: 'Tối',
-          name: 'Đậu hũ sốt cà chua với cơm gạo lứt',
-          calories: 380,
-          time: '19:00',
-        },
-        {
-          id: 12,
-          date: daysAgo(4).dateString,
-          displayDate: daysAgo(4).displayDate,
-          type: 'Sáng',
-          name: 'Sinh tố protein với các loại quả mọng',
-          calories: 310,
-          time: '8:00',
-        },
-        {
-          id: 13,
-          date: daysAgo(4).dateString,
-          displayDate: daysAgo(4).displayDate,
-          type: 'Trưa',
-          name: 'Cơm cuộn Hàn Quốc với rau và thịt gà',
-          calories: 440,
-          time: '12:00',
-          note: 'Nên thêm sốt cay để tăng hương vị',
-        },
-        {
-          id: 14,
-          date: daysAgo(10).dateString,
-          displayDate: daysAgo(10).displayDate,
-          type: 'Sáng',
-          name: 'Bánh kếp bột yến mạch với mật ong và quả mọng',
-          calories: 340,
-          time: '7:30',
-        },
-        {
-          id: 15,
-          date: daysAgo(10).dateString,
-          displayDate: daysAgo(10).displayDate,
-          type: 'Tối',
-          name: 'Cá ngừ áp chảo với salad trộn',
-          calories: 410,
-          time: '18:30',
-          note: 'Nên ăn cá ngừ chín tái để giữ độ mềm và ngọt',
-        },
-        {
-          id: 16,
-          date: daysAgo(12).dateString,
-          displayDate: daysAgo(12).displayDate,
-          type: 'Snack',
-          name: 'Sữa chua Hy Lạp với hạt óc chó và mật ong',
-          calories: 220,
-          time: '15:00',
-        },
-        {
-          id: 17,
-          date: daysAgo(15).dateString,
-          displayDate: daysAgo(15).displayDate,
-          type: 'Trưa',
-          name: 'Mì Ý sốt bò bằm với rau củ',
-          calories: 520,
-          time: '12:30',
-          note: 'Phần này hơi nhiều calo, lần sau nên giảm lượng mì xuống',
-        },
-        {
-          id: 18,
-          date: daysAgo(18).dateString,
-          displayDate: daysAgo(18).displayDate,
-          type: 'Tối',
-          name: 'Canh rau củ với thịt viên',
-          calories: 320,
-          time: '19:15',
-        },
-        {
-          id: 19,
-          date: daysAgo(21).dateString,
-          displayDate: daysAgo(21).displayDate,
-          type: 'Sáng',
-          name: 'Bánh mì đen với trứng luộc và bơ',
-          calories: 370,
-          time: '7:45',
-          note: 'Bánh mì đen giàu chất xơ, rất tốt cho tiêu hóa buổi sáng',
-        },
-        {
-          id: 20,
-          date: daysAgo(25).dateString,
-          displayDate: daysAgo(25).displayDate,
-          type: 'Snack',
-          name: 'Chuối và một nắm hạnh nhân',
-          calories: 190,
-          time: '16:00',
-        },
-        {
-          id: 21,
-          date: daysAgo(28).dateString,
-          displayDate: daysAgo(28).displayDate,
-          type: 'Trưa',
-          name: 'Salad cá hồi hun khói với rau trộn',
-          calories: 380,
-          time: '12:30',
-        },
-        {
-          id: 22,
-          date: daysAgo(0).dateString, // Hôm nay
-          displayDate: daysAgo(0).displayDate,
-          type: 'Sáng',
-          name: 'Bột yến mạch nấu với sữa hạnh nhân và quả việt quất',
-          calories: 330,
-          time: '7:00',
-          note: 'Bữa sáng hoàn hảo trước khi tập luyện buổi sáng',
-        },
-      ];
-
-      setCompletedMeals(mockCompletedMeals);
-      setFilteredMeals(mockCompletedMeals);
-      setLoading(false);
-    }, 800);
+    fetchCompletedMeals();
   }, []);
 
   // Xử lý click bên ngoài date picker

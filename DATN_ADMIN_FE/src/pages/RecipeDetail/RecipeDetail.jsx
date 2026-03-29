@@ -21,7 +21,6 @@ export default function RecipeDetail() {
   })
 
   const location = useLocation()
-  console.log(location)
 
   const checkNavigate = () => {
     // nếu location.pathname === 'albums/recipes/:id' thì navigate về trang quản lý album

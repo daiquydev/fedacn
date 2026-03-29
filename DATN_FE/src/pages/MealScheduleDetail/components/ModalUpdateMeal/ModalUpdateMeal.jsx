@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import ModalLayout from '../../../../layouts/ModalLayout'
 import { useEffect, useState } from 'react'
 import Input from '../../../../components/InputComponents/Input'
-import { } from '@tanstack/react-query'
+
 import { updateMealSchedule } from '../../../../apis/mealScheduleApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { schemaUpdateMeal } from '../../../../utils/rules'
@@ -45,7 +45,6 @@ export default function ModalUpdateMeal({ handleCloseModalUpdateMeal, meal }) {
   }, [meal, setValue])
 
   const purpose = watch('purpose')
-  console.log(purpose)
 
   // nếu purpose là 0, 1 thì hiện weight_target
   useEffect(() => {
@@ -80,11 +79,10 @@ export default function ModalUpdateMeal({ handleCloseModalUpdateMeal, meal }) {
       })
       return
     }
-    console.log(newData)
+
 
     updateMealMutation.mutate(newData, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: ['meal-info']
         })
@@ -92,7 +90,7 @@ export default function ModalUpdateMeal({ handleCloseModalUpdateMeal, meal }) {
         handleCloseModalUpdateMeal()
       },
       onError: (error) => {
-        console.log(error)
+
         setError('weight_target', {
           type: 'manual',
           message: error.response.data.message

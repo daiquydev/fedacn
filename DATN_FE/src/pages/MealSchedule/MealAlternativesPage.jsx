@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaExchangeAlt, FaCheckCircle, FaFilter, FaSearch } from 'react-icons/fa';
+import { getDateMealItem, getListMealSchedules } from '../../apis/mealScheduleApi';
 
 export default function MealAlternativesPage() {
   const { date } = useParams();
@@ -12,202 +13,61 @@ export default function MealAlternativesPage() {
   const [calorieRange, setCalorieRange] = useState([0, 1000]);
   const [showFilters, setShowFilters] = useState(false);
   
-  // Mô phỏng fetch dữ liệu
+  // Lấy dữ liệu bữa ăn và món thay thế từ database
   useEffect(() => {
-    setTimeout(() => {
-      // Mock data for the selected day with alternatives for each meal
-      const mockDayData = {
-        date: date,
-        meals: [
-          {
-            id: 1,
-            type: 'Sáng',
-            name: 'Yến mạch nấu với sữa hạnh nhân + 1 quả chuối + 5 quả hạnh nhân',
-            calories: 320,
-            completed: false,
-            time: '7:00 - 8:00',
-            alternatives: [
-              { 
-                id: 101, 
-                name: 'Bánh mì nguyên cám với trứng và bơ', 
-                calories: 350,
-                nutrients: {
-                  protein: 15,
-                  carbs: 40,
-                  fat: 12
-                },
-                tags: ['vegetarian', 'highProtein']
+    const fetchMealAlternatives = async () => {
+      try {
+        setLoading(true);
+
+        // Lấy danh sách thực đơn
+        const schedulesRes = await getListMealSchedules({ page: 1, limit: 10 });
+        const schedules = schedulesRes?.data?.result?.meal_schedules || schedulesRes?.data?.result || [];
+        const activePlan = schedules[0];
+
+        if (activePlan) {
+          const planId = activePlan._id || activePlan.id;
+
+          // Lấy meals cho ngày được chọn
+          const mealItemsRes = await getDateMealItem({
+            meal_schedule_id: planId,
+            date: date
+          });
+          const mealItems = mealItemsRes?.data?.result || [];
+
+          const meals = mealItems.map((item, index) => ({
+            id: item._id || `meal-${index}`,
+            type: item.meal_type === 0 ? 'Sáng' : item.meal_type === 1 ? 'Trưa' : item.meal_type === 2 ? 'Tối' : 'Snack',
+            name: item.meal_name || '',
+            calories: item.energy || 0,
+            completed: item.is_completed || false,
+            time: item.time || '',
+            alternatives: (item.alternatives || []).map((alt, altIndex) => ({
+              id: alt._id || `alt-${index}-${altIndex}`,
+              name: alt.meal_name || alt.name || '',
+              calories: alt.energy || alt.calories || 0,
+              nutrients: {
+                protein: alt.protein || 0,
+                carbs: alt.carbs || 0,
+                fat: alt.fat || 0
               },
-              { 
-                id: 102, 
-                name: 'Sinh tố protein với các loại quả mọng', 
-                calories: 300,
-                nutrients: {
-                  protein: 20,
-                  carbs: 35,
-                  fat: 5
-                },
-                tags: ['vegan', 'lowFat']
-              },
-              { 
-                id: 103, 
-                name: 'Bánh muffin protein hạt chia', 
-                calories: 330,
-                nutrients: {
-                  protein: 18,
-                  carbs: 30,
-                  fat: 14
-                },
-                tags: ['vegetarian', 'highFiber']
-              },
-              { 
-                id: 104, 
-                name: 'Bánh kếp nguyên cám với sữa chua và mật ong', 
-                calories: 380,
-                nutrients: {
-                  protein: 10,
-                  carbs: 60,
-                  fat: 8
-                },
-                tags: ['vegetarian', 'lowFat']
-              }
-            ]
-          },
-          {
-            id: 2,
-            type: 'Trưa',
-            name: 'Salad gà nướng với rau xanh, cà chua, dưa chuột, dầu olive',
-            calories: 450,
-            completed: false,
-            time: '12:00 - 13:00',
-            alternatives: [
-              { 
-                id: 201, 
-                name: 'Cơm gạo lứt với thịt gà và rau luộc', 
-                calories: 420,
-                nutrients: {
-                  protein: 30,
-                  carbs: 50,
-                  fat: 10
-                },
-                tags: ['glutenFree', 'highProtein']
-              },
-              { 
-                id: 202, 
-                name: 'Bún trộn thịt bò và rau sống', 
-                calories: 430,
-                nutrients: {
-                  protein: 35,
-                  carbs: 45,
-                  fat: 12
-                },
-                tags: ['dairyFree', 'highProtein']
-              },
-              { 
-                id: 203, 
-                name: 'Bowl quinoa với đậu đen, bơ và ớt', 
-                calories: 400,
-                nutrients: {
-                  protein: 15,
-                  carbs: 55,
-                  fat: 15
-                },
-                tags: ['vegan', 'glutenFree']
-              }
-            ]
-          },
-          {
-            id: 3,
-            type: 'Tối',
-            name: 'Cá hồi nướng với măng tây và khoai lang nướng',
-            calories: 480,
-            completed: false,
-            time: '18:30 - 19:30',
-            alternatives: [
-              { 
-                id: 301, 
-                name: 'Đậu hũ sốt cà chua với cơm gạo lứt', 
-                calories: 400,
-                nutrients: {
-                  protein: 20,
-                  carbs: 60,
-                  fat: 10
-                },
-                tags: ['vegan', 'lowFat']
-              },
-              { 
-                id: 302, 
-                name: 'Súp rau củ với thịt gà xé', 
-                calories: 350,
-                nutrients: {
-                  protein: 25,
-                  carbs: 30,
-                  fat: 15
-                },
-                tags: ['dairyFree', 'lowCarb']
-              },
-              { 
-                id: 303, 
-                name: 'Thịt lợn nạc nướng với khoai tây và rau xào', 
-                calories: 500,
-                nutrients: {
-                  protein: 40,
-                  carbs: 45,
-                  fat: 18
-                },
-                tags: ['highProtein', 'glutenFree']
-              }
-            ]
-          },
-          {
-            id: 4,
-            type: 'Snack',
-            name: 'Sữa chua Hy Lạp với hỗn hợp quả mọng',
-            calories: 180,
-            completed: false,
-            time: '15:30 - 16:00',
-            alternatives: [
-              { 
-                id: 401, 
-                name: 'Một nắm hạt hỗn hợp', 
-                calories: 160,
-                nutrients: {
-                  protein: 6,
-                  carbs: 8,
-                  fat: 12
-                },
-                tags: ['vegan', 'lowCarb']
-              },
-              { 
-                id: 402, 
-                name: 'Táo xanh với bơ đậu phộng', 
-                calories: 200,
-                nutrients: {
-                  protein: 7,
-                  carbs: 20,
-                  fat: 10
-                },
-                tags: ['vegetarian', 'highFiber']
-              },
-              { 
-                id: 403, 
-                name: 'Thanh protein năng lượng', 
-                calories: 220,
-                nutrients: {
-                  protein: 15,
-                  carbs: 25,
-                  fat: 7
-                },
-                tags: ['vegetarian', 'highProtein']
-              }
-            ]
-          }
-        ]
-      };
-      
-      setDayData(mockDayData);
-      setLoading(false);
-    }, 800);
+              tags: alt.tags || []
+            }))
+          }));
+
+          setDayData({ date, meals });
+        } else {
+          setDayData({ date, meals: [] });
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu:', error);
+        setDayData({ date, meals: [] });
+        setLoading(false);
+      }
+    };
+
+    fetchMealAlternatives();
   }, [date]);
   
   // Format the date from URL param

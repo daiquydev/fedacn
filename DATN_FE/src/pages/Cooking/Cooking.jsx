@@ -3,6 +3,7 @@ import RecipeCard from '../../components/CardComponents/RecipeCard'
 import { Link, useNavigate } from 'react-router-dom'
 import AlbumCard from '../../components/CardComponents/AlbumCard'
 import useravatar from '../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../utils/imageUrl'
 import BlogCard from '../../components/CardComponents/BlogCard'
 import { getBlogsForUser } from '../../apis/blogApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -240,7 +241,7 @@ const ItemUser = ({ user }) => {
           <div className=' rounded-full w-12 h-12'>
             <img
               className='object-cover w-12 h-12 rounded-full'
-              src={user.avatar === '' ? useravatar : user.avatar}
+              src={user.avatar === '' ? useravatar : getImageUrl(user.avatar)}
               alt='Avatar Tailwind CSS Component'
             />
           </div>

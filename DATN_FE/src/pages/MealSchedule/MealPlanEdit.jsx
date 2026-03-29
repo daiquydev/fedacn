@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaUtensils, FaArrowLeft, FaPlus, FaTrash, FaSave, FaTimes, FaCheck, FaExchangeAlt, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox';
+import { getMealSchedules, updateMealSchedule } from '../../apis/mealScheduleApi';
 
 export default function MealPlanEdit() {
   const { id } = useParams();
@@ -14,83 +15,78 @@ export default function MealPlanEdit() {
   const [hasChanges, setHasChanges] = useState(false);
   const [openCancelBox, setOpenCancelBox] = useState(false);
 
-  // Giả lập API lấy dữ liệu thực đơn
+  // Lấy dữ liệu thực đơn từ database
   useEffect(() => {
-    setLoading(true);
-    // Trong dự án thực, thay thế bằng API call: fetchMealPlanById(id)
-    setTimeout(() => {
-      setMealPlan({
-        id: id,
-        title: "Thực đơn giảm cân 7 ngày",
-        description: "Thực đơn giảm cân lành mạnh với đầy đủ dinh dưỡng",
-        category: "Giảm cân",
-        author: {
-          name: "Nguyễn Văn A",
-          avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-        },
-        days: [
-          {
-            day: 1,
-            meals: {
-              breakfast: {
-                name: "Yến mạch với trái cây",
-                calories: 320,
-                time: "7:00",
-                ingredients: ["Yến mạch", "Sữa ít béo", "Chuối", "Việt quất"]
-              },
-              lunch: {
-                name: "Salad gà nướng",
-                calories: 420,
-                time: "12:00",
-                ingredients: ["Gà nướng", "Rau xà lách", "Cà chua", "Dầu olive"]
-              },
-              dinner: {
-                name: "Cá hồi nướng với súp lơ",
-                calories: 380,
-                time: "18:30",
-                ingredients: ["Cá hồi", "Súp lơ xanh", "Khoai lang", "Chanh"]
-              },
-              snack: {
-                name: "Hạnh nhân và táo",
-                calories: 150,
-                time: "15:00",
-                ingredients: ["Hạnh nhân", "Táo"]
-              }
-            }
-          },
-          {
-            day: 2,
-            meals: {
-              breakfast: {
-                name: "Sinh tố protein",
-                calories: 300,
-                time: "7:00",
-                ingredients: ["Chuối", "Sữa hạnh nhân", "Bột protein", "Hạt chia"]
-              },
-              lunch: {
-                name: "Bowl gạo lứt và đậu",
-                calories: 450,
-                time: "12:00",
-                ingredients: ["Gạo lứt", "Đậu đen", "Bơ", "Rau chân vịt"]
-              },
-              dinner: {
-                name: "Thịt gà và rau củ hấp",
-                calories: 400,
-                time: "18:30",
-                ingredients: ["Thịt gà", "Cà rốt", "Bông cải", "Đậu Hà Lan"]
-              },
-              snack: {
-                name: "Sữa chua Hy Lạp với berries",
-                calories: 180,
-                time: "15:30",
-                ingredients: ["Sữa chua Hy Lạp", "Dâu tây", "Mật ong"]
-              }
+    const fetchMealPlan = async () => {
+      try {
+        setLoading(true);
+        const response = await getMealSchedules(id);
+        const plan = response?.data?.result || {};
+
+        // Map days from API
+        const days = (plan.days || []).map((day, index) => ({
+          day: index + 1,
+          meals: {
+            breakfast: {
+              name: day.breakfast?.meal_name || day.breakfast?.name || '',
+              calories: day.breakfast?.energy || day.breakfast?.calories || 0,
+              time: day.breakfast?.time || '07:00',
+              ingredients: day.breakfast?.ingredients || []
+            },
+            lunch: {
+              name: day.lunch?.meal_name || day.lunch?.name || '',
+              calories: day.lunch?.energy || day.lunch?.calories || 0,
+              time: day.lunch?.time || '12:00',
+              ingredients: day.lunch?.ingredients || []
+            },
+            dinner: {
+              name: day.dinner?.meal_name || day.dinner?.name || '',
+              calories: day.dinner?.energy || day.dinner?.calories || 0,
+              time: day.dinner?.time || '18:30',
+              ingredients: day.dinner?.ingredients || []
+            },
+            snack: {
+              name: day.snack?.meal_name || day.snack?.name || '',
+              calories: day.snack?.energy || day.snack?.calories || 0,
+              time: day.snack?.time || '15:00',
+              ingredients: day.snack?.ingredients || []
             }
           }
-        ]
-      });
-      setLoading(false);
-    }, 1000);
+        }));
+
+        // If no days data, create a default day
+        if (days.length === 0) {
+          days.push({
+            day: 1,
+            meals: {
+              breakfast: { name: '', calories: 0, time: '07:00', ingredients: [] },
+              lunch: { name: '', calories: 0, time: '12:00', ingredients: [] },
+              dinner: { name: '', calories: 0, time: '18:00', ingredients: [] },
+              snack: { name: '', calories: 0, time: '15:00', ingredients: [] }
+            }
+          });
+        }
+
+        setMealPlan({
+          id: plan._id || plan.id || id,
+          title: plan.name || plan.title || 'Thực đơn',
+          description: plan.description || '',
+          category: plan.purpose === 0 ? 'Giảm cân' : plan.purpose === 1 ? 'Tăng cơ' : plan.purpose === 2 ? 'Keto' : 'Ăn sạch',
+          author: {
+            name: plan.user_id?.name || '',
+            avatar: plan.user_id?.avatar || ''
+          },
+          days
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Lỗi khi tải thực đơn:', error);
+        setMealPlan(null);
+        setLoading(false);
+      }
+    };
+
+    fetchMealPlan();
   }, [id]);
 
   const handleUpdateMeal = (dayIndex, mealType, field, value) => {
@@ -204,14 +200,18 @@ export default function MealPlanEdit() {
     setHasChanges(true);
   };
 
-  const handleSave = () => {
-    // Trong dự án thực, thay thế bằng API call: updateMealPlan(mealPlan)
-    setLoading(true);
-    setTimeout(() => {
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await updateMealSchedule(mealPlan.id, mealPlan);
       setLoading(false);
       setHasChanges(false);
       toast.success("Thực đơn đã được cập nhật");
-    }, 1000);
+    } catch (error) {
+      console.error('Lỗi khi lưu:', error);
+      setLoading(false);
+      toast.error("Không thể lưu thay đổi");
+    }
   };
 
   const handleCancel = () => {

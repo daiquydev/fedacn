@@ -15,6 +15,7 @@ export interface SportEventProgress {
   source?: 'manual' | 'video_call' | 'gps'
   sessionId?: Types.ObjectId
   activeSeconds?: number
+  is_deleted?: boolean
   createdAt?: Date
   updatedAt?: Date
 }
@@ -33,7 +34,8 @@ const SportEventProgressSchema = new mongoose.Schema<SportEventProgress>(
     notes: { type: String, default: '' },
     source: { type: String, enum: ['manual', 'video_call', 'gps'], default: 'manual' },
     sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'sport_event_sessions', default: null },
-    activeSeconds: { type: Number, default: null }
+    activeSeconds: { type: Number, default: null },
+    is_deleted: { type: Boolean, default: false }
   },
   {
     timestamps: true,

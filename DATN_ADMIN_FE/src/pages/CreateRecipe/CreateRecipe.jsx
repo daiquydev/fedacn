@@ -111,14 +111,13 @@ export default function CreateRecipe() {
     }
   })
 
-  console.log(mealState)
 
   const createRecipeMutation = useSafeMutation({
     mutationFn: (body) => createRecipesForWritter(body)
   })
   const onSubmit = handleSubmit((data) => {
     var formData = new FormData()
-    console.log(data)
+
 
     if (mealState.length === 0) {
       return toast.error('Vui lòng chọn ít nhất 1 nguyên liệu')
@@ -153,7 +152,7 @@ export default function CreateRecipe() {
       })
     }
 
-    console.log(newData)
+
     formData.append('title', newData.title)
     formData.append('image', newData.image)
     formData.append('description', newData.description)
@@ -173,15 +172,14 @@ export default function CreateRecipe() {
     formData.append('ingredients', JSON.stringify(newData.ingredients))
 
     createRecipeMutation.mutate(formData, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         reset()
         handleCloseCreate()
         toast.success('Tạo bài viết thành công')
         setMealState([])
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Tạo bài viết thất bại')
       }
     })
   })
@@ -194,7 +192,6 @@ export default function CreateRecipe() {
   const titleWatch = watch('title')
   const imageWatch = watch('image')
 
-  console.log(imageWatch)
 
   const { data: category, isFetching } = useQuery({
     queryKey: ['category-recipe'],

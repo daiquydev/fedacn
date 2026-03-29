@@ -9,7 +9,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { createWorkoutSchedule } from '../../../../apis/workoutScheduleApi'
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
-import { } from '@tanstack/react-query'
+
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { useNavigate } from 'react-router-dom'
 import { useContext } from 'react'
@@ -46,13 +46,11 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
   const startDate = watch('start_date')
   const endDate = watch('end_date')
 
-  // console.log(startDate)
-  // console.log(endDate)
   const createWorkoutMutation = useSafeMutation({
     mutationFn: (body) => createWorkoutSchedule(body)
   })
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
+
 
     const newData = {
       ...data,
@@ -64,11 +62,11 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
       onSuccess: (data) => {
         handleCloseModalCreateWorkout()
         navigate(`/schedule/ex-schedule/${data?.data.result._id}`)
-        queryClient.invalidateQueries('workout-schedule')
+        queryClient.invalidateQueries({ queryKey: ['workout-schedule'] })
         toast.success('Tạo lịch tập thành công')
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Lỗi khi tạo lịch tập')
       }
     })
   })

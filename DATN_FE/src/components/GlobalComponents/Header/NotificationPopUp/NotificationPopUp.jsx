@@ -1,7 +1,8 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { IoMdNotifications } from 'react-icons/io'
+import { AiOutlineDelete, AiOutlineCheckCircle, AiOutlineInbox } from 'react-icons/ai'
 import { SocketContext } from '../../../../contexts/socket.context'
 import { omit } from 'lodash'
 import useQueryConfig from '../../../../hooks/useQueryConfig'
@@ -13,7 +14,6 @@ import {
   readNotification
 } from '../../../../apis/notificationApi'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import Loading from '../../Loading'
 import { cutString } from '../../../../utils/helper'
 import moment from 'moment'
 import useravatar from '../../../../assets/images/useravatar.jpg'
@@ -21,58 +21,223 @@ import logo from '../../../../assets/images/logo.png'
 import { queryClient } from '../../../../main'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import {
+  NotificationTypes,
+  NOTIFICATION_ROUTES,
+  CATEGORIES,
+  TAB_CONFIG,
+  getNotificationConfig,
+  getCategoryForType,
+  isSystemNotification
+} from './notificationConstants'
 
-const NotificationTypes = {
-  follow: 0,
-  likePost: 1,
-  commentPost: 2,
-  commentChildPost: 3,
-  sharePost: 4,
-  likeRecipe: 5,
-  commentRecipe: 6,
-  bookmarkRecipe: 7,
-  commentBlog: 8,
-  bookmarkAlbum: 9,
-  shareMealPlan: 10,
-  mealPlanInvite: 11,
-  system: 12,
-  sportEventInvite: 13,
-  reportPost: 14,
-  habitChallengeInvite: 15,
-  habitBuddyReminder: 16,
-  habitCheckinLike: 17,
-  habitStreakMilestone: 18
+// ─── Styles ───
+const styles = {
+  panel: {
+    width: '30rem',
+    maxHeight: '75vh',
+    borderRadius: '1rem',
+    overflow: 'hidden',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(0,0,0,0.06)'
+  },
+  header: {
+    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+    padding: '1.25rem 1.25rem 0.75rem',
+    color: '#fff'
+  },
+  tabBar: {
+    display: 'flex',
+    gap: '0.25rem',
+    padding: '0 1rem',
+    background: '#fff',
+    borderBottom: '1px solid #f1f5f9'
+  },
+  tab: (isActive) => ({
+    flex: 1,
+    padding: '0.65rem 0.5rem',
+    fontSize: '0.75rem',
+    fontWeight: isActive ? 600 : 500,
+    color: isActive ? '#4f46e5' : '#64748b',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.35rem',
+    position: 'relative',
+    transition: 'color 0.2s'
+  }),
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: '10%',
+    right: '10%',
+    height: '2.5px',
+    background: 'linear-gradient(90deg, #4f46e5, #7c3aed)',
+    borderRadius: '2px 2px 0 0'
+  },
+  listContainer: {
+    maxHeight: 'calc(75vh - 10.5rem)',
+    overflowY: 'auto',
+    padding: '0.5rem',
+    background: '#fafbfc'
+  },
+  itemCard: (isRead, borderColor) => ({
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '0.75rem',
+    padding: '0.75rem',
+    borderRadius: '0.75rem',
+    background: isRead ? '#fff' : '#f0f4ff',
+    border: isRead ? '1px solid #f1f5f9' : '1px solid #dbeafe',
+    borderLeft: `3.5px solid ${isRead ? '#e2e8f0' : borderColor}`,
+    cursor: 'pointer',
+    position: 'relative',
+    transition: 'all 0.2s ease',
+    marginBottom: '0.375rem'
+  }),
+  iconBubble: (bgColor, color) => ({
+    width: '2.5rem',
+    height: '2.5rem',
+    borderRadius: '0.75rem',
+    background: bgColor,
+    color: color,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    fontSize: '1.15rem'
+  }),
+  unreadDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    background: '#4f46e5',
+    position: 'absolute',
+    top: '0.75rem',
+    right: '0.75rem',
+    boxShadow: '0 0 0 2px #f0f4ff'
+  },
+  deleteBtn: {
+    position: 'absolute',
+    top: '0.5rem',
+    right: '0.5rem',
+    background: 'none',
+    border: 'none',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    padding: '0.25rem',
+    borderRadius: '0.375rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.95rem',
+    transition: 'all 0.2s'
+  },
+  loadMoreBtn: {
+    width: '100%',
+    padding: '0.65rem',
+    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '0.625rem',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    marginTop: '0.25rem',
+    transition: 'opacity 0.2s'
+  },
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '2.5rem 1rem',
+    color: '#94a3b8',
+    gap: '0.75rem'
+  },
+  badge: (count) => ({
+    display: count > 0 ? 'inline-flex' : 'none',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: '1rem',
+    height: '1rem',
+    padding: '0 0.3rem',
+    borderRadius: '9999px',
+    background: '#ef4444',
+    color: '#fff',
+    fontSize: '0.6rem',
+    fontWeight: 700,
+    lineHeight: 1
+  }),
+  skeleton: {
+    display: 'flex',
+    gap: '0.75rem',
+    padding: '0.75rem',
+    marginBottom: '0.375rem'
+  },
+  skeletonCircle: {
+    width: '2.5rem',
+    height: '2.5rem',
+    borderRadius: '0.75rem',
+    background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.5s infinite',
+    flexShrink: 0
+  },
+  skeletonLine: (width) => ({
+    height: '0.65rem',
+    width,
+    borderRadius: '0.25rem',
+    background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.5s infinite'
+  })
 }
 
-// Route map: NotificationType → path builder function
-// Returns null for types that don't navigate (modal-based or system)
-const NOTIFICATION_ROUTES = {
-  [NotificationTypes.follow]: (n) => `/user/${n.link_id}`,
-  [NotificationTypes.likePost]: (n) => `/post/${n.link_id}`,
-  [NotificationTypes.commentPost]: (n) => `/post/${n.link_id}`,
-  [NotificationTypes.commentChildPost]: (n) => `/post/${n.link_id}`,
-  [NotificationTypes.sharePost]: (n) => `/post/${n.link_id}`,
-  [NotificationTypes.likeRecipe]: (n) => `/cooking/recipe/${n.link_id}`,
-  [NotificationTypes.commentRecipe]: (n) => `/cooking/recipe/${n.link_id}`,
-  [NotificationTypes.bookmarkRecipe]: (n) => `/cooking/recipe/${n.link_id}`,
-  [NotificationTypes.commentBlog]: (n) => `/blog/${n.link_id}`,
-  [NotificationTypes.bookmarkAlbum]: (n) => `/album/${n.link_id}`,
-  [NotificationTypes.shareMealPlan]: null,
-  [NotificationTypes.mealPlanInvite]: null, // opens modal
-  [NotificationTypes.system]: null,
-  [NotificationTypes.sportEventInvite]: (n) => `/sport-event/${n.link_id}`,
-  [NotificationTypes.reportPost]: (n) => `/post/${n.link_id}`,
-  [NotificationTypes.habitChallengeInvite]: (n) => `/habit-challenge/${n.link_id}`,
-  [NotificationTypes.habitBuddyReminder]: (n) => `/habit-challenge/${n.link_id}`,
-  [NotificationTypes.habitCheckinLike]: (n) => `/habit-challenge/${n.link_id}`,
-  [NotificationTypes.habitStreakMilestone]: (n) => `/habit-challenge/${n.link_id}`
+// ─── Skeleton Component ───
+function NotificationSkeleton() {
+  return (
+    <>
+      {[1, 2, 3].map((i) => (
+        <div key={i} style={styles.skeleton}>
+          <div style={styles.skeletonCircle} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingTop: '0.25rem' }}>
+            <div style={styles.skeletonLine('60%')} />
+            <div style={styles.skeletonLine('90%')} />
+            <div style={styles.skeletonLine('35%')} />
+          </div>
+        </div>
+      ))}
+    </>
+  )
 }
 
+// ─── Empty State ───
+function EmptyState({ tabLabel }) {
+  return (
+    <div style={styles.emptyState}>
+      <AiOutlineInbox style={{ fontSize: '3rem', opacity: 0.4 }} />
+      <p style={{ fontSize: '0.85rem', fontWeight: 500 }}>Không có thông báo nào</p>
+      <p style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+        {tabLabel === 'Tất cả'
+          ? 'Bạn đã xem hết thông báo rồi!'
+          : `Chưa có thông báo ${tabLabel.toLowerCase()} nào`}
+      </p>
+    </div>
+  )
+}
+
+// ─── Main Component ───
 export default function NotificationPopUp() {
   const [isMenu, setIsMenu] = useState(false)
+  const [activeTab, setActiveTab] = useState(CATEGORIES.all)
   const [invitePreview, setInvitePreview] = useState(null)
   const { notification, setNotification } = useContext(SocketContext)
   const ref = useRef()
+
   const handleClickOutside = (event) => {
     if (ref.current && !ref.current.contains(event.target)) {
       setIsMenu(false)
@@ -81,13 +246,10 @@ export default function NotificationPopUp() {
 
   const { data: dataCheck } = useQuery({
     queryKey: ['check-notification'],
-    queryFn: () => {
-      return checkReadNotification()
-    },
+    queryFn: () => checkReadNotification(),
     placeholderData: keepPreviousData
   })
 
-  // result is now a number (unread count)
   const unreadCount = dataCheck?.data?.result ?? 0
 
   useEffect(() => {
@@ -96,9 +258,7 @@ export default function NotificationPopUp() {
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const queryConfig = omit(useQueryConfig(), ['page', 'sort'])
@@ -135,17 +295,66 @@ export default function NotificationPopUp() {
     })
   }
 
-  const handleOpenInvite = (payload) => {
-    setInvitePreview(payload)
-  }
+  // All notifications flattened
+  const allNotifications = useMemo(() => {
+    if (!data?.pages) return []
+    return data.pages.flatMap((page) => page.data.result.notifications)
+  }, [data])
 
+  // Filtered by active tab
+  const filteredNotifications = useMemo(() => {
+    if (activeTab === CATEGORIES.all) return allNotifications
+    return allNotifications.filter((n) => getCategoryForType(n.type) === activeTab)
+  }, [allNotifications, activeTab])
+
+  // Count unread per category (for tab badges)
+  const unreadByCategory = useMemo(() => {
+    const counts = { [CATEGORIES.all]: 0, [CATEGORIES.social]: 0, [CATEGORIES.system]: 0 }
+    allNotifications.forEach((n) => {
+      if (!n.is_read) {
+        counts[CATEGORIES.all]++
+        const cat = getCategoryForType(n.type)
+        if (counts[cat] !== undefined) counts[cat]++
+      }
+    })
+    return counts
+  }, [allNotifications])
+
+  const handleOpenInvite = (payload) => setInvitePreview(payload)
   const handleCloseInvite = () => setInvitePreview(null)
 
-  // Format badge text
   const badgeText = unreadCount > 99 ? '99+' : unreadCount
 
   return (
     <div ref={ref}>
+      {/* Shimmer animation keyframes */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .noti-item-hover:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .noti-delete-hover:hover {
+          color: #ef4444 !important;
+          background: #fef2f2 !important;
+        }
+        .noti-tab-hover:hover {
+          color: #4f46e5 !important;
+          background: #f8fafc;
+        }
+        .noti-loadmore-hover:hover {
+          opacity: 0.9;
+        }
+        .noti-scroll::-webkit-scrollbar { width: 5px; }
+        .noti-scroll::-webkit-scrollbar-track { background: transparent; }
+        .noti-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .noti-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      `}</style>
+
+      {/* Bell Button */}
       <div
         onClick={() => setIsMenu(!isMenu)}
         className='dark:bg-slate-600 relative dark:hover:bg-slate-500 dark:border-none text-2xl hover:bg-yellow-200 transition-all duration-300 cursor-pointer border text-red-600 dark:text-white shadow-md font-normal h-8 w-8 md:h-10 md:w-10 flex items-center justify-center align-center rounded-full outline-none focus:outline-none mr-1'
@@ -157,100 +366,168 @@ export default function NotificationPopUp() {
           </div>
         )}
       </div>
+
+      {/* Notification Panel */}
       <AnimatePresence>
         {isMenu && (
           <motion.div
-            initial={{ opacity: 0, y: '-10%' }}
-            animate={{ opacity: 1, y: '0%' }}
-            exit={{ opacity: 0, y: '-10%', transition: { duration: '0.1' } }}
-            transition={{ type: 'spring', stiffness: '200', duration: '0.1' }}
-            className='z-50 absolute top-[4rem] right-1 bg-white divide-y divide-gray-100 rounded-lg shadow  dark:bg-color-primary dark:divide-gray-600'
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98, transition: { duration: 0.15 } }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            style={styles.panel}
+            className='z-50 absolute top-[4rem] right-1 bg-white dark:bg-gray-900'
           >
-            <div className='z-50  bg-white divide-y divide-gray-100 rounded-lg shadow  dark:bg-color-primary dark:divide-gray-600'>
-              <div
-                id='toast-notification'
-                className=' w-[24rem] p-4 max-h-[35rem] overflow-y-auto scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 text-gray-900 bg-white rounded-lg shadow dark:bg-gray-800 dark:text-gray-300'
-                role='alert'
-              >
-                <div className='flex items-center mb-3'>
-                  <span className='mb-1 text-sm font-semibold text-gray-900 dark:text-white'>Thông báo mới</span>
+            {/* Header */}
+            <div style={styles.header}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>
+                    Thông báo
+                  </h3>
+                  {unreadCount > 0 && (
+                    <p style={{ fontSize: '0.72rem', opacity: 0.85, margin: '0.2rem 0 0' }}>
+                      Bạn có {unreadCount} thông báo chưa đọc
+                    </p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   {unreadCount > 0 && (
                     <button
                       type='button'
                       onClick={handleReadAll}
                       disabled={readAllMutation.isPending}
-                      className='ms-2 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium disabled:opacity-50'
+                      style={{
+                        background: 'rgba(255,255,255,0.18)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        color: '#fff',
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        transition: 'background 0.2s',
+                        opacity: readAllMutation.isPending ? 0.6 : 1
+                      }}
                     >
-                      Đánh dấu tất cả đã đọc
+                      <AiOutlineCheckCircle />
+                      Đọc tất cả
                     </button>
                   )}
                   <button
                     type='button'
                     onClick={() => setIsMenu(false)}
-                    className='ms-auto -mx-1.5 -my-1.5 bg-white justify-center items-center flex-shrink-0 text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700'
-                    data-dismiss-target='#toast-notification'
-                    aria-label='Close'
+                    style={{
+                      background: 'rgba(255,255,255,0.15)',
+                      border: 'none',
+                      color: '#fff',
+                      width: '1.75rem',
+                      height: '1.75rem',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.1rem'
+                    }}
                   >
-                    <span className='sr-only'>Close</span>
-                    <svg
-                      className='w-3 h-3'
-                      aria-hidden='true'
-                      xmlns='http://www.w3.org/2000/svg'
-                      fill='none'
-                      viewBox='0 0 14 14'
-                    >
-                      <path
-                        stroke='currentColor'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6'
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <div className='flex flex-col gap-1'>
-                  {isLoading ? (
-                    <Loading />
-                  ) : (
-                    <>
-                      {data?.pages?.map((dataNotifications) =>
-                        dataNotifications.data.result.notifications.map((notification) => {
-                          return (
-                            <div className='' key={notification._id}>
-                              <NotificationItem notification={notification} onOpenInvite={handleOpenInvite} />
-                            </div>
-                          )
-                        })
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className='w-full'>
-                  <button
-                    className='btn btn-xs text-xs w-full mt-4 hover:bg-red-800  bg-red-900 dark:bg-pink-700 dark:disabled:bg-slate-700 dark:disabled:text-gray-400 disabled:text-black disabled:bg-gray-100 text-gray-200'
-                    disabled={!hasNextPage || isFetchingNextPage}
-                    onClick={() => fetchNextPage()}
-                  >
-                    {isFetchingNextPage
-                      ? 'Đang tải ...'
-                      : hasNextPage
-                        ? 'Xem thêm kết quả khác'
-                        : 'Không còn thông báo nào '}
+                    ×
                   </button>
                 </div>
               </div>
             </div>
+
+            {/* Filter Tabs */}
+            <div style={styles.tabBar} className='dark:bg-gray-800 dark:border-gray-700'>
+              {TAB_CONFIG.map((tab) => {
+                const isActive = activeTab === tab.key
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.key}
+                    type='button'
+                    onClick={() => setActiveTab(tab.key)}
+                    style={styles.tab(isActive)}
+                    className='noti-tab-hover dark:text-gray-300'
+                  >
+                    <Icon style={{ fontSize: '0.9rem' }} />
+                    {tab.label}
+                    {unreadByCategory[tab.key] > 0 && (
+                      <span style={styles.badge(unreadByCategory[tab.key])}>
+                        {unreadByCategory[tab.key]}
+                      </span>
+                    )}
+                    {isActive && (
+                      <motion.div
+                        layoutId='noti-tab-indicator'
+                        style={styles.tabIndicator}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Notification List */}
+            <div style={styles.listContainer} className='noti-scroll dark:bg-gray-900'>
+              {isLoading ? (
+                <NotificationSkeleton />
+              ) : filteredNotifications.length === 0 ? (
+                <EmptyState tabLabel={TAB_CONFIG.find((t) => t.key === activeTab)?.label || 'Tất cả'} />
+              ) : (
+                <>
+                  <AnimatePresence mode='popLayout'>
+                    {filteredNotifications.map((notification) => (
+                      <NotificationItem
+                        key={notification._id}
+                        notification={notification}
+                        onOpenInvite={handleOpenInvite}
+                      />
+                    ))}
+                  </AnimatePresence>
+
+                  {/* Load More */}
+                  {activeTab === CATEGORIES.all && (
+                    <button
+                      type='button'
+                      style={{
+                        ...styles.loadMoreBtn,
+                        opacity: !hasNextPage || isFetchingNextPage ? 0.6 : 1,
+                        cursor: !hasNextPage ? 'default' : 'pointer'
+                      }}
+                      className='noti-loadmore-hover'
+                      disabled={!hasNextPage || isFetchingNextPage}
+                      onClick={() => fetchNextPage()}
+                    >
+                      {isFetchingNextPage
+                        ? 'Đang tải...'
+                        : hasNextPage
+                          ? 'Xem thêm thông báo'
+                          : 'Đã xem hết thông báo ✓'}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
       <InvitePreviewModal invite={invitePreview} onClose={handleCloseInvite} />
     </div>
   )
 }
 
+// ─── Notification Item ───
 const NotificationItem = ({ notification, onOpenInvite }) => {
   const navigate = useNavigate()
+  const config = getNotificationConfig(notification.type)
+  const IconComponent = config.icon
+  const isSystem = isSystemNotification(notification.type)
 
   const openInviteModal = () => {
     if (!notification.metadata?.meal_plan_id && !notification.link_id) return
@@ -263,25 +540,20 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
   }
 
   const checkNavigate = () => {
-    // mealPlanInvite → open modal
     if (notification.type === NotificationTypes.mealPlanInvite) {
       return openInviteModal()
     }
 
     const routeBuilder = NOTIFICATION_ROUTES[notification.type]
-
-    // No route defined for this type (system, shareMealPlan, etc.)
     if (!routeBuilder) return
 
-    // Fallback: link_id is empty or missing
-    if (!notification.link_id) {
-      toast.error('Nội dung không còn tồn tại')
-      return
-    }
-
-    const path = routeBuilder(notification)
-    if (path) {
-      navigate(path)
+    if (typeof routeBuilder === 'function') {
+      const path = routeBuilder(notification)
+      if (path) {
+        navigate(path)
+      } else {
+        toast('Nội dung không còn tồn tại', { icon: 'ℹ️', id: 'noti-nav' })
+      }
     }
   }
 
@@ -293,14 +565,13 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
     mutationFn: () => deleteNotification(notification._id)
   })
 
-  const handleDelete = () => {
+  const handleDelete = (e) => {
+    e.stopPropagation()
     deleteMutation.mutate(null, {
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ['notification']
-        })
-
-        toast.success('Xóa thông báo thành công', { id: 'delete-noti' })
+        queryClient.invalidateQueries({ queryKey: ['notification'] })
+        queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        toast.success('Đã xóa thông báo', { id: 'delete-noti' })
       }
     })
   }
@@ -312,121 +583,99 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
     readMutation.mutate(null, {
       onSuccess: async () => {
         await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: ['notification']
-          }),
-          queryClient.invalidateQueries({
-            queryKey: ['check-notification']
-          })
+          queryClient.invalidateQueries({ queryKey: ['notification'] }),
+          queryClient.invalidateQueries({ queryKey: ['check-notification'] })
         ])
         checkNavigate()
       }
     })
   }
 
-  if (notification.type === NotificationTypes.shareMealPlan) {
-    return (
-      <div
-        className={
-          notification.is_read
-            ? 'flex items-center relative cursor-pointer p-1 rounded-lg bg-white hover:bg-gray-200 transition-al dark:bg-gray-800'
-            : 'flex items-center relative p-1 cursor-pointer  rounded-lg hover:bg-gray-200 transition-all dark:hover:bg-gray-800 bg-gray-100 dark:bg-gray-700'
-        }
-      >
-        <div
-          onClick={handleDelete}
-          className={`absolute top-0 right-0 m-1 text-xs font-bold text-gray-400 hover:text-gray-500 ${deleteMutation.isPending ? 'pointer-events-none opacity-50' : ''}`}
-        >
-          {deleteMutation.isPending ? '...' : 'Xóa'}
-        </div>
-        <div className='relative inline-block shrink-0'>
-          <img className='w-12 h-12 object-cover rounded-full' src={logo} alt='image' />
-          <span className='absolute bottom-0 right-0 inline-flex items-center justify-center w-6 h-6 bg-blue-600 rounded-full'>
-            <svg
-              className='w-3 h-3 text-white'
-              aria-hidden='true'
-              xmlns='http://www.w3.org/2000/svg'
-              viewBox='0 0 20 18'
-              fill='currentColor'
-            >
-              <path
-                d='M18 4H16V9C16 10.0609 15.5786 11.0783 14.8284 11.8284C14.0783 12.5786 13.0609 13 12 13H9L6.846 14.615C7.17993 14.8628 7.58418 14.9977 8 15H11.667L15.4 17.8C15.5731 17.9298 15.7836 18 16 18C16.2652 18 16.5196 17.8946 16.7071 17.7071C16.8946 17.5196 17 17.2652 17 17V15H18C18.5304 15 19.0391 14.7893 19.4142 14.4142C19.7893 14.0391 20 13.5304 20 13V6C20 5.46957 19.7893 4.96086 19.4142 4.58579C19.0391 4.21071 18.5304 4 18 4Z'
-                fill='currentColor'
-              />
-              <path
-                d='M12 0H2C1.46957 0 0.960859 0.210714 0.585786 0.585786C0.210714 0.960859 0 1.46957 0 2V9C0 9.53043 0.210714 10.0391 0.585786 10.4142C0.960859 10.7893 1.46957 11 2 11H3V13C3 13.1857 3.05171 13.3678 3.14935 13.5257C3.24698 13.6837 3.38668 13.8114 3.55279 13.8944C3.71889 13.9775 3.90484 14.0126 4.08981 13.996C4.27477 13.9793 4.45143 13.9114 4.6 13.8L8.333 11H12C12.5304 11 13.0391 10.7893 13.4142 10.4142C13.7893 10.0391 14 9.53043 14 9V2C14 1.46957 13.7893 0.960859 13.4142 0.585786C13.0391 0.210714 12.5304 0 12 0Z'
-                fill='currentColor'
-              />
-            </svg>
-          </span>
-        </div>
-        <div onClick={handleRead} className='ms-3 text-sm font-normal'>
-          <div className='text-sm font-semibold text-gray-900 dark:text-white'>FitConnect</div>
-          <div className='text-xs font-normal'>{notification.content}</div>
-          <span className='text-xs font-medium text-blue-600 dark:text-blue-300'>
-            {moment(notification.createdAt).fromNow()}
-          </span>
-        </div>
-      </div>
-    )
-  }
+  const hasNoSender = isSystem || !notification.sender_id || !notification.sender
+  const senderName = hasNoSender ? 'FitConnect' : (notification.sender?.name || 'Người dùng')
+  const avatarSrc = hasNoSender ? logo : (notification.sender?.avatar || useravatar)
 
   return (
-    <div
-      className={
-        notification.is_read
-          ? 'flex items-center relative cursor-pointer p-1 rounded-lg bg-white hover:bg-gray-200 transition-al dark:bg-gray-800'
-          : 'flex items-center relative p-1 cursor-pointer  rounded-lg hover:bg-gray-200 transition-all dark:hover:bg-gray-800 bg-gray-100 dark:bg-gray-700'
-      }
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -80, transition: { duration: 0.25 } }}
+      onClick={handleRead}
+      className='noti-item-hover'
+      style={styles.itemCard(notification.is_read, config.borderColor)}
     >
-      <div
-        onClick={handleDelete}
-        className={`absolute top-0 right-0 m-1 text-xs font-bold text-gray-400 hover:text-gray-500 ${deleteMutation.isPending ? 'pointer-events-none opacity-50' : ''}`}
-      >
-        {deleteMutation.isPending ? '...' : 'Xóa'}
+      {/* Unread dot */}
+      {!notification.is_read && <div style={styles.unreadDot} />}
+
+      {/* Type Icon */}
+      <div style={styles.iconBubble(config.bgColor, config.color)}>
+        <IconComponent />
       </div>
-      <div className='relative inline-block shrink-0'>
-        <img
-          className='w-12 h-12 object-cover rounded-full'
-          src={notification.sender?.avatar ? notification.sender.avatar : useravatar}
-          alt='image'
-        />
-        <span className='absolute bottom-0 right-0 inline-flex items-center justify-center w-6 h-6 bg-blue-600 rounded-full'>
-          <svg
-            className='w-3 h-3 text-white'
-            aria-hidden='true'
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 20 18'
-            fill='currentColor'
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0, paddingRight: '1.25rem' }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
+          <img
+            src={avatarSrc}
+            alt=''
+            onError={(e) => { e.target.src = useravatar }}
+            style={{ width: '1.25rem', height: '1.25rem', borderRadius: '50%', objectFit: 'cover' }}
+          />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b' }} className='dark:text-white'>
+            {senderName}
+          </span>
+          <span
+            style={{
+              fontSize: '0.6rem',
+              fontWeight: 500,
+              color: config.color,
+              background: config.bgColor,
+              padding: '0.1rem 0.4rem',
+              borderRadius: '0.3rem'
+            }}
           >
-            <path
-              d='M18 4H16V9C16 10.0609 15.5786 11.0783 14.8284 11.8284C14.0783 12.5786 13.0609 13 12 13H9L6.846 14.615C7.17993 14.8628 7.58418 14.9977 8 15H11.667L15.4 17.8C15.5731 17.9298 15.7836 18 16 18C16.2652 18 16.5196 17.8946 16.7071 17.7071C16.8946 17.5196 17 17.2652 17 17V15H18C18.5304 15 19.0391 14.7893 19.4142 14.4142C19.7893 14.0391 20 13.5304 20 13V6C20 5.46957 19.7893 4.96086 19.4142 4.58579C19.0391 4.21071 18.5304 4 18 4Z'
-              fill='currentColor'
-            />
-            <path
-              d='M12 0H2C1.46957 0 0.960859 0.210714 0.585786 0.585786C0.210714 0.960859 0 1.46957 0 2V9C0 9.53043 0.210714 10.0391 0.585786 10.4142C0.960859 10.7893 1.46957 11 2 11H3V13C3 13.1857 3.05171 13.3678 3.14935 13.5257C3.24698 13.6837 3.38668 13.8114 3.55279 13.8944C3.71889 13.9775 3.90484 14.0126 4.08981 13.996C4.27477 13.9793 4.45143 13.9114 4.6 13.8L8.333 11H12C12.5304 11 13.0391 10.7893 13.4142 10.4142C13.7893 10.0391 14 9.53043 14 9V2C14 1.46957 13.7893 0.960859 13.4142 0.585786C13.0391 0.210714 12.5304 0 12 0Z'
-              fill='currentColor'
-            />
-          </svg>
-        </span>
-      </div>
-      <div onClick={handleRead} className='ms-3 text-sm font-normal'>
-        <div className='text-sm font-semibold text-gray-900 dark:text-white'>
-          {notification.sender?.name || 'Người dùng'}
+            {config.label}
+          </span>
         </div>
-        <div className='text-xs font-normal'>
+
+        {/* Content text */}
+        <p style={{ fontSize: '0.78rem', color: '#475569', margin: '0.15rem 0', lineHeight: 1.4 }} className='dark:text-gray-300'>
           {notification.content}
-          {notification.type === NotificationTypes.follow ? '' : ':'}{' '}
-          <span className='font-medium'>{cutString(notification.name_notification, 40)}</span>
-        </div>
-        <span className='text-xs font-medium text-blue-600 dark:text-blue-300'>
+          {notification.type !== NotificationTypes.follow && notification.name_notification ? (
+            <>
+              {': '}
+              <span style={{ fontWeight: 600 }}>{cutString(notification.name_notification, 40)}</span>
+            </>
+          ) : null}
+        </p>
+
+        {/* Timestamp */}
+        <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500 }}>
           {moment(notification.createdAt).fromNow()}
         </span>
       </div>
-    </div>
+
+      {/* Delete button */}
+      <button
+        type='button'
+        onClick={handleDelete}
+        disabled={deleteMutation.isPending}
+        style={{
+          ...styles.deleteBtn,
+          opacity: deleteMutation.isPending ? 0.4 : 1
+        }}
+        className='noti-delete-hover'
+        title='Xóa thông báo'
+      >
+        <AiOutlineDelete />
+      </button>
+    </motion.div>
   )
 }
 
+// ─── Invite Preview Modal ───
 const InvitePreviewModal = ({ invite, onClose }) => {
   const navigate = useNavigate()
 
@@ -446,7 +695,7 @@ const InvitePreviewModal = ({ invite, onClose }) => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        <div className='absolute inset-0 bg-black/50' onClick={onClose} />
+        <div className='absolute inset-0 bg-black/50 backdrop-blur-sm' onClick={onClose} />
         <motion.div
           className='relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900'
           initial={{ scale: 0.95, opacity: 0 }}

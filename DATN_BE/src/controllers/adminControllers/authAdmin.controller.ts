@@ -14,7 +14,6 @@ export const loginAdminController = async (req: Request, res: Response) => {
 
 export const logoutAdminController = async (req: Request, res: Response) => {
   const { decoded_authorization } = req
-  console.log('decoded_authorization', decoded_authorization)
   const result = await authAdminService.logoutAdmin()
   return res.json({
     message: AUTH_USER_MESSAGE.LOGOUT_SUCCESS,

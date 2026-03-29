@@ -12,6 +12,7 @@ import {
 import { MdHistory, MdErrorOutline } from "react-icons/md";
 import moment from "moment";
 import toast from "react-hot-toast";
+import { getJoinedEvents } from "../../../apis/sportEventApi";
 
 export default function EventHistory() {
   const navigate = useNavigate();
@@ -35,67 +36,32 @@ export default function EventHistory() {
         setIsLoading(true);
         setError(null);
 
-        // --- MOCK DATA ---
-        const fetchedEvents = [
-          {
-            id: 5,
-            name: "City Swimming Gala",
-            date: "2024-02-20T13:00:00Z",
-            endDate: "2024-02-20T13:25:45Z",
-            location: "City Aquatic Center",
-            category: "Swimming",
-            participants: 68,
-            performance: "Completed",
-            ranking: 3,
-            totalParticipants: 68,
-            achievement: "Bronze Medal",
-            time: "00:25:45",
-          },
-          {
-            id: 7,
-            name: "Spring Cycling Tour",
-            date: "2024-04-10T09:00:00Z",
-            endDate: "2024-04-10T14:30:00Z",
-            location: "Countryside Loop",
-            category: "Cycling",
-            participants: 120,
-            performance: "Completed",
-            ranking: 15,
-            totalParticipants: 120,
-            achievement: "Top 25%",
-            time: "04:10:00",
-          },
-          {
-            id: 8,
-            name: "Sunset Yoga Session",
-            date: "2024-03-05T18:00:00Z",
-            endDate: "2024-03-05T19:00:00Z",
-            location: "Beach Park",
-            category: "Yoga",
-            participants: 35,
-            performance: "Completed",
-            ranking: null,
-            totalParticipants: 35,
-            achievement: "Participant",
-            time: "01:00:00",
-          },
-          {
-            id: 9,
-            name: "Community Football Match",
-            date: "2024-01-28T15:00:00Z",
-            endDate: "2024-01-28T17:00:00Z",
-            location: "Local Sports Field",
-            category: "Football",
-            participants: 22,
-            performance: "Completed",
-            ranking: 1,
-            totalParticipants: 2,
-            achievement: "Winner",
-            time: "02:00:00",
-          },
-        ];
+        const response = await getJoinedEvents({ page: 1, limit: 100 });
+        const events = response?.data?.result?.events || response?.data?.result || [];
 
-        setPastEvents(fetchedEvents);
+        // Filter only past/completed events and map to expected format
+        const now = new Date();
+        const completedEvents = events
+          .filter(event => {
+            const endDate = new Date(event.end_date || event.endDate || event.date);
+            return endDate < now || event.status === 'completed';
+          })
+          .map(event => ({
+            id: event._id || event.id,
+            name: event.name || event.title || '',
+            date: event.start_date || event.startDate || event.date,
+            endDate: event.end_date || event.endDate,
+            location: event.location || '',
+            category: event.category || event.sport_type || '',
+            participants: event.participant_count || event.participants || 0,
+            performance: event.user_result?.status || 'Completed',
+            ranking: event.user_result?.ranking || null,
+            totalParticipants: event.participant_count || event.max_participants || 0,
+            achievement: event.user_result?.achievement || 'Participant',
+            time: event.user_result?.time || '',
+          }));
+
+        setPastEvents(completedEvents);
       } catch (err) {
         console.error(err);
         setError("Không thể tải lịch sử sự kiện.");

@@ -9,7 +9,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { updateWorkoutSchedule } from '../../../../apis/workoutScheduleApi'
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
-import { } from '@tanstack/react-query'
+
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { useEffect } from 'react'
 
@@ -53,8 +53,7 @@ export default function ModalUpdateWorkout({ handleCloseModalUpdateWorkout, work
     }
 
     updateWorkoutMutation.mutate(newData, {
-      onSuccess: async (data) => {
-        console.log(data)
+      onSuccess: async () => {
         await Promise.all([
           queryClient.invalidateQueries({
             queryKey: ['date-items']
@@ -69,8 +68,8 @@ export default function ModalUpdateWorkout({ handleCloseModalUpdateWorkout, work
         toast.success('Cập nhật lịch trình thành công')
         handleCloseModalUpdateWorkout()
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Lỗi khi cập nhật lịch trình')
       }
     })
   })

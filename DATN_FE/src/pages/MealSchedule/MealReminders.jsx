@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaBell, FaPlus, FaTrashAlt, FaEdit, FaClock, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 
+const REMINDERS_STORAGE_KEY = 'meal_reminders';
+
+const defaultReminders = [
+  { id: 1, title: 'Bữa sáng', time: '07:00', days: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'], enabled: true },
+  { id: 2, title: 'Bữa trưa', time: '12:00', days: ['T2', 'T3', 'T4', 'T5', 'T6'], enabled: true },
+  { id: 3, title: 'Bữa tối', time: '19:00', days: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'], enabled: true },
+  { id: 4, title: 'Snack chiều', time: '15:30', days: ['T2', 'T3', 'T4', 'T5', 'T6'], enabled: false }
+];
+
 export default function MealReminders() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -17,45 +26,28 @@ export default function MealReminders() {
     enabled: true
   });
   
-  // Mô phỏng fetch dữ liệu
+  // Lấy dữ liệu từ localStorage (TODO: chuyển sang backend khi có endpoint)
   useEffect(() => {
-    setTimeout(() => {
-      // Mock data
-      const mockReminders = [
-        {
-          id: 1,
-          title: 'Bữa sáng',
-          time: '07:00',
-          days: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-          enabled: true
-        },
-        {
-          id: 2,
-          title: 'Bữa trưa',
-          time: '12:00',
-          days: ['T2', 'T3', 'T4', 'T5', 'T6'],
-          enabled: true
-        },
-        {
-          id: 3,
-          title: 'Bữa tối',
-          time: '19:00',
-          days: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-          enabled: true
-        },
-        {
-          id: 4,
-          title: 'Snack chiều',
-          time: '15:30',
-          days: ['T2', 'T3', 'T4', 'T5', 'T6'],
-          enabled: false
-        }
-      ];
-      
-      setReminders(mockReminders);
-      setLoading(false);
-    }, 800);
+    try {
+      const saved = localStorage.getItem(REMINDERS_STORAGE_KEY);
+      if (saved) {
+        setReminders(JSON.parse(saved));
+      } else {
+        setReminders(defaultReminders);
+        localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(defaultReminders));
+      }
+    } catch {
+      setReminders(defaultReminders);
+    }
+    setLoading(false);
   }, []);
+  
+  // Persist changes to localStorage
+  useEffect(() => {
+    if (!loading && reminders.length > 0) {
+      localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(reminders));
+    }
+  }, [reminders, loading]);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;

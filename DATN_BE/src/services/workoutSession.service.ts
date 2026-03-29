@@ -1,6 +1,6 @@
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import { Types } from 'mongoose'
-import challengeService from '~/services/userServices/challenge.services'
+import trainingService from '~/services/userServices/training.services'
 
 class WorkoutSessionService {
     async createSession(userId: string, data: any) {
@@ -73,14 +73,14 @@ class WorkoutSessionService {
             },
             { new: true }
         ).then(async (updatedSession) => {
-            // Auto-track challenge progress (fire-and-forget)
+            // Auto-track training progress (fire-and-forget)
             if (updatedSession) {
-                challengeService.updateProgressOnWorkoutComplete(userId, {
+                trainingService.updateProgressOnWorkoutComplete(userId, {
                     total_calories: updatedSession.total_calories,
                     duration_minutes: updatedSession.duration_minutes,
                     finished_at: updatedSession.finished_at
                 }).catch(() => {
-                    // Challenge tracking errors should not affect workout completion
+                    // Training tracking errors should not affect workout completion
                 })
             }
             return updatedSession

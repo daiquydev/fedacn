@@ -46,7 +46,8 @@ import adminMuscleGroupRouter from './routes/adminRoutes/muscleGroup.routes'
 import adminExerciseRouter from './routes/adminRoutes/exercise.routes'
 import aiRouter from './routes/userRoutes/ai.routes'
 import savedWorkoutTemplateRouter from './routes/userRoutes/savedWorkoutTemplate.routes'
-import habitChallengeRouter from './routes/userRoutes/habitChallenge.routes'
+
+import trainingRouter from './routes/userRoutes/training.routes'
 import challengeRouter from './routes/userRoutes/challenge.routes'
 const app: Express = express()
 const port = envConfig.port
@@ -144,7 +145,8 @@ app.use('/api/equipment', publicEquipmentRouter)
 app.use('/api/muscle-groups', publicMuscleGroupRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/saved-workouts', savedWorkoutTemplateRouter)
-app.use('/api/habit-challenges', habitChallengeRouter)
+
+app.use('/api/trainings', trainingRouter)
 app.use('/api/challenges', challengeRouter)
 
 app.use('/api/admin/auth/admins', authAdminRouter)

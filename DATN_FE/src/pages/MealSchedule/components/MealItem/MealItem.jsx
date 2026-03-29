@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
-import { } from '@tanstack/react-query'
+
 import moment from 'moment'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -31,8 +31,8 @@ export default function MealItem({ meal }) {
         })
         toast.success('Xóa lịch trình thành công')
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Lỗi khi xóa lịch trình')
       }
     })
   }

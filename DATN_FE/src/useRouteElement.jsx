@@ -32,11 +32,17 @@ const IBW = lazy(() => import('./pages/IBW'))
 const LBM = lazy(() => import('./pages/LBM'))
 const CaloBurned = lazy(() => import('./pages/CaloBurned'))
 const WaterPerDay = lazy(() => import('./pages/WaterPerDay'))
+// Training system components - converted to lazy loading
+const Training = lazy(() => import('./pages/Training/Training'))
+const TrainingDetail = lazy(() => import('./pages/Training/TrainingDetail'))
+const MyTraining = lazy(() => import('./pages/Training/MyTraining'))
+const CreateTraining = lazy(() => import('./pages/Training/CreateTraining'))
 // Challenge system components - converted to lazy loading
-const Challenge = lazy(() => import('./pages/Challenge/Challenge'))
+const ChallengeList = lazy(() => import('./pages/Challenge/Challenge'))
 const ChallengeDetail = lazy(() => import('./pages/Challenge/ChallengeDetail'))
 const MyChallenge = lazy(() => import('./pages/Challenge/MyChallenge'))
 const CreateChallenge = lazy(() => import('./pages/Challenge/CreateChallenge'))
+const ChallengeTracking = lazy(() => import('./pages/Challenge/ChallengeTracking'))
 // MealSchedule components - converted to lazy loading
 const MyMealSchedule = lazy(() => import('./pages/MealSchedule/MyMealSchedule'))
 const DayMealScheduleDetail = lazy(() => import('./pages/MealSchedule/DayMealScheduleDetail'))
@@ -88,9 +94,7 @@ const MyMealPlans = lazy(() => import('./pages/MealPlan/MyMealPlans/MyMealPlans'
 const ActiveMealPlan = lazy(() => import('./pages/MealPlan/ActiveMealPlan/ActiveMealPlan'))
 const FriendManagement = lazy(() => import('./pages/Friends/FriendManagement'))
 const Explore = lazy(() => import('./pages/Explore'))
-const HabitChallenge = lazy(() => import('./pages/HabitChallenge'))
-const HabitChallengeDetail = lazy(() => import('./pages/HabitChallengeDetail'))
-const CreateHabitChallenge = lazy(() => import('./pages/CreateHabitChallenge'))
+
 const PublicMealPlanDetail = lazy(() => import('./pages/Explore/PublicMealPlanDetail'))
 const PersonalDashboard = lazy(() => import('./pages/PersonalDashboard/PersonalDashboard'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
@@ -550,36 +554,7 @@ export default function useRouteElement() {
             </Suspense>
           )
         },
-        {
-          path: '/habit-challenge',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <HabitChallenge />
-              </Suspense>
-            </MainLayout>
-          )
-        },
-        {
-          path: '/habit-challenge/create',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <CreateHabitChallenge />
-              </Suspense>
-            </MainLayout>
-          )
-        },
-        {
-          path: '/habit-challenge/:id',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <HabitChallengeDetail />
-              </Suspense>
-            </MainLayout>
-          )
-        },
+
         {
           path: '/meal-plan',
           element: (
@@ -631,11 +606,51 @@ export default function useRouteElement() {
           )
         },
         {
+          path: '/training',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <Training />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/training/my-trainings',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <MyTraining />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/training/create',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <CreateTraining />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/training/:id',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <TrainingDetail />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
           path: '/challenge',
           element: (
             <MainLayout>
               <Suspense>
-                <Challenge />
+                <ChallengeList />
               </Suspense>
             </MainLayout>
           )
@@ -668,6 +683,14 @@ export default function useRouteElement() {
                 <ChallengeDetail />
               </Suspense>
             </MainLayout>
+          )
+        },
+        {
+          path: '/challenge/:id/tracking',
+          element: (
+            <Suspense>
+              <ChallengeTracking />
+            </Suspense>
           )
         },
         {

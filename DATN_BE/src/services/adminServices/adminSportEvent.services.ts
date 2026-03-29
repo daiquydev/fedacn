@@ -1,5 +1,6 @@
 import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
+import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import { Types } from 'mongoose'
 
 class AdminSportEventService {
@@ -70,7 +71,24 @@ class AdminSportEventService {
         const total = await SportEventModel.countDocuments(condition)
         const totalPage = Math.ceil(total / limit)
 
-        return { events, totalPage, page, limit, total }
+        // Aggregate actual participants' progress from SportEventProgress
+        const eventIds = events.map(e => e._id)
+        const progressAgg = await SportEventProgressModel.aggregate([
+            { $match: { eventId: { $in: eventIds } } },
+            { $group: { _id: '$eventId', totalProgress: { $sum: '$value' } } }
+        ])
+        const progressMap = new Map(progressAgg.map(p => [p._id.toString(), p.totalProgress]))
+
+        const eventsWithProgress = events.map(ev => {
+            const evObj = ev.toObject ? ev.toObject() : ev
+            const evId = (evObj._id as Types.ObjectId).toString()
+            const progressSum = progressMap.get(evId) || 0
+            const target = (evObj as any).targetValue || 0
+            const progressPercent = target > 0 ? Math.min(Math.round((progressSum / target) * 100), 100) : 0
+            return { ...evObj, progressTotal: progressSum, progressPercent }
+        })
+
+        return { events: eventsWithProgress, totalPage, page, limit, total }
     }
 
     // Get stats for admin dashboard

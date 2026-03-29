@@ -4,7 +4,7 @@ import {
     FaPlus, FaEdit, FaTrash, FaDumbbell, FaRunning, FaHome, FaTimes, FaUndo,
     FaBiking, FaSwimmer, FaBasketballBall, FaVolleyballBall, FaTableTennis, FaMountain, FaSkating,
     FaChevronDown, FaWalking, FaHorse, FaFistRaised, FaBowlingBall, FaFootballBall, FaGolfBall,
-    FaSkiing, FaSnowboarding, FaWater, FaBaseballBall, FaSearch, FaExclamationTriangle
+    FaSkiing, FaSnowboarding, FaWater, FaBaseballBall, FaSearch
 } from 'react-icons/fa'
 import {
     MdSportsSoccer, MdSportsTennis, MdGolfCourse, MdSportsScore,
@@ -23,6 +23,7 @@ import sportCategoryApi from '../../apis/sportCategoryApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import { useForm, Controller } from 'react-hook-form'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
+import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 
 // ── Bộ icon thể thao (đồng nhất với DATN_FE/src/utils/sportIcons.js) ──
 const SPORT_ICONS = {
@@ -670,32 +671,19 @@ export default function AdminSportCategory() {
 
             {/* ── Confirm Dialog ── */}
             {confirmAction && (
-                <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60' onClick={(e) => e.target === e.currentTarget && setConfirmAction(null)}>
-                    <div className='bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4'>
-                        <div className='flex items-center gap-3 mb-3'>
-                            <div className={`p-2 rounded-full ${confirmAction.type === 'delete' ? 'bg-red-100 dark:bg-red-900' : 'bg-yellow-100 dark:bg-yellow-900'}`}>
-                                <FaExclamationTriangle className={`text-lg ${confirmAction.type === 'delete' ? 'text-red-600' : 'text-yellow-600'}`} />
-                            </div>
-                            <h3 className='text-base font-bold text-gray-800 dark:text-white'>
-                                {confirmAction.type === 'delete' ? 'Xóa danh mục' : 'Khôi phục danh mục'}
-                            </h3>
-                        </div>
-                        <p className='text-sm text-gray-600 dark:text-gray-400 ml-11 mb-5'>
-                            {confirmAction.type === 'delete'
-                                ? `Bạn có chắc muốn xóa danh mục "${confirmAction.category.name}"? Danh mục sẽ bị ẩn khỏi hệ thống (có thể khôi phục).`
-                                : `Khôi phục danh mục "${confirmAction.category.name}"?`
-                            }
-                        </p>
-                        <div className='flex justify-end gap-3'>
-                            <button onClick={() => setConfirmAction(null)} className='px-4 py-2 text-sm bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors'>
-                                Hủy
-                            </button>
-                            <button onClick={handleConfirm} className={`px-4 py-2 text-sm text-white rounded-lg font-medium transition-colors ${confirmAction.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
-                                Xác nhận
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ConfirmBox
+                    title={confirmAction.type === 'delete' ? 'Xóa danh mục' : 'Khôi phục danh mục'}
+                    subtitle={
+                        confirmAction.type === 'delete'
+                            ? `Bạn có chắc muốn xóa danh mục "${confirmAction.category.name}"? Danh mục sẽ bị ẩn khỏi hệ thống (có thể khôi phục).`
+                            : `Khôi phục danh mục "${confirmAction.category.name}"?`
+                    }
+                    danger={confirmAction.type === 'delete'}
+                    handleDelete={handleConfirm}
+                    closeModal={() => setConfirmAction(null)}
+                    isPending={deleteMutation.isPending || restoreMutation.isPending}
+                    tilteButton={confirmAction.type === 'delete' ? 'Xóa' : 'Khôi phục'}
+                />
             )}
         </div>
     )

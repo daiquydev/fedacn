@@ -8,7 +8,7 @@ import { schemaCreateMeal } from '../../../../utils/rules'
 import { yupResolver } from '@hookform/resolvers/yup'
 import toast from 'react-hot-toast'
 import { queryClient } from '../../../../main'
-import { } from '@tanstack/react-query'
+
 import Loading from '../../../../components/GlobalComponents/Loading'
 import { useNavigate } from 'react-router-dom'
 import { createMealSchedule } from '../../../../apis/mealScheduleApi'
@@ -35,7 +35,6 @@ export default function ModalCreateMeal({ handleCloseModalCreateMeal }) {
   })
 
   const purpose = watch('purpose')
-  console.log(purpose)
 
   // nếu purpose là 0, 1 thì hiện weight_target
   useEffect(() => {
@@ -57,13 +56,11 @@ export default function ModalCreateMeal({ handleCloseModalCreateMeal }) {
   const startDate = watch('start_date')
   const endDate = watch('end_date')
 
-  // console.log(startDate)
-  // console.log(endDate)
   const createMealMutation = useSafeMutation({
     mutationFn: (body) => createMealSchedule(body)
   })
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
+
 
     const newData = {
       ...data,
@@ -71,7 +68,7 @@ export default function ModalCreateMeal({ handleCloseModalCreateMeal }) {
       end_date: data.end_date,
       weight_target: parseInt(data.weight_target)
     }
-    console.log(newData)
+
     // nếu weight_target là NaN và purpose là 2 thì xóa weight_target
     if (newData.purpose === '2') {
       delete newData.weight_target
@@ -88,7 +85,6 @@ export default function ModalCreateMeal({ handleCloseModalCreateMeal }) {
 
     createMealMutation.mutate(newData, {
       onSuccess: (data) => {
-        console.log(data)
         queryClient.invalidateQueries({
           queryKey: ['meal-schedule']
         })
@@ -97,7 +93,7 @@ export default function ModalCreateMeal({ handleCloseModalCreateMeal }) {
         navigate(`/schedule/eat-schedule/${data?.data.result._id}`)
       },
       onError: (error) => {
-        console.log(error)
+
         setError('weight_target', {
           type: 'manual',
           message: error.response.data.message

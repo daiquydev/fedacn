@@ -47,7 +47,6 @@ export default function Login() {
       onError: (error) => {
         if (isAxiosUnprocessableEntityError(error)) {
           const formError = error.response?.data.errors
-          console.log(formError)
           if (formError?.user_name) {
             setError('user_name', {
               message: formError.user_name.msg,

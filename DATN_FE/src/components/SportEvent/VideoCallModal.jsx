@@ -29,6 +29,10 @@ const ICE_SERVERS = {
 
 const ABSENCE_THRESHOLD = 10   // seconds of no face before pausing
 const AI_INTERVAL = 3000        // ms between face checks
+const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
+const MAX_SCREENSHOTS = 5
+const CLOUD_NAME = 'da9cghklv'
+const UPLOAD_PRESET = 'fedacn_unsigned'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0') }
@@ -38,7 +42,7 @@ function fmtTime(s) {
 }
 
 // ─── RemoteVideo: attaches srcObject from a MediaStream to a <video> element ─
-function RemoteVideo({ stream, trackCount = 0, muted = false, className = '', style = {} }) {
+function RemoteVideo({ stream, trackCount = 0, muted = false, className = '', style = {}, peerName = '' }) {
     const ref = useRef(null)
     useEffect(() => {
         const el = ref.current
@@ -55,6 +59,8 @@ function RemoteVideo({ stream, trackCount = 0, muted = false, className = '', st
             muted={muted}
             className={className}
             style={style}
+            data-peer-video="true"
+            data-peer-name={peerName}
         />
     )
 }
@@ -159,6 +165,8 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
     const faceApiRef = useRef(null)
     const localVideoRef = useRef(null)  // For AI detection (always shows local cam)
     const camOnRef = useRef(true)        // Synchronous cam state for AI interval
+    const screenshotsRef = useRef([])    // Captured screenshot URLs
+    const lastScreenshotRef = useRef(0)  // Timestamp of last screenshot
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -500,6 +508,131 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                     absenceRef.current = 0
                     setAbsenceSecs(0)
                     if (pausedRef.current) syncPause(false)
+
+                    // ── Full video call screenshot: capture ALL video streams
+                    const now = Date.now()
+                    if (
+                        screenshotsRef.current.length < MAX_SCREENSHOTS &&
+                        now - lastScreenshotRef.current >= SCREENSHOT_INTERVAL * 1000 &&
+                        camOnRef.current
+                    ) {
+                        lastScreenshotRef.current = now
+                        try {
+                            // Gather all video elements in the call
+                            const allVideos = []
+                            // Local video (self)
+                            if (localVideoRef.current) {
+                                allVideos.push({ video: localVideoRef.current, name: 'Bạn', mirror: true })
+                            }
+                            // Remote peer videos
+                            const remoteVideoEls = document.querySelectorAll('video[data-peer-video]')
+                            remoteVideoEls.forEach((v) => {
+                                if (v.readyState >= 2 && v.videoWidth > 0) {
+                                    allVideos.push({ video: v, name: v.getAttribute('data-peer-name') || 'Người dùng', mirror: false })
+                                }
+                            })
+
+                            if (allVideos.length === 0) return
+
+                            // Create composite canvas (16:9 aspect)
+                            const W = 960, H = 540
+                            const canvas = document.createElement('canvas')
+                            canvas.width = W
+                            canvas.height = H
+                            const ctx = canvas.getContext('2d')
+
+                            // Background
+                            const gradient = ctx.createLinearGradient(0, 0, W, H)
+                            gradient.addColorStop(0, '#1e1b4b')
+                            gradient.addColorStop(1, '#312e81')
+                            ctx.fillStyle = gradient
+                            ctx.fillRect(0, 0, W, H)
+
+                            // Layout videos in a grid
+                            const count = allVideos.length
+                            const cols = count <= 1 ? 1 : count <= 4 ? 2 : 3
+                            const rows = Math.ceil(count / cols)
+                            const pad = 6
+                            const cellW = (W - pad * (cols + 1)) / cols
+                            const cellH = (H - pad * (rows + 1) - 28) / rows  // 28px for header
+                            const headerH = 28
+
+                            // Header bar
+                            ctx.fillStyle = 'rgba(0,0,0,0.5)'
+                            ctx.fillRect(0, 0, W, headerH)
+                            ctx.fillStyle = '#ef4444'
+                            ctx.beginPath()
+                            ctx.arc(16, headerH / 2, 4, 0, Math.PI * 2)
+                            ctx.fill()
+                            ctx.fillStyle = '#fff'
+                            ctx.font = 'bold 12px sans-serif'
+                            ctx.fillText('● LIVE', 24, headerH / 2 + 4)
+
+                            // Draw each video
+                            allVideos.forEach((entry, idx) => {
+                                const col = idx % cols
+                                const row = Math.floor(idx / cols)
+                                const x = pad + col * (cellW + pad)
+                                const y = headerH + pad + row * (cellH + pad)
+
+                                // Rounded clip region
+                                const r = 8
+                                ctx.save()
+                                ctx.beginPath()
+                                ctx.moveTo(x + r, y)
+                                ctx.lineTo(x + cellW - r, y)
+                                ctx.quadraticCurveTo(x + cellW, y, x + cellW, y + r)
+                                ctx.lineTo(x + cellW, y + cellH - r)
+                                ctx.quadraticCurveTo(x + cellW, y + cellH, x + cellW - r, y + cellH)
+                                ctx.lineTo(x + r, y + cellH)
+                                ctx.quadraticCurveTo(x, y + cellH, x, y + cellH - r)
+                                ctx.lineTo(x, y + r)
+                                ctx.quadraticCurveTo(x, y, x + r, y)
+                                ctx.closePath()
+                                ctx.clip()
+
+                                // Draw video (mirror for self)
+                                if (entry.mirror) {
+                                    ctx.translate(x + cellW, 0)
+                                    ctx.scale(-1, 1)
+                                    ctx.drawImage(entry.video, 0, y, cellW, cellH)
+                                    ctx.setTransform(1, 0, 0, 1, 0, 0)
+                                } else {
+                                    ctx.drawImage(entry.video, x, y, cellW, cellH)
+                                }
+
+                                // Name label at bottom
+                                ctx.fillStyle = 'rgba(0,0,0,0.6)'
+                                ctx.fillRect(x, y + cellH - 22, cellW, 22)
+                                ctx.fillStyle = '#fff'
+                                ctx.font = '11px sans-serif'
+                                ctx.fillText(entry.name, x + 8, y + cellH - 7)
+
+                                ctx.restore()
+                            })
+
+                            canvas.toBlob(async (blob) => {
+                                if (!blob || screenshotsRef.current.length >= MAX_SCREENSHOTS) return
+                                try {
+                                    const formData = new FormData()
+                                    formData.append('file', blob, `call_screenshot_${Date.now()}.jpg`)
+                                    formData.append('upload_preset', UPLOAD_PRESET)
+                                    formData.append('folder', 'video-call-screenshots')
+                                    const res = await fetch(
+                                        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+                                        { method: 'POST', body: formData }
+                                    )
+                                    if (res.ok) {
+                                        const data = await res.json()
+                                        screenshotsRef.current = [...screenshotsRef.current, data.secure_url]
+                                        console.log(`[Screenshot] Captured full call ${screenshotsRef.current.length}/${MAX_SCREENSHOTS}`)
+                                    }
+                                } catch (err) {
+                                    console.warn('[Screenshot] Upload failed:', err)
+                                }
+                            }, 'image/jpeg', 0.85)
+                        } catch { }
+                    }
                 }
             } catch { }
         }, AI_INTERVAL)
@@ -532,7 +665,8 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
         try {
             const res = await endVideoSession(eventId, vsIdRef.current, {
                 activeSeconds: activeRef.current,
-                totalSeconds: totalRef.current
+                totalSeconds: totalRef.current,
+                screenshots: screenshotsRef.current
             })
             const summary = res?.data?.result?.summary
             if (summary) onCallEnded(summary)
@@ -743,7 +877,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                                         {entry.type === 'self' ? (
                                             <SelfPreviewVideo stream={localStream} camOn={camOn} />
                                         ) : entry.peer?.stream ? (
-                                            <RemoteVideo stream={entry.peer.stream} trackCount={entry.peer._trackCount || 0} className="w-full h-full object-cover" />
+                                            <RemoteVideo stream={entry.peer.stream} trackCount={entry.peer._trackCount || 0} className="w-full h-full object-cover" peerName={entry.peer?.userName || 'Người dùng'} />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
                                                 {entry.peer?.userAvatar
@@ -819,7 +953,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                         <div className="w-full h-full relative rounded-2xl overflow-hidden shadow-2xl"
                             style={{ boxShadow: '0 0 60px rgba(99,102,241,0.15)' }}>
                             {mainEntry.peer?.stream ? (
-                                <RemoteVideo stream={mainEntry.peer.stream} trackCount={mainEntry.peer._trackCount || 0} className="w-full h-full object-cover" />
+                                <RemoteVideo stream={mainEntry.peer.stream} trackCount={mainEntry.peer._trackCount || 0} className="w-full h-full object-cover" peerName={mainEntry.peer?.userName || 'Người dùng'} />
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-4"
                                     style={{ background: 'rgba(0,0,40,0.6)' }}>

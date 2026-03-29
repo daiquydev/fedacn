@@ -53,7 +53,6 @@ export default function CreateItemSchedule({ workout }) {
   })
 
   const handleChangeTime = (e) => {
-    console.log(e)
     setTimeWorkout(e)
   }
 
@@ -110,11 +109,9 @@ export default function CreateItemSchedule({ workout }) {
     // call api add activity
 
     createWorkOutItemMutation.mutate(arrayWorkoutItems, {
-      onSuccess: async (data) => {
-        console.log(data)
+      onSuccess: async () => {
         toast.success('Thêm hoạt động thành công')
         setWorkoutState([])
-        // queryClient.invalidateQueries('date-items')
         await Promise.all([
           queryClient.invalidateQueries({
             queryKey: ['date-items']
@@ -128,7 +125,7 @@ export default function CreateItemSchedule({ workout }) {
         ])
       },
       onError: () => {
-        console.log('error')
+        toast.error('Lỗi khi thêm hoạt động')
       }
     })
   }
@@ -374,7 +371,7 @@ const AcitivityItem = ({ activity, workoutState, setWorkoutState }) => {
   })
 
   const onSubmit = handleSubmit((data) => {
-    console.log(data)
+
     // thêm id vào data
     // nếu đã tồn tại 1 item trong workoutState thì sẽ không thêm vào
     const isExist = workoutState.find((item) => item.id === activity._id)
@@ -390,7 +387,7 @@ const AcitivityItem = ({ activity, workoutState, setWorkoutState }) => {
       time: data.time,
       id: activity._id
     }
-    console.log(dataWithId)
+
     setWorkoutState((prev) => [...prev, dataWithId])
     setOpenModal(false)
     reset()

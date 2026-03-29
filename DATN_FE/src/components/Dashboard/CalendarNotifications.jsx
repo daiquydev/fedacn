@@ -83,7 +83,7 @@ export default function CalendarNotifications() {
                         dateKey: ev.date,
                         startTime: ev.time_of_day || '',
                         location: null,
-                        navigateTo: '/challenge'
+                        navigateTo: '/training'
                     }))
                     .filter(ev => ev.dateKey >= from && ev.dateKey <= to)
                     .sort((a, b) => (a.dateKey + a.startTime).localeCompare(b.dateKey + b.startTime))

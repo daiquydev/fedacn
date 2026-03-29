@@ -27,10 +27,9 @@ export enum NotificationTypes {
   system,
   sportEventInvite,
   reportPost,
-  habitChallengeInvite,
-  habitBuddyReminder,
-  habitCheckinLike,
-  habitStreakMilestone,
+  trainingJoined,
+  trainingCompleted,
+  trainingMilestone,
   challengeJoined,
   challengeCompleted,
   challengeMilestone
@@ -232,37 +231,15 @@ export enum MealItemStatus {
   substituted
 }
 
-// Habit Challenge
-export enum HabitChallengeCategory {
-  exercise = 'exercise',
-  nutrition = 'nutrition',
-  sleep = 'sleep',
-  mental = 'mental',
-  hydration = 'hydration',
-  other = 'other'
-}
-
-export enum HabitChallengeStatus {
-  active = 'active',
-  completed = 'completed',
-  cancelled = 'cancelled'
-}
-
-export enum HabitParticipantStatus {
-  in_progress = 'in_progress',
-  completed = 'completed',
-  quit = 'quit'
-}
-
-// Challenge Type
-export enum ChallengeType {
+// Training Type
+export enum TrainingType {
   solo = 'solo',
   team = 'team',
   global = 'global'
 }
 
-// Challenge Difficulty
-export enum ChallengeDifficulty {
+// Training Difficulty
+export enum TrainingDifficulty {
   easy = 'easy',
   medium = 'medium',
   hard = 'hard'
@@ -284,7 +261,7 @@ export enum BadgeTier {
 }
 
 // XP thresholds per level
-export const CHALLENGE_LEVEL_THRESHOLDS = [
+export const TRAINING_LEVEL_THRESHOLDS = [
   { level: 1, xp: 0, title: 'Người mới 🌱' },
   { level: 2, xp: 100, title: 'Chiến binh 💪' },
   { level: 3, xp: 300, title: 'Kiên trì ⚡' },
@@ -298,7 +275,7 @@ export const XP_REWARDS = {
   streak_3: 5,
   streak_7: 15,
   streak_14: 30,
-  challenge_complete: 50,
+  training_complete: 50,
   perfect_streak: 100,
   team_win: 75,
   creator_bonus: 25,

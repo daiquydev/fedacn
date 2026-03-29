@@ -10,6 +10,7 @@ import {
     adminGetMuscleGroups,
     adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise, adminRestoreExercise
 } from '../../apis/workoutApi'
+import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 
 // Gradient colors for cards
 const CARD_GRADIENTS = [
@@ -77,6 +78,7 @@ function EquipmentManager() {
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [search, setSearch] = useState('')
+    const [confirmDeleteEquipment, setConfirmDeleteEquipment] = useState(null) // { id, name }
     const [form, setForm] = useState({ name: '', name_en: '', image_url: '', description: '', is_active: true })
 
     const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
@@ -306,7 +308,7 @@ function EquipmentManager() {
                                             className='flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors'>
                                             <FaEdit className='text-[10px]' /> Sửa
                                         </button>
-                                        <button onClick={() => window.confirm(`Xóa thiết bị "${item.name}"?`) && deleteMut.mutate(item._id)}
+                                        <button onClick={() => setConfirmDeleteEquipment({ id: item._id, name: item.name })}
                                             className='flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors'>
                                             <FaTrash className='text-[10px]' /> Xóa
                                         </button>
@@ -316,6 +318,19 @@ function EquipmentManager() {
                         )
                     })}
                 </div>
+            )}
+
+            {/* Confirm delete equipment */}
+            {confirmDeleteEquipment && (
+                <ConfirmBox
+                    title='Xác nhận xóa'
+                    subtitle={`Bạn có chắc chắn muốn xóa thiết bị "${confirmDeleteEquipment.name}"?`}
+                    handleDelete={() => {
+                        deleteMut.mutate(confirmDeleteEquipment.id, { onSettled: () => setConfirmDeleteEquipment(null) })
+                    }}
+                    closeModal={() => setConfirmDeleteEquipment(null)}
+                    isPending={deleteMut.isPending}
+                />
             )}
         </div>
     )
@@ -761,34 +776,15 @@ function ExerciseManager() {
                 )}
             </div>
 
-            {/* ── Custom Delete Confirm Modal ── */}
+            {/* ── Delete Confirm Modal ── */}
             {confirmDelete && (
-                <div className='fixed inset-0 z-50 flex items-center justify-center p-4'
-                    style={{ animation: 'fadeIn 0.15s ease-out' }}>
-                    <div className='absolute inset-0 bg-black/50 backdrop-blur-sm' onClick={() => setConfirmDelete(null)} />
-                    <div className='relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-5 w-full max-w-sm'
-                        style={{ animation: 'scaleIn 0.2s ease-out' }}>
-                        {/* Icon */}
-                        <div className='flex items-center justify-center w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full mx-auto mb-3'>
-                            <FaTrash className='text-base text-red-500' />
-                        </div>
-                        <h3 className='text-sm font-bold text-slate-800 dark:text-white text-center mb-1.5'>Xác nhận xóa</h3>
-                        <p className='text-xs text-slate-500 dark:text-slate-400 text-center mb-4'>
-                            Bạn có chắc chắn muốn xóa bài tập <strong className='text-slate-700 dark:text-slate-200'>"{confirmDelete.name}"</strong>?
-                            <br /><span className='text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 block'>Bài tập sẽ được chuyển vào thùng rác và có thể khôi phục.</span>
-                        </p>
-                        <div className='flex gap-2'>
-                            <button onClick={() => setConfirmDelete(null)}
-                                className='flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors'>
-                                Hủy
-                            </button>
-                            <button onClick={handleDeleteConfirm} disabled={deleteMut.isPending}
-                                className='flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5'>
-                                <FaTrash size={10} /> {deleteMut.isPending ? 'Đang xóa...' : 'Xóa bài tập'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ConfirmBox
+                    title='Xác nhận xóa'
+                    subtitle={<>Bạn có chắc chắn muốn xóa bài tập <strong className='text-slate-700 dark:text-slate-200'>"{confirmDelete.name}"</strong>?<br /><span className='text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 block'>Bài tập sẽ được chuyển vào thùng rác và có thể khôi phục.</span></>}
+                    handleDelete={handleDeleteConfirm}
+                    closeModal={() => setConfirmDelete(null)}
+                    isPending={deleteMut.isPending}
+                />
             )}
 
             {/* ── Modal Form ── */}

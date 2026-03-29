@@ -11,7 +11,6 @@ export default function ShowMoreContent({
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const executeOnClick = (currentIsExpanded) => {
-    console.log(currentIsExpanded)
     setIsExpanded(!currentIsExpanded)
   }
   return (

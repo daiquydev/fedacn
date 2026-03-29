@@ -134,7 +134,6 @@ export default function EditRecipe() {
       delete data.image
     }
 
-    console.log(data)
 
     var formData = new FormData()
 
@@ -161,8 +160,7 @@ export default function EditRecipe() {
     formData.append('ingredients', JSON.stringify(ingredients))
 
     editRecipeMutation.mutate(formData, {
-      onSuccess: (data) => {
-        console.log(data)
+      onSuccess: () => {
         toast.success('Chỉnh sửa bài viết thành công')
         handleCloseEdit()
         queryClient.invalidateQueries({
@@ -170,8 +168,8 @@ export default function EditRecipe() {
         })
         setMealState([])
       },
-      onError: (error) => {
-        console.log(error)
+      onError: () => {
+        toast.error('Chỉnh sửa bài viết thất bại')
       }
     })
   })

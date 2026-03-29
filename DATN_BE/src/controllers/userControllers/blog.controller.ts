@@ -32,7 +32,6 @@ export const getListBlogForChefController = async (req: Request, res: Response) 
   const user = req.decoded_authorization as TokenPayload
   const { page, limit, sort, status, search, category_blog_id } = req.query
 
-  console.log(sort, status, search, category_blog_id, page, limit)
   const result = await blogsService.getListBlogForChefService({
     user_id: user.user_id,
     page: Number(page),

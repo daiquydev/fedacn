@@ -14,6 +14,10 @@ import {
   restoreUserByIdController,
   unbanUserByIdController
 } from '~/controllers/adminControllers/userAdmin.controller'
+import {
+  getAIUsageAnalyticsController,
+  getCommunityAnalyticsController
+} from '~/controllers/adminControllers/analytics.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { checkRole } from '~/middlewares/roles.middleware'
 import { createWritterAndInspectorValidator } from '~/middlewares/userAdmin.middleware'
@@ -85,6 +89,20 @@ userAdminRouter.put(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin])),
   wrapRequestHandler(acceptRequestUpgradeController)
+)
+
+userAdminRouter.get(
+  '/analytics/ai-usage',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getAIUsageAnalyticsController)
+)
+
+userAdminRouter.get(
+  '/analytics/community',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getCommunityAnalyticsController)
 )
 
 userAdminRouter.get(

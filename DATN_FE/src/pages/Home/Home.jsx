@@ -1,14 +1,16 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { BsFillImageFill, BsFillSunFill } from 'react-icons/bs'
 import useravatar from '../../assets/images/useravatar.jpg'
-import { MdNightlight } from 'react-icons/md'
-import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaUserPlus, FaArrowRight } from 'react-icons/fa'
+import { getImageUrl } from '../../utils/imageUrl'
+import { MdNightlight, MdCheckCircle } from 'react-icons/md'
+import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaUserPlus, FaArrowRight, FaTrophy, FaDumbbell, FaFire, FaPlus } from 'react-icons/fa'
 import { PiClockAfternoonFill } from 'react-icons/pi'
 import PostCard from '../../components/CardComponents/PostCard'
 import { useContext, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import ModalUploadPost from './components/ModalUploadPost'
 import { getNewsFeed } from '../../apis/postApi'
+import { getChallenges, joinChallenge } from '../../apis/challengeApi'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useInView } from 'react-intersection-observer'
 import LoadingHome from './components/LoadingHome'
@@ -19,6 +21,7 @@ import { queryClient } from '../../main'
 import { useNavigate } from 'react-router-dom'
 import { MdClose } from 'react-icons/md'
 import CalendarNotifications from '../../components/Dashboard/CalendarNotifications'
+import { toast } from 'react-hot-toast'
 
 export default function Home() {
   const { profile } = useContext(AppContext)
@@ -113,7 +116,7 @@ export default function Home() {
               <div className='w-10 h-10 md:w-12 flex-shrink-0 overflow-hidden md:h-12 rounded-full cursor-pointer ring-2 ring-green-200 dark:ring-green-800'>
                 <img
                   className='w-10 h-10 md:w-12 object-cover md:h-12 rounded-full'
-                  src={profile?.avatar && profile.avatar !== '' ? profile.avatar : useravatar}
+                  src={profile?.avatar && profile.avatar !== '' ? getImageUrl(profile.avatar) : useravatar}
                   alt='user photo'
                   onError={(e) => { e.target.src = useravatar }}
                 />
@@ -158,6 +161,9 @@ export default function Home() {
 
         {/* Sidebar Content - Mobile: trên feed, Desktop: bên phải sticky */}
         <div className='space-y-4 order-1 lg:order-2 lg:sticky lg:top-20 self-start'>
+          {/* 🏆 Popular Challenges Section */}
+          <PopularChallenges />
+
           {/* People You May Know */}
           {userData?.data?.result.length === 0 ? null : (
             <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
@@ -257,7 +263,7 @@ const ItemUser = ({ user }) => {
       { follow_id: user._id },
       {
         onSuccess: () => {
-          queryClient.invalidateQueries('recommed-list-user')
+          queryClient.invalidateQueries({ queryKey: ['recommed-list-user'] })
         }
       }
     )
@@ -269,7 +275,7 @@ const ItemUser = ({ user }) => {
         <div className="rounded-full w-11 h-11 overflow-hidden ring-2 ring-offset-1 ring-gray-200 dark:ring-gray-700">
           <img
             className="object-cover w-full h-full"
-            src={user.avatar === '' ? useravatar : user.avatar}
+            src={user.avatar === '' ? useravatar : getImageUrl(user.avatar)}
             alt={`Avatar của ${user.name}`}
           />
         </div>
@@ -302,6 +308,165 @@ const ItemUser = ({ user }) => {
         <FaUserPlus size={11} />
         {followMutation.isPending ? '...' : 'Kết bạn'}
       </button>
+    </div>
+  )
+}
+
+// ── Sidebar: Popular Challenges ────────────────────────────────────────────
+const CHALLENGE_TYPE_CFG = {
+  nutrition: { icon: <FaUtensils size={9} />, label: 'Ăn uống', badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300', gradientClass: 'from-emerald-400 to-teal-500' },
+  outdoor_activity: { icon: <FaRunning size={9} />, label: 'Ngoài trời', badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300', gradientClass: 'from-blue-400 to-cyan-500' },
+  fitness: { icon: <FaDumbbell size={9} />, label: 'Thể dục', badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', gradientClass: 'from-orange-400 to-amber-500' }
+}
+
+function PopularChallenges() {
+  const navigate = useNavigate()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['popular-challenges-home'],
+    queryFn: () => getChallenges({ limit: 5, page: 1 }),
+    staleTime: 60_000
+  })
+
+  const joinMutation = useSafeMutation({
+    mutationFn: (id) => joinChallenge(id),
+    onSuccess: () => {
+      toast.success('Đã tham gia thử thách! 🏆')
+      queryClient.invalidateQueries({ queryKey: ['popular-challenges-home'] })
+      queryClient.invalidateQueries({ queryKey: ['challenges'] })
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi tham gia')
+  })
+
+  const allChallenges = data?.data?.result?.challenges || []
+  const sorted = [...allChallenges].sort((a, b) => (b.participants_count || 0) - (a.participants_count || 0)).slice(0, 5)
+
+  if (isLoading) {
+    return (
+      <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 py-2.5 px-4">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <FaTrophy className="text-base" /> Thử Thách Nổi Bật
+          </h3>
+        </div>
+        <div className="p-3 space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="animate-pulse flex gap-2 p-2">
+              <div className="w-11 h-11 bg-gray-200 dark:bg-gray-700 rounded-lg shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (sorted.length === 0) return null
+
+  return (
+    <div className="w-full shadow-lg bg-white rounded-xl dark:bg-color-primary dark:border-none overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-amber-500 to-orange-500 py-2.5 px-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <FaTrophy className="text-base" /> Thử Thách Nổi Bật
+        </h3>
+        <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">
+          {sorted.length}
+        </span>
+      </div>
+
+      {/* Challenge mini-items */}
+      <div className="p-3 space-y-0.5">
+        {sorted.map((challenge) => {
+          const cfg = CHALLENGE_TYPE_CFG[challenge.challenge_type] || CHALLENGE_TYPE_CFG.fitness
+          const isExpired = new Date() > new Date(challenge.end_date)
+          const isJoined = challenge.isJoined
+
+          return (
+            <div
+              key={challenge._id}
+              className="flex gap-2.5 items-center p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer group border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+              onClick={() => navigate(`/challenge/${challenge._id}`)}
+            >
+              {/* Thumbnail */}
+              <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 shadow-sm">
+                {challenge.image ? (
+                  <img
+                    src={getImageUrl(challenge.image)}
+                    alt={challenge.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.style.display = 'none' }}
+                  />
+                ) : (
+                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${cfg.gradientClass}`}>
+                    <span className="text-lg opacity-70">{challenge.badge_emoji || '🏆'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-800 dark:text-white truncate group-hover:text-orange-500 transition-colors leading-tight">
+                  {challenge.title}
+                </p>
+                <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                  <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cfg.badgeClass}`}>
+                    {cfg.icon} {cfg.label}
+                  </span>
+                  <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                    <FaUsers size={8} /> {challenge.participants_count || 0}
+                  </span>
+                  {!isExpired && (
+                    <span className="text-[10px] text-emerald-500 flex items-center gap-0.5 font-medium">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Live
+                    </span>
+                  )}
+                </div>
+                {challenge.goal_value && (
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-0.5">
+                    <FaFire size={8} className="text-amber-400" />
+                    {challenge.goal_value} {challenge.goal_unit}/ngày
+                  </p>
+                )}
+              </div>
+
+              {/* Join / Joined / Expired button */}
+              <div onClick={(e) => e.stopPropagation()}>
+                {isJoined ? (
+                  <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 font-semibold cursor-default whitespace-nowrap">
+                    <MdCheckCircle size={11} /> Đã tham gia
+                  </span>
+                ) : isExpired ? (
+                  <span className="text-[10px] px-2 py-1 rounded-md bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-default whitespace-nowrap">
+                    Đã kết thúc
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => joinMutation.mutate(challenge._id)}
+                    disabled={joinMutation.isPending}
+                    className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-orange-500 hover:bg-orange-600 text-white font-semibold transition disabled:opacity-50 whitespace-nowrap"
+                  >
+                    <FaPlus size={8} /> Tham gia
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer: link to all challenges */}
+      <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-2.5">
+        <button
+          onClick={() => navigate('/challenge')}
+          className="w-full text-center text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-500 transition-colors flex items-center justify-center gap-1"
+        >
+          Xem tất cả thử thách <FaArrowRight className="text-[10px]" />
+        </button>
+      </div>
     </div>
   )
 }

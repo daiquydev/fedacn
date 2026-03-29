@@ -1,14 +1,21 @@
 import { Router } from 'express'
 import {
-  getChallengesController,
-  getChallengeController,
-  createChallengeController,
-  updateChallengeController,
-  deleteChallengeController,
-  joinChallengeController,
-  quitChallengeController,
-  getMyChallengesController,
-  getLeaderboardController
+    getChallengesController,
+    getChallengeController,
+    createChallengeController,
+    updateChallengeController,
+    deleteChallengeController,
+    joinChallengeController,
+    quitChallengeController,
+    getMyChallengesController,
+    getMyCreatedChallengesController,
+    addProgressController,
+    getProgressController,
+    getLeaderboardController,
+    getParticipantsController,
+    getUserProgressController,
+    getChallengeActivityController,
+    deleteProgressController
 } from '~/controllers/userControllers/challenge.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -17,6 +24,7 @@ const challengeRouter = Router()
 
 // Protected user-specific routes — MUST come before /:id
 challengeRouter.get('/my', verifyToken, wrapRequestHandler(getMyChallengesController))
+challengeRouter.get('/my-created', verifyToken, wrapRequestHandler(getMyCreatedChallengesController))
 
 // Public routes (with optional auth for isJoined status)
 challengeRouter.get('/', verifyTokenOptional, wrapRequestHandler(getChallengesController))
@@ -31,7 +39,19 @@ challengeRouter.delete('/:id', verifyToken, wrapRequestHandler(deleteChallengeCo
 challengeRouter.post('/:id/join', verifyToken, wrapRequestHandler(joinChallengeController))
 challengeRouter.post('/:id/quit', verifyToken, wrapRequestHandler(quitChallengeController))
 
+// Progress
+challengeRouter.post('/:id/progress', verifyToken, wrapRequestHandler(addProgressController))
+challengeRouter.get('/:id/progress', verifyTokenOptional, wrapRequestHandler(getProgressController))
+challengeRouter.patch('/:id/progress/:progressId/soft-delete', verifyToken, wrapRequestHandler(deleteProgressController))
+
 // Leaderboard
 challengeRouter.get('/:id/leaderboard', verifyTokenOptional, wrapRequestHandler(getLeaderboardController))
+
+// Participants
+challengeRouter.get('/:id/participants', verifyTokenOptional, wrapRequestHandler(getParticipantsController))
+challengeRouter.get('/:id/progress/:userId', verifyTokenOptional, wrapRequestHandler(getUserProgressController))
+
+// GPS Activity detail (for map modal)
+challengeRouter.get('/:id/activity/:activityId', verifyTokenOptional, wrapRequestHandler(getChallengeActivityController))
 
 export default challengeRouter

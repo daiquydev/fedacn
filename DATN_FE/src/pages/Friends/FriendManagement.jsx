@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { currentAccount, followUser, recommendUser, unfollowUser } from '../../apis/userApi'
 import defaultAvatar from '../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../utils/imageUrl'
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ const PersonRow = ({ person, badge, actions, navigate }) => (
       aria-label={`Xem hồ sơ của ${person.name || 'người dùng'}`}
     >
       <img
-        src={person.avatar || defaultAvatar}
+        src={person.avatar ? getImageUrl(person.avatar) : defaultAvatar}
         alt={person.name}
         className='w-9 h-9 flex-shrink-0 rounded-full object-cover border border-gray-200 dark:border-gray-600 hover:ring-2 hover:ring-emerald-400 transition-all'
       />
@@ -312,7 +313,7 @@ export default function FriendManagement() {
     )
   }
 
-  const actionDisabled = followMutation.isLoading || unfollowMutation.isLoading
+  const actionDisabled = followMutation.isPending || unfollowMutation.isPending
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -503,7 +504,7 @@ export default function FriendManagement() {
                     aria-label={`Xem hồ sơ của ${person.name}`}
                   >
                     <img
-                      src={person.avatar || defaultAvatar}
+                      src={person.avatar ? getImageUrl(person.avatar) : defaultAvatar}
                       alt={person.name}
                       className='w-11 h-11 rounded-full object-cover border border-gray-200 dark:border-gray-600 hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0'
                     />

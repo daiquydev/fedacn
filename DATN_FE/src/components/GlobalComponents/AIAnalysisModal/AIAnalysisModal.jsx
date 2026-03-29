@@ -132,10 +132,10 @@ export default function AIAnalysisModal({ isOpen, onClose, calculationType, inpu
         }
     }
 
-    // Navigate to Challenge page with pre-selected exercises (only Setup + Workout steps)
+    // Navigate to Training page with pre-selected exercises (only Setup + Workout steps)
     const handleStartWorkout = () => {
         onClose()
-        navigate('/challenge', {
+        navigate('/training', {
             state: {
                 source: 'calculator',
                 exercises: suggestedExercises,

@@ -1,6 +1,6 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AiOutlineLoading3Quarters
@@ -54,6 +54,7 @@ import SportEventLeaderboard from './components/SportEventLeaderboard'
 import SportEventShareModal from '../../components/SportEvent/SportEventShareModal'
 import IndoorEventProgress from './components/IndoorEventProgress'
 import ProgressRing from '../../components/SportEvent/ProgressRing'
+import MilestoneCelebration, { useMilestoneCelebration } from '../../components/SportEvent/MilestoneCelebration'
 
 export default function SportEventDetail() {
 
@@ -62,7 +63,11 @@ export default function SportEventDetail() {
   const queryClient = useQueryClient()
 
   // UI State
-  const [activeTab, setActiveTab] = useState('details')
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab')
+    return tabParam === 'progress' ? 'progress' : 'details'
+  })
   const [searchTerm, setSearchTerm] = useState('')
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [showMapPopup, setShowMapPopup] = useState(false)
@@ -351,7 +356,7 @@ export default function SportEventDetail() {
     return () => clearInterval(timer)
   }, [event?.startDate])
 
-  // ===== Achievement Milestone Popup =====
+  // ===== Achievement Milestone Celebrations =====
   const myPercentForMilestone = useMemo(() => {
     if (!userProgress || !event?.targetValue || event.targetValue <= 0) return 0
     const maxP = event?.maxParticipants > 0 ? event.maxParticipants : 1
@@ -360,24 +365,20 @@ export default function SportEventDetail() {
     return Math.min(Math.round(((userProgress.totalProgress || 0) / perPerson) * 100), 100)
   }, [userProgress, event])
 
-  useEffect(() => {
-    if (!id || myPercentForMilestone <= 0) return
-    const milestones = [
-      { pct: 25, medal: '🥉', msg: 'Khởi động! Bạn đã hoàn thành 25% mục tiêu' },
-      { pct: 50, medal: '🥈', msg: 'Nửa chặng đường! 50% mục tiêu đã đạt!' },
-      { pct: 75, medal: '🥇', msg: 'Gần đích! 75% — cố lên nào!' },
-      { pct: 100, medal: '🏆', msg: '🎉 HOÀN THÀNH! Bạn đã chinh phục mục tiêu!' }
-    ]
-    const key = `milestone_${id}`
-    const shown = JSON.parse(localStorage.getItem(key) || '[]')
-    milestones.forEach(m => {
-      if (myPercentForMilestone >= m.pct && !shown.includes(m.pct)) {
-        toast(`${m.medal} ${m.msg}`, { duration: 5000, icon: m.medal, style: { fontWeight: 600 } })
-        shown.push(m.pct)
-      }
-    })
-    localStorage.setItem(key, JSON.stringify(shown))
-  }, [myPercentForMilestone, id])
+  // Group (overall event) progress percentage
+  const groupPercentForMilestone = useMemo(() => {
+    if (!event?.targetValue || event.targetValue <= 0) return 0
+    const groupTotal = overallProgress?.totalGroupProgress || 0
+    return Math.min(Math.round((groupTotal / event.targetValue) * 100), 100)
+  }, [overallProgress, event])
+
+  // Personal milestone celebration
+  const { celebration: personalCelebration, closeCelebration: closePersonalCelebration } =
+    useMilestoneCelebration(id, myPercentForMilestone, 'personal')
+
+  // Group milestone celebration
+  const { celebration: groupCelebration, closeCelebration: closeGroupCelebration } =
+    useMilestoneCelebration(id, groupPercentForMilestone, 'group')
 
   // ==================== LOADING & ERROR STATES ====================
 
@@ -423,6 +424,10 @@ export default function SportEventDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Milestone Celebrations */}
+      <MilestoneCelebration milestone={personalCelebration} isGroup={false} onClose={closePersonalCelebration} />
+      <MilestoneCelebration milestone={groupCelebration} isGroup={true} onClose={closeGroupCelebration} />
+
       {/* Share Sport Event Modal */}
       {showShareModal && event && (
         <SportEventShareModal
@@ -575,7 +580,7 @@ export default function SportEventDetail() {
               </div>
               <div className="flex items-center gap-2">
                 {isOnline ? <MdVideocam /> : <FaMapMarkerAlt />}
-                <span>{event.location}</span>
+                <span>{isOnline ? 'Video call trực tuyến' : event.location}</span>
               </div>
               <div className="flex items-center gap-2">
                 <FaUsers />
@@ -907,7 +912,7 @@ export default function SportEventDetail() {
                               <span className="font-bold text-gray-800 dark:text-white">Tiến độ cả nhóm</span>
                             </div>
                             <p className="text-sm">
-                              <span className="font-black text-blue-600 dark:text-blue-400">{groupTotal.toFixed(1)}</span>
+                              <span className="font-black text-blue-600 dark:text-blue-400">{groupTotal.toFixed(2)}</span>
                               <span className="text-gray-400 mx-1">/</span>
                               <span className="text-gray-600 dark:text-gray-300 font-semibold">{effectiveTarget} {event.targetUnit}</span>
                             </p>
@@ -941,9 +946,9 @@ export default function SportEventDetail() {
                                 <span className="font-bold text-gray-800 dark:text-white">Mục tiêu cá nhân</span>
                               </div>
                               <p className="text-sm">
-                                <span className="font-black text-emerald-600 dark:text-emerald-400">{myTotal.toFixed(1)}</span>
+                                <span className="font-black text-emerald-600 dark:text-emerald-400">{myTotal.toFixed(2)}</span>
                                 <span className="text-gray-400 mx-1">/</span>
-                                <span className="text-gray-600 dark:text-gray-300 font-semibold">{perPersonTarget.toFixed(1)} {event.targetUnit}</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-semibold">{perPersonTarget.toFixed(2)} {event.targetUnit}</span>
                               </p>
                               {myPercent >= 100 && (
                                 <p className="text-xs text-green-500 font-semibold mt-1">🎉 Bạn đã hoàn thành mục tiêu!</p>
@@ -968,11 +973,10 @@ export default function SportEventDetail() {
                               return (
                                 <div
                                   key={m.pct}
-                                  className={`flex-1 flex flex-col items-center py-3 px-1 rounded-xl text-xs font-bold transition-all ${
-                                    reached
-                                      ? `bg-${m.color}-100 dark:bg-${m.color}-900/30 text-${m.color}-700 dark:text-${m.color}-300 ring-1 ring-${m.color}-200 dark:ring-${m.color}-800`
-                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 opacity-50'
-                                  }`}
+                                  className={`flex-1 flex flex-col items-center py-3 px-1 rounded-xl text-xs font-bold transition-all ${reached
+                                    ? `bg-${m.color}-100 dark:bg-${m.color}-900/30 text-${m.color}-700 dark:text-${m.color}-300 ring-1 ring-${m.color}-200 dark:ring-${m.color}-800`
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 opacity-50'
+                                    }`}
                                 >
                                   <span className={`text-xl mb-1 ${reached ? '' : 'grayscale opacity-40'}`}>{m.medal}</span>
                                   <span>{m.pct}%</span>
@@ -1012,7 +1016,7 @@ export default function SportEventDetail() {
                   </div>
                   <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                      <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{groupTotal.toFixed(1)}</p>
+                      <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{groupTotal.toFixed(2)}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tổng {event.targetUnit}</p>
                     </div>
                     <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
@@ -1025,7 +1029,7 @@ export default function SportEventDetail() {
                     </div>
                     <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <p className="text-2xl font-black text-purple-600 dark:text-purple-400">
-                        {partCount > 0 ? (groupTotal / partCount).toFixed(1) : '0'}
+                        {partCount > 0 ? (groupTotal / partCount).toFixed(2) : '0'}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">TB/{event.targetUnit}/người</p>
                     </div>
@@ -1136,7 +1140,7 @@ export default function SportEventDetail() {
                       >
                         <div className="relative shrink-0">
                           <img
-                            src={friend.avatar || useravatar}
+                            src={friend.avatar ? getImageUrl(friend.avatar) : useravatar}
                             alt={friend.name}
                             className="w-11 h-11 rounded-full object-cover border-2 border-green-400"
                           />

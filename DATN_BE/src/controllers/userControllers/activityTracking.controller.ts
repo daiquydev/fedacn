@@ -117,3 +117,21 @@ export const getUserActivitiesController = async (req: Request, res: Response) =
         })
     }
 }
+
+export const softDeleteActivityController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params
+        const userId = (req as any).decoded?.user_id
+
+        const activity = await activityTrackingService.softDeleteActivityService(id, userId)
+
+        return res.json({
+            result: activity,
+            message: 'Đã xóa hoạt động thành công'
+        })
+    } catch (error) {
+        return res.status(400).json({
+            message: (error as Error).message
+        })
+    }
+}
