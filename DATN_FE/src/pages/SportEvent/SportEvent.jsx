@@ -332,8 +332,9 @@ const SportEvent = () => {
 
           {/* Row 1: Search bar + Bộ lọc button */}
           <div className="p-4">
-            <div className="flex gap-2 items-center">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row gap-2">
+              {/* Search input — full width on mobile */}
+              <div className="relative flex-1 min-w-0">
                 <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                 {searchTerm && (
                   <button
@@ -351,34 +352,37 @@ const SportEvent = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button
-                onClick={() => setFilterJoined(v => !v)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                  filterJoined
-                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600'
-                }`}
-              >
-                {filterJoined ? <FaCheck size={10} /> : <FaUsers size={12} />}
-                Đang tham gia
-              </button>
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                  showAdvanced || sortBy !== 'popular' || filterDateFrom || filterDateTo
-                    ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
-                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
-                }`}
-              >
-                <FaFilter size={12} />
-                Bộ lọc
-                {([sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length > 0) && (
-                  <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
-                    {[sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length}
-                  </span>
-                )}
-                <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-              </button>
+              {/* Filter buttons — wrap to second row on mobile */}
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={() => setFilterJoined(v => !v)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                    filterJoined
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                      : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600'
+                  }`}
+                >
+                  {filterJoined ? <FaCheck size={10} /> : <FaUsers size={12} />}
+                  Đang tham gia
+                </button>
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                    showAdvanced || sortBy !== 'popular' || filterDateFrom || filterDateTo
+                      ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                      : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                  }`}
+                >
+                  <FaFilter size={12} />
+                  Bộ lọc
+                  {([sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length > 0) && (
+                    <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+                      {[sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length}
+                    </span>
+                  )}
+                  <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
             </div>
 
             {/* Active filter chips */}

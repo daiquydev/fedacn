@@ -161,8 +161,8 @@ export default function Home() {
 
         {/* Sidebar Content - Mobile: trên feed, Desktop: bên phải sticky */}
         <div className='space-y-4 order-1 lg:order-2 lg:sticky lg:top-20 self-start'>
-          {/* 🏆 Popular Challenges Section */}
-          <PopularChallenges />
+          {/* 🏆 Popular Challenges Section — Ẩn tạm */}
+          {/* <PopularChallenges /> */}
 
           {/* People You May Know */}
           {userData?.data?.result.length === 0 ? null : (

@@ -454,11 +454,8 @@ export default function SportEventProgress({
 
   // Determine displayed stats — prefer GPS data for outdoor events
   const isOutdoor = event?.eventType === 'Ngoài trời'
-  // Progress = all-time total (never affected by time filter dropdown)
-  const allTimeGpsDistance = isOutdoor
-    ? Number((completedActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000).toFixed(2))
-    : null
-  const displayProgress = isOutdoor ? (allTimeGpsDistance || 0) : stats?.totalProgress
+  // Progress = always from SportEventProgress (single source of truth)
+  const displayProgress = stats?.totalProgress || 0
   const displayDistance = isOutdoor && gpsStats ? gpsStats.totalDistance : stats?.totalDistance
   const displayCalories = isOutdoor && gpsStats ? gpsStats.totalCalories : stats?.totalCalories
   const displaySessions = isOutdoor && gpsStats ? gpsStats.totalSessions : stats?.totalEntries
