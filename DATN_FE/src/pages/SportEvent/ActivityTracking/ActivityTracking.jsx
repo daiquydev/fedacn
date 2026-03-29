@@ -283,9 +283,11 @@ export default function ActivityTracking() {
     const currentPace = tracker.currentSpeed > 0 ? 1000 / tracker.currentSpeed : 0
     const speedKmH = (tracker.currentSpeed * 3.6).toFixed(2)
     const avgSpeedKmH = (tracker.avgSpeed * 3.6).toFixed(2)
+    const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
     const targetValue = event?.targetValue || 0
+    const perPersonTarget = targetValue > 0 ? targetValue / maxParticipants : 0
     const targetUnit = event?.targetUnit || 'km'
-    const progressPercent = targetValue > 0 ? Math.min(Math.round((parseFloat(distanceKm) / targetValue) * 100), 100) : 0
+    const progressPercent = perPersonTarget > 0 ? Math.min(Math.round((parseFloat(distanceKm) / perPersonTarget) * 100), 100) : 0
 
     return (
         <div className='tracking-hud'>
@@ -348,12 +350,12 @@ export default function ActivityTracking() {
                 </div>
 
                 {/* Progress bar — only if event has target */}
-                {targetValue > 0 && (
+                {perPersonTarget > 0 && (
                     <div className='hud-glass-progress'>
                         <div className='hud-glass-progress-track'>
                             <div className='hud-glass-progress-fill' style={{ width: `${progressPercent}%` }} />
                         </div>
-                        <span className='hud-glass-progress-text'>{distanceKm}/{targetValue} {targetUnit}</span>
+                        <span className='hud-glass-progress-text'>{distanceKm}/{Number(perPersonTarget.toFixed(2))} {targetUnit}</span>
                     </div>
                 )}
 
