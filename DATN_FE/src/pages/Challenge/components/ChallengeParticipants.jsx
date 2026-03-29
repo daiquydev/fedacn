@@ -117,10 +117,19 @@ export default function ChallengeParticipants({
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-0.5">
-                      <span>{participant.current_value}/{participant.goal_value} {goalUnit}</span>
+                      {/* Today's check-in progress */}
+                      <span className="font-medium text-gray-500 dark:text-gray-400">
+                        {participant.today_value ?? 0}/{participant.goal_value} {goalUnit} hôm nay
+                      </span>
+                      {/* Overall completed days */}
+                      {participant.total_required_days > 0 && (
+                        <span className="text-gray-400">
+                          · {participant.current_value}/{participant.total_required_days} ngày
+                        </span>
+                      )}
                       {participant.streak_count > 0 && (
                         <span className="flex items-center gap-0.5 text-orange-500">
-                          <FaFire className="text-[9px]" /> {participant.streak_count} ngày
+                          <FaFire className="text-[9px]" /> {participant.streak_count}🔥
                         </span>
                       )}
                     </div>

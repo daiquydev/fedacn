@@ -49,6 +49,8 @@ import savedWorkoutTemplateRouter from './routes/userRoutes/savedWorkoutTemplate
 
 import trainingRouter from './routes/userRoutes/training.routes'
 import challengeRouter from './routes/userRoutes/challenge.routes'
+import adminChallengeRouter from './routes/adminRoutes/challenge.routes'
+
 const app: Express = express()
 const port = envConfig.port
 
@@ -155,6 +157,7 @@ app.use('/api/admin/sport-events', adminSportEventRouter)
 app.use('/api/admin/equipment', adminEquipmentRouter)
 app.use('/api/admin/muscle-groups', adminMuscleGroupRouter)
 app.use('/api/admin/exercises', adminExerciseRouter)
+app.use('/api/admin/challenges', adminChallengeRouter)
 app.use('/api/admin', userAdminRouter)
 app.use('/api/inspectors', inspectorRouter)
 app.use('/api/writters', writterRouter)

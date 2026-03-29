@@ -159,19 +159,45 @@ class ActivityTrackingService {
         await activity.save()
 
         // Auto-create sport event progress entry
+        const event = await SportEventModel.findById(activity.eventId)
+        const targetUnit = (event?.targetUnit || 'km').toLowerCase().trim()
         const distanceKm = activity.totalDistance / 1000
         const durationMinutes = Math.round(activity.totalDuration / 60)
+        const durationHours = activity.totalDuration / 3600
+        const caloriesRounded = Math.round(activity.calories)
 
-        if (distanceKm > 0) {
+        // Determine progress value based on the event's target unit
+        let progressValue: number
+        let progressUnit: string
+        if (targetUnit === 'm' || targetUnit === 'mét' || targetUnit === 'meters') {
+            progressValue = parseFloat(activity.totalDistance.toFixed(2))
+            progressUnit = 'm'
+        } else if (targetUnit === 'phút' || targetUnit === 'min' || targetUnit === 'minutes') {
+            progressValue = durationMinutes
+            progressUnit = 'phút'
+        } else if (targetUnit === 'giờ' || targetUnit === 'hour' || targetUnit === 'hours') {
+            progressValue = parseFloat(durationHours.toFixed(4))
+            progressUnit = 'giờ'
+        } else if (targetUnit === 'kcal' || targetUnit === 'calo' || targetUnit === 'calories' || targetUnit === 'cal') {
+            progressValue = caloriesRounded
+            progressUnit = 'kcal'
+        } else {
+            // Default: km
+            progressValue = parseFloat(distanceKm.toFixed(2))
+            progressUnit = 'km'
+        }
+
+        if (progressValue > 0) {
             const progressEntry = new SportEventProgressModel({
                 eventId: activity.eventId,
                 userId: activity.userId,
                 date: new Date(),
-                value: parseFloat(distanceKm.toFixed(2)),
-                unit: 'km',
+                value: progressValue,
+                unit: progressUnit,
                 distance: parseFloat(distanceKm.toFixed(2)),
                 time: `${durationMinutes} phút`,
-                calories: Math.round(activity.calories),
+                calories: caloriesRounded,
+                source: 'gps',
                 notes: `Hoạt động ${activity.activityType} - ${distanceKm.toFixed(2)}km trong ${durationMinutes} phút`
             })
 
@@ -203,8 +229,7 @@ class ActivityTrackingService {
     // Get single activity
     async getActivityService(activityId: string, userId: string) {
         const activity = await ActivityTrackingModel.findOne({
-            _id: activityId,
-            userId
+            _id: activityId
         })
 
         if (!activity) {

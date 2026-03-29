@@ -18,7 +18,9 @@ export default function ActivityResult() {
     const { data, isLoading } = useQuery({
         queryKey: ['activity', eventId, activityId],
         queryFn: () => getActivity(eventId, activityId),
-        enabled: !!activityId
+        enabled: !!activityId,
+        staleTime: 30000,
+        retry: false
     })
 
     const { data: eventData } = useQuery({

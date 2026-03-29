@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaTimes, FaUtensils } from 'react-icons/fa'
+import { FaTimes, FaUtensils, FaRobot, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import { getImageUrl } from '../../../utils/imageUrl'
 
 /**
@@ -36,7 +36,7 @@ export default function NutritionDetailView({ entry, onClose }) {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                    {/* Meal type */}
+                    {/* Meal type + Food name */}
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xl">
                             🥗
@@ -44,6 +44,9 @@ export default function NutritionDetailView({ entry, onClose }) {
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Loại bữa ăn</p>
                             <p className="text-base font-bold text-gray-800 dark:text-white">{mealType}</p>
+                            {entry.food_name && (
+                                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">🍽️ {entry.food_name}</p>
+                            )}
                         </div>
                     </div>
 
@@ -79,10 +82,37 @@ export default function NutritionDetailView({ entry, onClose }) {
                         </div>
                     )}
 
-                    {/* Notes */}
+                    {/* AI Review Badge */}
+                    {entry.ai_review_valid !== null && entry.ai_review_valid !== undefined && (
+                        <div className={`flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm ${
+                            entry.ai_review_valid
+                                ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        }`}>
+                            {entry.ai_review_valid
+                                ? <FaCheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={14} />
+                                : <FaTimesCircle className="text-red-500 shrink-0 mt-0.5" size={14} />
+                            }
+                            <div>
+                                <span className={`text-xs font-bold ${
+                                    entry.ai_review_valid
+                                        ? 'text-emerald-700 dark:text-emerald-400'
+                                        : 'text-red-700 dark:text-red-400'
+                                }`}>
+                                    <FaRobot className="inline mr-1" size={10} />
+                                    AI xác minh: {entry.ai_review_valid ? 'Ảnh hợp lệ' : 'Ảnh không hợp lệ'}
+                                </span>
+                                {entry.ai_review_reason && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{entry.ai_review_reason}</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Notes / Mô tả */}
                     {detailedNotes && (
                         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 font-bold mb-1">📝 Ghi chú</p>
+                            <p className="text-xs text-gray-500 font-bold mb-1">📝 Mô tả</p>
                             <p className="text-sm text-gray-700 dark:text-gray-300">{detailedNotes}</p>
                         </div>
                     )}

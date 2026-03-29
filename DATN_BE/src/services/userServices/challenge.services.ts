@@ -4,6 +4,7 @@ import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.sch
 import ChallengeProgressModel from '~/models/schemas/challengeProgress.schema'
 import ActivityTrackingModel from '~/models/schemas/activityTracking.schema'
 import NotificationModel from '~/models/schemas/notification.schema'
+import FollowModel from '~/models/schemas/follow.schema'
 import { NotificationTypes } from '~/constants/enums'
 
 class ChallengeService {
@@ -103,7 +104,7 @@ class ChallengeService {
         difficulty?: string
         userId?: string
     }) {
-        const condition: any = { status: 'active', is_public: true }
+        const condition: any = { status: 'active', is_public: true, is_deleted: { $ne: true } }
 
         if (search) condition.$text = { $search: search }
         if (challenge_type && challenge_type !== 'all') condition.challenge_type = challenge_type
@@ -144,7 +145,7 @@ class ChallengeService {
     }
 
     async getChallenge(challengeId: string, userId?: string) {
-        const challenge = await ChallengeModel.findById(challengeId)
+        const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
             .populate('creator_id', 'name avatar email')
         if (!challenge) throw new Error('Thử thách không tồn tại')
 
@@ -191,11 +192,12 @@ class ChallengeService {
     }
 
     async deleteChallenge(challengeId: string, userId: string) {
-        const challenge = await ChallengeModel.findById(challengeId)
+        const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
         if (!challenge) throw new Error('Thử thách không tồn tại')
         if (challenge.creator_id.toString() !== userId) throw new Error('Bạn không có quyền xóa thử thách này')
 
         challenge.status = 'cancelled'
+        challenge.is_deleted = true
         await challenge.save()
         return challenge
     }
@@ -256,7 +258,7 @@ class ChallengeService {
 
     async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20) {
         const skip = (page - 1) * limit
-        const condition = { creator_id: new Types.ObjectId(userId), status: { $ne: 'cancelled' } }
+        const condition = { creator_id: new Types.ObjectId(userId), is_deleted: { $ne: true } }
 
         const challenges = await ChallengeModel.find(condition)
             .populate('creator_id', 'name avatar')
@@ -300,6 +302,9 @@ class ChallengeService {
         value: number
         notes?: string
         proof_image?: string
+        food_name?: string
+        ai_review_valid?: boolean
+        ai_review_reason?: string
         distance?: number
         duration_minutes?: number
         avg_speed?: number
@@ -369,6 +374,9 @@ class ChallengeService {
             unit: challenge.goal_unit,
             notes: data.notes || '',
             proof_image: data.proof_image || '',
+            food_name: data.food_name || '',
+            ai_review_valid: data.ai_review_valid !== undefined ? data.ai_review_valid : null,
+            ai_review_reason: data.ai_review_reason || '',
             distance: data.distance || null,
             duration_minutes: data.duration_minutes || null,
             avg_speed: data.avg_speed || null,
@@ -475,6 +483,14 @@ class ChallengeService {
     async getLeaderboard(challengeId: string, page: number = 1, limit: number = 50) {
         const skip = (page - 1) * limit
 
+        const challenge = await ChallengeModel.findById(challengeId)
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+
+        // Total required days for this challenge
+        const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
+        const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
+        const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+
         const participants = await ChallengeParticipantModel.find({
             challenge_id: new Types.ObjectId(challengeId),
             status: { $ne: 'quit' }
@@ -490,25 +506,33 @@ class ChallengeService {
         })
 
         return {
-            leaderboard: participants.map((p, index) => ({
-                rank: skip + index + 1,
-                user: p.user_id,
-                current_value: p.current_value,
-                goal_value: p.goal_value,
-                progress_percent: p.goal_value > 0 ? Math.min(Math.round((p.current_value / p.goal_value) * 100), 100) : 0,
-                is_completed: p.is_completed,
-                streak_count: p.streak_count,
-                joined_at: p.joined_at
-            })),
+            leaderboard: participants.map((p, index) => {
+                const completedDays = (p as any).completed_days?.length || p.current_value
+                return {
+                    rank: skip + index + 1,
+                    user: p.user_id,
+                    current_value: completedDays,
+                    goal_value: p.goal_value,
+                    total_required_days: totalRequiredDays,
+                    progress_percent: Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100),
+                    is_completed: p.is_completed,
+                    streak_count: p.streak_count,
+                    joined_at: p.joined_at
+                }
+            }),
             total,
             page,
             limit
         }
     }
 
+
     // ==================== PARTICIPANTS ====================
 
     async getParticipants(challengeId: string) {
+        const challenge = await ChallengeModel.findById(challengeId)
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+
         const participants = await ChallengeParticipantModel.find({
             challenge_id: new Types.ObjectId(challengeId),
             status: { $ne: 'quit' }
@@ -516,20 +540,57 @@ class ChallengeService {
             .populate('user_id', 'name avatar')
             .sort({ current_value: -1, joined_at: 1 })
 
+        // Total required days for this challenge
+        const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
+        const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
+        const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+
+        // Bulk-fetch today's check-in sums for all participants in one aggregation
+        const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
+        const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999)
+        const userIds = participants.map(p => p.user_id instanceof Types.ObjectId ? p.user_id : (p.user_id as any)?._id)
+
+        const todayAgg = await ChallengeProgressModel.aggregate([
+            {
+                $match: {
+                    challenge_id: new Types.ObjectId(challengeId),
+                    user_id: { $in: userIds.map(id => new Types.ObjectId(id.toString())) },
+                    date: { $gte: startOfDay, $lte: endOfDay },
+                    is_deleted: { $ne: true }
+                }
+            },
+            {
+                $group: {
+                    _id: '$user_id',
+                    today_sum: { $sum: '$value' }
+                }
+            }
+        ])
+        const todayMap = new Map<string, number>()
+        todayAgg.forEach(row => todayMap.set(row._id.toString(), row.today_sum))
+
         return {
-            participants: participants.map((p, index) => ({
-                rank: index + 1,
-                user: p.user_id,
-                current_value: p.current_value,
-                goal_value: p.goal_value,
-                progress_percent: p.goal_value > 0 ? Math.min(Math.round((p.current_value / p.goal_value) * 100), 100) : 0,
-                is_completed: p.is_completed,
-                streak_count: p.streak_count,
-                active_days: p.active_days,
-                joined_at: p.joined_at,
-                last_activity_at: p.last_activity_at,
-                status: p.status
-            })),
+            participants: participants.map((p, index) => {
+                const userId = p.user_id instanceof Types.ObjectId
+                    ? p.user_id.toString()
+                    : (p.user_id as any)?._id?.toString() || ''
+                const completedDays = (p as any).completed_days?.length || p.current_value
+                return {
+                    rank: index + 1,
+                    user: p.user_id,
+                    current_value: completedDays,
+                    goal_value: p.goal_value,
+                    total_required_days: totalRequiredDays,
+                    today_value: todayMap.get(userId) || 0,
+                    progress_percent: Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100),
+                    is_completed: p.is_completed,
+                    streak_count: p.streak_count,
+                    active_days: p.active_days,
+                    joined_at: p.joined_at,
+                    last_activity_at: p.last_activity_at,
+                    status: p.status
+                }
+            }),
             total: participants.length
         }
     }
@@ -630,6 +691,117 @@ class ChallengeService {
         await participant.save()
 
         return progress
+    }
+
+    // ==================== FEED (scope-based) ====================
+
+    async getChallengeFeed({
+        scope = 'public',
+        userId,
+        page = 1,
+        limit = 9,
+        challenge_type,
+        search
+    }: {
+        scope?: 'public' | 'friends' | 'mine'
+        userId?: string
+        page?: number
+        limit?: number
+        challenge_type?: string
+        search?: string
+    }) {
+        const skip = (page - 1) * limit
+        let challengeIds: Types.ObjectId[] | null = null
+        let participations: any[] = []
+
+        // ────────── scope: mine ──────────
+        if (scope === 'mine') {
+            if (!userId) return { challenges: [], totalPage: 0, page, limit, total: 0 }
+
+            const myParticipations = await ChallengeParticipantModel.find({
+                user_id: new Types.ObjectId(userId),
+                status: { $ne: 'quit' }
+            }).select('challenge_id current_value goal_value is_completed streak_count')
+
+            challengeIds = myParticipations.map(p => p.challenge_id as Types.ObjectId)
+            participations = myParticipations
+        }
+
+        // ────────── scope: friends ──────────
+        if (scope === 'friends') {
+            if (!userId) return { challenges: [], totalPage: 0, page, limit, total: 0 }
+
+            // Find mutual friends (both sides follow each other)
+            const iFollow = await FollowModel.find({ user_id: new Types.ObjectId(userId) }).select('follow_id')
+            const iFollowIds = iFollow.map(f => f.follow_id.toString())
+
+            const followMeBack = await FollowModel.find({
+                user_id: { $in: iFollowIds.map(id => new Types.ObjectId(id)) },
+                follow_id: new Types.ObjectId(userId)
+            }).select('user_id')
+
+            const mutualFriendIds = followMeBack.map(f => f.user_id)
+
+            if (mutualFriendIds.length === 0) {
+                return { challenges: [], totalPage: 0, page, limit, total: 0 }
+            }
+
+            // Challenges that friends are participating in
+            const friendParticipations = await ChallengeParticipantModel.find({
+                user_id: { $in: mutualFriendIds },
+                status: { $ne: 'quit' }
+            }).select('challenge_id user_id')
+
+            challengeIds = [...new Set(friendParticipations.map(p => p.challenge_id.toString()))]
+                .map(id => new Types.ObjectId(id))
+        }
+
+        // ────────── Build query ──────────
+        const condition: any = { status: 'active', is_deleted: { $ne: true } }
+
+        if (scope === 'public') {
+            condition.is_public = true
+        } else if (challengeIds !== null) {
+            condition._id = { $in: challengeIds }
+        }
+
+        if (challenge_type && challenge_type !== 'all') condition.challenge_type = challenge_type
+        if (search) condition.$text = { $search: search }
+
+        const total = await ChallengeModel.countDocuments(condition)
+        const totalPage = Math.ceil(total / limit) || 0
+
+        const challenges = await ChallengeModel.find(condition)
+            .populate('creator_id', 'name avatar')
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 })
+
+        let resultChallenges = challenges.map(c => c.toObject())
+
+        // Inject isJoined + myProgress for logged-in user
+        if (userId) {
+            const userParticipations = participations.length > 0
+                ? participations
+                : await ChallengeParticipantModel.find({
+                    user_id: new Types.ObjectId(userId),
+                    challenge_id: { $in: challenges.map(c => c._id) },
+                    status: { $ne: 'quit' }
+                })
+
+            const joinedMap = new Map<string, any>()
+            userParticipations.forEach((p: any) => {
+                joinedMap.set(p.challenge_id.toString(), p.toObject ? p.toObject() : p)
+            })
+
+            resultChallenges = resultChallenges.map((c: any) => ({
+                ...c,
+                isJoined: joinedMap.has(c._id.toString()),
+                myProgress: joinedMap.get(c._id.toString()) || null
+            }))
+        }
+
+        return { challenges: resultChallenges, totalPage, page, limit, total }
     }
 
     // ==================== HELPERS ====================

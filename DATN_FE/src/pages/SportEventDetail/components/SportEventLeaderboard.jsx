@@ -80,7 +80,7 @@ const PodiumStep = ({ participant, rank, connectedIds = new Set(), friendIds = n
         <p className={`font-bold truncate max-w-[120px] ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
           {participant.name} {isMe && '(Bạn)'}
         </p>
-        <p className="text-sm font-semibold text-red-500">{Number(participant.totalProgress || 0).toFixed(2)}</p>
+        <p className="text-sm font-semibold text-red-500">{Number(participant.totalProgress || 0).toFixed(2)} {event?.targetUnit}</p>
       </div>
 
       <div className={`w-full ${heightClass} ${colorClass} rounded-t-lg border-t-4 flex items-end justify-center pb-4 shadow-inner`}>
@@ -192,7 +192,7 @@ export default function SportEventLeaderboard({
               <tr>
                 <th className="px-6 py-4 text-left">Hạng</th>
                 <th className="px-6 py-4 text-left">Vận động viên</th>
-                <th className="px-6 py-4 text-left">Kết quả ({event.targetUnit})</th>
+                <th className="px-6 py-4 text-left">Kết quả ({event?.targetUnit || 'điểm'})</th>
                 <th className="px-6 py-4 text-left">Tiến độ cá nhân</th>
               </tr>
             </thead>
@@ -204,9 +204,13 @@ export default function SportEventLeaderboard({
                 const ringStyle = getRingStyle(isFriend, isConnected)
                 const isMe = String(userId) === String(currentUserId)
 
+                // perPersonTarget: each participant's share of the event goal
+                // totalProgress from server is already in the correct unit (kcal or native unit)
                 const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
                 const perPersonTarget = event?.targetValue > 0 ? event.targetValue / maxParticipants : 1
-                const correctedPct = Math.min(Math.round((user.totalProgress / perPersonTarget) * 100), 100)
+                const correctedPct = perPersonTarget > 0
+                  ? Math.min(Math.round((user.totalProgress / perPersonTarget) * 100), 100)
+                  : user.progressPercentage ?? 0
 
                 return (
                   <tr
@@ -252,8 +256,8 @@ export default function SportEventLeaderboard({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-bold text-gray-900 dark:text-white">{Number(user.totalProgress || 0).toFixed(2)} {event.targetUnit}</span>
-                      <span className="text-xs text-gray-400 block">/ {perPersonTarget.toFixed(2)} {event.targetUnit}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{Number(user.totalProgress || 0).toFixed(2)} {event?.targetUnit}</span>
+                      <span className="text-xs text-gray-400 block">/ {perPersonTarget.toFixed(2)} {event?.targetUnit}</span>
                     </td>
                     <td className="px-6 py-4 w-1/4">
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

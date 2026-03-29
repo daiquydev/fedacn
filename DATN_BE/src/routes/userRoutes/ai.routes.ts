@@ -351,4 +351,112 @@ Trả về JSON theo đúng định dạng sau (không có markdown, không có 
     }
 })
 
+/**
+ * POST /api/ai/review-meal-image
+ * Use Gemini Vision to validate a meal photo against challenge requirements.
+ * Body: { imageBase64: string, mimeType: string, challengeTitle: string, challengeDescription: string }
+ * Returns: { valid: boolean, reason: string }
+ */
+aiRouter.post('/review-meal-image', async (req: Request, res: Response) => {
+    const { imageBase64, mimeType, challengeTitle, challengeDescription } = req.body
+
+    if (!imageBase64) {
+        res.status(400).json({ message: 'imageBase64 is required' })
+        return
+    }
+    if (!challengeTitle) {
+        res.status(400).json({ message: 'challengeTitle is required' })
+        return
+    }
+
+    const GROQ_API_KEY = (process.env.GROQ_API_KEY || '').trim()
+    if (!GROQ_API_KEY || GROQ_API_KEY === 'your_groq_key_here') {
+        // Fallback: no key configured → pass through
+        res.json({ valid: true, reason: 'AI chưa được cấu hình, bỏ qua kiểm tra.' })
+        return
+    }
+
+    const imageMimeType = mimeType || 'image/jpeg'
+    // Ensure we have a proper data URL for Groq vision
+    const dataUrl = imageBase64.startsWith('data:')
+        ? imageBase64
+        : `data:${imageMimeType};base64,${imageBase64}`
+
+    const systemPrompt = `Bạn là AI kiểm duyệt ảnh bữa ăn cho ứng dụng sức khỏe. Chỉ trả về JSON object thuần túy, không giải thích thêm.`
+
+    const userPrompt = `Thử thách: "${challengeTitle}"
+${challengeDescription ? `Mô tả: "${challengeDescription}"` : ''}
+
+Kiểm tra xem ảnh bữa ăn này có phù hợp với yêu cầu thử thách không.
+
+Ví dụ logic:
+- "Ăn chay" → ảnh không được có thịt, cá, hải sản
+- "Ăn ít carb" → không nên có cơm/bánh mì/mì nhiều
+- "Uống đủ nước" → phải có nước/đồ uống
+- Thử thách chung (không có yêu cầu thức ăn cụ thể) → valid: true
+- Nếu ảnh không phải thức ăn → valid: false
+
+Chỉ trả về JSON (không markdown):
+{"valid": true/false, "reason": "lý do 1 câu tiếng Việt"}`
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    {
+                        role: 'user',
+                        content: [
+                            {
+                                type: 'image_url',
+                                image_url: { url: dataUrl }
+                            },
+                            {
+                                type: 'text',
+                                text: userPrompt
+                            }
+                        ]
+                    }
+                ],
+                temperature: 0.2,
+                max_tokens: 256
+            })
+        })
+
+        if (!response.ok) {
+            const errData = await response.json()
+            console.error('[AI Review Meal] Groq error status:', response.status, JSON.stringify(errData))
+            // On API error, be lenient — don't block the user
+            res.json({ valid: true, reason: 'Không thể xác minh ảnh, cho phép ghi nhận.' })
+            return
+        }
+
+        const data = await response.json()
+        const text: string = data?.choices?.[0]?.message?.content || ''
+
+        try {
+            const cleaned = text.replace(/```(?:json)?\n?/gi, '').replace(/```/g, '').trim()
+            const parsed = JSON.parse(cleaned)
+
+            // Log AI usage (fire-and-forget)
+            AIUsageLogModel.create({ feature: 'review_meal_image' }).catch(() => { })
+
+            res.json({ valid: Boolean(parsed.valid), reason: parsed.reason || '' })
+        } catch {
+            // JSON parse failed → be lenient
+            res.json({ valid: true, reason: 'AI không thể phân tích ảnh, bỏ qua kiểm tra.' })
+        }
+    } catch (err: any) {
+        console.error('[AI Review Meal] Error:', err.message)
+        res.json({ valid: true, reason: 'Không thể kết nối AI, bỏ qua kiểm tra.' })
+    }
+})
+
 export default aiRouter
+

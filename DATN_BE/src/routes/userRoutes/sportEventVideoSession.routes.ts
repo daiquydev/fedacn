@@ -3,6 +3,7 @@ import {
     joinVideoSessionController,
     endVideoSessionController,
     getVideoSessionsController,
+    getVideoSessionByIdController,
     getActiveVideoSessionController,
     getVideoSessionStatsController,
     softDeleteVideoSessionController
@@ -16,6 +17,7 @@ const videoSessionRouter = Router({ mergeParams: true })
 videoSessionRouter.post('/join', verifyToken, wrapRequestHandler(joinVideoSessionController))
 videoSessionRouter.get('/active', verifyToken, wrapRequestHandler(getActiveVideoSessionController))
 videoSessionRouter.get('/stats', verifyToken, wrapRequestHandler(getVideoSessionStatsController))
+videoSessionRouter.get('/:vsId', verifyToken, wrapRequestHandler(getVideoSessionByIdController))
 videoSessionRouter.get('/', verifyToken, wrapRequestHandler(getVideoSessionsController))
 videoSessionRouter.post('/:vsId/end', verifyToken, wrapRequestHandler(endVideoSessionController))
 videoSessionRouter.patch('/:vsId/soft-delete', verifyToken, wrapRequestHandler(softDeleteVideoSessionController))

@@ -207,13 +207,17 @@ export default function CreateChallengeModal({ open, onClose }) {
     }, [form.challenge_type, outdoorCategories.length])
 
     // Reset goal when changing type
+    const FIXED_GOALS = {
+        nutrition: { goal_type: 'meals_logged', goal_unit: 'bữa' },
+        fitness: { goal_type: 'workout_count', goal_unit: 'buổi' }
+    }
     useEffect(() => {
         if (form.challenge_type === 'outdoor_activity') {
             setForm(prev => ({ ...prev, goal_type: 'daily_km', goal_unit: 'km' }))
         } else {
-            const goals = NON_OUTDOOR_GOALS[form.challenge_type] || []
-            if (goals.length > 0) {
-                setForm(prev => ({ ...prev, goal_type: goals[0].type, goal_unit: goals[0].unit }))
+            const fixed = FIXED_GOALS[form.challenge_type]
+            if (fixed) {
+                setForm(prev => ({ ...prev, goal_type: fixed.goal_type, goal_unit: fixed.goal_unit }))
             }
         }
     }, [form.challenge_type])
@@ -304,23 +308,22 @@ export default function CreateChallengeModal({ open, onClose }) {
     }
 
     // ==================== AI FILL ====================
-    const handleAIFill = async () => {
-        if (!aiDesc.trim()) { toast.error('Nhập mô tả trước!'); return }
-        setAiLoading(true)
-        try {
-            const today = moment().format('DD/MM/YYYY')
-            const outdoorNames = outdoorCategories.map(c => c.name).join(', ')
-            const prompt = `Hôm nay là ${today}. Người dùng muốn tạo một thử thách thể thao ngoài trời. Mô tả sơ bộ:
-"${aiDesc.trim()}"
+    const buildAIPrompt = (desc, today) => {
+        const type = form.challenge_type
+        const outdoorNames = outdoorCategories.map(c => c.name).join(', ')
 
-Hãy điền đầy đủ các trường sau thành một JSON object hợp lệ. Quy tắc:
+        if (type === 'outdoor_activity') {
+            return `Hôm nay là ${today}. Người dùng muốn tạo một thử thách HOẠT ĐỘNG NGOÀI TRỜI (chạy bộ, đạp xe, leo núi...). Mô tả:
+"${desc}"
+
+Quy tắc:
 1. startDate >= ${today}, endDate >= startDate, định dạng DD/MM/YYYY.
-2. category: một trong [${outdoorNames}], chọn phù hợp nhất.
-3. goal_value: số km CHẠY MỖI NGÀY hợp lý cho thử thách (thường là 3-10km).
+2. category: một trong [${outdoorNames}], chọn phù hợp nhất với mô tả.
+3. goal_value: số km di chuyển MỖI NGÀY hợp lý (thường 3-15km).
 4. visibility: "public" | "friends" | "private".
-5. title: ngắn gọn, tiếng Việt, hấp dẫn.
+5. title: ngắn gọn, tiếng Việt, hấp dẫn, phù hợp hoạt động ngoài trời.
 6. description: tối đa 150 ký tự, tiếng Việt.
-7. Chỉ trả về JSON object, không có markdown.
+7. Chỉ trả về JSON object, không markdown.
 
 {
   "title": string,
@@ -331,6 +334,58 @@ Hãy điền đầy đủ các trường sau thành một JSON object hợp lệ
   "visibility": "public" | "friends" | "private",
   "description": string
 }`
+        }
+
+        if (type === 'nutrition') {
+            return `Hôm nay là ${today}. Người dùng muốn tạo một thử thách ĂN UỐNG / CHẾ ĐỘ DINH DƯỠNG (ăn kiêng, detox, ăn sạch, giảm cân...). Mô tả:
+"${desc}"
+
+Quy tắc:
+1. startDate >= ${today}, endDate >= startDate, định dạng DD/MM/YYYY.
+2. goal_value: số bữa ăn cần check-in mỗi ngày (thường là 1-5 bữa).
+3. visibility: "public" | "friends" | "private".
+4. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ ĂN UỐNG/DINH DƯỠNG (KHÔNG được dùng từ "chạy bộ", "đạp xe", hay thể thao ngoài trời).
+5. description: tối đa 150 ký tự, tiếng Việt, nói về chế độ ăn uống.
+6. Chỉ trả về JSON object, không markdown.
+
+{
+  "title": string,
+  "startDate": "DD/MM/YYYY",
+  "endDate": "DD/MM/YYYY",
+  "goal_value": number,
+  "visibility": "public" | "friends" | "private",
+  "description": string
+}`
+        }
+
+        // fitness
+        return `Hôm nay là ${today}. Người dùng muốn tạo một thử thách THỂ DỤC / TẬP LUYỆN (workout, gym, yoga...). Mô tả:
+"${desc}"
+
+Quy tắc:
+1. startDate >= ${today}, endDate >= startDate, định dạng DD/MM/YYYY.
+2. goal_value: số buổi tập cần hoàn thành trong toàn bộ thử thách (thường 10-60 buổi).
+3. visibility: "public" | "friends" | "private".
+4. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ LUYỆN TẬP THỂ DỤC (KHÔNG dùng từ liên quan ăn uống hay chạy bộ).
+5. description: tối đa 150 ký tự, tiếng Việt, nói về luyện tập.
+6. Chỉ trả về JSON object, không markdown.
+
+{
+  "title": string,
+  "startDate": "DD/MM/YYYY",
+  "endDate": "DD/MM/YYYY",
+  "goal_value": number,
+  "visibility": "public" | "friends" | "private",
+  "description": string
+}`
+    }
+
+    const handleAIFill = async () => {
+        if (!aiDesc.trim()) { toast.error('Nhập mô tả trước!'); return }
+        setAiLoading(true)
+        try {
+            const today = moment().format('DD/MM/YYYY')
+            const prompt = buildAIPrompt(aiDesc.trim(), today)
 
             const res = await fetch(AI_PROXY_ENDPOINT, {
                 method: 'POST',
@@ -345,7 +400,8 @@ Hãy điền đầy đủ các trường sau thành một JSON object hợp lệ
             setForm(prev => {
                 const updated = { ...prev }
                 if (parsed.title) updated.title = parsed.title
-                if (parsed.category && outdoorCategories.some(c => c.name === parsed.category)) {
+                // category chỉ áp dụng cho outdoor
+                if (prev.challenge_type === 'outdoor_activity' && parsed.category && outdoorCategories.some(c => c.name === parsed.category)) {
                     updated.category = parsed.category
                     const cat = outdoorCategories.find(c => c.name === parsed.category)
                     updated.kcal_per_unit = cat?.kcal_per_unit || 0
@@ -475,36 +531,23 @@ Hãy điền đầy đủ các trường sau thành một JSON object hợp lệ
                                 </div>
                             )}
 
-                            {/* Non-outdoor: Goal type selector */}
-                            {form.challenge_type !== 'outdoor_activity' && nonOutdoorGoals.length > 0 && (
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Loại mục tiêu *</label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {nonOutdoorGoals.map(g => (
-                                            <button
-                                                key={g.type}
-                                                onClick={() => { setField('goal_type', g.type); setField('goal_unit', g.unit) }}
-                                                className={`p-3 rounded-xl border-2 text-left transition-all ${form.goal_type === g.type ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}
-                                            >
-                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{g.label}</span>
-                                                <span className="block text-[10px] text-gray-400">{g.unit}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Non-outdoor: goal type is fixed, no selector needed */}
 
                             {/* Mục tiêu (value) */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                    {form.challenge_type === 'outdoor_activity' ? '🎯 Mục tiêu mỗi ngày (km) *' : `🎯 Giá trị mục tiêu mỗi ngày (${form.goal_unit}) *`}
+                                    {form.challenge_type === 'outdoor_activity'
+                                        ? '🎯 Mục tiêu mỗi ngày (km) *'
+                                        : form.challenge_type === 'nutrition'
+                                            ? '🍽️ Số bữa check-in *'
+                                            : '💪 Số buổi tập *'}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
                                         type="number"
                                         value={form.goal_value}
                                         onChange={e => { setField('goal_value', e.target.value); const err = validateField('goal_value', e.target.value); setErrors(p => ({ ...p, goal_value: err })) }}
-                                        placeholder={form.challenge_type === 'outdoor_activity' ? '50' : '20'}
+                                        placeholder={form.challenge_type === 'outdoor_activity' ? '50' : '1'}
                                         min="1"
                                         className={`flex-1 px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.goal_value ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-orange-400'}`}
                                     />
@@ -670,7 +713,7 @@ Hãy điền đầy đủ các trường sau thành một JSON object hợp lệ
                             value={aiDesc}
                             onChange={e => setAiDesc(e.target.value)}
                             rows={4}
-                            placeholder="VD: Tổ chức thử thách chạy bộ 50km trong tháng 4, mở cho mọi người tham gia, độ khó trung bình..."
+                            placeholder="Ghi rõ thông tin về Thử thách"
                             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 outline-none focus:border-orange-400 transition text-sm resize-none mb-4"
                         />
 

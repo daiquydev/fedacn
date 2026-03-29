@@ -15,7 +15,9 @@ import {
     getParticipantsController,
     getUserProgressController,
     getChallengeActivityController,
-    deleteProgressController
+    deleteProgressController,
+    getPublicUserChallengesController,
+    getFeedController
 } from '~/controllers/userControllers/challenge.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -25,6 +27,9 @@ const challengeRouter = Router()
 // Protected user-specific routes — MUST come before /:id
 challengeRouter.get('/my', verifyToken, wrapRequestHandler(getMyChallengesController))
 challengeRouter.get('/my-created', verifyToken, wrapRequestHandler(getMyCreatedChallengesController))
+challengeRouter.get('/user/:userId/joined', wrapRequestHandler(getPublicUserChallengesController))
+// Feed endpoint - scope-based (public/friends/mine)
+challengeRouter.get('/feed', verifyTokenOptional, wrapRequestHandler(getFeedController))
 
 // Public routes (with optional auth for isJoined status)
 challengeRouter.get('/', verifyTokenOptional, wrapRequestHandler(getChallengesController))

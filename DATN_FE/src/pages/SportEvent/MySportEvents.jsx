@@ -39,14 +39,13 @@ const MySportEvents = () => {
 
   const createdEvents = createdEventsData?.data?.result?.events || createdEventsData?.result?.events || []
 
-  // Fetch joined events  
+  // Fetch joined events (always, so badge count is correct on first render)
   const {
     data: joinedEventsData,
     isLoading: isLoadingJoined
   } = useQuery({
     queryKey: ['myJoinedEvents'],
-    queryFn: () => getJoinedEvents({ page: 1, limit: 100 }),
-    enabled: activeTab === 'joined'
+    queryFn: () => getJoinedEvents({ page: 1, limit: 100 })
   })
 
   const joinedEvents = joinedEventsData?.data?.result?.events || joinedEventsData?.result?.events || []

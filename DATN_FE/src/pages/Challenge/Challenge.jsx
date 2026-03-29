@@ -1,12 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getChallenges, joinChallenge, quitChallenge } from '../../apis/challengeApi'
+import { getChallengeFeed, joinChallenge, quitChallenge } from '../../apis/challengeApi'
 import { toast } from 'react-hot-toast'
 import {
   FaUtensils, FaRunning, FaDumbbell, FaPlus, FaSearch, FaTrophy,
   FaUsers, FaClock, FaFire, FaChevronRight, FaFilter, FaStar,
-  FaTimes, FaChevronDown, FaSortAmountDown, FaCalendarAlt, FaShare
+  FaTimes, FaChevronDown, FaSortAmountDown, FaCalendarAlt, FaCheck,
+  FaGlobe, FaUserFriends, FaUser
 } from 'react-icons/fa'
 import { MdCheckCircle } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
@@ -15,7 +16,6 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import CreateChallengeModal from './components/CreateChallengeModal'
-import ChallengeShareModal from '../../components/Challenge/ChallengeShareModal'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -24,7 +24,7 @@ const TYPE_CONFIG = {
 }
 
 // Challenge Card — styled after SportEventCard
-function ChallengeCard({ challenge, onJoin, onQuit, joinLoading, onShare }) {
+function ChallengeCard({ challenge, onJoin, onQuit, joinLoading }) {
   const navigate = useNavigate()
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
 
@@ -78,14 +78,7 @@ function ChallengeCard({ challenge, onJoin, onQuit, joinLoading, onShare }) {
           )}
         </div>
 
-        {/* Share icon — top right */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onShare(challenge) }}
-          className="absolute top-3 right-12 bg-white/80 dark:bg-gray-900/80 hover:bg-white dark:hover:bg-gray-900 text-orange-500 p-1.5 rounded-full backdrop-blur-sm shadow transition"
-          title="Chia sẻ thử thách"
-        >
-          <FaShare size={11} />
-        </button>
+
       </div>
 
       {/* Details */}
@@ -176,14 +169,33 @@ export default function Challenge() {
   const [activeType, setActiveType] = useState('all')
   const [sortBy, setSortBy] = useState('popular')
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [filterOngoing, setFilterOngoing] = useState(false)
   const [page, setPage] = useState(1)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [shareTarget, setShareTarget] = useState(null) // challenge to share
+  const [scope, setScope] = useState('public')
+  const [showScopeMenu, setShowScopeMenu] = useState(false)
+  const scopeRef = useRef(null)
+
+  const SCOPE_OPTIONS = [
+    { value: 'public', label: 'Công khai', icon: FaGlobe, color: 'text-blue-600' },
+    { value: 'friends', label: 'Bạn bè', icon: FaUserFriends, color: 'text-emerald-600' },
+    { value: 'mine', label: 'Của tôi', icon: FaUser, color: 'text-orange-600' }
+  ]
+  const activeScope = SCOPE_OPTIONS.find(s => s.value === scope)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => { if (scopeRef.current && !scopeRef.current.contains(e.target)) setShowScopeMenu(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   const ITEMS_PER_PAGE = 9
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['challenges', activeType, searchTerm, page],
-    queryFn: () => getChallenges({
+    queryKey: ['challenges-feed', scope, activeType, searchTerm, page],
+    queryFn: () => getChallengeFeed({
+      scope,
       challenge_type: activeType === 'all' ? undefined : activeType,
       search: searchTerm || undefined,
       page,
@@ -195,29 +207,33 @@ export default function Challenge() {
   const challenges = data?.data?.result?.challenges || []
   const totalPage = data?.data?.result?.totalPage || 1
 
-  useEffect(() => { setPage(1) }, [searchTerm, activeType, sortBy])
+  useEffect(() => { setPage(1) }, [searchTerm, activeType, sortBy, filterOngoing, scope])
 
   const joinMutation = useSafeMutation({
     mutationFn: (id) => joinChallenge(id),
-    onSuccess: () => { toast.success('Đã tham gia thử thách!'); queryClient.invalidateQueries({ queryKey: ['challenges'] }) },
+    onSuccess: () => { toast.success('Đã tham gia thử thách!'); queryClient.invalidateQueries({ queryKey: ['challenges-feed'] }) },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi tham gia')
   })
 
   const quitMutation = useSafeMutation({
     mutationFn: (id) => quitChallenge(id),
-    onSuccess: () => { toast.success('Đã rời thử thách'); queryClient.invalidateQueries({ queryKey: ['challenges'] }) },
+    onSuccess: () => { toast.success('Đã rời thử thách'); queryClient.invalidateQueries({ queryKey: ['challenges-feed'] }) },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi rời')
   })
 
-  // Sort client-side
+  // Sort & filter client-side
   const sortedChallenges = useMemo(() => {
     let sorted = [...challenges]
+    if (filterOngoing) {
+      const now = new Date()
+      sorted = sorted.filter(c => new Date(c.start_date) <= now && now <= new Date(c.end_date))
+    }
     if (sortBy === 'popular') sorted.sort((a, b) => (b.participants_count || 0) - (a.participants_count || 0))
     else if (sortBy === 'newest') sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     else if (sortBy === 'ending_soon') sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date))
     else if (sortBy === 'joined') sorted = sorted.filter(c => c.isJoined)
     return sorted
-  }, [challenges, sortBy])
+  }, [challenges, sortBy, filterOngoing])
 
   // Skeleton
   const SkeletonCard = () => (
@@ -267,12 +283,12 @@ export default function Challenge() {
 
       {/* Search & Filters — matching SportEvent filter card */}
       <div className="container mx-auto px-4 pt-6 pb-2">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
 
           {/* Row 1: Search + Filter toggle */}
           <div className="p-4">
-            <div className="flex gap-2 items-center">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1 min-w-0">
                 <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                 {searchTerm && (
                   <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -287,34 +303,95 @@ export default function Challenge() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showAdvanced || sortBy !== 'popular'
-                  ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300'
-                  : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+              <div className="flex gap-2 items-center">
+                {/* Scope Dropdown */}
+                <div className="relative" ref={scopeRef}>
+                  <button
+                    onClick={() => setShowScopeMenu(v => !v)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                      scope !== 'public'
+                        ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300'
+                        : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                    }`}
+                  >
+                    {activeScope && <activeScope.icon size={12} className={activeScope.color} />}
+                    <span>{activeScope?.label}</span>
+                    <FaChevronDown size={10} className={`transition-transform ${showScopeMenu ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showScopeMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
+                      {SCOPE_OPTIONS.map(opt => {
+                        const Icon = opt.icon
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setScope(opt.value); setShowScopeMenu(false) }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
+                              scope === opt.value
+                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
+                                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            <Icon size={14} className={opt.color} />
+                            {opt.label}
+                            {scope === opt.value && <FaCheck size={10} className="ml-auto text-orange-500" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setFilterOngoing(v => !v)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                    filterOngoing
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                      : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600'
                   }`}
-              >
-                <FaFilter size={12} />
-                Bộ lọc
-                {([sortBy !== 'popular'].filter(Boolean).length > 0) && (
-                  <span className="w-5 h-5 rounded-full bg-orange-600 text-white text-[10px] font-bold flex items-center justify-center">
-                    {[sortBy !== 'popular'].filter(Boolean).length}
-                  </span>
-                )}
-                <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-              </button>
+                >
+                  {filterOngoing ? <FaCheck size={10} /> : <FaUsers size={12} />}
+                  Đang diễn ra
+                </button>
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showAdvanced || sortBy !== 'popular'
+                    ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300'
+                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                    }`}
+                >
+                  <FaFilter size={12} />
+                  Bộ lọc
+                  {([sortBy !== 'popular'].filter(Boolean).length > 0) && (
+                    <span className="w-5 h-5 rounded-full bg-orange-600 text-white text-[10px] font-bold flex items-center justify-center">
+                      {[sortBy !== 'popular'].filter(Boolean).length}
+                    </span>
+                  )}
+                  <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
             </div>
 
             {/* Active filter chips */}
-            {(activeType !== 'all' || sortBy !== 'popular' || searchTerm) && (
+            {(activeType !== 'all' || sortBy !== 'popular' || searchTerm || filterOngoing || scope !== 'public') && (
               <div className="flex flex-wrap gap-2 mt-3">
+                {scope !== 'public' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                    {scope === 'friends' ? '👥 Bạn bè' : '👤 Của tôi'}
+                    <button onClick={() => setScope('public')}><FaTimes size={9} /></button>
+                  </span>
+                )}
                 {activeType !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                     {TYPE_CONFIG[activeType]?.icon} {TYPE_CONFIG[activeType]?.label}
                     <button onClick={() => setActiveType('all')}><FaTimes size={9} /></button>
                   </span>
                 )}
-
+                {filterOngoing && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                    ✅ Đang diễn ra
+                    <button onClick={() => setFilterOngoing(false)}><FaTimes size={9} /></button>
+                  </span>
+                )}
                 {sortBy !== 'popular' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                     ↕️ {{ newest: 'Mới nhất', ending_soon: 'Sắp kết thúc', joined: 'Đã tham gia' }[sortBy] || sortBy}
@@ -322,7 +399,7 @@ export default function Challenge() {
                   </span>
                 )}
                 <button
-                  onClick={() => { setSearchTerm(''); setActiveType('all'); setSortBy('popular') }}
+                  onClick={() => { setSearchTerm(''); setActiveType('all'); setSortBy('popular'); setFilterOngoing(false); setScope('public') }}
                   className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition-colors"
                 >
                   <FaTimes size={9} /> Xóa tất cả
@@ -410,7 +487,7 @@ export default function Challenge() {
         {!isLoading && (
           <div className="mb-6 flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{sortedChallenges.length}</span> thử thách
+              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{sortedChallenges.length}</span> / {challenges.length} thử thách
               {totalPage > 1 && <span className="text-gray-400 ml-2">(trang {page}/{totalPage})</span>}
             </p>
           </div>
@@ -442,7 +519,6 @@ export default function Challenge() {
                   onJoin={(id) => joinMutation.mutate(id)}
                   onQuit={(id) => quitMutation.mutate(id)}
                   joinLoading={joinMutation.isPending || quitMutation.isPending}
-                  onShare={(c) => setShareTarget(c)}
                 />
               ))}
             </div>
@@ -496,14 +572,7 @@ export default function Challenge() {
         onClose={() => { setShowCreateModal(false); queryClient.invalidateQueries({ queryKey: ['challenges'] }) }}
       />
 
-      {/* Challenge Share Modal */}
-      {shareTarget && (
-        <ChallengeShareModal
-          challenge={shareTarget}
-          challengeId={shareTarget._id}
-          onClose={() => setShareTarget(null)}
-        />
-      )}
+
     </div>
   )
 }

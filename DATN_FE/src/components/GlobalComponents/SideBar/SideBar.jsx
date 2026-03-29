@@ -107,6 +107,15 @@ export default function SideBar() {
           </NavLink>
         </li>
       )}
+      {isAdmin && (
+        <li>
+          <NavLink to={'/admin/challenges'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+            <FaTrophy size={20} className='min-w-max' />
+            Quản lý Thử thách
+          </NavLink>
+        </li>
+      )}
+
       <li>
         <NavLink to={'/user-calendar'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
           <FaCalendarAlt size={22} className='min-w-max' />
@@ -132,7 +141,7 @@ export default function SideBar() {
         </NavLink>
       </li>
       <li>
-        <NavLink to={'/challenge'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+        <NavLink to={'/challenge'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
           <FaTrophy size={22} className='min-w-max' />
           Thử thách
         </NavLink>

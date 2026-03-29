@@ -423,9 +423,6 @@ export default function ActivityTracking() {
                             <div><strong>{formatDuration(tracker.duration)}</strong></div>
                             <div>🔥 <strong>{tracker.calories}</strong> kcal</div>
                         </div>
-                        <div className='hud-modal-detail'>
-                            ⚡ Vận tốc TB {avgSpeedKmH} km/h • Tốc độ {formatPace(tracker.avgPace)}/km
-                        </div>
                         <div className='hud-modal-btns'>
                             <button className='hud-modal-btn cancel' onClick={() => setShowConfirmComplete(false)}>Quay lại</button>
                             <button className='hud-modal-btn success' onClick={confirmComplete}>Xác nhận</button>

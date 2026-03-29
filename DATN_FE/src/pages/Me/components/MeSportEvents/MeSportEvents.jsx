@@ -2,7 +2,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FaRunning, FaCalendarAlt, FaUsers, FaArrowRight, FaMapMarkerAlt } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
-import { getJoinedEvents } from '../../../../apis/sportEventApi'
+import { getJoinedEvents, getPublicUserJoinedEvents } from '../../../../apis/sportEventApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
 
@@ -70,10 +70,17 @@ function EventCard({ event }) {
   )
 }
 
-export default function MeSportEvents() {
+export default function MeSportEvents({ userId }) {
+  const isPublic = Boolean(userId)
+
   const { data, isLoading } = useQuery({
-    queryKey: ['joinedEvents', { page: 1, limit: 20 }],
-    queryFn: () => getJoinedEvents({ page: 1, limit: 20 }),
+    queryKey: isPublic
+      ? ['publicUserEvents', userId, { page: 1, limit: 20 }]
+      : ['joinedEvents', { page: 1, limit: 20 }],
+    queryFn: () =>
+      isPublic
+        ? getPublicUserJoinedEvents(userId, { page: 1, limit: 20 })
+        : getJoinedEvents({ page: 1, limit: 20 }),
     placeholderData: keepPreviousData
   })
 
@@ -89,10 +96,14 @@ export default function MeSportEvents() {
       <div className='text-center py-16'>
         <FaRunning className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
         <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>Chưa tham gia sự kiện nào</h3>
-        <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tham gia sự kiện thể thao để bắt đầu!</p>
-        <Link to='/sport-event' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
-          Khám phá sự kiện <FaArrowRight />
-        </Link>
+        {!isPublic && (
+          <>
+            <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tham gia sự kiện thể thao để bắt đầu!</p>
+            <Link to='/sport-event' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+              Khám phá sự kiện <FaArrowRight />
+            </Link>
+          </>
+        )}
       </div>
     )
   }

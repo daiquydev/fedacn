@@ -1,4 +1,4 @@
-﻿import { useSafeMutation } from '../../hooks/useSafeMutation'
+import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -16,12 +16,12 @@ import { filterExercises, suggestExercisesByKcal, getAllExercises } from '../../
 import { createWorkoutSession, completeWorkoutSession } from '../../apis/workoutSessionApi'
 import { getEquipment } from '../../apis/equipmentApi'
 import { getMuscleGroups } from '../../apis/muscleGroupApi'
-import {
-  getSavedWorkouts as apiGetSavedWorkouts,
+import { getSavedWorkouts as apiGetSavedWorkouts,
   createSavedWorkout as apiCreateSavedWorkout,
   deleteSavedWorkout as apiDeleteSavedWorkout,
   updateSavedWorkoutSchedule as apiUpdateSavedWorkoutSchedule
 } from '../../apis/savedWorkoutApi'
+import { addChallengeProgress } from '../../apis/challengeApi'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 
 // Fallback muscle labels for head/neck (non-selectable)
@@ -2046,7 +2046,8 @@ export default function Training() {
 
   const completeSessionMutation = useSafeMutation({
     mutationFn: ({ id, data }) => completeWorkoutSession(id, data),
-    onSuccess: () => { toast.success('🎉 Phiên tập hoàn thành! Tuyệt vời!'); navigate('/training/my-Trainings') },
+    // Navigation is handled by handleComplete to support challenge redirect flow
+    onSuccess: () => {},
     onError: () => toast.error('Lỗi khi lưu phiên tập.')
   })
 
@@ -2192,9 +2193,52 @@ export default function Training() {
     }
   }
 
-  const handleComplete = (exerciseSets) => {
-    if (sessionId) completeSessionMutation.mutate({ id: sessionId, data: { exercises: exerciseSets } })
-    else { toast.success('🎉 Phiên tập hoàn thành!'); navigate('/training/my-Trainings') }
+  const handleComplete = async (exerciseSets) => {
+    const challengeId = location.state?.challengeId
+    const challengeTitle = location.state?.challengeTitle
+
+    // Calculate total calories and duration from completed sets
+    let totalCalories = 0
+    let totalDuration = 0
+    exerciseSets.forEach(ex => {
+      ex.sets.forEach(s => {
+        if (s.completed) totalCalories += (s.reps || 0) * (s.weight || 0) * (s.calories_per_unit ?? 10)
+      })
+    })
+    // Estimate duration: assume ~3 min per completed set
+    const completedSets = exerciseSets.reduce((acc, ex) => acc + ex.sets.filter(s => s.completed).length, 0)
+    totalDuration = Math.max(completedSets * 3, 10) // min 10 minutes
+    totalCalories = Math.round(totalCalories)
+
+    // Complete workout session first
+    if (sessionId) {
+      await completeSessionMutation.mutateAsync({ id: sessionId, data: { exercises: exerciseSets } }).catch(() => {})
+    }
+
+    // If came from challenge, record progress
+    if (challengeId) {
+      try {
+        await addChallengeProgress(challengeId, {
+          value: 1,
+          notes: `Buổi tập từ Training${challengeTitle ? ': ' + challengeTitle : ''}`,
+          duration_minutes: totalDuration,
+          calories: totalCalories || undefined,
+          source: 'workout_session',
+          workout_session_id: sessionId || undefined,
+          exercises_count: exerciseSets.length
+        })
+        toast.success('🎉 Phiên tập hoàn thành và đã ghi nhận vào thử thách!')
+      } catch (err) {
+        toast.success('🎉 Phiên tập hoàn thành!')
+        toast.error('Không thể ghi nhận vào thử thách: ' + (err?.response?.data?.message || 'Lỗi không xác định'))
+      }
+      navigate(`/challenge/${challengeId}`)
+      return
+    }
+
+    // Normal flow (no challenge)
+    toast.success('🎉 Phiên tập hoàn thành! Tuyệt vời!')
+    navigate('/training/my-Trainings')
   }
 
   const handleQuit = () => {

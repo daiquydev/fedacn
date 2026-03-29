@@ -25,6 +25,7 @@ export interface IChallenge {
     visibility: 'public' | 'friends' | 'private'
     is_public: boolean
     status: string
+    is_deleted: boolean
     participants_count: number
     badge_emoji: string
 
@@ -81,6 +82,7 @@ const ChallengeSchema = new mongoose.Schema<IChallenge>(
             enum: ['active', 'completed', 'cancelled'],
             default: 'active'
         },
+        is_deleted: { type: Boolean, default: false },
         participants_count: { type: Number, default: 0 },
         badge_emoji: { type: String, default: '🏆' },
 
@@ -99,9 +101,9 @@ const ChallengeSchema = new mongoose.Schema<IChallenge>(
 
 ChallengeSchema.index({ title: 'text', description: 'text' }, { default_language: 'none' })
 ChallengeSchema.index({ creator_id: 1 })
-ChallengeSchema.index({ challenge_type: 1, status: 1, is_public: 1 })
-ChallengeSchema.index({ status: 1, is_public: 1, createdAt: -1 })
-ChallengeSchema.index({ end_date: 1, status: 1 })
+ChallengeSchema.index({ challenge_type: 1, status: 1, is_public: 1, is_deleted: 1 })
+ChallengeSchema.index({ status: 1, is_public: 1, is_deleted: 1, createdAt: -1 })
+ChallengeSchema.index({ end_date: 1, status: 1, is_deleted: 1 })
 
 
 

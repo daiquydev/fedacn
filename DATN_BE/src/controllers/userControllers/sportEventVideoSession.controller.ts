@@ -82,6 +82,29 @@ export const getVideoSessionsController = async (req: Request, res: Response) =>
     }
 }
 
+// ─── Get Single Video Session By Id ──────────────────────────────────────────
+export const getVideoSessionByIdController = async (req: Request, res: Response) => {
+    try {
+        const { eventId, vsId } = req.params
+        const userId = (req as any).decoded?.user_id || ''
+
+        const session = await sportEventVideoSessionService.getVideoSessionByIdService(eventId, vsId, userId)
+
+        if (!session) {
+            return res.status(404).json({ message: 'Không tìm thấy buổi học' })
+        }
+
+        return res.json({
+            result: session,
+            message: 'Lấy thông tin buổi học thành công'
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: (error as Error).message
+        })
+    }
+}
+
 // ─── Get Active Video Session ──────────────────────────────────────────────────
 export const getActiveVideoSessionController = async (req: Request, res: Response) => {
     try {

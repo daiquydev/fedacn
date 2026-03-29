@@ -194,7 +194,10 @@ class AuthUserService {
       const password = Math.random().toString(36).slice(-8)
       const hashedPassword = await hashPassword(password)
       const newUser = await UserModel.create({
-        name: userInfo.name,
+        name:
+          userInfo.family_name && userInfo.given_name
+            ? `${userInfo.family_name} ${userInfo.given_name}`
+            : userInfo.name,
         email: userInfo.email,
         user_name: userInfo.email.split('@')[0],
         avatar: userInfo.picture,

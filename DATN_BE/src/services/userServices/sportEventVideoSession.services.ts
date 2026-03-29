@@ -196,13 +196,31 @@ class SportEventVideoSessionService {
 
     // ─── Get Video Sessions (history) ──────────────────────────────────────────
     async getVideoSessionsService(eventId: string, userId: string) {
+        const event = await SportEventModel.findById(eventId)
+        const startDate = event?.startDate ? new Date(event.startDate) : null
+        const dateFilter = startDate ? { joinedAt: { $gte: startDate } } : {}
+
         const sessions = await SportEventVideoSessionModel
-            .find({ eventId, userId, is_deleted: { $ne: true } })
+            .find({ eventId, userId, is_deleted: { $ne: true }, ...dateFilter })
             .populate('sessionId', 'title sessionNumber sessionDate')
             .sort({ joinedAt: -1 })
             .exec()
 
         return sessions
+    }
+
+    // ─── Get Single Video Session By Id ──────────────────────────────────────────
+    async getVideoSessionByIdService(eventId: string, vsId: string, userId: string) {
+        // We might want to allow anyone in the event (or public) to see the session details for feed
+        // If it's for feed, user doesn't strictly have to be the owner, but we can verify event existence.
+        const session = await SportEventVideoSessionModel.findOne({
+            _id: vsId,
+            eventId,
+            is_deleted: { $ne: true }
+        }).populate('sessionId', 'title sessionNumber sessionDate')
+          .exec()
+
+        return session
     }
 
     // ─── Get Active Video Session ───────────────────────────────────────────────
@@ -218,13 +236,18 @@ class SportEventVideoSessionService {
 
     // ─── Aggregate stats ────────────────────────────────────────────────────────
     async getVideoSessionStatsService(eventId: string, userId: string) {
+        const event = await SportEventModel.findById(eventId)
+        const startDate = event?.startDate ? new Date(event.startDate) : null
+        const dateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+
         const stats = await SportEventVideoSessionModel.aggregate([
             {
                 $match: {
                     eventId: new Types.ObjectId(eventId),
                     userId: new Types.ObjectId(userId),
                     status: 'ended',
-                    is_deleted: { $ne: true }
+                    is_deleted: { $ne: true },
+                    ...dateMatch
                 }
             },
             {

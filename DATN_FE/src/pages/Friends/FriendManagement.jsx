@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FaSearch, FaUserFriends, FaUserMinus, FaUserPlus, FaUser, FaHeart } from 'react-icons/fa'
 import toast from 'react-hot-toast'
@@ -160,6 +160,12 @@ export default function FriendManagement() {
   // This is per-session state — does NOT affect the follow data in DB.
   const [hiddenFromRequests, setHiddenFromRequests] = useState(new Set())
 
+  // Per-user pending state: only disable the button of the user being processed
+  const [pendingIds, setPendingIds] = useState(new Set())
+  const addPending = useCallback((id) => setPendingIds((prev) => new Set([...prev, String(id)])))
+  const removePending = useCallback((id) => setPendingIds((prev) => { const s = new Set(prev); s.delete(String(id)); return s }))
+  const isUserPending = useCallback((id) => pendingIds.has(String(id)), [pendingIds])
+
   const {
     data: meData,
     isLoading: loadingMe,
@@ -228,9 +234,13 @@ export default function FriendManagement() {
 
   // Chấp nhận lời mời = follow lại họ
   const handleAccept = (userId) => {
+    addPending(userId)
     followMutation.mutate(
       { follow_id: userId },
-      { onSuccess: () => toast.success('Đã chấp nhận lời mời kết bạn') }
+      {
+        onSuccess: () => toast.success('Đã chấp nhận lời mời kết bạn'),
+        onSettled: () => removePending(userId)
+      }
     )
   }
 
@@ -243,31 +253,40 @@ export default function FriendManagement() {
 
   // Hủy kết bạn = bỏ follow họ (họ vẫn follow mình) + ẩn khỏi "Lời mời kết bạn"
   const handleUnfriend = (userId) => {
+    addPending(userId)
     unfollowMutation.mutate(
       { follow_id: userId },
       {
         onSuccess: () => {
-          // Ẩn họ khỏi "Lời mời kết bạn" - họ vẫn xuất hiện trong "Người theo dõi"
           setHiddenFromRequests((prev) => new Set([...prev, String(userId)]))
           toast.success('Đã hủy kết bạn')
-        }
+        },
+        onSettled: () => removePending(userId)
       }
     )
   }
 
   // Hủy lời mời đã gửi = bỏ follow họ
   const handleCancelRequest = (userId) => {
+    addPending(userId)
     unfollowMutation.mutate(
       { follow_id: userId },
-      { onSuccess: () => toast.success('Đã hủy lời mời kết bạn') }
+      {
+        onSuccess: () => toast.success('Đã hủy lời mời kết bạn'),
+        onSettled: () => removePending(userId)
+      }
     )
   }
 
   // Gửi lời mời kết bạn = follow họ
   const handleSendRequest = (userId) => {
+    addPending(userId)
     followMutation.mutate(
       { follow_id: userId },
-      { onSuccess: () => toast.success('Đã gửi lời mời kết bạn') }
+      {
+        onSuccess: () => toast.success('Đã gửi lời mời kết bạn'),
+        onSettled: () => removePending(userId)
+      }
     )
   }
 
@@ -313,7 +332,7 @@ export default function FriendManagement() {
     )
   }
 
-  const actionDisabled = followMutation.isPending || unfollowMutation.isPending
+  // actionDisabled is now per-user — see isUserPending(userId) instead of a global flag
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -352,12 +371,11 @@ export default function FriendManagement() {
             people={friends}
             badge='Bạn bè'
             emptyMessage='Bạn chưa có người bạn nào. Hãy chấp nhận lời mời!'
-            disabled={actionDisabled}
             renderActions={(person) => (
               <ActionButton
                 label='Hủy kết bạn'
                 variant='danger'
-                disabled={actionDisabled}
+                disabled={isUserPending(person._id)}
                 icon={FaUserMinus}
                 onClick={() => handleUnfriend(person._id)}
               />
@@ -371,13 +389,12 @@ export default function FriendManagement() {
             people={incomingRequests}
             badge='Chờ chấp nhận'
             emptyMessage='Không có lời mời kết bạn mới.'
-            disabled={actionDisabled}
             renderActions={(person) => (
               <>
                 <ActionButton
                   label='Chấp nhận'
                   variant='primary'
-                  disabled={actionDisabled}
+                  disabled={isUserPending(person._id)}
                   icon={FaUserPlus}
                   onClick={() => handleAccept(person._id)}
                 />
@@ -385,7 +402,7 @@ export default function FriendManagement() {
                 <ActionButton
                   label='Từ chối'
                   variant='secondary'
-                  disabled={actionDisabled}
+                  disabled={isUserPending(person._id)}
                   icon={FaUserMinus}
                   onClick={() => handleDecline(person._id)}
                 />
@@ -406,14 +423,13 @@ export default function FriendManagement() {
               return 'Đang chờ xác nhận'
             }}
             emptyMessage='Bạn chưa theo dõi ai.'
-            disabled={actionDisabled}
             renderActions={(person) => {
               const isFriend = followerIds.has(String(person._id))
               return isFriend ? (
                 <ActionButton
                   label='Hủy kết bạn'
                   variant='danger'
-                  disabled={actionDisabled}
+                  disabled={isUserPending(person._id)}
                   icon={FaUserMinus}
                   onClick={() => handleUnfriend(person._id)}
                 />
@@ -421,7 +437,7 @@ export default function FriendManagement() {
                 <ActionButton
                   label='Hủy lời mời'
                   variant='danger'
-                  disabled={actionDisabled}
+                  disabled={isUserPending(person._id)}
                   icon={FaUserMinus}
                   onClick={() => handleCancelRequest(person._id)}
                 />
@@ -439,7 +455,6 @@ export default function FriendManagement() {
               return 'Đang theo dõi bạn'
             }}
             emptyMessage='Chưa có người theo dõi nào.'
-            disabled={actionDisabled}
             renderActions={(person) => {
               const isFriend = followingIds.has(String(person._id))
               return isFriend ? (
@@ -453,7 +468,7 @@ export default function FriendManagement() {
                 <ActionButton
                   label='Kết bạn'
                   variant='primary'
-                  disabled={actionDisabled}
+                  disabled={isUserPending(person._id)}
                   icon={FaUserPlus}
                   onClick={() => handleAccept(person._id)}
                 />
@@ -535,7 +550,7 @@ export default function FriendManagement() {
                       e.stopPropagation()
                       handleSendRequest(person._id)
                     }}
-                    disabled={actionDisabled}
+                    disabled={isUserPending(person._id)}
                     icon={FaUserPlus}
                   />
                 </div>

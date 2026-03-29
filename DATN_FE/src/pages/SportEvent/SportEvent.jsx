@@ -24,6 +24,14 @@ import { currentAccount } from '../../apis/userApi'
 import { getSportIcon } from '../../utils/sportIcons'
 import toast from 'react-hot-toast'
 
+// Format digits into DD/MM/YYYY
+const formatDateInput = (raw) => {
+  const digits = raw.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2)
+  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4)
+}
+
 // Featured Events Carousel Banner
 function FeaturedBanner({ events, navigate }) {
   const [activeIdx, setActiveIdx] = useState(0)
@@ -175,13 +183,19 @@ const SportEvent = () => {
     }
 
     // Filter by date range
-    if (filterDateFrom) {
-      const from = new Date(filterDateFrom)
-      filtered = filtered.filter((event) => new Date(event.startDate) >= from)
+    if (filterDateFrom && filterDateFrom.length === 10) {
+      const [d, m, y] = filterDateFrom.split('/')
+      const fromDate = new Date(`${y}-${m}-${d}T00:00:00`)
+      if (!isNaN(fromDate.getTime())) {
+        filtered = filtered.filter((event) => new Date(event.startDate) >= fromDate)
+      }
     }
-    if (filterDateTo) {
-      const to = new Date(filterDateTo + 'T23:59:59')
-      filtered = filtered.filter((event) => new Date(event.startDate) <= to)
+    if (filterDateTo && filterDateTo.length === 10) {
+      const [d, m, y] = filterDateTo.split('/')
+      const toDate = new Date(`${y}-${m}-${d}T23:59:59`)
+      if (!isNaN(toDate.getTime())) {
+        filtered = filtered.filter((event) => new Date(event.startDate) <= toDate)
+      }
     }
 
     // Filter: Đã tham gia (joined by current user)
@@ -368,16 +382,16 @@ const SportEvent = () => {
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                    showAdvanced || sortBy !== 'popular' || filterDateFrom || filterDateTo
+                    showAdvanced || sortBy !== 'popular' || (filterDateFrom && filterDateFrom.length === 10) || (filterDateTo && filterDateTo.length === 10)
                       ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
                       : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
                   }`}
                 >
                   <FaFilter size={12} />
                   Bộ lọc
-                  {([sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length > 0) && (
+                  {([sortBy !== 'popular', filterDateFrom?.length === 10, filterDateTo?.length === 10].filter(Boolean).length > 0) && (
                     <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
-                      {[sortBy !== 'popular', filterDateFrom, filterDateTo].filter(Boolean).length}
+                      {[sortBy !== 'popular', filterDateFrom?.length === 10, filterDateTo?.length === 10].filter(Boolean).length}
                     </span>
                   )}
                   <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
@@ -386,7 +400,7 @@ const SportEvent = () => {
             </div>
 
             {/* Active filter chips */}
-            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || filterDateFrom || filterDateTo || filterJoined) && (
+            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || (filterDateFrom && filterDateFrom.length === 10) || (filterDateTo && filterDateTo.length === 10) || filterJoined) && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {eventType !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
@@ -406,15 +420,15 @@ const SportEvent = () => {
                     <button onClick={() => setSortBy('popular')} className="hover:text-purple-900 dark:hover:text-purple-100"><FaTimes size={9} /></button>
                   </span>
                 )}
-                {filterDateFrom && (
+                {filterDateFrom && filterDateFrom.length === 10 && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                    📅 Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
+                    📅 Từ {filterDateFrom}
                     <button onClick={() => setFilterDateFrom('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
                   </span>
                 )}
-                {filterDateTo && (
+                {filterDateTo && filterDateTo.length === 10 && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                    📅 Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
+                    📅 Đến {filterDateTo}
                     <button onClick={() => setFilterDateTo('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
                   </span>
                 )}
@@ -517,21 +531,31 @@ const SportEvent = () => {
               <div className="grid grid-cols-2 gap-3 pt-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Từ ngày</label>
-                  <input
-                    type="date"
-                    value={filterDateFrom}
-                    onChange={e => setFilterDateFrom(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={filterDateFrom}
+                      onChange={e => setFilterDateFrom(formatDateInput(e.target.value))}
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                      className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                    />
+                    <FaCalendarAlt className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Đến ngày</label>
-                  <input
-                    type="date"
-                    value={filterDateTo}
-                    onChange={e => setFilterDateTo(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={filterDateTo}
+                      onChange={e => setFilterDateTo(formatDateInput(e.target.value))}
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                      className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                    />
+                    <FaCalendarAlt className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                  </div>
                 </div>
               </div>
 

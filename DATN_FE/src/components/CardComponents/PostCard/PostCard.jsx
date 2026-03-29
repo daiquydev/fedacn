@@ -56,6 +56,7 @@ import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
 import SportEventPreviewCard, { extractSportEventId, cleanSportEventMarker } from '../../Post/SportEventPreviewCard'
 import ActivityPreviewCard, { extractActivityIds, cleanActivityMarker } from '../../Post/ActivityPreviewCard'
 import ChallengePreviewCard, { extractChallengeId, cleanChallengeMarker } from '../../Post/ChallengePreviewCard'
+import IndoorPreviewCard, { extractIndoorSessionIds, cleanIndoorSessionMarker } from '../../Post/IndoorPreviewCard'
 
 export default function PostCard({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -299,7 +300,7 @@ function CheckTypeOfPost({
           </div>
         </div>
         <ShowMoreContent className='px-4 text-sm whitespace-pre-line pb-5 md:px-0'>
-          <p className=''>{cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content)))}</p>
+          <p className=''>{cleanIndoorSessionMarker(cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content))))}</p>
         </ShowMoreContent>
         <CheckLengthOfImages navigate={navigate} data={data} images={data?.images} />
         {/* Sport Event Preview */}
@@ -311,11 +312,19 @@ function CheckTypeOfPost({
           <ActivityPreviewCard
             activityId={extractActivityIds(data.content).activityId}
             eventId={extractActivityIds(data.content).eventId}
+            challengeId={extractActivityIds(data.content).challengeId}
           />
         )}
         {/* Challenge Preview */}
         {extractChallengeId(data.content) && (
           <ChallengePreviewCard challengeId={extractChallengeId(data.content)} />
+        )}
+        {/* Indoor Session Preview */}
+        {extractIndoorSessionIds(data.content) && (
+          <IndoorPreviewCard
+            sessionId={extractIndoorSessionIds(data.content).sessionId}
+            eventId={extractIndoorSessionIds(data.content).eventId}
+          />
         )}
       </>
     )
@@ -432,7 +441,7 @@ function CheckTypeOfPost({
         </div>
       </div>
       <ShowMoreContent className='px-4  whitespace-pre-line text-sm pb-5 md:px-0'>
-        <p className=''>{cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content)))}</p>
+        <p className=''>{cleanIndoorSessionMarker(cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content))))}</p>
       </ShowMoreContent>
       {/* Challenge Preview (shared posts) */}
       {extractChallengeId(data.content) && (
@@ -441,6 +450,21 @@ function CheckTypeOfPost({
       {/* Sport Event Preview (shared posts) */}
       {extractSportEventId(data.content) && (
         <SportEventPreviewCard eventId={extractSportEventId(data.content)} />
+      )}
+      {/* Activity Progress Preview (shared posts) */}
+      {extractActivityIds(data.content) && (
+        <ActivityPreviewCard
+          activityId={extractActivityIds(data.content).activityId}
+          eventId={extractActivityIds(data.content).eventId}
+          challengeId={extractActivityIds(data.content).challengeId}
+        />
+      )}
+      {/* Indoor Session Preview (shared posts) */}
+      {extractIndoorSessionIds(data.content) && (
+        <IndoorPreviewCard
+          sessionId={extractIndoorSessionIds(data.content).sessionId}
+          eventId={extractIndoorSessionIds(data.content).eventId}
+        />
       )}
       <div className='border mt-2 mb-2 dark:border-gray-700 border-red-200 '></div>
       {data.parent_user && data.parent_post && !data.parent_post?.is_banned ? (

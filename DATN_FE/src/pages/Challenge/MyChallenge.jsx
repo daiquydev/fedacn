@@ -12,6 +12,7 @@ import { getMyCreatedChallenges, getMyChallenges, deleteChallenge } from '../../
 import { getImageUrl } from '../../utils/imageUrl'
 import toast from 'react-hot-toast'
 import EditChallengeModal from './components/EditChallengeModal'
+import CreateChallengeModal from './components/CreateChallengeModal'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -27,6 +28,7 @@ export default function MyChallenge() {
   const [openDeleteBox, setOpenDeleteBox] = useState(false)
   const [selectedInfo, setSelectedInfo] = useState({ id: null, name: '' })
   const [editChallenge, setEditChallenge] = useState(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   // Fetch created challenges
   const {
@@ -39,15 +41,14 @@ export default function MyChallenge() {
   })
   const createdChallenges = createdData?.data?.result?.challenges || []
 
-  // Fetch joined challenges
+  // Fetch joined challenges (always, so badge count is correct on first render)
   const {
     data: joinedData,
     isLoading: isLoadingJoined
   } = useQuery({
     queryKey: ['my-challenges'],
     queryFn: () => getMyChallenges({ limit: 100 }),
-    staleTime: 1000,
-    enabled: activeTab === 'joined'
+    staleTime: 1000
   })
   const joinedParticipations = joinedData?.data?.result?.participations || []
 
@@ -119,7 +120,7 @@ export default function MyChallenge() {
                   {challenge.title}
                 </h3>
                 <span className={`ml-2 px-3 py-1 ${config.bg} ${config.text} rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1`}>
-                  {config.icon} {challenge.category || config.label}
+                  {config.icon} {config.label}
                 </span>
               </div>
 
@@ -228,7 +229,7 @@ export default function MyChallenge() {
                   {challenge.title}
                 </h3>
                 <span className={`ml-2 px-3 py-1 ${config.bg} ${config.text} rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1`}>
-                  {config.icon} {challenge.category || config.label}
+                  {config.icon} {config.label}
                 </span>
               </div>
 
@@ -339,12 +340,12 @@ export default function MyChallenge() {
             >
               <FaArrowLeft /> Quay lại danh sách
             </button>
-            <Link
-              to="/challenge/create"
+            <button
+              onClick={() => setShowCreateModal(true)}
               className="bg-white hover:bg-gray-50 text-orange-600 px-4 py-2 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
             >
               <FaPlus /> Tạo thử thách mới
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -397,13 +398,13 @@ export default function MyChallenge() {
                 <p className="text-gray-500 dark:text-gray-500 mb-6">
                   Hãy tạo thử thách đầu tiên của bạn ngay!
                 </p>
-                <Link
-                  to="/challenge/create"
+                <button
+                  onClick={() => setShowCreateModal(true)}
                   className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition"
                 >
                   <FaPlus />
                   Tạo thử thách mới
-                </Link>
+                </button>
               </div>
             )
           ) : (
@@ -448,6 +449,12 @@ export default function MyChallenge() {
           isPending={deleteMutation.isPending}
         />
       )}
+
+      {/* Create Modal */}
+      <CreateChallengeModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
 
       {/* Edit Modal */}
       <EditChallengeModal

@@ -16,7 +16,7 @@ import { MdFactCheck } from 'react-icons/md'
 import { FaBowlFood, FaCookieBite, FaPenToSquare, FaUserPen } from 'react-icons/fa6'
 import { AppContext } from '../../../contexts/app.context'
 import { IoMdAlbums } from 'react-icons/io'
-import { FaShareAlt, FaRunning, FaDumbbell, FaCalendarAlt } from 'react-icons/fa'
+import { FaShareAlt, FaRunning, FaDumbbell, FaCalendarAlt, FaTrophy } from 'react-icons/fa'
 import { GiBiceps } from 'react-icons/gi'
 import { MdReport } from 'react-icons/md'
 import { GiMuscleUp } from 'react-icons/gi'
@@ -106,7 +106,7 @@ export default function SideBar() {
         <Logo />
 
         <div className='flex flex-col h-full'>
-          <ul className='whitespace-pre  px-2.5 pt-6 flex flex-col font-medium overflow-x-hidden scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 md:h-[72%] h-[70%]'>
+          <ul className='whitespace-pre px-2.5 pt-6 flex flex-col font-medium overflow-x-hidden overflow-y-auto scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 flex-1'>
             {profile?.role === 2 && (
               <>
                 <li>
@@ -179,6 +179,16 @@ export default function SideBar() {
                     </NavLink>
                   </li>
                 </div>
+                <div className='border-t py-5 border-t-slate-300 '>
+                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lý Thử thách</small>
+                  <li>
+                    <NavLink to={'/challenges'} className='link-custom '>
+                      <FaTrophy size={23} className='min-w-max' />
+                      Thử thách
+                    </NavLink>
+                  </li>
+                </div>
+
               </>
             )}
             {profile?.role === 4 && (

@@ -327,14 +327,24 @@ export default function SportEventDetail() {
   }
 
 
+  // Helper: check if targetUnit is calorie-based
+  const isKcalUnit = (unit = '') => {
+    const u = unit.toLowerCase().trim()
+    return u === 'kcal' || u === 'calo' || u === 'calories' || u === 'cal'
+  }
+
   // Calculate progress percentage — with NaN/zero guards
+  // For kcal events: compare totalCalories vs per-person target
+  // For other events: compare totalProgress (native unit) vs per-person target
   const calculateProgress = () => {
     if (!userProgress || !event?.targetValue || event.targetValue <= 0) return 0
-    const total = userProgress.totalProgress || 0
     const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
     const perPersonTarget = event.targetValue / maxParticipants
     if (perPersonTarget <= 0) return 0
-    const pct = Math.round((total / perPersonTarget) * 100)
+    const myTotal = isKcalUnit(event.targetUnit)
+      ? (userProgress.totalCalories || 0)
+      : (userProgress.totalProgress || 0)
+    const pct = Math.round((myTotal / perPersonTarget) * 100)
     return isNaN(pct) ? 0 : Math.min(pct, 100)
   }
 
@@ -362,13 +372,18 @@ export default function SportEventDetail() {
     const maxP = event?.maxParticipants > 0 ? event.maxParticipants : 1
     const perPerson = event.targetValue / maxP
     if (perPerson <= 0) return 0
-    return Math.min(Math.round(((userProgress.totalProgress || 0) / perPerson) * 100), 100)
+    const myTotal = isKcalUnit(event.targetUnit)
+      ? (userProgress.totalCalories || 0)
+      : (userProgress.totalProgress || 0)
+    return Math.min(Math.round((myTotal / perPerson) * 100), 100)
   }, [userProgress, event])
 
   // Group (overall event) progress percentage
   const groupPercentForMilestone = useMemo(() => {
     if (!event?.targetValue || event.targetValue <= 0) return 0
-    const groupTotal = overallProgress?.totalGroupProgress || 0
+    const groupTotal = isKcalUnit(event.targetUnit)
+      ? (overallProgress?.totalCalories || 0)
+      : (overallProgress?.totalGroupProgress || 0)
     return Math.min(Math.round((groupTotal / event.targetValue) * 100), 100)
   }, [overallProgress, event])
 
@@ -861,10 +876,17 @@ export default function SportEventDetail() {
             {/* Progress Overview — Circular Rings */}
             {(() => {
               const effectiveTarget = event.targetValue || 0
-              const groupTotal = overallProgress.totalGroupProgress || 0
+              const kcal = isKcalUnit(event.targetUnit)
+              // For kcal events, group progress is sum of calories; otherwise sum of value (native unit)
+              const groupTotal = kcal
+                ? (overallProgress.totalCalories || 0)
+                : (overallProgress.totalGroupProgress || 0)
               const groupPercent = effectiveTarget > 0 ? Math.min(Math.round((groupTotal / effectiveTarget) * 100), 100) : 0
               const perPersonTarget = effectiveTarget > 0 ? effectiveTarget / (event.maxParticipants || 1) : 0
-              const myTotal = userProgress?.totalProgress || 0
+              // For kcal events, personal progress is totalCalories; otherwise totalProgress (native unit)
+              const myTotal = kcal
+                ? (userProgress?.totalCalories || 0)
+                : (userProgress?.totalProgress || 0)
               const myPercent = perPersonTarget > 0 ? Math.min(Math.round((myTotal / perPersonTarget) * 100), 100) : 0
               const hasTarget = effectiveTarget > 0
 

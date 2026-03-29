@@ -265,3 +265,20 @@ export const inviteFriendToEventController = async (req: Request, res: Response)
     })
   }
 }
+
+export const getPublicUserEventsController = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params
+    const { page, limit } = req.query
+
+    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 20)
+    return res.json({
+      result,
+      message: 'Get user joined events successfully'
+    })
+  } catch (error) {
+    return res.status(500).json({
+      message: (error as Error).message
+    })
+  }
+}

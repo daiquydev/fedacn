@@ -14,6 +14,9 @@ export interface IChallengeProgress {
 
     // Nutrition check-in
     proof_image: string
+    food_name: string
+    ai_review_valid: boolean | null
+    ai_review_reason: string
 
     // Outdoor activity data
     distance: number | null
@@ -54,6 +57,9 @@ const ChallengeProgressSchema = new mongoose.Schema<IChallengeProgress>(
 
         // Nutrition
         proof_image: { type: String, default: '' },
+        food_name: { type: String, default: '' },
+        ai_review_valid: { type: Boolean, default: null },
+        ai_review_reason: { type: String, default: '' },
 
         // Outdoor activity
         distance: { type: Number, default: null },

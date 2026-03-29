@@ -34,7 +34,8 @@ export default function ActivityDetailModal({
       ? getActivity(eventId, activityId)
       : getChallengeActivity(challengeId, activityId),
     enabled: !!activityId && !!sourceId,
-    staleTime: 30000
+    staleTime: 30000,
+    retry: false
   })
 
   const activity = data?.data?.result
@@ -191,7 +192,9 @@ export default function ActivityDetailModal({
               <div className='adm-stat-item'>
                 <div className='adm-stat-icon pace'>⚡</div>
                 <div>
-                  <p className='adm-stat-val'>{formatPace(activity.avgPace)}</p>
+                  <p className='adm-stat-val'>
+                    {activity.avgSpeed ? (activity.avgSpeed * 3.6).toFixed(2) : '0'} <small>km/h</small>
+                  </p>
                   <p className='adm-stat-lbl'>Vận tốc</p>
                 </div>
               </div>
@@ -200,7 +203,7 @@ export default function ActivityDetailModal({
                 <div className='adm-stat-icon speed'>🚀</div>
                 <div>
                   <p className='adm-stat-val'>
-                    {activity.maxSpeed ? `${(activity.maxSpeed * 3.6).toFixed(2)}` : '0'}
+                    {activity.maxSpeed ? `${(activity.maxSpeed * 3.6).toFixed(2)}` : '0'} <small>km/h</small>
                   </p>
                   <p className='adm-stat-lbl'>Vận tốc tối đa</p>
                 </div>

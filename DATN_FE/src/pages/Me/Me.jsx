@@ -1,6 +1,6 @@
 import { BiSolidPencil } from 'react-icons/bi'
 import { BsFillCameraFill } from 'react-icons/bs'
-import { FaCheckCircle } from 'react-icons/fa'
+import { FaCheckCircle, FaTrophy } from 'react-icons/fa'
 import { MdDashboard, MdArticle, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md'
 import { motion, AnimatePresence } from 'framer-motion'
 import useravatar from '../../assets/images/useravatar.jpg'
@@ -20,6 +20,7 @@ const MeOverview = lazy(() => import('./components/MeOverview/MeOverview'))
 const MePost = lazy(() => import('./components/MePost/MePost'))
 const MeSportEvents = lazy(() => import('./components/MeSportEvents/MeSportEvents'))
 const MeWorkouts = lazy(() => import('./components/MeWorkouts/MeWorkouts'))
+const MeChallenges = lazy(() => import('./components/MeChallenges/MeChallenges'))
 
 
 
@@ -27,7 +28,8 @@ const TABS = [
   { key: 'overview', label: 'Tổng quan', icon: MdDashboard },
   { key: 'posts', label: 'Bài viết', icon: MdArticle },
   { key: 'sports', label: 'Thể thao', icon: MdSportsSoccer },
-  { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter }
+  { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter },
+  { key: 'challenges', label: 'Thử thách', icon: FaTrophy }
 ]
 
 const fadeInUp = {
@@ -82,6 +84,8 @@ export default function Me() {
         return <MeSportEvents />
       case 'workouts':
         return <MeWorkouts />
+      case 'challenges':
+        return <MeChallenges isOwner={true} />
       default:
         return <MeOverview />
     }

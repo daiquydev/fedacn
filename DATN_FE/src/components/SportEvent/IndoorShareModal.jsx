@@ -322,7 +322,7 @@ function IndoorPreviewCardInModal({ session, event, progressPercent }) {
                             Ảnh chụp buổi học
                         </span>
                     </div>
-                    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: '140px' }}>
+                    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 aspect-video">
                         <img
                             src={firstScreenshot}
                             alt="Screenshot buổi học"

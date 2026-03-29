@@ -72,8 +72,19 @@ class Http {
         // Suppress toast for sport-event preview calls (404/410 = event deleted, handled gracefully by component)
         const isSportEventPreview = /\/sport-events\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
 
-        // Chỉ toast lỗi không phải 422, 401, và không phải sport-event preview lỗi
-        if (!isSportEventPreview && ![HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized].includes(status)) {
+        // Suppress toast for GET requests fetching a single resource that may not exist
+        // Components (ActivityPreviewCard, ActivityDetailModal, etc.) handle the empty state silently
+        const isGetRequest = error.config?.method?.toLowerCase() === 'get'
+        const isResourceFetch = isGetRequest && (
+          /\/sport-events\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}/i.test(url) ||
+          /\/challenges\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}/i.test(url) ||
+          /\/sport-events\/[a-f0-9]{24}\/video-sessions\/[a-f0-9]{24}/i.test(url) ||
+          /\/sport-events\/[a-f0-9]{24}\/sessions\/[a-f0-9]{24}/i.test(url)
+        )
+        const isSilentError = isSportEventPreview || isResourceFetch
+
+        // Chỉ toast lỗi không phải 422, 401, và không phải silent resource-fetch errors
+        if (!isSilentError && ![HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized].includes(status)) {
           const data = error.response?.data
           console.log(data)
           const message = data?.message || error.message

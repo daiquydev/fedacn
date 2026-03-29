@@ -29,6 +29,7 @@ const AdminCenter = lazy(() => import('./pages/AdminCenter'))
 const AdminSportCategory = lazy(() => import('./pages/AdminSportCategory/AdminSportCategory'))
 const AdminSportEvent = lazy(() => import('./pages/AdminSportEvent/AdminSportEvent'))
 const WorkoutManagement = lazy(() => import('./pages/WorkoutManagement/WorkoutManagement'))
+const AdminChallenge = lazy(() => import('./pages/AdminChallenge/AdminChallenge'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -310,6 +311,16 @@ export default function useRouteElement() {
                 <MainLayout>
                   <Suspense>
                     <WorkoutManagement mode='exercises' />
+                  </Suspense>
+                </MainLayout>
+              )
+            },
+            {
+              path: '/challenges',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <AdminChallenge />
                   </Suspense>
                 </MainLayout>
               )

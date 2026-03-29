@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FaTimes, FaDumbbell } from 'react-icons/fa'
 
@@ -12,12 +12,23 @@ const WORKOUT_TYPES = [
 ]
 
 export default function FitnessCheckinModal({ challenge, onClose, onSubmit, isLoading }) {
+  // challenge._id and challenge.title are passed from ChallengeDetail
   const navigate = useNavigate()
-  const [mode, setMode] = useState('choose') // 'choose' | 'manual'
   const [workoutType, setWorkoutType] = useState('cardio')
   const [durationMin, setDurationMin] = useState('')
   const [calories, setCalories] = useState('')
   const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    onClose()
+    navigate('/training', {
+      state: {
+        challengeId: challenge?._id,
+        challengeTitle: challenge?.title,
+        referrer: 'challenge'
+      }
+    })
+  }, [])
 
   const handleSubmit = () => {
     if (!durationMin || Number(durationMin) <= 0) {
@@ -25,74 +36,13 @@ export default function FitnessCheckinModal({ challenge, onClose, onSubmit, isLo
     }
     const selected = WORKOUT_TYPES.find(w => w.key === workoutType)
     const data = {
-      value: 1, // 1 workout session = 1 unit
+      value: 1,
       notes: `${selected?.label || 'Tập luyện'}${notes ? ': ' + notes : ''}`,
       duration_minutes: Number(durationMin),
       calories: calories ? Number(calories) : undefined,
       source: 'workout_session'
     }
     onSubmit(data)
-  }
-
-  const handleGoTraining = () => {
-    onClose()
-    navigate('/training')
-  }
-
-  // Step 1: Choose mode (Training flow or Manual)
-  if (mode === 'choose') {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4 flex items-center justify-between">
-            <h3 className="font-bold text-white text-lg flex items-center gap-2">
-              <FaDumbbell /> Ghi nhận buổi tập
-            </h3>
-            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/20 text-white transition"><FaTimes /></button>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">Chọn cách ghi nhận buổi tập</p>
-
-            {/* Training Flow Option */}
-            <button
-              onClick={handleGoTraining}
-              className="w-full p-5 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 bg-purple-50 dark:bg-purple-900/20 transition-all group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-2xl text-white shadow-lg">
-                  <FaDumbbell />
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-bold text-gray-800 dark:text-white text-base group-hover:text-purple-600 transition">🏋️ Trang Tập Luyện</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Mở trang tập luyện với đầy đủ bài tập, set/rep, timer.</p>
-                </div>
-              </div>
-              <div className="mt-3 text-[11px] text-purple-600 dark:text-purple-400 font-semibold flex items-center gap-1 justify-center">
-                Sử dụng toàn bộ chức năng Tập Luyện →
-              </div>
-            </button>
-
-            {/* Manual Input Option */}
-            <button
-              onClick={() => setMode('manual')}
-              className="w-full p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-gray-400 bg-gray-50 dark:bg-gray-700/50 transition-all group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-2xl text-white shadow-lg">
-                  ✍️
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-bold text-gray-800 dark:text-white text-base group-hover:text-gray-600 transition">Nhập nhanh</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Nhập thời gian và calo thủ công.</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   // Step 2: Manual input form

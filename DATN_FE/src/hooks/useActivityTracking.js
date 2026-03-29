@@ -126,24 +126,27 @@ export default function useActivityTracking() {
                     const dist = haversineDistance(lastPos.lat, lastPos.lng, latitude, longitude)
                     const timeDiff = (point.timestamp - lastPos.timestamp) / 1000
 
-                    // GPS Anti-cheat: flag teleport (>500m jump)
+                    // GPS Anti-cheat: flag teleport (>500m jump) — skip point entirely (do NOT add to route)
                     if (dist > 500) {
                         setGpsFlags(prev => [...prev, {
                             type: 'teleport', distance: Math.round(dist),
                             timestamp: Date.now(), lat: latitude, lng: longitude
                         }])
-                        // Skip this point entirely
+                        // Update lastPos so next point calculates from here,
+                        // but do NOT add this point to gpsRoute (avoids drawing abnormal lines)
                         lastPositionRef.current = point
-                        setGpsPoints((prev) => [...prev, point])
                         return
                     }
 
-                    // GPS Anti-cheat: flag impossible speed (>50km/h = 13.9m/s)
+                    // GPS Anti-cheat: flag impossible speed (>50km/h = 13.9m/s) — skip point entirely
                     if (timeDiff > 0 && dist / timeDiff > 13.9) {
                         setGpsFlags(prev => [...prev, {
                             type: 'speed', speed: Math.round(dist / timeDiff * 3.6),
                             timestamp: Date.now()
                         }])
+                        // Do NOT count distance or add to route for this flagged point
+                        lastPositionRef.current = point
+                        return
                     }
 
                     // Filter noise: ignore movements < 3m or > 100m (GPS jump)
@@ -184,6 +187,8 @@ export default function useActivityTracking() {
                 }
 
                 lastPositionRef.current = point
+
+                // Only add valid (non-flagged) points to gpsRoute
                 setGpsPoints((prev) => [...prev, point])
             },
             (error) => {

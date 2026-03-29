@@ -179,3 +179,28 @@ export const deleteProgressController = async (req: Request, res: Response) => {
 
     return res.json({ message: 'Đã xóa hoạt động thành công', result })
 }
+
+export const getPublicUserChallengesController = async (req: Request, res: Response) => {
+    const { userId } = req.params
+    const { page, limit } = req.query
+
+    const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20)
+
+    return res.json({ message: 'Lấy thử thách người dùng thành công', result })
+}
+
+export const getFeedController = async (req: Request, res: Response) => {
+    const { scope, challenge_type, search, page, limit } = req.query
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+
+    const result = await challengeService.getChallengeFeed({
+        scope: (scope as 'public' | 'friends' | 'mine') || 'public',
+        userId,
+        challenge_type: challenge_type as string,
+        search: search as string,
+        page: Number(page) || 1,
+        limit: Number(limit) || 9
+    })
+
+    return res.json({ message: 'Lấy feed thử thách thành công', result })
+}

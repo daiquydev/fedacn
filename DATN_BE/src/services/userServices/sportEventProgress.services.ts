@@ -1,4 +1,5 @@
 import SportEventProgressModel, { SportEventProgress } from '~/models/schemas/sportEventProgress.schema'
+import SportEventVideoSessionModel from '~/models/schemas/sportEventVideoSession.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import { Types } from 'mongoose'
 
@@ -55,81 +56,171 @@ class SportEventProgressService {
 
   // Get user's progress history for an event
   async getUserProgressService(eventId: string, userId: string) {
+    const event = await SportEventModel.findById(eventId)
+    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const isKcal = this.isKcalUnit(event?.targetUnit || '')
+    const isIndoor = event?.eventType === 'Trong nhà'
+
+    const dateFilter = startDate ? { date: { $gte: startDate } } : {}
+
     const progressHistory = await SportEventProgressModel.find({
       eventId,
       userId,
-      is_deleted: { $ne: true }
+      is_deleted: { $ne: true },
+      ...dateFilter
     })
       .sort({ date: -1 })
       .exec()
 
-    // Calculate total progress
     const totalProgress = progressHistory.reduce((sum, entry) => sum + entry.value, 0)
+    const totalDistance = progressHistory.reduce((sum, entry) => sum + (entry.distance || 0), 0)
+
+    let totalCalories = progressHistory.reduce((sum, entry) => sum + (entry.calories || 0), 0)
+
+    // For indoor kcal events: override totalCalories from VideoSession (single source of truth)
+    if (isIndoor && isKcal) {
+      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const vsAgg = await SportEventVideoSessionModel.aggregate([
+        {
+          $match: {
+            eventId: new Types.ObjectId(eventId),
+            userId: new Types.ObjectId(userId),
+            status: 'ended',
+            is_deleted: { $ne: true },
+            $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }],
+            ...vsDateMatch
+          }
+        },
+        { $group: { _id: null, totalCalories: { $sum: '$caloriesBurned' } } }
+      ])
+      totalCalories = vsAgg[0]?.totalCalories || 0
+    }
 
     return {
       progressHistory,
       totalProgress,
+      totalDistance,
+      totalCalories,
       totalEntries: progressHistory.length
     }
   }
 
+  // Determine whether a targetUnit is calorie-based
+  private isKcalUnit(targetUnit: string): boolean {
+    const u = (targetUnit || '').toLowerCase().trim()
+    return u === 'kcal' || u === 'calo' || u === 'calories' || u === 'cal'
+  }
+
   // Get leaderboard for an event
   async getLeaderboardService(eventId: string, sortBy: string = 'totalProgress') {
-    // Aggregate progress by user
-    const leaderboardData = await SportEventProgressModel.aggregate([
-      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true } } },
-      {
-        $group: {
-          _id: '$userId',
-          totalProgress: { $sum: '$value' },
-          totalDistance: { $sum: '$distance' },
-          totalCalories: { $sum: '$calories' },
-          entriesCount: { $sum: 1 },
-          lastUpdate: { $max: '$date' }
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'userInfo'
-        }
-      },
-      { $unwind: '$userInfo' },
-      {
-        $project: {
-          userId: '$_id',
-          name: '$userInfo.name',
-          avatar: '$userInfo.avatar',
-          totalProgress: 1,
-          totalDistance: 1,
-          totalCalories: 1,
-          entriesCount: 1,
-          lastUpdate: 1
-        }
-      }
-    ])
+    const event = await SportEventModel.findById(eventId)
+    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const isKcal = this.isKcalUnit(event?.targetUnit || '')
+    const isIndoor = event?.eventType === 'Trong nhà'
 
-    // Sort based on sortBy parameter
-    if (sortBy === 'totalDistance') {
-      leaderboardData.sort((a, b) => (b.totalDistance || 0) - (a.totalDistance || 0))
-    } else if (sortBy === 'totalCalories') {
+    let leaderboardData: any[]
+
+    if (isIndoor && isKcal) {
+      // ── Indoor kcal events: aggregate directly from VideoSession table
+      // This is the SAME source IndoorEventProgress uses, ensuring consistency
+      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      leaderboardData = await SportEventVideoSessionModel.aggregate([
+        {
+          $match: {
+            eventId: new Types.ObjectId(eventId),
+            status: 'ended',
+            is_deleted: { $ne: true },
+            $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }],
+            ...vsDateMatch
+          }
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalCalories: { $sum: '$caloriesBurned' },
+            totalActiveSeconds: { $sum: '$activeSeconds' },
+            entriesCount: { $sum: 1 },
+            lastUpdate: { $max: '$joinedAt' }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'userInfo'
+          }
+        },
+        { $unwind: '$userInfo' },
+        {
+          $project: {
+            userId: '$_id',
+            name: '$userInfo.name',
+            avatar: '$userInfo.avatar',
+            totalProgress: '$totalCalories',
+            totalCalories: 1,
+            totalDistance: { $literal: 0 },
+            entriesCount: 1,
+            lastUpdate: 1
+          }
+        }
+      ])
       leaderboardData.sort((a, b) => (b.totalCalories || 0) - (a.totalCalories || 0))
     } else {
-      leaderboardData.sort((a, b) => b.totalProgress - a.totalProgress)
+      // ── Outdoor events (or non-kcal events): use SportEventProgress table
+      const dateMatch = startDate ? { date: { $gte: startDate } } : {}
+      leaderboardData = await SportEventProgressModel.aggregate([
+        { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
+        {
+          $group: {
+            _id: '$userId',
+            totalProgress: { $sum: '$value' },
+            totalDistance: { $sum: '$distance' },
+            totalCalories: { $sum: '$calories' },
+            entriesCount: { $sum: 1 },
+            lastUpdate: { $max: '$date' }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'userInfo'
+          }
+        },
+        { $unwind: '$userInfo' },
+        {
+          $project: {
+            userId: '$_id',
+            name: '$userInfo.name',
+            avatar: '$userInfo.avatar',
+            totalProgress: 1,
+            totalDistance: 1,
+            totalCalories: 1,
+            entriesCount: 1,
+            lastUpdate: 1
+          }
+        }
+      ])
+      // Sort: for outdoor events, always by totalProgress (value = correct targetUnit)
+      if (sortBy === 'totalDistance') {
+        leaderboardData.sort((a, b) => (b.totalDistance || 0) - (a.totalDistance || 0))
+      } else if (sortBy === 'totalCalories') {
+        leaderboardData.sort((a, b) => (b.totalCalories || 0) - (a.totalCalories || 0))
+      } else {
+        leaderboardData.sort((a, b) => b.totalProgress - a.totalProgress)
+      }
     }
 
-    // Add rank
+    // Add rank and displayValue
     const leaderboard = leaderboardData.map((entry, index) => ({
       rank: index + 1,
-      ...entry
+      ...entry,
+      displayValue: entry.totalProgress  // value is always saved in correct targetUnit
     }))
 
-    return {
-      leaderboard,
-      totalParticipants: leaderboard.length
-    }
+    return { leaderboard, totalParticipants: leaderboard.length }
   }
 
   // Get detailed participant list with progress
@@ -143,66 +234,100 @@ class SportEventProgressService {
       throw new Error('Event not found')
     }
 
-    // Get progress data for all participants
-    const progressData = await SportEventProgressModel.aggregate([
-      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true } } },
-      {
-        $group: {
-          _id: '$userId',
-          totalProgress: { $sum: '$value' },
-          totalDistance: { $sum: '$distance' },
-          totalCalories: { $sum: '$calories' },
-          lastUpdate: { $max: '$date' }
+    const isKcal = this.isKcalUnit(event.targetUnit || '')
+    const isIndoor = event.eventType === 'Trong nhà'
+    const perPersonTarget = (event.targetValue || 0) / Math.max(event.maxParticipants || 1, 1)
+    const startDate = event?.startDate ? new Date(event.startDate) : null
+
+    // Build a userId → displayValue map
+    const displayMap = new Map<string, { displayValue: number; totalDistance: number; totalCalories: number; lastUpdate?: Date }>()
+
+    if (isIndoor && isKcal) {
+      // ── Indoor kcal: aggregate from VideoSession table (same source as IndoorEventProgress)
+      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const vsData = await SportEventVideoSessionModel.aggregate([
+        {
+          $match: {
+            eventId: new Types.ObjectId(eventId),
+            status: 'ended',
+            is_deleted: { $ne: true },
+            $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }],
+            ...vsDateMatch
+          }
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalCalories: { $sum: '$caloriesBurned' },
+            lastUpdate: { $max: '$joinedAt' }
+          }
         }
-      }
-    ])
+      ])
+      vsData.forEach((item) => {
+        displayMap.set(item._id.toString(), {
+          displayValue: item.totalCalories || 0,
+          totalDistance: 0,
+          totalCalories: item.totalCalories || 0,
+          lastUpdate: item.lastUpdate
+        })
+      })
+    } else {
+      // ── Outdoor / non-kcal: aggregate from SportEventProgress table
+      const dateMatch = startDate ? { date: { $gte: startDate } } : {}
+      const progressData = await SportEventProgressModel.aggregate([
+        { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
+        {
+          $group: {
+            _id: '$userId',
+            totalProgress: { $sum: '$value' },
+            totalDistance: { $sum: '$distance' },
+            totalCalories: { $sum: '$calories' },
+            lastUpdate: { $max: '$date' }
+          }
+        }
+      ])
+      progressData.forEach((item) => {
+        // For outdoor events: value is always saved in targetUnit (km, phút, kcal, etc.)
+        // So totalProgress ($sum of value) is always the correct display metric
+        displayMap.set(item._id.toString(), {
+          displayValue: item.totalProgress,
+          totalDistance: item.totalDistance || 0,
+          totalCalories: item.totalCalories || 0,
+          lastUpdate: item.lastUpdate
+        })
+      })
+    }
 
-    // Create a map for quick lookup
-    const progressMap = new Map()
-    progressData.forEach((item) => {
-      progressMap.set(item._id.toString(), item)
-    })
-
-    // Get event target for percentage calculation
-    const targetValue = event.targetValue || 100
-
-    // Combine participant data with progress
+    // Combine participant list with display values
     let participants = (event.participants_ids as any[])?.map((user) => {
-      const progress = progressMap.get(user._id.toString()) || {
-        totalProgress: 0,
-        totalDistance: 0,
-        totalCalories: 0
-      }
-
-      const progressPercentage = Math.round((progress.totalProgress / targetValue) * 100)
+      const data = displayMap.get(user._id.toString()) || { displayValue: 0, totalDistance: 0, totalCalories: 0 }
+      const progressPercentage = perPersonTarget > 0
+        ? Math.min(Math.round((data.displayValue / perPersonTarget) * 100), 100)
+        : 0
 
       return {
         userId: user._id,
         name: user.name,
         avatar: user.avatar,
-        totalProgress: progress.totalProgress,
-        totalDistance: progress.totalDistance || 0,
-        totalCalories: progress.totalCalories || 0,
-        progressPercentage: Math.min(progressPercentage, 100),
-        lastUpdate: progress.lastUpdate
+        totalProgress: data.displayValue,   // always the value matching targetUnit
+        totalDistance: data.totalDistance,
+        totalCalories: data.totalCalories,
+        progressPercentage,
+        lastUpdate: data.lastUpdate
       }
     }) || []
 
-    // Apply search filter
+    // Search
     if (search) {
       participants = participants.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     }
 
-    // Sort by total progress (desc)
+    // Sort by display value (desc)
     participants.sort((a, b) => b.totalProgress - a.totalProgress)
 
     // Add rank
-    participants = participants.map((p, index) => ({
-      rank: index + 1,
-      ...p
-    }))
+    participants = participants.map((p, index) => ({ rank: index + 1, ...p }))
 
-    // Apply pagination
     const skip = (page - 1) * limit
     const paginatedParticipants = participants.slice(skip, skip + limit)
 
@@ -248,8 +373,51 @@ class SportEventProgressService {
 
   // Get overall event progress (sum of all participants)
   async getEventOverallProgressService(eventId: string) {
+    const event = await SportEventModel.findById(eventId)
+    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const isKcal = this.isKcalUnit(event?.targetUnit || '')
+    const isIndoor = event?.eventType === 'Trong nhà'
+
+    if (isIndoor && isKcal) {
+      // Indoor kcal: aggregate from VideoSession (same source as IndoorEventProgress)
+      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const result = await SportEventVideoSessionModel.aggregate([
+        {
+          $match: {
+            eventId: new Types.ObjectId(eventId),
+            status: 'ended',
+            is_deleted: { $ne: true },
+            $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }],
+            ...vsDateMatch
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalGroupProgress: { $sum: '$caloriesBurned' },
+            totalCalories: { $sum: '$caloriesBurned' },
+            participantIds: { $addToSet: '$userId' },
+            entriesCount: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            totalGroupProgress: 1,
+            totalCalories: 1,
+            totalDistance: { $literal: 0 },
+            participantCount: { $size: '$participantIds' },
+            entriesCount: 1
+          }
+        }
+      ])
+      return result[0] || { totalGroupProgress: 0, totalCalories: 0, totalDistance: 0, participantCount: 0, entriesCount: 0 }
+    }
+
+    // Outdoor / non-kcal: use SportEventProgress table
+    const dateMatch = startDate ? { date: { $gte: startDate } } : {}
     const result = await SportEventProgressModel.aggregate([
-      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true } } },
+      { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
       {
         $group: {
           _id: null,

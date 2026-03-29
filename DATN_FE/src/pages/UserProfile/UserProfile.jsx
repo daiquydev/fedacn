@@ -3,7 +3,7 @@ import { useContext, useMemo, useState, useEffect, lazy, Suspense } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FaCheckCircle, FaUserPlus, FaUserCheck } from 'react-icons/fa'
+import { FaCheckCircle, FaUserPlus, FaUserCheck, FaTrophy } from 'react-icons/fa'
 import { MdArticle, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md'
 import { HiClock } from 'react-icons/hi'
 import toast from 'react-hot-toast'
@@ -21,12 +21,14 @@ import Loading from '../../components/GlobalComponents/Loading'
 const UserPost = lazy(() => import('./components/UserPost/UserPost'))
 const MeSportEvents = lazy(() => import('../Me/components/MeSportEvents/MeSportEvents'))
 const MeWorkouts = lazy(() => import('../Me/components/MeWorkouts/MeWorkouts'))
+const MeChallenges = lazy(() => import('../Me/components/MeChallenges/MeChallenges'))
 
 
 const TABS = [
   { key: 'posts', label: 'Bài viết', icon: MdArticle },
   { key: 'sports', label: 'Thể thao', icon: MdSportsSoccer },
-  { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter }
+  { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter },
+  { key: 'challenges', label: 'Thử thách', icon: FaTrophy }
 ]
 
 const fadeInUp = {
@@ -122,9 +124,11 @@ export default function UserProfile() {
       case 'posts':
         return <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />
       case 'sports':
-        return <MeSportEvents />
+        return <MeSportEvents userId={id} />
       case 'workouts':
         return <MeWorkouts isOwner={false} />
+      case 'challenges':
+        return <MeChallenges isOwner={false} userId={id} />
       default:
         return <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />
     }

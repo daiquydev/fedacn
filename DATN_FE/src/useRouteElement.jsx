@@ -98,6 +98,7 @@ const Explore = lazy(() => import('./pages/Explore'))
 const PublicMealPlanDetail = lazy(() => import('./pages/Explore/PublicMealPlanDetail'))
 const PersonalDashboard = lazy(() => import('./pages/PersonalDashboard/PersonalDashboard'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
+const AdminChallengeManager = lazy(() => import('./pages/AdminPanel/AdminChallengeManager'))
 
 export default function useRouteElement() {
   function ProtectedRoute() {
@@ -819,6 +820,16 @@ export default function useRouteElement() {
                 <MainLayout>
                   <Suspense>
                     <AdminPanel />
+                  </Suspense>
+                </MainLayout>
+              )
+            },
+            {
+              path: '/admin/challenges',
+              element: (
+                <MainLayout>
+                  <Suspense>
+                    <AdminChallengeManager />
                   </Suspense>
                 </MainLayout>
               )

@@ -3,11 +3,11 @@ import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, Cell
+    Tooltip, ResponsiveContainer, Cell, LabelList
 } from 'recharts'
 import {
     FaFire, FaClock, FaTrophy, FaVideo, FaPlay,
-    FaHistory, FaCheckCircle, FaDotCircle, FaShareAlt, FaTrash
+    FaHistory, FaCheckCircle, FaDotCircle, FaShareAlt, FaTrash, FaChartLine
 } from 'react-icons/fa'
 import { MdVideocam } from 'react-icons/md'
 import moment from 'moment'
@@ -100,11 +100,15 @@ export default function IndoorEventProgress({ event, userProgress }) {
         enabled: !!eventId && !!event?.isJoined
     })
     const videoSessions = useMemo(() => vsData?.data?.result || [], [vsData])
-    // Lọc bỏ "abandoned sessions" (buổi bị force-end do reload/StrictMode, totalSeconds = 0)
-    const endedSessions = useMemo(
-        () => videoSessions.filter(s => s.status === 'ended' && (s.totalSeconds > 0 || s.activeSeconds > 0)),
-        [videoSessions]
-    )
+    // Lọc bỏ "abandoned sessions" + chỉ tính từ startDate hiện tại của sự kiện (fallback)
+    const endedSessions = useMemo(() => {
+        const eventStart = event?.startDate ? moment(event.startDate).startOf('day') : null
+        return videoSessions.filter(s =>
+            s.status === 'ended' &&
+            (s.totalSeconds > 0 || s.activeSeconds > 0) &&
+            (!eventStart || moment(s.joinedAt).isSameOrAfter(eventStart))
+        )
+    }, [videoSessions, event?.startDate])
 
     // ── Window calculation for event
     const eventStartMoment = useMemo(() => moment(event?.startDate), [event?.startDate])
@@ -293,38 +297,63 @@ export default function IndoorEventProgress({ event, userProgress }) {
             return arr
         }
 
-        const getDays = () => {
-            switch (timeFilter) {
-                case '7d': return 7
-                case '1m': return 30
-                case '6m': return 180
-                default: return 365
-            }
+        // 7d → 7 cột theo ngày
+        if (timeFilter === '7d') {
+            const arr = Array.from({ length: 7 }, (_, i) => {
+                const d = moment().subtract(6 - i, 'days')
+                return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0, calories: 0, minutes: 0, sessions: 0 }
+            })
+            endedSessions.forEach(vs => {
+                const d = moment(vs.joinedAt).format('YYYY-MM-DD')
+                const slot = arr.find(x => x.fullDate === d)
+                if (slot) {
+                    slot.value += Math.round((vs[field] || 0) / divisor)
+                    slot.calories += (vs.caloriesBurned || 0)
+                    slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
+                    slot.sessions += 1
+                }
+            })
+            return arr
         }
 
-        const days = getDays()
+        // all → group by tháng (≤12 cột)
+        if (timeFilter === 'all') {
+            const monthMap = {}
+            endedSessions.forEach(vs => {
+                const key = moment(vs.joinedAt).format('MM/YY')
+                if (!monthMap[key]) monthMap[key] = { date: key, fullDate: moment(vs.joinedAt).format('YYYY-MM'), value: 0, calories: 0, minutes: 0, sessions: 0 }
+                monthMap[key].value += Math.round((vs[field] || 0) / divisor)
+                monthMap[key].calories += (vs.caloriesBurned || 0)
+                monthMap[key].minutes += Math.round((vs.activeSeconds || 0) / 60)
+                monthMap[key].sessions += 1
+            })
+            return Object.values(monthMap).slice(-12)
+        }
 
-        const arr = Array.from({ length: days }, (_, i) => {
-            const d = moment().subtract(days - 1 - i, 'days')
-            return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0, calories: 0, minutes: 0, sessions: 0 }
-        })
-
+        // 1m → 5 tuần, 6m → 26 tuần
+        const numWeeks = timeFilter === '6m' ? 26 : 5
+        const weeks = []
+        for (let i = numWeeks - 1; i >= 0; i--) {
+            const weekStart = moment().subtract(i * 7 + 6, 'days')
+            const weekEnd = moment().subtract(i * 7, 'days')
+            weeks.push({
+                date: weekStart.format('DD/MM'),
+                fullDate: weekStart.format('YYYY-MM-DD'),
+                weekEnd: weekEnd.format('YYYY-MM-DD'),
+                value: 0, calories: 0, minutes: 0, sessions: 0
+            })
+        }
         endedSessions.forEach(vs => {
-            const d = moment(vs.joinedAt).format('YYYY-MM-DD')
-            const slot = arr.find(x => x.fullDate === d)
-            if (slot) {
-                slot.value += Math.round((vs[field] || 0) / divisor)
-                slot.calories += (vs.caloriesBurned || 0)
-                slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
-                slot.sessions += 1
+            const vsDate = moment(vs.joinedAt)
+            const week = weeks.find(w => vsDate.isBetween(moment(w.fullDate), moment(w.weekEnd), 'day', '[]'))
+            if (week) {
+                week.value += Math.round((vs[field] || 0) / divisor)
+                week.calories += (vs.caloriesBurned || 0)
+                week.minutes += Math.round((vs.activeSeconds || 0) / 60)
+                week.sessions += 1
             }
         })
-
-        if (arr.length > 30) {
-            const step = Math.ceil(arr.length / 30)
-            return arr.filter((_, i) => i % step === 0)
-        }
-        return arr
+        return weeks
     }, [endedSessions, timeFilter, activeMetric, customRange])
 
     const handleCallEnded = useCallback((summary) => {
@@ -591,32 +620,81 @@ export default function IndoorEventProgress({ event, userProgress }) {
 
                 {/* Chart */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-                                Lịch sử{' '}
-                                <span className="text-sm font-normal text-gray-400">
-                                    ({metricUnit})
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div className="px-6 pt-6 pb-2 flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg"
+                                    style={{ background: `linear-gradient(135deg, ${barColor}, ${barColor}99)` }}>
+                                    <FaChartLine />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                                        Lịch sử
+                                        <span className="text-sm font-normal text-gray-400 ml-1">({metricUnit})</span>
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        {timeFilter === '24h'
+                                            ? 'Hiển thị từng buổi tham gia trong 24 giờ qua'
+                                            : 'Nhấn vào cột để xem chi tiết ngày đó'}
+                                    </p>
+                                </div>
+                            </div>
+                            {/* Legend dots */}
+                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: barColor }} />
+                                    Có dữ liệu
                                 </span>
-                            </h3>
-                            {timeFilter === '24h' && <p className="text-xs text-gray-400 mt-0.5">Hiển thị từng buổi tham gia trong 24 giờ qua</p>}
+                                <span className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-600" />
+                                    Không có
+                                </span>
+                            </div>
                         </div>
 
-                        <div className="h-64 w-full">
+                        <div className="px-6 pb-6 pt-2">
+                            <div className="h-72 w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <BarChart 
+                                    data={chartData}
+                                    margin={{ top: 28, right: 8, left: -8, bottom: 4 }}
+                                    barCategoryGap="20%"
+                                >
+                                    <defs>
+                                        <linearGradient id="barGradientBlue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#06B6D4" stopOpacity={0.85} />
+                                        </linearGradient>
+                                        <linearGradient id="barGradientOrange" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#F97316" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#FBBF24" stopOpacity={0.85} />
+                                        </linearGradient>
+                                        <linearGradient id="barGradientHighlight" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#8B5CF6" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#A78BFA" stopOpacity={0.9} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#E5E7EB" strokeOpacity={0.6} />
                                     <XAxis
                                         dataKey="date"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: '#6B7280', fontSize: 11 }}
-                                        dy={10}
+                                        tick={{ fill: '#9CA3AF', fontSize: 11, fontWeight: 500 }}
+                                        dy={8}
                                         interval={chartData.length > 10 ? Math.floor(chartData.length / 7) : 0}
                                     />
-                                    <YAxis hide />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                                        width={40}
+                                        tickFormatter={(v) => {
+                                            if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
+                                            return v % 1 === 0 ? v : v.toFixed(1)
+                                        }}
+                                    />
                                     <Tooltip
-                                        cursor={{ fill: 'rgba(229, 231, 235, 0.4)' }}
+                                        cursor={{ fill: 'rgba(99, 102, 241, 0.06)', radius: 8 }}
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length) {
                                                 const data = payload[0].payload
@@ -642,7 +720,9 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                             return null
                                         }}
                                     />
-                                    <Bar dataKey="value" radius={[4, 4, 0, 0]}
+                                    <Bar 
+                                        dataKey="value" 
+                                        radius={[6, 6, 0, 0]}
                                         onClick={d => {
                                             if (d?.fullDate) {
                                                 setHighlightDate(d.fullDate)
@@ -650,18 +730,40 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                             }
                                         }}
                                         style={{ cursor: 'pointer' }}
+                                        animationDuration={800}
+                                        animationEasing="ease-out"
                                     >
-                                        {chartData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.fullDate === highlightDate
-                                                    ? '#8B5CF6'
-                                                    : entry.value > 0 ? barColor : '#F3F4F6'}
-                                            />
-                                        ))}
+                                        <LabelList
+                                            dataKey="value"
+                                            position="top"
+                                            style={{ fontSize: 10, fontWeight: 600, fill: '#6B7280' }}
+                                            formatter={(v) => {
+                                                if (!v || v <= 0) return ''
+                                                if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
+                                                return v % 1 === 0 ? v : v.toFixed(1)
+                                            }}
+                                            offset={6}
+                                        />
+                                        {chartData.map((entry, index) => {
+                                            const gradientMap = {
+                                                minutes: 'url(#barGradientBlue)',
+                                                calories: 'url(#barGradientOrange)'
+                                            }
+                                            const isHighlighted = entry.fullDate === highlightDate
+                                            const isEmpty = !entry.value || entry.value <= 0
+                                            let fill = isEmpty ? '#F3F4F6' : (gradientMap[activeMetric] || 'url(#barGradientBlue)')
+                                            if (isHighlighted) fill = 'url(#barGradientHighlight)'
+                                            return (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={fill}
+                                                />
+                                            )
+                                        })}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
+                        </div>
                         </div>
                     </div>
                 </div>

@@ -148,7 +148,13 @@ export default function SportEventProgress({
     enabled: !!id && event?.eventType === 'Ngoài trời'
   })
   const activitiesResult = activitiesData?.data?.result
-  const completedActivities = activitiesResult?.activities?.filter(a => a.status === 'completed') || []
+  // Chỉ tính activities từ startDate hiện tại của sự kiện (fallback server-side filter)
+  const completedActivities = useMemo(() => {
+    const all = activitiesResult?.activities?.filter(a => a.status === 'completed') || []
+    const eventStart = event?.startDate ? moment(event.startDate).startOf('day') : null
+    if (!eventStart) return all
+    return all.filter(a => moment(a.startTime).isSameOrAfter(eventStart))
+  }, [activitiesResult, event?.startDate])
 
   // Share activity to community — open modal inline
   const handleShare = (e, activity) => {
@@ -267,6 +273,40 @@ export default function SportEventProgress({
       const divisor = activeMetric === 'distance' ? 1000 : 1
       const precision = activeMetric === 'distance' ? 2 : 0
 
+      // 24h → show per-activity bars
+      if (timeFilter === '24h' && !customRange) {
+        const cutoff = moment().subtract(24, 'hours')
+        const recentActivities = completedActivities
+          .filter(a => moment(a.startTime).isAfter(cutoff))
+          .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
+          
+        return recentActivities.map(a => {
+          const duration = a.totalDuration || 0
+          const distance = a.totalDistance / 1000
+          const avgSpeed = duration > 0 ? Number((distance / (duration / 3600)).toFixed(2)) : 0
+          
+          let value = 0
+          switch (activeMetric) {
+            case 'distance': value = Number(distance.toFixed(2)); break
+            case 'calories': value = Math.round(a.calories); break
+            case 'sessions': value = 1; break
+            case 'speed': value = avgSpeed; break
+            default: value = 0
+          }
+
+          return {
+            date: moment(a.startTime).format('HH:mm'),
+            fullDate: moment(a.startTime).format('YYYY-MM-DD'),
+            value: value,
+            distance: Number(distance.toFixed(2)),
+            calories: Math.round(a.calories),
+            sessions: 1,
+            avgSpeed: avgSpeed,
+            duration: duration
+          }
+        })
+      }
+
       // Group by date with all 4 metrics
       const dayMap = {}
       completedActivities.forEach(a => {
@@ -316,35 +356,81 @@ export default function SportEventProgress({
         }).filter((_, i, arr) => arr.length <= 30 || i % Math.ceil(arr.length / 30) === 0)
       }
 
-      // Apply time filter
-      const now = moment()
-      let days = 7
-      switch (timeFilter) {
-        case '24h': days = 1; break
-        case '7d': days = 7; break
-        case '1m': days = 30; break
-        case '6m': days = 180; break
-        case '1y': days = 365; break
-        default: days = 365
+      // 7d → 7 cột theo ngày
+      if (timeFilter === '7d') {
+        return Array.from({ length: 7 }, (_, i) => {
+          const d = moment().subtract(6 - i, 'days')
+          const fd = d.format('YYYY-MM-DD')
+          return {
+            date: d.format('DD/MM'),
+            fullDate: fd,
+            value: getValue(fd),
+            distance: dayMap[fd]?.distance || 0,
+            calories: dayMap[fd]?.calories || 0,
+            sessions: dayMap[fd]?.sessions || 0,
+            avgSpeed: dayMap[fd]?.avgSpeed || 0
+          }
+        })
       }
 
-      return Array.from({ length: timeFilter === 'all' ? 365 : days }, (_, i) => {
-        const d = moment().subtract(days - 1 - i, 'days')
-        const fd = d.format('YYYY-MM-DD')
-        return {
-          date: d.format('DD/MM'),
-          fullDate: fd,
-          value: getValue(fd),
-          distance: dayMap[fd]?.distance || 0,
-          calories: dayMap[fd]?.calories || 0,
-          sessions: dayMap[fd]?.sessions || 0,
-          avgSpeed: dayMap[fd]?.avgSpeed || 0
+      // all → group by tháng (≤12 cột)
+      if (timeFilter === 'all') {
+        const monthMap = {}
+        Object.keys(dayMap).forEach(fd => {
+          const key = moment(fd).format('MM/YY')
+          if (!monthMap[key]) monthMap[key] = { date: key, fullDate: moment(fd).format('YYYY-MM'), distance: 0, calories: 0, sessions: 0, duration: 0 }
+          monthMap[key].distance += dayMap[fd].distance
+          monthMap[key].calories += dayMap[fd].calories
+          monthMap[key].sessions += dayMap[fd].sessions
+          monthMap[key].duration += dayMap[fd].duration
+        })
+        return Object.values(monthMap).map(m => {
+          const avgSpd = m.duration > 0 ? Number((m.distance / (m.duration / 3600)).toFixed(2)) : 0
+          const v = activeMetric === 'distance' ? m.distance : activeMetric === 'calories' ? m.calories : activeMetric === 'sessions' ? m.sessions : avgSpd
+          return { ...m, avgSpeed: avgSpd, value: v }
+        }).slice(-12)
+      }
+
+      // 1m → 5 tuần, 6m → 26 tuần, 1y → 52 tuần
+      const numWeeks = timeFilter === '6m' ? 26 : timeFilter === '1y' ? 52 : 5
+      const gpsWeeks = []
+      for (let i = numWeeks - 1; i >= 0; i--) {
+        const weekStart = moment().subtract(i * 7 + 6, 'days')
+        const weekEnd = moment().subtract(i * 7, 'days')
+        gpsWeeks.push({ date: weekStart.format('DD/MM'), fullDate: weekStart.format('YYYY-MM-DD'), weekEnd: weekEnd.format('YYYY-MM-DD'), distance: 0, calories: 0, sessions: 0, duration: 0 })
+      }
+      Object.keys(dayMap).forEach(fd => {
+        const fdMoment = moment(fd)
+        const week = gpsWeeks.find(w => fdMoment.isBetween(moment(w.fullDate), moment(w.weekEnd), 'day', '[]'))
+        if (week) {
+          week.distance += dayMap[fd].distance
+          week.calories += dayMap[fd].calories
+          week.sessions += dayMap[fd].sessions
+          week.duration += dayMap[fd].duration
         }
-      }).filter((_, i, arr) => timeFilter === 'all' || arr.length <= 30 || i % Math.ceil(arr.length / 30) === 0)
+      })
+      return gpsWeeks.map(w => {
+        const avgSpd = w.duration > 0 ? Number((w.distance / (w.duration / 3600)).toFixed(2)) : 0
+        const v = activeMetric === 'distance' ? w.distance : activeMetric === 'calories' ? w.calories : activeMetric === 'sessions' ? w.sessions : avgSpd
+        return { ...w, avgSpeed: avgSpd, value: v }
+      })
     }
 
     // Default: use progressHistory
     if (!userProgress?.progressHistory) return []
+
+    if (timeFilter === '24h' && !customRange) {
+      const cutoff = moment().subtract(24, 'hours')
+      const recentProgress = userProgress.progressHistory
+        .filter(entry => moment(entry.date).isAfter(cutoff))
+        .sort((a, b) => moment(a.date).diff(moment(b.date)))
+
+      return recentProgress.map(entry => ({
+        date: moment(entry.date).format('HH:mm'),
+        fullDate: moment(entry.date).format('YYYY-MM-DD'),
+        value: entry.value
+      }))
+    }
 
     // Custom date range
     if (customRange) {
@@ -405,9 +491,10 @@ export default function SportEventProgress({
 
     const days = getDays()
 
-    if (days <= 31) {
-      const arr = Array.from({ length: days }, (_, i) => {
-        const d = moment().subtract(days - 1 - i, 'days')
+    // 7d → 7 cột theo ngày
+    if (days === 7) {
+      const arr = Array.from({ length: 7 }, (_, i) => {
+        const d = moment().subtract(6 - i, 'days')
         return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0 }
       })
       userProgress.progressHistory.forEach(entry => {
@@ -417,7 +504,8 @@ export default function SportEventProgress({
       })
       return arr
     } else {
-      const numWeeks = Math.ceil(days / 7)
+      // 1m → 5 tuần, 6m → 26 tuần, 1y → 52 tuần
+      const numWeeks = days <= 31 ? 5 : Math.ceil(days / 7)
       const weeks = []
       for (let i = numWeeks - 1; i >= 0; i--) {
         const weekStart = moment().subtract(i * 7 + 6, 'days')

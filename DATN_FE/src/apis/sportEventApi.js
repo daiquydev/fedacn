@@ -30,6 +30,9 @@ export const getJoinedEvents = (params) => http.get('/sport-events/user/joined-e
 // Get all joined events for calendar display (higher limit, no pagination)
 export const getJoinedEventsForCalendar = () => http.get('/sport-events/user/joined-events', { params: { limit: 200, page: 1 } })
 
+// Get joined events of a specific user (public, for profile pages)
+export const getPublicUserJoinedEvents = (userId, params) => http.get(`/sport-events/user/${userId}/joined-events`, { params })
+
 
 
 // ==================== SESSION APIs ====================
@@ -156,6 +159,10 @@ export const endVideoSession = (eventId, vsId, data) =>
 // Get all video sessions (history) for the current user in an event
 export const getVideoSessions = (eventId) =>
     http.get(`/sport-events/${eventId}/video-sessions`)
+
+// Get single video session by ID
+export const getIndoorSession = (eventId, vsId) =>
+    http.get(`/sport-events/${eventId}/video-sessions/${vsId}`)
 
 // Get currently active video session (for resume after page reload)
 export const getActiveVideoSession = (eventId) =>
