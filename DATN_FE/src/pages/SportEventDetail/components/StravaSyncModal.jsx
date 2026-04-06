@@ -89,7 +89,7 @@ export default function StravaSyncModal({ isOpen, onClose, eventId, onImportSucc
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 relative bg-gray-50/30 dark:bg-gray-900/10">
+        <div className="flex-1 overflow-y-auto p-6 relative bg-gray-50/30 dark:bg-gray-900/10 max-h-[500px] overflow-y-auto custom-scrollbar">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <FaSpinner className="animate-spin text-3xl mb-4 text-[#fc4c02]" />

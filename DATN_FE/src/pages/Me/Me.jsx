@@ -7,13 +7,14 @@ import useravatar from '../../assets/images/useravatar.jpg'
 import avatarbg from '../../assets/images/avatarbg.jpg'
 import { getImageUrl } from '../../utils/imageUrl'
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { currentAccount, getStravaAuthUrl } from '../../apis/userApi'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { currentAccount, getStravaAuthUrl, disconnectStrava } from '../../apis/userApi'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import ModalUpdateProfile from './components/ModalUpdateProfile'
 import ModalUploadAvatar from './components/ModalUploadAvatar'
 import ModalUploadCoverAvatar from './components/ModalUploadCoverAvatar'
 import Loading from '../../components/GlobalComponents/Loading'
+import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox/DeleteConfirmBox'
 
 // Lazy load tab components
 const MeOverview = lazy(() => import('./components/MeOverview/MeOverview'))
@@ -55,6 +56,8 @@ export default function Me() {
   const [modalUpdateProfile, setModalUpdateProfile] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [scrollPosition, setScrollPosition] = useState(0)
+  const [modalConfirmStrava, setModalConfirmStrava] = useState(false)
+  const [isDisconnecting, setIsDisconnecting] = useState(false)
 
   const handleScroll = () => {
     const position = window.scrollY
@@ -72,6 +75,20 @@ export default function Me() {
     }
   }
 
+  const handleDisconnectStrava = async () => {
+    setIsDisconnecting(true)
+    try {
+      await disconnectStrava()
+      import('react-hot-toast').then(toast => toast.default.success('Đã huỷ kết nối Strava'))
+      queryClient.invalidateQueries(['me'])
+      setModalConfirmStrava(false)
+    } catch (err) {
+      import('react-hot-toast').then(toast => toast.default.error('Lỗi khi huỷ kết nối Strava'))
+    } finally {
+      setIsDisconnecting(false)
+    }
+  }
+
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
@@ -83,6 +100,7 @@ export default function Me() {
     placeholderData: keepPreviousData
   })
 
+  const queryClient = useQueryClient()
   const user = userData?.data?.result?.[0]
 
   const renderTabContent = () => {
@@ -207,9 +225,13 @@ export default function Me() {
           {/* Nút chỉnh sửa đã ẩn / Changed to Action Buttons */}
           <motion.div variants={fadeInUp} className='flex gap-3 justify-center md:justify-end flex-wrap mt-4 md:mt-0 md:ml-auto w-full md:w-auto'>
             {user?.stravaProviderId ? (
-              <button disabled className='flex items-center gap-2 bg-gray-600/60 backdrop-blur-md px-4 py-2 rounded-full text-white font-medium text-sm border border-gray-400'>
-                <FaCheckCircle className='text-[#fc4c02] text-lg' />
-                Đã kết nối Strava
+              <button 
+                onClick={() => setModalConfirmStrava(true)} 
+                className='flex items-center gap-2 hover:bg-red-500/80 bg-gray-600/60 transition-all backdrop-blur-md px-4 py-2 rounded-full text-white font-medium text-sm border border-gray-400 group'
+              >
+                <FaCheckCircle className='text-[#fc4c02] text-lg group-hover:hidden' />
+                <span className='group-hover:hidden'>Đã kết nối Strava</span>
+                <span className='hidden group-hover:inline ml-1 font-bold'>Hủy kết nối</span>
               </button>
             ) : (
               <button
@@ -286,6 +308,17 @@ export default function Me() {
       {modalCoverAvatar && <ModalUploadCoverAvatar closeModalCoverAvatar={() => setModalCoverAvatar(false)} />}
       {modalUpdateProfile && (
         <ModalUpdateProfile handleCloseModalUpdateProfile={() => setModalUpdateProfile(false)} user={user} />
+      )}
+      {modalConfirmStrava && (
+        <DeleteConfirmBox
+          title="Huỷ kết nối Strava"
+          subtitle="Tài khoản của bạn sẽ ngưng báo cáo số liệu và tự động ngừng đồng bộ dữ liệu từ Strava. Bạn có chắc chắn không?"
+          tilteButton="Huỷ kết nối"
+          danger={true}
+          handleDelete={handleDisconnectStrava}
+          closeModal={() => setModalConfirmStrava(false)}
+          isPending={isDisconnecting}
+        />
       )}
     </motion.div>
   )

@@ -8,6 +8,34 @@ import { config } from 'dotenv'
 import { envConfig } from '~/constants/config'
 config()
 
+// Helpers
+function decodePolyline(str: string, precision: number = 5): [number, number][] {
+  let index = 0, lat = 0, lng = 0, coordinates = [];
+  let shift = 0, result = 0, byte = null, latitude_change, longitude_change;
+  let factor = Math.pow(10, precision);
+
+  while (index < str.length) {
+    byte = null; shift = 0; result = 0;
+    do {
+      byte = str.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    shift = result = 0;
+    do {
+      byte = str.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += latitude_change;
+    lng += longitude_change;
+    coordinates.push([lat / factor, lng / factor] as [number, number]);
+  }
+  return coordinates;
+}
+
 class StravaService {
   /**
    * Gen auth URL
@@ -43,6 +71,17 @@ class StravaService {
     })
 
     return data
+  }
+
+  async disconnectStrava(userId: string) {
+    await UserModel.findByIdAndUpdate(userId, {
+      $unset: {
+        stravaProviderId: 1,
+        stravaAccessToken: 1,
+        stravaRefreshToken: 1,
+        stravaTokenExpiresAt: 1
+      }
+    })
   }
 
   /**
@@ -190,7 +229,6 @@ class StravaService {
       const activityIdStr = activity.id.toString()
       const exists = await SportEventProgressModel.exists({
         userId,
-        eventId,
         stravaActivityId: activityIdStr
       })
       
@@ -228,7 +266,6 @@ class StravaService {
       
       const exists = await SportEventProgressModel.exists({
         userId,
-        eventId,
         stravaActivityId: activityIdStr
       })
       
@@ -261,18 +298,33 @@ class StravaService {
             stravaActivityId: activityIdStr
           } as any)
           
+          const polylineStr = activity.map?.summary_polyline || ''
+          const decodedCoords = polylineStr ? decodePolyline(polylineStr) : []
+          const startTimestamp = new Date(activity.start_date || activity.start_date_local).getTime()
+          const totalMs = (activity.moving_time || 0) * 1000
+          const intervalMs = decodedCoords.length > 0 ? totalMs / decodedCoords.length : 0
+
+          const gpsRoute = decodedCoords.map((coord, i) => ({
+            lat: coord[0],
+            lng: coord[1],
+            timestamp: startTimestamp + (i * intervalMs),
+            speed: activity.average_speed || 0
+          }))
+
           await ActivityTrackingModel.create({
             eventId: sportEvent._id,
             userId: userId,
             activityType: activity.type === 'Run' ? 'Chạy bộ' : activity.type === 'Ride' ? 'Đạp xe' : 'Đi bộ',
             status: 'completed',
             startTime: new Date(activity.start_date || activity.start_date_local),
-            endTime: new Date(new Date(activity.start_date || activity.start_date_local).getTime() + ((activity.moving_time || 0) * 1000)),
+            endTime: new Date(startTimestamp + totalMs),
             totalDuration: activity.moving_time || 0,
             totalDistance: activity.distance || 0,
-            avgSpeed: (activity.average_speed || 0) * 3.6,
-            maxSpeed: (activity.max_speed || 0) * 3.6,
-            calories: kcal
+            avgSpeed: activity.average_speed || 0,
+            maxSpeed: (activity.max_speed > 0 ? activity.max_speed : activity.average_speed) || 0,
+            calories: kcal,
+            gpsRoute: gpsRoute,
+            source: 'strava'
           })
           
           syncedCount++

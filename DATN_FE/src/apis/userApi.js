@@ -37,3 +37,5 @@ export const getStravaAuthUrl = () => http.get('/strava/auth')
 
 export const previewStravaEvent = (eventId) => http.get(`/strava/preview-event/${eventId}`)
 export const importStravaEvent = (eventId, activityIds) => http.post(`/strava/import-event/${eventId}`, { activityIds })
+
+export const disconnectStrava = () => http.delete('/user-strava/disconnect')

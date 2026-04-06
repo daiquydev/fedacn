@@ -16,7 +16,8 @@ class SportEventProgressService {
     calories,
     proofImage,
     notes,
-    source = 'manual'
+    source = 'manual',
+    stravaActivityId
   }: {
     eventId: string
     userId: string
@@ -29,6 +30,7 @@ class SportEventProgressService {
     proofImage?: string
     notes?: string
     source?: 'manual' | 'video_call' | 'gps'
+    stravaActivityId?: string
   }) {
     // Verify event exists and user is a participant
     const event = await SportEventModel.findById(eventId)
@@ -52,7 +54,8 @@ class SportEventProgressService {
       calories,
       proofImage,
       notes,
-      source
+      source,
+      stravaActivityId
     })
 
     await newProgress.save()

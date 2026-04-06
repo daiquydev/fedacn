@@ -30,6 +30,7 @@ export interface ActivityTracking {
     calories: number
     gpsRoute: GpsPoint[]
     pauseIntervals: PauseInterval[]
+    source?: string
     is_deleted?: boolean
     createdAt?: Date
     updatedAt?: Date
@@ -78,6 +79,7 @@ const ActivityTrackingSchema = new mongoose.Schema<ActivityTracking>(
         calories: { type: Number, default: 0 },
         gpsRoute: [GpsPointSchema],
         pauseIntervals: [PauseIntervalSchema],
+        source: { type: String, default: 'app' },
         is_deleted: { type: Boolean, default: false }
     },
     {

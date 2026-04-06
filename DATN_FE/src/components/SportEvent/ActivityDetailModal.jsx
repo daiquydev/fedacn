@@ -6,6 +6,7 @@ import { getActivity } from '../../apis/sportEventApi'
 import { getChallengeActivity } from '../../apis/challengeApi'
 import { formatDuration, formatPace } from '../../hooks/useActivityTracking'
 import { FaShareAlt, FaRoute } from 'react-icons/fa'
+import { SiStrava } from 'react-icons/si'
 import moment from 'moment'
 import '@goongmaps/goong-js/dist/goong-js.css'
 import './ActivityDetailModal.css'
@@ -78,7 +79,7 @@ export default function ActivityDetailModal({
           source: 'route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
-            'line-color': isCompletion ? '#22c55e' : '#3b82f6',
+            'line-color': isCompletion ? '#22c55e' : activity.source === 'strava' ? '#fc4c02' : '#3b82f6',
             'line-width': 5,
             'line-opacity': 0.85
           }
@@ -128,7 +129,7 @@ export default function ActivityDetailModal({
 
   // Computed values
   const distanceKm = activity ? (activity.totalDistance / 1000).toFixed(2) : '0.00'
-  const activityTypeLabel = event?.category || activity?.activityType || 'Hoạt động'
+  const activityTypeLabel = activity?.source === 'strava' ? 'Bài tập từ Strava' : (event?.category || activity?.activityType || 'Hoạt động')
   const dateStr = activity
     ? moment(activity.startTime).format('dddd, DD [tháng] MM, YYYY • HH:mm')
     : ''
@@ -154,12 +155,14 @@ export default function ActivityDetailModal({
         ) : (
           <>
             {/* Header */}
-            <div className={`adm-header ${headerMode}`}>
+            <div className={`adm-header ${headerMode}`} style={activity.source === 'strava' ? { background: 'linear-gradient(135deg, #fc4c02 0%, #e84300 100%)' } : {}}>
               <div className='adm-header-pattern' />
               <button className='adm-close-btn' onClick={onClose}>
                 ✕
               </button>
-              <div className='adm-check-icon'>{isCompletion ? '✓' : '📊'}</div>
+              <div className='adm-check-icon'>
+                {isCompletion ? '✓' : activity.source === 'strava' ? <SiStrava /> : '📊'}
+              </div>
               <h2>{isCompletion ? 'Hoàn thành! 🎉' : 'Chi tiết hoạt động'}</h2>
               <p className='adm-subtitle'>
                 {activityTypeLabel} • {dateStr}

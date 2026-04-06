@@ -26,6 +26,7 @@ import {
   FaTrash
 } from 'react-icons/fa'
 import { MdOutlineHistoryEdu } from 'react-icons/md'
+import { SiStrava } from 'react-icons/si'
 import moment from 'moment'
 import toast from 'react-hot-toast'
 import { getUserActivities, softDeleteActivity } from '../../../apis/sportEventApi'
@@ -284,12 +285,12 @@ export default function SportEventProgress({
         const recentActivities = completedActivities
           .filter(a => moment(a.startTime).isAfter(cutoff))
           .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
-          
+
         return recentActivities.map(a => {
           const duration = a.totalDuration || 0
           const distance = a.totalDistance / 1000
           const avgSpeed = duration > 0 ? Number((distance / (duration / 3600)).toFixed(2)) : 0
-          
+
           let value = 0
           switch (activeMetric) {
             case 'distance': value = Number(distance.toFixed(2)); break
@@ -987,15 +988,17 @@ export default function SportEventProgress({
                           : 'border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-gray-200 dark:hover:border-gray-600'
                           }`}
                       >
-                        {/* Row 1: icon + title + date + share */}
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 text-lg flex-shrink-0">
-                            <CategoryIcon />
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${activity.source === 'strava'
+                            ? 'bg-orange-50 dark:bg-orange-900/20 text-[#fc4c02]'
+                            : 'bg-blue-50 dark:bg-blue-900/20 text-blue-500'
+                            }`}>
+                            {activity.source === 'strava' ? <SiStrava /> : <CategoryIcon />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                                {event?.category || activity.activityType}
+                              <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate flex items-center gap-1.5">
+                                {activity.source === 'strava' ? 'Strava' : (event?.category || activity.activityType)}
                               </h4>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <span className="text-xs text-gray-400">

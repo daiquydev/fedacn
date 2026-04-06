@@ -15,7 +15,7 @@ export const stravaCallbackController = async (req: Request, res: Response) => {
   }
   const userId = state
   await stravaService.exchangeToken(code, userId)
-  return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/profile?strava_connected=success`)
+  return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/me?strava_connected=success`)
 }
 
 export const verifyStravaWebhookController = async (req: Request, res: Response) => {
@@ -60,4 +60,10 @@ export const importStravaEventController = async (req: Request, res: Response) =
 
   const result = await stravaService.importActivitiesForEvent(user_id, eventId, activityIds)
   return res.json({ message: 'Đã nhập thành công', result })
+}
+
+export const disconnectStravaController = async (req: Request, res: Response) => {
+  const { user_id } = req.decoded_authorization as any
+  await stravaService.disconnectStrava(user_id)
+  return res.json({ message: 'Đã hủy kết nối Strava' })
 }
