@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../../utils/mathUtils'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FaRunning, FaDumbbell, FaFireAlt, FaChartLine, FaArrowRight } from 'react-icons/fa'
@@ -75,14 +76,14 @@ function HealthCompact({ user }) {
         </div>
         <div className='text-center border-x border-gray-200 dark:border-gray-700'>
           <div className='text-2xl font-bold text-gray-800 dark:text-white'>
-            {Number.isFinite(bmr) ? Math.round(bmr) : '—'}
+            {Number.isFinite(bmr) ? roundKcal(bmr) : '—'}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400'>BMR</div>
           <div className='text-xs text-gray-400 dark:text-gray-500 mt-1'>kcal/ngày</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-gray-800 dark:text-white'>
-            {Number.isFinite(tdee) ? Math.round(tdee) : '—'}
+            {Number.isFinite(tdee) ? roundKcal(tdee) : '—'}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400'>TDEE</div>
           <div className='text-xs text-gray-400 dark:text-gray-500 mt-1'>kcal/ngày</div>

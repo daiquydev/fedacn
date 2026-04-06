@@ -1,3 +1,4 @@
+import { roundKcal } from '../utils/mathUtils'
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 // Haversine formula to calculate distance between two GPS points (in metres)
@@ -33,7 +34,7 @@ export function formatPace(secondsPerKm) {
 function estimateCalories(distanceMetres, kcalPerKm) {
     if (!kcalPerKm || kcalPerKm <= 0) return 0
     const distanceKm = distanceMetres / 1000
-    return Math.round(kcalPerKm * distanceKm)
+    return roundKcal(kcalPerKm * distanceKm)
 }
 
 export default function useActivityTracking() {

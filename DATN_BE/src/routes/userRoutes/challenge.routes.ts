@@ -15,9 +15,11 @@ import {
     getParticipantsController,
     getUserProgressController,
     getChallengeActivityController,
+    getChallengeProgressEntryController,
     deleteProgressController,
     getPublicUserChallengesController,
-    getFeedController
+    getFeedController,
+    inviteFriendToChallengeController
 } from '~/controllers/userControllers/challenge.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -43,6 +45,7 @@ challengeRouter.delete('/:id', verifyToken, wrapRequestHandler(deleteChallengeCo
 // Participation
 challengeRouter.post('/:id/join', verifyToken, wrapRequestHandler(joinChallengeController))
 challengeRouter.post('/:id/quit', verifyToken, wrapRequestHandler(quitChallengeController))
+challengeRouter.post('/:id/invite', verifyToken, wrapRequestHandler(inviteFriendToChallengeController))
 
 // Progress
 challengeRouter.post('/:id/progress', verifyToken, wrapRequestHandler(addProgressController))
@@ -54,6 +57,7 @@ challengeRouter.get('/:id/leaderboard', verifyTokenOptional, wrapRequestHandler(
 
 // Participants
 challengeRouter.get('/:id/participants', verifyTokenOptional, wrapRequestHandler(getParticipantsController))
+challengeRouter.get('/:id/progress-entry/:progressId', verifyTokenOptional, wrapRequestHandler(getChallengeProgressEntryController))
 challengeRouter.get('/:id/progress/:userId', verifyTokenOptional, wrapRequestHandler(getUserProgressController))
 
 // GPS Activity detail (for map modal)

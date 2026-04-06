@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaBell, FaPlus, FaTrashAlt, FaEdit, FaClock, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
+const parseTime = (timeStr) => {
+  if (!timeStr) return new Date();
+  const [hours, minutes] = timeStr.split(':');
+  const d = new Date();
+  d.setHours(parseInt(hours, 10));
+  d.setMinutes(parseInt(minutes, 10));
+  d.setSeconds(0);
+  d.setMilliseconds(0);
+  return d;
+};
 
 const REMINDERS_STORAGE_KEY = 'meal_reminders';
 
@@ -282,13 +295,24 @@ export default function MealReminders() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Thời gian
                 </label>
-                <input
-                  type="time"
-                  name="time"
-                  value={formData.time}
-                  onChange={handleInputChange}
+                <DatePicker
+                  selected={parseTime(formData.time)}
+                  onChange={date => {
+                    if (date) {
+                      const h = String(date.getHours()).padStart(2, '0');
+                      const m = String(date.getMinutes()).padStart(2, '0');
+                      handleInputChange({ target: { name: 'time', value: `${h}:${m}` }});
+                    }
+                  }}
+                  showTimeSelect
+                  showTimeSelectOnly
+                  timeIntervals={15}
+                  timeCaption="Giờ"
+                  dateFormat="HH:mm"
+                  timeFormat="HH:mm"
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  wrapperClassName="w-full"
                 />
               </div>
               

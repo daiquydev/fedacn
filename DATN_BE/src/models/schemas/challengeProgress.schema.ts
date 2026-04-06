@@ -1,5 +1,11 @@
 import mongoose, { Types } from 'mongoose'
 
+export interface ICompletedExercise {
+    exercise_id: Types.ObjectId
+    exercise_name: string
+    completed: boolean
+}
+
 export interface IChallengeProgress {
     _id?: Types.ObjectId
     challenge_id: Types.ObjectId
@@ -27,12 +33,15 @@ export interface IChallengeProgress {
     // Fitness workout data
     workout_session_id: Types.ObjectId | null
     exercises_count: number | null
+    completed_exercises: ICompletedExercise[]
 
     // Source
     source: 'photo_checkin' | 'gps_tracking' | 'workout_session' | 'manual'
 
     // GPS Activity link (for map display)
     activity_id: Types.ObjectId | null
+
+    validation_status?: 'valid' | 'invalid_time' | 'invalid_content'
 
     is_deleted?: boolean
     createdAt?: Date
@@ -70,6 +79,11 @@ const ChallengeProgressSchema = new mongoose.Schema<IChallengeProgress>(
         // Fitness
         workout_session_id: { type: mongoose.Schema.Types.ObjectId, ref: 'workout_sessions', default: null },
         exercises_count: { type: Number, default: null },
+        completed_exercises: [{
+            exercise_id: { type: mongoose.Schema.Types.ObjectId, ref: 'exercises', required: true },
+            exercise_name: { type: String, required: true },
+            completed: { type: Boolean, default: true }
+        }],
 
         // Source
         source: {
@@ -81,7 +95,12 @@ const ChallengeProgressSchema = new mongoose.Schema<IChallengeProgress>(
         // GPS Activity link (for map display)
         activity_id: { type: mongoose.Schema.Types.ObjectId, ref: 'activity_tracking', default: null },
 
-        is_deleted: { type: Boolean, default: false }
+        is_deleted: { type: Boolean, default: false },
+        validation_status: {
+            type: String,
+            enum: ['valid', 'invalid_time', 'invalid_content'],
+            default: 'valid'
+        }
     },
     {
         timestamps: true,

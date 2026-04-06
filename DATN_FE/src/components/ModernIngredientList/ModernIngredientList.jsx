@@ -1,3 +1,4 @@
+import { roundKcal } from '../../utils/mathUtils'
 import React, { useState } from 'react'
 import { FaCheck, FaPlus, FaMinus } from 'react-icons/fa'
 import { MdScale } from 'react-icons/md'
@@ -149,7 +150,7 @@ const ModernIngredientList = ({ ingredients, servings = 1, onServingsChange }) =
                   <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     {ingredient.nutrition.calories && (
                       <span className="mr-4">
-                        {Math.round(ingredient.nutrition.calories * currentServings / servings)} kcal
+                        {roundKcal(ingredient.nutrition.calories * currentServings / servings)} kcal
                       </span>
                     )}
                     {ingredient.nutrition.protein && (

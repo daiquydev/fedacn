@@ -68,8 +68,14 @@ export default function ChallengeShareModal({ challenge, challengeId, onClose })
     const [play] = useSound(postSound)
     const theme = localStorage.getItem('theme')
 
+    // Sync default privacy with challenge visibility setting
+    const visibilityToPrivacy = { public: 0, friends: 1, private: 2 }
+    const defaultPrivacy = challenge?.visibility != null
+        ? (visibilityToPrivacy[challenge.visibility] ?? 0)
+        : 0
+
     const [content, setContent] = useState('')
-    const [privacy, setPrivacy] = useState(0)
+    const [privacy, setPrivacy] = useState(defaultPrivacy)
     const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false)
     const [showEmoji, setShowEmoji] = useState(false)
     const textareaRef = useRef(null)

@@ -8,16 +8,19 @@ class SportEventProgressService {
   async addProgressService({
     eventId,
     userId,
+    date,
     value,
     unit,
     distance,
     time,
     calories,
     proofImage,
-    notes
+    notes,
+    source = 'manual'
   }: {
     eventId: string
     userId: string
+    date?: Date
     value: number
     unit: string
     distance?: number
@@ -25,6 +28,7 @@ class SportEventProgressService {
     calories?: number
     proofImage?: string
     notes?: string
+    source?: 'manual' | 'video_call' | 'gps'
   }) {
     // Verify event exists and user is a participant
     const event = await SportEventModel.findById(eventId)
@@ -40,14 +44,15 @@ class SportEventProgressService {
     const newProgress = new SportEventProgressModel({
       eventId,
       userId,
-      date: new Date(),
+      date: date || new Date(),
       value,
       unit,
       distance,
       time,
       calories,
       proofImage,
-      notes
+      notes,
+      source
     })
 
     await newProgress.save()

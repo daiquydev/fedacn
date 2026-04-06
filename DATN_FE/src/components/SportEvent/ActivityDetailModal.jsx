@@ -1,3 +1,4 @@
+import { roundKcal } from '../../utils/mathUtils'
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
@@ -184,7 +185,7 @@ export default function ActivityDetailModal({
               <div className='adm-stat-item'>
                 <div className='adm-stat-icon calories'>🔥</div>
                 <div>
-                  <p className='adm-stat-val'>{Math.round(activity.calories)}</p>
+                  <p className='adm-stat-val'>{roundKcal(activity.calories)}</p>
                   <p className='adm-stat-lbl'>Kcal</p>
                 </div>
               </div>

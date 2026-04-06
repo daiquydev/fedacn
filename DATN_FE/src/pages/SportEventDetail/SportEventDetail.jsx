@@ -54,7 +54,7 @@ import SportEventLeaderboard from './components/SportEventLeaderboard'
 import SportEventShareModal from '../../components/SportEvent/SportEventShareModal'
 import IndoorEventProgress from './components/IndoorEventProgress'
 import ProgressRing from '../../components/SportEvent/ProgressRing'
-import MilestoneCelebration, { useMilestoneCelebration } from '../../components/SportEvent/MilestoneCelebration'
+
 
 export default function SportEventDetail() {
 
@@ -131,6 +131,7 @@ export default function SportEventDetail() {
   }, [myFriends, friendSearch])
 
   const event = eventData?.data?.result || eventData?.result
+  const isCreator = me?._id && event?.createdBy && (me._id === String(event.createdBy?._id || event.createdBy))
 
   // Fetch Sessions (for Trong nhà events)
   const {
@@ -366,34 +367,7 @@ export default function SportEventDetail() {
     return () => clearInterval(timer)
   }, [event?.startDate])
 
-  // ===== Achievement Milestone Celebrations =====
-  const myPercentForMilestone = useMemo(() => {
-    if (!userProgress || !event?.targetValue || event.targetValue <= 0) return 0
-    const maxP = event?.maxParticipants > 0 ? event.maxParticipants : 1
-    const perPerson = event.targetValue / maxP
-    if (perPerson <= 0) return 0
-    const myTotal = isKcalUnit(event.targetUnit)
-      ? (userProgress.totalCalories || 0)
-      : (userProgress.totalProgress || 0)
-    return Math.min(Math.round((myTotal / perPerson) * 100), 100)
-  }, [userProgress, event])
 
-  // Group (overall event) progress percentage
-  const groupPercentForMilestone = useMemo(() => {
-    if (!event?.targetValue || event.targetValue <= 0) return 0
-    const groupTotal = isKcalUnit(event.targetUnit)
-      ? (overallProgress?.totalCalories || 0)
-      : (overallProgress?.totalGroupProgress || 0)
-    return Math.min(Math.round((groupTotal / event.targetValue) * 100), 100)
-  }, [overallProgress, event])
-
-  // Personal milestone celebration
-  const { celebration: personalCelebration, closeCelebration: closePersonalCelebration } =
-    useMilestoneCelebration(id, myPercentForMilestone, 'personal')
-
-  // Group milestone celebration
-  const { celebration: groupCelebration, closeCelebration: closeGroupCelebration } =
-    useMilestoneCelebration(id, groupPercentForMilestone, 'group')
 
   // ==================== LOADING & ERROR STATES ====================
 
@@ -439,9 +413,7 @@ export default function SportEventDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Milestone Celebrations */}
-      <MilestoneCelebration milestone={personalCelebration} isGroup={false} onClose={closePersonalCelebration} />
-      <MilestoneCelebration milestone={groupCelebration} isGroup={true} onClose={closeGroupCelebration} />
+
 
       {/* Share Sport Event Modal */}
       {showShareModal && event && (
@@ -652,16 +624,22 @@ export default function SportEventDetail() {
                     <FaInvite className="text-sm" />
                     Mời bạn bè
                   </button>
-                  <button
-                    onClick={() => setShowLeaveModal(true)}
-                    disabled={leaveEventMutation.isPending}
-                    className="px-5 py-2.5 bg-white/10 hover:bg-red-500/30 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-400/40 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
-                  >
-                    {leaveEventMutation.isPending ? (
-                      <AiOutlineLoading3Quarters className="animate-spin" />
-                    ) : <FaTimes className="text-sm" />}
-                    Rời khỏi
-                  </button>
+                  {isCreator ? (
+                    <div className="px-5 py-2.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
+                      👑 Người tổ chức
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowLeaveModal(true)}
+                      disabled={leaveEventMutation.isPending}
+                      className="px-5 py-2.5 bg-white/10 hover:bg-red-500/30 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-400/40 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
+                    >
+                      {leaveEventMutation.isPending ? (
+                        <AiOutlineLoading3Quarters className="animate-spin" />
+                      ) : <FaTimes className="text-sm" />}
+                      Rời khỏi
+                    </button>
+                  )}
                 </>
               )}
               {/* Share Event Button */}
@@ -924,9 +902,6 @@ export default function SportEventDetail() {
                               label={`${groupPercent}%`}
                               sublabel="cả nhóm"
                             />
-                            {groupPercent >= 100 && (
-                              <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎉</div>
-                            )}
                           </div>
                           <div className="text-center">
                             <div className="flex items-center gap-2 justify-center mb-1">
@@ -940,7 +915,6 @@ export default function SportEventDetail() {
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                               {overallProgress.participantCount || 0} người đóng góp
-                              {groupPercent >= 100 && <span className="text-green-500 font-semibold ml-1">✅ Hoàn thành!</span>}
                             </p>
                           </div>
                         </div>
@@ -958,9 +932,6 @@ export default function SportEventDetail() {
                                 label={`${myPercent}%`}
                                 sublabel="hoàn thành"
                               />
-                              {myPercent >= 100 && (
-                                <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🏆</div>
-                              )}
                             </div>
                             <div className="text-center">
                               <div className="flex items-center gap-2 justify-center mb-1">
@@ -972,43 +943,13 @@ export default function SportEventDetail() {
                                 <span className="text-gray-400 mx-1">/</span>
                                 <span className="text-gray-600 dark:text-gray-300 font-semibold">{perPersonTarget.toFixed(2)} {event.targetUnit}</span>
                               </p>
-                              {myPercent >= 100 && (
-                                <p className="text-xs text-green-500 font-semibold mt-1">🎉 Bạn đã hoàn thành mục tiêu!</p>
-                              )}
+
                             </div>
                           </div>
                         )}
                       </div>
 
-                      {/* Virtual Medal Milestones */}
-                      {event.isJoined && (
-                        <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
-                          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">🏅 Huy chương cá nhân</p>
-                          <div className="flex items-center gap-2">
-                            {[
-                              { pct: 25, medal: '🥉', label: 'Khởi động', color: 'amber' },
-                              { pct: 50, medal: '🥈', label: 'Nửa chặng', color: 'slate' },
-                              { pct: 75, medal: '🥇', label: 'Gần đích', color: 'yellow' },
-                              { pct: 100, medal: '🏆', label: 'Hoàn thành', color: 'emerald' }
-                            ].map(m => {
-                              const reached = myPercent >= m.pct
-                              return (
-                                <div
-                                  key={m.pct}
-                                  className={`flex-1 flex flex-col items-center py-3 px-1 rounded-xl text-xs font-bold transition-all ${reached
-                                    ? `bg-${m.color}-100 dark:bg-${m.color}-900/30 text-${m.color}-700 dark:text-${m.color}-300 ring-1 ring-${m.color}-200 dark:ring-${m.color}-800`
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 opacity-50'
-                                    }`}
-                                >
-                                  <span className={`text-xl mb-1 ${reached ? '' : 'grayscale opacity-40'}`}>{m.medal}</span>
-                                  <span>{m.pct}%</span>
-                                  <span className="text-[9px] font-medium mt-0.5">{m.label}</span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
+
 
                       {/* CTA for non-participants */}
                       {!event.isJoined && (

@@ -21,5 +21,9 @@ export const envConfig = {
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD as string,
   ACCESS_TOKEN_ADMIN_EXPIRES_IN: process.env.ACCESS_TOKEN_ADMIN_EXPIRES_IN as string,
   CLIENT_URL: process.env.CLIENT_URL as string,
-  ADMIN_URL: process.env.ADMIN_URL as string
+  ADMIN_URL: process.env.ADMIN_URL as string,
+  STRAVA_CLIENT_ID: process.env.STRAVA_CLIENT_ID as string,
+  STRAVA_CLIENT_SECRET: process.env.STRAVA_CLIENT_SECRET as string,
+  STRAVA_REDIRECT_URI: process.env.STRAVA_REDIRECT_URI as string,
+  STRAVA_VERIFY_TOKEN: process.env.STRAVA_VERIFY_TOKEN as string
 }

@@ -8,6 +8,7 @@ export const updateChallenge = (id, data) => http.put(`/challenges/${id}`, data)
 export const deleteChallenge = (id) => http.delete(`/challenges/${id}`)
 export const joinChallenge = (id) => http.post(`/challenges/${id}/join`)
 export const quitChallenge = (id) => http.post(`/challenges/${id}/quit`)
+export const inviteFriendToChallenge = (challengeId, friendId) => http.post(`/challenges/${challengeId}/invite`, { friendId })
 export const getMyChallenges = (params) => http.get('/challenges/my', { params })
 export const getMyCreatedChallenges = (params) => http.get('/challenges/my-created', { params })
 export const getPublicUserChallenges = (userId, params) => http.get(`/challenges/user/${userId}/joined`, { params })
@@ -17,6 +18,7 @@ export const getChallengeLeaderboard = (id, params) => http.get(`/challenges/${i
 export const getChallengeParticipants = (id) => http.get(`/challenges/${id}/participants`)
 export const getUserChallengeProgress = (challengeId, userId) => http.get(`/challenges/${challengeId}/progress/${userId}`)
 export const getChallengeActivity = (challengeId, activityId) => http.get(`/challenges/${challengeId}/activity/${activityId}`)
+export const getChallengeProgressEntry = (challengeId, progressId) => http.get(`/challenges/${challengeId}/progress-entry/${progressId}`)
 
 // Soft-delete challenge progress entry
 export const deleteChallengeProgress = (challengeId, progressId) =>

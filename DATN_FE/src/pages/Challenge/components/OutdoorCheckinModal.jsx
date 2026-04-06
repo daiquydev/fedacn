@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -38,7 +39,7 @@ export default function OutdoorCheckinModal({ challenge, onClose, onSubmit, isLo
 
   // Auto-calc calories from distance if not manually entered
   const autoCalories = distance && Number(distance) > 0 && !calories
-    ? Math.round(Number(distance) * kcalPerKm)
+    ? roundKcal(Number(distance) * kcalPerKm)
     : null
 
   const handleSubmit = () => {

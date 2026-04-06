@@ -1,3 +1,4 @@
+import { roundKcal } from '../../utils/mathUtils'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -387,7 +388,7 @@ function ActivityPreviewCardInModal({ activity, event, eventId, challengeId, dis
     }, [hasRoute, gpsRoute])
 
     const duration = formatDuration(activity.totalDuration)
-    const calories = Math.round(activity.calories || 0)
+    const calories = roundKcal(activity.calories || 0)
     const actDate = moment(activity.startTime).format('HH:mm - DD/MM/YYYY')
 
     const stats = [

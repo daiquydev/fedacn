@@ -6,6 +6,7 @@ import UserMealScheduleModel from '~/models/schemas/userMealSchedule.schema'
 import UserMealItemModel from '~/models/schemas/userMealItem.schema'
 import MealPlanModel from '~/models/schemas/mealPlan.schema'
 import UserModel from '~/models/schemas/user.schema'
+import { roundKcal } from '~/utils/math.utils'
 import { ScheduleStatus, MealItemStatus } from '~/constants/enums'
 
 class PersonalDashboardService {
@@ -58,7 +59,7 @@ class PersonalDashboardService {
         } 
       }
     ])
-    const totalCaloriesConsumed = Math.round(caloriesAgg[0]?.totalCalories || 0)
+    const totalCaloriesConsumed = roundKcal(caloriesAgg[0]?.totalCalories || 0)
 
     // Get user info for goals
     const user = await UserModel.findById(userObjectId)
@@ -129,7 +130,7 @@ class PersonalDashboardService {
       const dayData = caloriesData.find((d: any) => d._id === dateStr)
       result.push({
         date: dateStr,
-        calories: Math.round(dayData?.calories || 0),
+        calories: roundKcal(dayData?.calories || 0),
         protein: Math.round(dayData?.protein || 0),
         carbs: Math.round(dayData?.carbs || 0),
         fat: Math.round(dayData?.fat || 0),
@@ -203,7 +204,7 @@ class PersonalDashboardService {
     // Calculate today's nutrition (from completed meals)
     const completedMeals = meals.filter(m => m.status === 'completed')
     const todayNutrition = {
-      calories: Math.round(completedMeals.reduce((sum, m) => sum + (m.nutrition?.calories || 0), 0)),
+      calories: roundKcal(completedMeals.reduce((sum, m) => sum + (m.nutrition?.calories || 0), 0)),
       protein: Math.round(completedMeals.reduce((sum, m) => sum + (m.nutrition?.protein || 0), 0)),
       carbs: Math.round(completedMeals.reduce((sum, m) => sum + (m.nutrition?.carbs || 0), 0)),
       fat: Math.round(completedMeals.reduce((sum, m) => sum + (m.nutrition?.fat || 0), 0)),
@@ -275,7 +276,7 @@ class PersonalDashboardService {
         stats: {
           totalMeals,
           completedMeals,
-          totalCaloriesConsumed: Math.round(caloriesAgg[0]?.total || 0)
+          totalCaloriesConsumed: roundKcal(caloriesAgg[0]?.total || 0)
         },
         createdAt: (schedule as any).createdAt
       }
@@ -444,7 +445,7 @@ class PersonalDashboardService {
       result.push({
         date: dateStr,
         actual: {
-          calories: Math.round(dayData?.calories || 0),
+          calories: roundKcal(dayData?.calories || 0),
           protein: Math.round(dayData?.protein || 0),
           carbs: Math.round(dayData?.carbs || 0),
           fat: Math.round(dayData?.fat || 0)
@@ -464,7 +465,7 @@ class PersonalDashboardService {
       trend: result,
       dailyGoal,
       averages: {
-        calories: Math.round(result.reduce((sum, d) => sum + d.actual.calories, 0) / result.length),
+        calories: roundKcal(result.reduce((sum, d) => sum + d.actual.calories, 0) / result.length),
         protein: Math.round(result.reduce((sum, d) => sum + d.actual.protein, 0) / result.length),
         carbs: Math.round(result.reduce((sum, d) => sum + d.actual.carbs, 0) / result.length),
         fat: Math.round(result.reduce((sum, d) => sum + d.actual.fat, 0) / result.length)

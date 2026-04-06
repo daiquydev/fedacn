@@ -3,13 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getChallenge, joinChallenge, quitChallenge,
-  addChallengeProgress, getChallengeProgress, getChallengeParticipants
+  addChallengeProgress, getChallengeProgress, getChallengeParticipants,
+  inviteFriendToChallenge
 } from '../../apis/challengeApi'
+import { currentAccount } from '../../apis/userApi'
 import { toast } from 'react-hot-toast'
 import {
   FaTrophy, FaArrowLeft, FaUtensils, FaRunning, FaDumbbell,
   FaUsers, FaClock, FaFire, FaPlus, FaCalendarAlt, FaTimes,
-  FaMedal, FaShare
+  FaMedal, FaShare, FaSearch, FaCheck, FaBell,
+  FaUserFriends as FaInvite
 } from 'react-icons/fa'
 import {
   MdCheckCircle, MdErrorOutline
@@ -51,6 +54,9 @@ export default function ChallengeDetail() {
   const [selectedDay, setSelectedDay] = useState(null) // { dateStr, dayData }
   const [showSubModal, setShowSubModal] = useState(null) // 'tracking' | 'manual' | null
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [friendSearch, setFriendSearch] = useState('')
+  const [invitedIds, setInvitedIds] = useState(new Set())
 
   // ==================== DATA FETCHING ====================
 
@@ -60,6 +66,27 @@ export default function ChallengeDetail() {
     staleTime: 1000
   })
   const challenge = data?.data?.result
+
+  // Fetch current user's friends
+  const { data: meData } = useQuery({
+    queryKey: ['me'],
+    queryFn: currentAccount
+  })
+  const me = meData?.data?.result?.[0]
+  const myFollowers = useMemo(() => me?.followers || [], [me])
+  const myFollowings = useMemo(() => me?.followings || [], [me])
+  const followingIds = useMemo(() => new Set(myFollowings.map(p => String(p._id))), [myFollowings])
+  const myFriends = useMemo(
+    () => myFollowers.filter(p => followingIds.has(String(p._id))),
+    [myFollowers, followingIds]
+  )
+  const filteredFriendsForInvite = useMemo(() => {
+    const kw = friendSearch.toLowerCase().trim()
+    return myFriends.filter(f => {
+      if (!kw) return true
+      return (f.name || '').toLowerCase().includes(kw) || (f.email || '').toLowerCase().includes(kw)
+    })
+  }, [myFriends, friendSearch])
 
   // My progress entries (for calendar)
   const { data: progressData, refetch: refetchProgress } = useQuery({
@@ -76,7 +103,10 @@ export default function ChallengeDetail() {
     progressList.forEach(entry => {
       const dateStr = format(new Date(entry.date || entry.createdAt), 'yyyy-MM-dd')
       if (!map[dateStr]) map[dateStr] = { total: 0, entries: [] }
-      map[dateStr].total += entry.value || 0
+      const isValid = entry.validation_status !== 'invalid_time' && entry.ai_review_valid !== false
+      if (isValid) {
+        map[dateStr].total += entry.value || 0
+      }
       map[dateStr].entries.push(entry)
     })
     return map
@@ -87,7 +117,7 @@ export default function ChallengeDetail() {
     queryKey: ['challenge-participants', id],
     queryFn: () => getChallengeParticipants(id),
     staleTime: 1000,
-    enabled: activeTab === 'participants'
+    enabled: activeTab === 'participants' || showInviteModal
   })
   const participantsList = participantsData?.data?.result?.participants || []
 
@@ -119,6 +149,18 @@ export default function ChallengeDetail() {
       }
     },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
+  })
+
+  // Invite Friend Mutation
+  const inviteFriendMutation = useSafeMutation({
+    mutationFn: (friendId) => inviteFriendToChallenge(id, friendId),
+    onSuccess: (_, friendId) => {
+      setInvitedIds(prev => new Set([...prev, String(friendId)]))
+      toast.success('Đã gửi lời mời! Bạn bè của bạn sẽ nhận được thông báo.')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || 'Không thể gửi lời mời')
+    }
   })
 
   // ==================== COMPUTED ====================
@@ -306,10 +348,35 @@ export default function ChallengeDetail() {
               </div>
             )}
             {isOngoing && (
-              <div className="mb-3">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Đang diễn ra
                 </span>
+                
+                {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && challenge.time_window_start && challenge.time_window_end && (
+                  (() => {
+                    const now = new Date()
+                    const currentHours = now.getHours()
+                    const currentMinutes = now.getMinutes()
+                    const [startH, startM] = challenge.time_window_start.split(':').map(Number)
+                    const [endH, endM] = challenge.time_window_end.split(':').map(Number)
+                    
+                    const currentTimeVal = currentHours * 60 + currentMinutes
+                    const startTimeVal = startH * 60 + startM
+                    const endTimeVal = endH * 60 + endM
+                    
+                    const isInWindow = currentTimeVal >= startTimeVal && currentTimeVal <= endTimeVal
+                    
+                    return (
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit shadow-lg ${isInWindow ? 'bg-emerald-500/90 text-white border border-emerald-400' : 'bg-gray-800/80 text-white border border-gray-600'}`}>
+                         <FaClock size={10} />
+                         {isInWindow 
+                            ? `🟢 Đang mở check-in (${challenge.time_window_start} - ${challenge.time_window_end})` 
+                            : `🔴 Đã đóng / Chưa tới giờ (${challenge.time_window_start} - ${challenge.time_window_end})`}
+                      </span>
+                    )
+                  })()
+                )}
               </div>
             )}
             {isExpired && (
@@ -367,6 +434,13 @@ export default function ChallengeDetail() {
                   <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
                     <MdCheckCircle className="text-base" /> Đã tham gia
                   </div>
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
+                  >
+                    <FaInvite className="text-sm" />
+                    Mời bạn bè
+                  </button>
                   <button
                     onClick={() => setShowLeaveModal(true)}
                     disabled={quitMutation.isPending}
@@ -453,12 +527,37 @@ export default function ChallengeDetail() {
                 <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300 p-4 bg-pink-50 dark:bg-pink-900/10 border border-pink-200 dark:border-pink-800 rounded-lg">
                   <span className="text-3xl">💪</span>
                   <div>
-                    <p className="font-semibold text-pink-700 dark:text-pink-400 mb-1">Ghi nhận buổi tập</p>
-                    <p className="text-sm">Chuyển sang tab "Tiến độ", nhấn vào ngày hôm nay trên lịch. Chọn loại bài tập, nhập thời gian và calo tiêu hao.</p>
+                    <p className="font-semibold text-pink-700 dark:text-pink-400 mb-1">Tập luyện & ghi nhận tiến độ</p>
+                    <p className="text-sm">Chuyển sang tab "Tiến độ", nhấn vào ngày hôm nay trên lịch. Nhấn "Bắt đầu tập" để thực hiện các bài đã chọn. Đánh dấu hoàn thành các bài tập để tự động ghi nhận vào tiến độ của ngày.</p>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Exercises List — Fitness challenges only */}
+            {challenge.challenge_type === 'fitness' && challenge.exercises?.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
+                  🏋️ Danh sách bài tập ({challenge.exercises.length})
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {challenge.exercises.map((ex, idx) => (
+                    <div key={ex.exercise_id || idx} className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-100 dark:border-purple-800/50">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500 text-white text-sm font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{ex.exercise_name}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                          {ex.sets?.length || 1} set • {ex.sets?.[0]?.reps || 10} reps
+                          {ex.sets?.[0]?.weight > 0 && ` • ${ex.sets[0].weight}kg`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Info Grid — 3 columns matching SportEventDetail */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -603,6 +702,114 @@ export default function ChallengeDetail() {
       )}
 
       {/* Participant Progress Modal */}
+      {/* ==================== INVITE FRIENDS MODAL ==================== */}
+      {
+        showInviteModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FaBell className="text-orange-500" />
+                    Mời bạn bè tham gia
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Bạn bè sẽ nhận được thông báo về thử thách này
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setShowInviteModal(false); setFriendSearch('') }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+                >
+                  <FaTimes className="text-gray-500" />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="px-5 pt-4 pb-2">
+                <div className="relative">
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    placeholder="Tìm tên bạn bè..."
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Friends List */}
+              <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-2">
+                {myFriends.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                    <FaInvite className="mx-auto text-4xl mb-3 text-gray-300" />
+                    <p className="font-medium">Bạn chưa có người bạn nào</p>
+                    <p className="text-xs mt-1">Kết bạn thêm để có thể mời họ!</p>
+                  </div>
+                ) : filteredFriendsForInvite.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    Không tìm thấy bạn bè phù hợp
+                  </div>
+                ) : (
+                  filteredFriendsForInvite.map((friend) => {
+                    const alreadyInvited = invitedIds.has(String(friend._id))
+                    const alreadyJoined = participantsList.some(p => {
+                      const pid = p.user?._id || p._id
+                      return String(pid) === String(friend._id)
+                    })
+                    return (
+                      <div
+                        key={friend._id}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/40 transition"
+                      >
+                        <div className="relative shrink-0">
+                          <img
+                            src={friend.avatar ? getImageUrl(friend.avatar) : useravatar}
+                            alt={friend.name}
+                            className="w-11 h-11 rounded-full object-cover border-2 border-orange-400"
+                          />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{friend.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{friend.email}</p>
+                        </div>
+                        <div className="shrink-0">
+                          {alreadyJoined ? (
+                            <span className="text-xs px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full font-medium flex items-center gap-1">
+                              <FaCheck size={10} /> Đã tham gia
+                            </span>
+                          ) : alreadyInvited ? (
+                            <span className="text-xs px-3 py-1.5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 rounded-full font-medium flex items-center gap-1">
+                              <FaCheck size={10} /> Đã mời
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => inviteFriendMutation.mutate(friend._id)}
+                              disabled={inviteFriendMutation.isPending}
+                              className="text-xs px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {inviteFriendMutation.isPending ? (
+                                <AiOutlineLoading3Quarters className="animate-spin" size={10} />
+                              ) : (
+                                <FaBell size={10} />
+                              )}
+                              Mời
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      }
+
       {selectedParticipant && (
         <ParticipantProgressModal
           participant={selectedParticipant}

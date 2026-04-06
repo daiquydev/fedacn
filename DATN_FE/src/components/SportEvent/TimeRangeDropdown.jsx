@@ -10,15 +10,6 @@ const PRESETS = [
   { label: 'Tùy chỉnh...', value: 'custom' }
 ]
 
-function parseDateInput(text) {
-  if (!text) return ''
-  const ddmm = text.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/)
-  if (ddmm) return `${ddmm[3]}-${ddmm[2].padStart(2, '0')}-${ddmm[1].padStart(2, '0')}`
-  const iso = text.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/)
-  if (iso) return `${iso[1]}-${iso[2].padStart(2, '0')}-${iso[3].padStart(2, '0')}`
-  return ''
-}
-
 /**
  * Dropdown time range filter — styled for User FE.
  * @param {string} value - current filter value (e.g. '7d', '1m', 'all')
@@ -27,8 +18,9 @@ function parseDateInput(text) {
  */
 export default function TimeRangeDropdown({ value = '7d', onChange, accentColor = 'blue' }) {
   const [showCustom, setShowCustom] = useState(false)
-  const [startText, setStartText] = useState('')
-  const [endText, setEndText] = useState('')
+  // type="date" inputs give YYYY-MM-DD directly
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const startRef = useRef(null)
   const endRef = useRef(null)
 
@@ -38,17 +30,16 @@ export default function TimeRangeDropdown({ value = '7d', onChange, accentColor 
       setShowCustom(true)
     } else {
       setShowCustom(false)
-      setStartText('')
-      setEndText('')
+      setStartDate('')
+      setEndDate('')
       onChange({ period: v })
     }
   }
 
   const handleApplyCustom = () => {
-    const start = parseDateInput(startText)
-    const end = parseDateInput(endText)
-    if (start && end) {
-      onChange({ startDate: start, endDate: end })
+    // Both are already YYYY-MM-DD from type="date" inputs
+    if (startDate && endDate) {
+      onChange({ startDate, endDate })
       setShowCustom(false)
     }
   }
@@ -98,26 +89,22 @@ export default function TimeRangeDropdown({ value = '7d', onChange, accentColor 
         <div className="flex items-center gap-1.5 animate-fadeIn">
           <input
             ref={startRef}
-            type="text"
-            placeholder="DD/MM/YYYY"
-            className="text-sm border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-[120px] bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            value={startText}
-            onChange={(e) => setStartText(e.target.value)}
-            onClick={() => startRef.current?.select()}
+            type="date"
+            className="text-sm border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-[150px] bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
           />
           <span className="text-gray-400 dark:text-gray-500 text-xs font-medium">→</span>
           <input
             ref={endRef}
-            type="text"
-            placeholder="DD/MM/YYYY"
-            className="text-sm border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-[120px] bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
-            value={endText}
-            onChange={(e) => setEndText(e.target.value)}
-            onClick={() => endRef.current?.select()}
+            type="date"
+            className="text-sm border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 w-[150px] bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
           />
           <button
             onClick={handleApplyCustom}
-            disabled={!parseDateInput(startText) || !parseDateInput(endText)}
+            disabled={!startDate || !endDate}
             className={`text-sm text-white px-4 py-2 rounded-xl transition-all font-semibold shadow-sm hover:shadow-md disabled:cursor-not-allowed ${accent.btn}`}
           >
             Áp dụng

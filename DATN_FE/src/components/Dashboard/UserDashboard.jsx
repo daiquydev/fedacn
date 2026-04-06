@@ -1,3 +1,4 @@
+import { roundKcal } from '../../utils/mathUtils'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -47,7 +48,7 @@ const DayPreview = ({ title, dateLabel, meals = [], nutrition }) => (
       <p className='text-[11px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400'>{title}</p>
       <p className='text-base font-semibold text-gray-900 dark:text-white'>{dateLabel}</p>
       <p className='text-xs text-gray-500 dark:text-gray-400'>
-        {meals.length ? `${meals.length} bữa · ${Math.round(nutrition?.calories || 0)} kcal` : 'Chưa có bữa ăn nào'}
+        {meals.length ? `${meals.length} bữa · ${roundKcal(nutrition?.calories || 0)} kcal` : 'Chưa có bữa ăn nào'}
       </p>
     </div>
     <div className='space-y-1.5'>

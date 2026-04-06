@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -246,7 +247,7 @@ export default function MealPlanDetail() {
 
     const divisor = Math.max(days.length, 1)
     return {
-      calories: Math.round(totals.calories / divisor),
+      calories: roundKcal(totals.calories / divisor),
       protein: Math.round(totals.protein / divisor),
       carbs: Math.round(totals.carbs / divisor),
       fat: Math.round(totals.fat / divisor)

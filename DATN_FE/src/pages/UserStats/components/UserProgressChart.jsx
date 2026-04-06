@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import React, { useState, useEffect, useRef } from 'react';
 import { format, parseISO, subMonths, startOfMonth, endOfMonth, isAfter, isBefore, isWithinInterval } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -738,7 +739,7 @@ const UserProgressChart = ({ healthMetricsHistory = [], activityHistory = [], us
                   fontSize="12"
                   fill="#718096"
                 >
-                  {Math.round(tick * maxCalories)}
+                  {roundKcal(tick * maxCalories)}
                 </text>
               </g>
             );

@@ -6,6 +6,7 @@ export interface WorkoutSet {
     weight: number
     calories_per_unit: number
     completed: boolean
+    skipped: boolean
 }
 
 export interface WorkoutExercise {
@@ -36,6 +37,7 @@ export interface WorkoutSession {
     total_sets: number
     total_reps: number
     total_calories: number
+    total_skipped_sets: number
     duration_minutes: number
     status: string
     // Smart workout fields
@@ -50,7 +52,8 @@ const WorkoutSetSchema = new mongoose.Schema<WorkoutSet>(
         reps: { type: Number, default: 0 },
         weight: { type: Number, default: 0 },
         calories_per_unit: { type: Number, default: 10 },
-        completed: { type: Boolean, default: false }
+        completed: { type: Boolean, default: false },
+        skipped: { type: Boolean, default: false }
     },
     { _id: false }
 )
@@ -107,6 +110,10 @@ const WorkoutSessionSchema = new mongoose.Schema<WorkoutSession>(
             default: 0
         },
         total_calories: {
+            type: Number,
+            default: 0
+        },
+        total_skipped_sets: {
             type: Number,
             default: 0
         },

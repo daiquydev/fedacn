@@ -1,3 +1,4 @@
+import { roundKcal } from '../../utils/mathUtils'
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaChartLine, FaChartBar, FaChartPie, FaFireAlt, FaCheck } from 'react-icons/fa';
@@ -38,7 +39,7 @@ export default function MealStats() {
         const totalMissed = totalMeals - totalCompleted;
         const completionRate = totalMeals > 0 ? Math.round((totalCompleted / totalMeals) * 100) : 0;
         const totalCalories = dashStats.total_calories || caloriesData.reduce((sum, d) => sum + (d.calories || d.total_calories || 0), 0);
-        const avgCalories = caloriesData.length > 0 ? Math.round(totalCalories / caloriesData.length) : 0;
+        const avgCalories = caloriesData.length > 0 ? roundKcal(totalCalories / caloriesData.length) : 0;
 
         // Tính meal types stats từ dữ liệu
         const mealTypeStats = dashStats.meal_type_stats || {};

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus, FaLink } from 'react-icons/fa';
 import { MdVideocam, MdCheckCircle, MdSportsScore } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs';
@@ -46,11 +46,18 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
         <img src={event.image} alt={event.name} className="w-full h-full object-cover" />
 
         {/* Type Badge */}
-        <div className="absolute top-3 left-3 bg-white dark:bg-gray-900 text-blue-500 font-medium px-3 py-1 rounded-full text-sm flex items-center">
-          {isOnline ? (
-            <><MdVideocam className="mr-1" /><span>Trong nhà</span></>
-          ) : (
-            <><FaMapMarkerAlt className="mr-1" /><span>Ngoài trời</span></>
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+          <div className="bg-white dark:bg-gray-900 text-blue-500 font-medium px-3 py-1 rounded-full text-sm flex items-center shadow-sm w-max">
+            {isOnline ? (
+              <><MdVideocam className="mr-1" /><span>Trong nhà</span></>
+            ) : (
+              <><FaMapMarkerAlt className="mr-1" /><span>Ngoài trời</span></>
+            )}
+          </div>
+          {!isOnline && (
+            <div className="bg-[#fc4c02] text-white font-medium px-2.5 py-0.5 rounded-full text-[10px] flex items-center shadow-sm w-max">
+              <FaLink className="mr-1" /> Strava Sync
+            </div>
           )}
         </div>
 
@@ -83,8 +90,8 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
 
         <div className="space-y-2 mb-3">
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <FaCalendarAlt className="mr-2" />
-            <span>{eventDate.format('DD/MM/YYYY')}</span>
+            <FaCalendarAlt className="mr-2 flex-shrink-0" />
+            <span>{eventDate.format('DD/MM/YYYY')} - {moment(event.endDate).format('DD/MM/YYYY')}</span>
           </div>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <FaClock className="mr-2" />
@@ -122,22 +129,34 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
           </div>
         )}
 
+        {/* Progress bar (if joined) */}
+        {event.isJoined && event.myProgress && (
+          <div className="mb-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] font-medium text-gray-500">Tiến độ</span>
+              <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{event.myProgress.progressPercent}%</span>
+            </div>
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-600 transition-all duration-500"
+                style={{ width: `${event.myProgress.progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Join Button */}
         <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700">
-          {event.isJoined ? (
+          {isEnded ? (
+            <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
+              <BsClockHistory /> Sự kiện đã kết thúc
+            </button>
+          ) : event.isJoined ? (
             <button
               onClick={(e) => e.stopPropagation()}
               className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400 gap-2"
             >
               <MdCheckCircle /> Đã tham gia
-            </button>
-          ) : isEnded ? (
-            <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
-              Sự kiện đã kết thúc
-            </button>
-          ) : isNotStarted ? (
-            <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
-              Sự kiện chưa bắt đầu
             </button>
           ) : (event.maxParticipants > 0 && event.participants >= event.maxParticipants) ? (
             <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">

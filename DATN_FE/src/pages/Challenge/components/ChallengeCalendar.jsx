@@ -79,12 +79,26 @@ export default function ChallengeCalendar({ challenge, progressEntries = [], onD
     const map = {}
     progressEntries.forEach(entry => {
       const dateStr = format(new Date(entry.date || entry.createdAt), 'yyyy-MM-dd')
-      if (!map[dateStr]) map[dateStr] = { total: 0, entries: [] }
-      map[dateStr].total += entry.value || 0
+      if (!map[dateStr]) map[dateStr] = { total: 0, entries: [], completedIds: new Set() }
+      const isValid = entry.validation_status !== 'invalid_time' && entry.ai_review_valid !== false;
+      
+      if (isValid) {
+        if (challengeType === 'fitness' && Array.isArray(entry.completed_exercises)) {
+           entry.completed_exercises.forEach(ce => {
+             if (ce.completed) {
+                const idStr = typeof ce.exercise_id === 'string' ? ce.exercise_id : (ce.exercise_id?._id || ce.exercise_id?.toString())
+                if (idStr) map[dateStr].completedIds.add(idStr.toString())
+             }
+           })
+           map[dateStr].total = map[dateStr].completedIds.size
+        } else {
+           map[dateStr].total += entry.value || 0
+        }
+      }
       map[dateStr].entries.push(entry)
     })
     return map
-  }, [progressEntries])
+  }, [progressEntries, challengeType])
 
   // Navigation
   const handlePrev = () => setCurrentDate(prev => subMonths(prev, 1))
@@ -205,7 +219,7 @@ export default function ChallengeCalendar({ challenge, progressEntries = [], onD
                     ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                     : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
                 }`}>
-                {emoji} {dayData.total.toFixed(1)}/{goalValue} {goalUnit}
+                {emoji} {dayData.total % 1 === 0 ? dayData.total : dayData.total.toFixed(1)}/{goalValue} {goalUnit}
               </div>
               {/* Mini progress bar */}
               <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

@@ -1,13 +1,13 @@
 import { BiSolidPencil } from 'react-icons/bi'
 import { BsFillCameraFill } from 'react-icons/bs'
-import { FaCheckCircle, FaTrophy } from 'react-icons/fa'
+import { FaCheckCircle, FaTrophy, FaLink } from 'react-icons/fa'
 import { MdDashboard, MdArticle, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md'
 import { motion, AnimatePresence } from 'framer-motion'
 import useravatar from '../../assets/images/useravatar.jpg'
 import avatarbg from '../../assets/images/avatarbg.jpg'
 import { getImageUrl } from '../../utils/imageUrl'
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { currentAccount } from '../../apis/userApi'
+import { currentAccount, getStravaAuthUrl } from '../../apis/userApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import ModalUpdateProfile from './components/ModalUpdateProfile'
@@ -59,6 +59,17 @@ export default function Me() {
   const handleScroll = () => {
     const position = window.scrollY
     setScrollPosition(position)
+  }
+
+  const handleConnectStrava = async () => {
+    try {
+      const res = await getStravaAuthUrl()
+      if (res?.data?.result) {
+        window.location.href = res.data.result
+      }
+    } catch (err) {
+      console.error('Failed to get Strava auth URL', err)
+    }
   }
 
   useEffect(() => {
@@ -193,7 +204,31 @@ export default function Me() {
             </motion.div>
           </motion.div>
 
-          {/* Nút chỉnh sửa đã ẩn */}
+          {/* Nút chỉnh sửa đã ẩn / Changed to Action Buttons */}
+          <motion.div variants={fadeInUp} className='flex gap-3 justify-center md:justify-end flex-wrap mt-4 md:mt-0 md:ml-auto w-full md:w-auto'>
+            {user?.stravaProviderId ? (
+              <button disabled className='flex items-center gap-2 bg-gray-600/60 backdrop-blur-md px-4 py-2 rounded-full text-white font-medium text-sm border border-gray-400'>
+                <FaCheckCircle className='text-[#fc4c02] text-lg' />
+                Đã kết nối Strava
+              </button>
+            ) : (
+              <button
+                onClick={handleConnectStrava}
+                className='flex items-center gap-2 bg-[#fc4c02] hover:bg-[#e34402] px-4 py-2 rounded-full text-white font-medium transition-all duration-300 shadow-md text-sm'
+              >
+                <FaLink className='text-[16px]' />
+                Kết nối Strava
+              </button>
+            )}
+            
+            <button
+              onClick={() => setModalUpdateProfile(true)}
+              className='flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-full text-white font-medium transition-all duration-300 shadow-md text-sm'
+            >
+              <BiSolidPencil className='text-[16px]' />
+              Chỉnh sửa hồ sơ
+            </button>
+          </motion.div>
         </motion.div>
       </div>
 

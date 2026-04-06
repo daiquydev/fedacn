@@ -1,3 +1,4 @@
+import { roundKcal } from '../../utils/mathUtils'
 import React, {
     useState, useEffect, useRef, useCallback, useMemo
 } from 'react'
@@ -796,7 +797,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
 
     const realtimeKcal = useMemo(() => {
         if (!kcalPerMinute || kcalPerMinute <= 0) return 0
-        return Math.round(kcalPerMinute * (activeSecs / 60))
+        return roundKcal(kcalPerMinute * (activeSecs / 60))
     }, [kcalPerMinute, activeSecs])
 
     // ─────────────────────────────────────────────────────────────────────────

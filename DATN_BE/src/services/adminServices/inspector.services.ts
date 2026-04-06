@@ -15,7 +15,6 @@ import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import UserModel from '~/models/schemas/user.schema'
 import MealPlanModel from '~/models/schemas/mealPlan.schema'
-import { trainRecipesRecommender } from '~/utils/recommend'
 
 class InspectorService {
   async getAllPostReportService({ page, limit, search }: { page: number; limit: number; search: string }) {
@@ -783,7 +782,6 @@ class InspectorService {
       },
       { new: true }
     )
-    await trainRecipesRecommender()
     return recipe
   }
   async rejectRecipeService({ recipe_id }: { recipe_id: string }) {
@@ -986,7 +984,6 @@ class InspectorService {
         }
       }
     )
-    await trainRecipesRecommender()
     return album
   }
   async rejectAlbumService({ album_id }: { album_id: string }) {

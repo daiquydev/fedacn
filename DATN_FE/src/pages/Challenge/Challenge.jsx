@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getChallengeFeed, joinChallenge, quitChallenge } from '../../apis/challengeApi'
+import { currentAccount } from '../../apis/userApi'
 import { toast } from 'react-hot-toast'
 import {
   FaUtensils, FaRunning, FaDumbbell, FaPlus, FaSearch, FaTrophy,
@@ -15,6 +16,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
+import ParticipantsList from '../../components/ParticipantsList'
 import CreateChallengeModal from './components/CreateChallengeModal'
 
 const TYPE_CONFIG = {
@@ -24,7 +26,7 @@ const TYPE_CONFIG = {
 }
 
 // Challenge Card — styled after SportEventCard
-function ChallengeCard({ challenge, onJoin, onQuit, joinLoading }) {
+function ChallengeCard({ challenge, onJoin, onQuit, joinLoading, friendIds = new Set(), connectedIds = new Set() }) {
   const navigate = useNavigate()
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
 
@@ -94,6 +96,12 @@ function ChallengeCard({ challenge, onJoin, onQuit, joinLoading }) {
             <FaCalendarAlt className="mr-2" />
             <span>{new Date(challenge.start_date).toLocaleDateString('vi-VN')} - {new Date(challenge.end_date).toLocaleDateString('vi-VN')}</span>
           </div>
+          {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && challenge.time_window_start && challenge.time_window_end && (
+            <div className="flex items-center text-xs font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400 px-2 py-1 rounded w-max mt-1">
+              <FaClock className="mr-1.5" />
+              <span>Khung giờ: {challenge.time_window_start} - {challenge.time_window_end}</span>
+            </div>
+          )}
           {!isExpired && daysLeft > 0 && (
             <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
               <FaClock className="mr-2" />
@@ -106,15 +114,27 @@ function ChallengeCard({ challenge, onJoin, onQuit, joinLoading }) {
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">{challenge.description}</p>
         )}
 
-        {/* Creator */}
-        <div className="flex items-center gap-2 mb-3">
-          <img
-            src={challenge.creator_id?.avatar ? getImageUrl(challenge.creator_id.avatar) : useravatar}
-            alt="" className="w-6 h-6 rounded-full object-cover"
-            onError={e => { e.target.onerror = null; e.target.src = useravatar }}
-          />
-          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{challenge.creator_id?.name || 'Ẩn danh'}</span>
-        </div>
+        {/* Participants avatar row */}
+        {(() => {
+          const previewUsers = (challenge.participants_preview || []).map(p => ({
+            id: p._id || p,
+            name: p.name || 'Người dùng',
+            avatar: p.avatar ? getImageUrl(p.avatar) : useravatar,
+          }))
+          return previewUsers.length > 0 ? (
+            <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+              <ParticipantsList
+                participants={previewUsers}
+                initialLimit={4}
+                size="sm"
+                title={null}
+                showCount={false}
+                friendIds={friendIds}
+                connectedIds={connectedIds}
+              />
+            </div>
+          ) : null
+        })()}
 
         {/* Progress bar (if joined) */}
         {challenge.isJoined && (
@@ -206,6 +226,20 @@ export default function Challenge() {
 
   const challenges = data?.data?.result?.challenges || []
   const totalPage = data?.data?.result?.totalPage || 1
+
+  // Fetch current user's social graph for ParticipantsList social rings
+  const { data: meData } = useQuery({
+    queryKey: ['me'],
+    queryFn: currentAccount
+  })
+  const me = meData?.data?.result?.[0]
+  const myFollowers = useMemo(() => me?.followers || [], [me])
+  const myFollowings = useMemo(() => me?.followings || [], [me])
+  const followerIds = useMemo(() => new Set(myFollowers.map(p => String(p._id))), [myFollowers])
+  const followingIds = useMemo(() => new Set(myFollowings.map(p => String(p._id))), [myFollowings])
+  const myFriends = useMemo(() => myFollowers.filter(p => followingIds.has(String(p._id))), [myFollowers, followingIds])
+  const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
+  const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
 
   useEffect(() => { setPage(1) }, [searchTerm, activeType, sortBy, filterOngoing, scope])
 
@@ -519,6 +553,8 @@ export default function Challenge() {
                   onJoin={(id) => joinMutation.mutate(id)}
                   onQuit={(id) => quitMutation.mutate(id)}
                   joinLoading={joinMutation.isPending || quitMutation.isPending}
+                  friendIds={friendIds}
+                  connectedIds={connectedIds}
                 />
               ))}
             </div>

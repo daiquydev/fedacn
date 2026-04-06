@@ -1,5 +1,18 @@
 import mongoose, { Types } from 'mongoose'
 
+export interface IChallengeExerciseSet {
+    set_number: number
+    reps: number
+    weight: number
+    calories_per_unit: number
+}
+
+export interface IChallengeExercise {
+    exercise_id: Types.ObjectId
+    exercise_name: string
+    sets: IChallengeExerciseSet[]
+}
+
 export interface IChallenge {
     _id?: Types.ObjectId
     creator_id: Types.ObjectId
@@ -28,6 +41,14 @@ export interface IChallenge {
     is_deleted: boolean
     participants_count: number
     badge_emoji: string
+
+    // Nutrition sub-type (time-window restriction)
+    nutrition_sub_type?: 'free' | 'time_window'
+    time_window_start?: string  // "HH:mm" e.g. "08:00"
+    time_window_end?: string    // "HH:mm" e.g. "11:00"
+
+    // Fitness exercises (only for challenge_type === 'fitness')
+    exercises: IChallengeExercise[]
 
     // Optional links
     linked_meal_plan_id?: Types.ObjectId | null
@@ -85,6 +106,27 @@ const ChallengeSchema = new mongoose.Schema<IChallenge>(
         is_deleted: { type: Boolean, default: false },
         participants_count: { type: Number, default: 0 },
         badge_emoji: { type: String, default: '🏆' },
+
+        // Nutrition sub-type (time-window restriction)
+        nutrition_sub_type: {
+            type: String,
+            enum: ['free', 'time_window'],
+            default: 'free'
+        },
+        time_window_start: { type: String, default: null },
+        time_window_end: { type: String, default: null },
+
+        // Fitness exercises (only for challenge_type === 'fitness')
+        exercises: [{
+            exercise_id: { type: mongoose.SchemaTypes.ObjectId, ref: 'exercises' },
+            exercise_name: { type: String, required: true },
+            sets: [{
+                set_number: { type: Number },
+                reps: { type: Number, default: 10 },
+                weight: { type: Number, default: 0 },
+                calories_per_unit: { type: Number, default: 10 }
+            }]
+        }],
 
         // Optional links
         linked_meal_plan_id: {

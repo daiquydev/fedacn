@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import { useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -137,7 +138,7 @@ export default function ActivityResult() {
                     <div className='result-popup-stat'>
                         <span className='result-popup-stat-icon'>🔥</span>
                         <div>
-                            <p className='result-popup-stat-val'>{Math.round(activity.calories)}</p>
+                            <p className='result-popup-stat-val'>{roundKcal(activity.calories)}</p>
                             <p className='result-popup-stat-lbl'>Kcal</p>
                         </div>
                     </div>

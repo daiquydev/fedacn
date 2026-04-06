@@ -34,7 +34,9 @@ export const createChallengeController = async (req: Request, res: Response) => 
         is_public,
         badge_emoji, linked_meal_plan_id,
         category, kcal_per_unit,
-        start_date_iso, end_date_iso, visibility
+        start_date_iso, end_date_iso, visibility,
+        nutrition_sub_type, time_window_start, time_window_end,
+        exercises
     } = req.body
 
     const result = await challengeService.createChallenge({
@@ -54,7 +56,11 @@ export const createChallengeController = async (req: Request, res: Response) => 
         kcal_per_unit: kcal_per_unit ? Number(kcal_per_unit) : undefined,
         start_date_iso,
         end_date_iso,
-        visibility
+        visibility,
+        nutrition_sub_type,
+        time_window_start,
+        time_window_end,
+        exercises
     })
 
     return res.json({ message: 'Tạo thử thách thành công', result })
@@ -171,6 +177,14 @@ export const getChallengeActivityController = async (req: Request, res: Response
     return res.json({ message: 'Lấy hoạt động thành công', result })
 }
 
+export const getChallengeProgressEntryController = async (req: Request, res: Response) => {
+    const { id, progressId } = req.params
+
+    const result = await challengeService.getChallengeProgressEntry(id, progressId)
+
+    return res.json({ message: 'Lấy tiến độ thành công', result })
+}
+
 export const deleteProgressController = async (req: Request, res: Response) => {
     const { id, progressId } = req.params
     const userId = (req as any).decoded.user_id
@@ -203,4 +217,29 @@ export const getFeedController = async (req: Request, res: Response) => {
     })
 
     return res.json({ message: 'Lấy feed thử thách thành công', result })
+}
+
+export const inviteFriendToChallengeController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params
+        const { friendId } = req.body
+        const userId = (req as any).decoded?.user_id
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' })
+        }
+        if (!friendId) {
+            return res.status(400).json({ message: 'friendId is required' })
+        }
+
+        const result = await challengeService.inviteFriendToChallenge(id, userId, friendId)
+        return res.json({
+            result,
+            message: 'Đã gửi lời mời thành công'
+        })
+    } catch (error) {
+        return res.status(400).json({
+            message: (error as Error).message
+        })
+    }
 }

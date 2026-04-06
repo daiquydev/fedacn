@@ -24,12 +24,10 @@ import { currentAccount } from '../../apis/userApi'
 import { getSportIcon } from '../../utils/sportIcons'
 import toast from 'react-hot-toast'
 
-// Format digits into DD/MM/YYYY
-const formatDateInput = (raw) => {
-  const digits = raw.replace(/\D/g, '').slice(0, 8)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2)
-  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4)
+// Convert YYYY-MM-DD (from type="date") to DD/MM/YYYY for display chips
+const formatDateDisplay = (isoDate) => {
+  if (!isoDate || isoDate.length !== 10) return ''
+  return isoDate.split('-').reverse().join('/')
 }
 
 // Featured Events Carousel Banner
@@ -113,17 +111,50 @@ const SportEvent = () => {
   const [page, setPage] = useState(1)
   const ITEMS_PER_PAGE = 9
 
-  // Fetch sport events with React Query
+  // Debounced search to avoid excessive API calls
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400)
+    return () => clearTimeout(t)
+  }, [searchTerm])
+
+  // Convert YYYY-MM-DD to YYYY-MM-DD for backend (type="date" already gives this)
+  const toISODate = (yyyymmdd) => {
+    if (!yyyymmdd || yyyymmdd.length !== 10) return undefined
+    return yyyymmdd
+  }
+
+  // Map sortBy values that imply a status filter
+  const resolvedStatus = sortBy === 'ongoing' ? 'ongoing' : sortBy === 'ended' ? 'ended' : sortBy === 'soonest' ? 'upcoming' : undefined
+
+  // Fetch sport events with React Query — server-side filtering
   const {
     data: eventsData,
     isLoading,
     error
   } = useQuery({
-    queryKey: ['sportEvents', { sortBy }],
-    queryFn: () => getAllSportEvents({ page: 1, limit: 100, sortBy })
+    queryKey: ['sportEvents', {
+      page, sortBy, debouncedSearch, selectedCategory, eventType,
+      filterDateFrom, filterDateTo, filterJoined, resolvedStatus
+    }],
+    queryFn: () => getAllSportEvents({
+      page,
+      limit: ITEMS_PER_PAGE,
+      sortBy: (sortBy === 'ongoing' || sortBy === 'ended') ? 'newest' : (sortBy === 'soonest' ? 'soonest' : sortBy),
+      search: debouncedSearch || undefined,
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      eventType: eventType !== 'all' ? eventType : undefined,
+      status: resolvedStatus,
+      dateFrom: toISODate(filterDateFrom),
+      dateTo: toISODate(filterDateTo),
+      joined: (sortBy === 'joined' || filterJoined) ? 'true' : undefined
+    }),
+    keepPreviousData: true
   })
 
   const sportEvents = eventsData?.data?.result?.events || eventsData?.result?.events || []
+  const totalPage = eventsData?.data?.result?.totalPage || 1
+  const totalItems = eventsData?.data?.result?.total || 0
 
   // Fetch current user's social graph
   const { data: meData } = useQuery({
@@ -157,94 +188,10 @@ const SportEvent = () => {
     }
   })
 
-  // Memoized filtered events
-  const filteredEvents = useMemo(() => {
-    let filtered = [...sportEvents]
-
-    // Filter by search term
-    if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        (event) =>
-          event.name?.toLowerCase().includes(search) ||
-          event.description?.toLowerCase().includes(search) ||
-          event.location?.toLowerCase().includes(search)
-      )
-    }
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((event) => event.category === selectedCategory)
-    }
-
-    // Filter by event type
-    if (eventType !== 'all') {
-      filtered = filtered.filter((event) => event.eventType === eventType)
-    }
-
-    // Filter by date range
-    if (filterDateFrom && filterDateFrom.length === 10) {
-      const [d, m, y] = filterDateFrom.split('/')
-      const fromDate = new Date(`${y}-${m}-${d}T00:00:00`)
-      if (!isNaN(fromDate.getTime())) {
-        filtered = filtered.filter((event) => new Date(event.startDate) >= fromDate)
-      }
-    }
-    if (filterDateTo && filterDateTo.length === 10) {
-      const [d, m, y] = filterDateTo.split('/')
-      const toDate = new Date(`${y}-${m}-${d}T23:59:59`)
-      if (!isNaN(toDate.getTime())) {
-        filtered = filtered.filter((event) => new Date(event.startDate) <= toDate)
-      }
-    }
-
-    // Filter: Đã tham gia (joined by current user)
-    if (sortBy === 'joined' || filterJoined) {
-      filtered = filtered.filter((event) => event.isJoined === true)
-    }
-
-    // Filter: Đang diễn ra (ongoing)
-    if (sortBy === 'ongoing') {
-      const now = new Date()
-      filtered = filtered.filter((event) => {
-        const start = new Date(event.startDate)
-        const end = new Date(event.endDate)
-        return start <= now && now <= end
-      })
-    }
-
-    // Filter: Đã kết thúc
-    if (sortBy === 'ended') {
-      const now = new Date()
-      filtered = filtered.filter((event) => new Date(event.endDate) < now)
-    }
-
-    // Sort events
-    if (sortBy === 'popular') {
-      filtered.sort((a, b) => (b.participants || 0) - (a.participants || 0))
-    } else if (sortBy === 'newest') {
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    } else if (sortBy === 'oldest') {
-      filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-    } else if (sortBy === 'soonest') {
-      filtered.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-    } else if (sortBy === 'ongoing') {
-      filtered.sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
-    } else if (sortBy === 'ended') {
-      filtered.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))
-    }
-
-    return filtered
-  }, [sportEvents, searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, filterJoined, me])
-
   // Reset page to 1 when any filter changes
   useEffect(() => {
     setPage(1)
-  }, [searchTerm, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, filterJoined])
-
-  // Pagination calculations
-  const totalPage = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1
-  const paginatedEvents = filteredEvents.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+  }, [debouncedSearch, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, filterJoined])
 
   // Fetch sport categories
   const { data: categoriesData } = useQuery({
@@ -330,8 +277,9 @@ const SportEvent = () => {
 
       {/* Featured Events Banner Carousel */}
       {(() => {
+        // Use current page events for banner if available (lightweight approach)
         const featuredEvents = [...sportEvents]
-          .filter(e => new Date(e.endDate) > new Date()) // only active/upcoming
+          .filter(e => new Date(e.endDate) > new Date())
           .sort((a, b) => (b.participants || 0) - (a.participants || 0))
           .slice(0, 3)
 
@@ -382,16 +330,16 @@ const SportEvent = () => {
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                    showAdvanced || sortBy !== 'popular' || (filterDateFrom && filterDateFrom.length === 10) || (filterDateTo && filterDateTo.length === 10)
+                    showAdvanced || sortBy !== 'popular' || !!filterDateFrom || !!filterDateTo
                       ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
                       : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
                   }`}
                 >
                   <FaFilter size={12} />
                   Bộ lọc
-                  {([sortBy !== 'popular', filterDateFrom?.length === 10, filterDateTo?.length === 10].filter(Boolean).length > 0) && (
+                  {([sortBy !== 'popular', !!filterDateFrom, !!filterDateTo].filter(Boolean).length > 0) && (
                     <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
-                      {[sortBy !== 'popular', filterDateFrom?.length === 10, filterDateTo?.length === 10].filter(Boolean).length}
+                      {[sortBy !== 'popular', !!filterDateFrom, !!filterDateTo].filter(Boolean).length}
                     </span>
                   )}
                   <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
@@ -400,7 +348,7 @@ const SportEvent = () => {
             </div>
 
             {/* Active filter chips */}
-            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || (filterDateFrom && filterDateFrom.length === 10) || (filterDateTo && filterDateTo.length === 10) || filterJoined) && (
+            {(eventType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || filterDateFrom || filterDateTo || filterJoined) && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {eventType !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
@@ -420,15 +368,15 @@ const SportEvent = () => {
                     <button onClick={() => setSortBy('popular')} className="hover:text-purple-900 dark:hover:text-purple-100"><FaTimes size={9} /></button>
                   </span>
                 )}
-                {filterDateFrom && filterDateFrom.length === 10 && (
+                {filterDateFrom && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                    📅 Từ {filterDateFrom}
+                    📅 Từ {formatDateDisplay(filterDateFrom)}
                     <button onClick={() => setFilterDateFrom('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
                   </span>
                 )}
-                {filterDateTo && filterDateTo.length === 10 && (
+                {filterDateTo && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                    📅 Đến {filterDateTo}
+                    📅 Đến {formatDateDisplay(filterDateTo)}
                     <button onClick={() => setFilterDateTo('')} className="hover:text-orange-900 dark:hover:text-orange-100"><FaTimes size={9} /></button>
                   </span>
                 )}
@@ -533,28 +481,22 @@ const SportEvent = () => {
                   <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Từ ngày</label>
                   <div className="relative">
                     <input
-                      type="text"
+                      type="date"
                       value={filterDateFrom}
-                      onChange={e => setFilterDateFrom(formatDateInput(e.target.value))}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
-                      className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                      onChange={e => setFilterDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
                     />
-                    <FaCalendarAlt className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Đến ngày</label>
                   <div className="relative">
                     <input
-                      type="text"
+                      type="date"
                       value={filterDateTo}
-                      onChange={e => setFilterDateTo(formatDateInput(e.target.value))}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
-                      className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                      onChange={e => setFilterDateTo(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
                     />
-                    <FaCalendarAlt className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
                   </div>
                 </div>
               </div>
@@ -598,7 +540,7 @@ const SportEvent = () => {
         {!isLoading && (
           <div className="mb-6 flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{paginatedEvents.length}</span> / {filteredEvents.length} sự kiện
+              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{sportEvents.length}</span> / {totalItems} sự kiện
               {totalPage > 1 && <span className="text-gray-400 ml-2">(trang {page}/{totalPage})</span>}
             </p>
           </div>
@@ -628,11 +570,11 @@ const SportEvent = () => {
               Thử lại
             </button>
           </div>
-        ) : filteredEvents.length > 0 ? (
+        ) : sportEvents.length > 0 ? (
           /* Events Grid */
           <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedEvents.map((event) => (
+            {sportEvents.map((event) => (
               <SportEventCard
                 key={event._id || event.id}
                 event={event}

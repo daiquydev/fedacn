@@ -24,7 +24,7 @@ import IndoorDetailModal from '../../../components/SportEvent/IndoorDetailModal'
 import IndoorShareModal from '../../../components/SportEvent/IndoorShareModal'
 import ProgressRing from '../../../components/SportEvent/ProgressRing'
 import TimeRangeDropdown from '../../../components/SportEvent/TimeRangeDropdown'
-import MilestoneCelebration, { useMilestoneCelebration } from '../../../components/SportEvent/MilestoneCelebration'
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 // Định dạng giây → chuỗi rõ đơn vị: "48p 00s" hoặc "1g 01p 01s"
@@ -376,14 +376,11 @@ export default function IndoorEventProgress({ event, userProgress }) {
     const metricUnit = activeMetric === 'calories' ? 'kcal' : 'phút'
     const barColor = activeMetric === 'calories' ? '#F97316' : '#3B82F6'
 
-    // ── Indoor Milestone Celebration
-    const { celebration: indoorCelebration, closeCelebration: closeIndoorCelebration } =
-        useMilestoneCelebration(eventId, progressStats?.pct || 0, 'indoor')
+
 
     return (
         <div className="space-y-8 animate-fadeIn">
-            {/* Milestone Celebration */}
-            <MilestoneCelebration milestone={indoorCelebration} isGroup={false} onClose={closeIndoorCelebration} />
+
 
             {/* ── Video Call Modal ── */}
             {showVideoCall && (

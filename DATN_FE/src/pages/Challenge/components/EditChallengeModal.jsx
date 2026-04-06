@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import React, { useState, useEffect } from 'react'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { updateChallenge } from '../../../apis/challengeApi'
@@ -7,43 +8,50 @@ import { getImageUrl } from '../../../utils/imageUrl'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
 import moment from 'moment'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
     FaBullseye, FaCalendarAlt, FaUsers, FaImage,
     FaGlobe, FaUserFriends, FaLock, FaFire, FaClipboardList,
-    FaSave
+    FaSave, FaClock
 } from 'react-icons/fa'
 import { BsClockHistory } from 'react-icons/bs'
 
 // ==================== DATE HELPERS ====================
-const isValidDateStr = (val) => {
+// Date input uses type="date" → value is YYYY-MM-DD
+const isValidDateISO = (val) => {
     if (!val || val.length !== 10) return false
-    const [d, m, y] = val.split('/').map(Number)
-    if (!d || !m || !y || y < 2000 || y > 2100) return false
-    const date = new Date(y, m - 1, d)
-    return date.getDate() === d && date.getMonth() === m - 1 && date.getFullYear() === y
+    const date = new Date(val + 'T00:00:00')
+    return !isNaN(date.getTime())
 }
 
-const parseDateToISO = (dateStr) => {
-    if (!isValidDateStr(dateStr)) return null
-    const [d, m, y] = dateStr.split('/')
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00.000Z`
+const parseDateToISO = (dateISO) => {
+    if (!isValidDateISO(dateISO)) return null
+    // dateISO is already YYYY-MM-DD from type="date" input
+    return `${dateISO}T00:00:00.000Z`
 }
 
-const formatDateInput = (raw) => {
-    const digits = raw.replace(/\D/g, '').slice(0, 8)
-    if (digits.length <= 2) return digits
-    if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2)
-    return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4)
-}
-
-const isoToDisplay = (isoStr) => {
+// Convert ISO string from backend to YYYY-MM-DD for type="date" input value
+const isoToInput = (isoStr) => {
     if (!isoStr) return ''
     const d = new Date(isoStr)
-    const dd = String(d.getUTCDate()).padStart(2, '0')
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+    if (isNaN(d.getTime())) return ''
     const yyyy = d.getUTCFullYear()
-    return `${dd}/${mm}/${yyyy}`
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const dd = String(d.getUTCDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+}
+
+const parseTime = (timeStr) => {
+    if (!timeStr) return new Date()
+    const [hours, minutes] = timeStr.split(':')
+    const d = new Date()
+    d.setHours(parseInt(hours, 10))
+    d.setMinutes(parseInt(minutes, 10))
+    d.setSeconds(0)
+    d.setMilliseconds(0)
+    return d
 }
 
 // ==================== CONSTANTS ====================
@@ -85,11 +93,15 @@ function PreviewCard({ form, selectedCat, outdoorCategories }) {
     const gradient = TYPE_GRADIENT[form.challenge_type] || 'from-gray-400 to-gray-500'
     const visConf = VISIBILITY_OPTIONS.find(v => v.value === form.visibility)
 
-    const startFmt = isValidDateStr(form.startDate) ? form.startDate : '--/--/----'
-    const endFmt = isValidDateStr(form.endDate) ? form.endDate : '--/--/----'
+    const startFmt = isValidDateISO(form.startDate)
+        ? form.startDate.split('-').reverse().join('/')
+        : '--/--/----'
+    const endFmt = isValidDateISO(form.endDate)
+        ? form.endDate.split('-').reverse().join('/')
+        : '--/--/----'
 
     const estimatedKcal = form.challenge_type === 'outdoor_activity' && form.goal_value && selectedCat?.kcal_per_unit
-        ? Math.round(Number(form.goal_value) * selectedCat.kcal_per_unit)
+        ? roundKcal(Number(form.goal_value) * selectedCat.kcal_per_unit)
         : null
 
     return (
@@ -160,7 +172,10 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
         startDate: '',
         endDate: '',
         visibility: 'public',
-        badge_emoji: '🏆'
+        badge_emoji: '🏆',
+        nutrition_sub_type: 'free',
+        time_window_start: '08:00',
+        time_window_end: '11:00'
     })
 
     const [errors, setErrors] = useState({})
@@ -188,10 +203,13 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                 goal_type: challenge.goal_type || 'daily_km',
                 goal_value: challenge.goal_value ? String(challenge.goal_value) : '',
                 goal_unit: challenge.goal_unit || 'km',
-                startDate: isoToDisplay(challenge.start_date),
-                endDate: isoToDisplay(challenge.end_date),
+                startDate: isoToInput(challenge.start_date),
+                endDate: isoToInput(challenge.end_date),
                 visibility: challenge.visibility || (challenge.is_public ? 'public' : 'private'),
-                badge_emoji: challenge.badge_emoji || '🏆'
+                badge_emoji: challenge.badge_emoji || '🏆',
+                nutrition_sub_type: challenge.nutrition_sub_type || 'free',
+                time_window_start: challenge.time_window_start || '08:00',
+                time_window_end: challenge.time_window_end || '11:00'
             })
             setErrors({})
         }
@@ -208,15 +226,13 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
             case 'goal_value': return (!value || Number(value) <= 0) ? 'Mục tiêu phải lớn hơn 0' : null
             case 'startDate':
                 if (!value) return 'Vui lòng nhập ngày bắt đầu'
-                if (!isValidDateStr(value)) return 'Định dạng DD/MM/YYYY'
+                if (!isValidDateISO(value)) return 'Ngày không hợp lệ'
                 return null
             case 'endDate':
                 if (!value) return 'Vui lòng nhập ngày kết thúc'
-                if (!isValidDateStr(value)) return 'Định dạng DD/MM/YYYY'
-                if (isValidDateStr(form.startDate)) {
-                    const [sd, sm, sy] = form.startDate.split('/').map(Number)
-                    const [ed, em, ey] = value.split('/').map(Number)
-                    if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd)) return 'Phải sau ngày bắt đầu'
+                if (!isValidDateISO(value)) return 'Ngày không hợp lệ'
+                if (isValidDateISO(form.startDate)) {
+                    if (new Date(value) < new Date(form.startDate)) return 'Phải sau ngày bắt đầu'
                 }
                 return null
             default: return null
@@ -224,10 +240,10 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
     }
 
     const handleDateChange = (name, raw) => {
-        const formatted = formatDateInput(raw)
-        setField(name, formatted)
-        if (formatted.length === 10) {
-            const err = validateField(name, formatted)
+        // type="date" gives YYYY-MM-DD directly
+        setField(name, raw)
+        if (raw.length === 10) {
+            const err = validateField(name, raw)
             setErrors(prev => ({ ...prev, [name]: err }))
         }
     }
@@ -262,7 +278,12 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
             is_public: form.visibility !== 'private',
             badge_emoji: form.badge_emoji,
             category: form.category,
-            kcal_per_unit: form.kcal_per_unit || 0
+            kcal_per_unit: form.kcal_per_unit || 0,
+            nutrition_sub_type: form.challenge_type === 'nutrition' ? form.nutrition_sub_type : 'free',
+            time_window_start: (form.challenge_type === 'nutrition' && form.nutrition_sub_type === 'time_window')
+                ? form.time_window_start : null,
+            time_window_end: (form.challenge_type === 'nutrition' && form.nutrition_sub_type === 'time_window')
+                ? form.time_window_end : null
         }),
         onSuccess: () => {
             toast.success('✅ Cập nhật thử thách thành công!')
@@ -393,6 +414,98 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                             </div>
                         )}
 
+                        {/* Nutrition: loại hình thử thách (time-window) */}
+                        {form.challenge_type === 'nutrition' && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <FaClock className="inline mr-1 text-emerald-500" /> Loại hình thử thách ăn uống *
+                                </label>
+                                <div className="space-y-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setField('nutrition_sub_type', 'free')}
+                                        className={`w-full p-3 rounded-xl border-2 flex items-start gap-3 text-left transition-all ${form.nutrition_sub_type === 'free'
+                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'}`}
+                                    >
+                                        <span className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 mt-0.5 ${form.nutrition_sub_type === 'free' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>🕊️</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Tự do</p>
+                                            <p className="text-[11px] text-gray-400">Check-in bất kỳ lúc nào trong ngày</p>
+                                        </div>
+                                        {form.nutrition_sub_type === 'free' && <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2" />}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setField('nutrition_sub_type', 'time_window')}
+                                        className={`w-full p-3 rounded-xl border-2 flex items-start gap-3 text-left transition-all ${form.nutrition_sub_type === 'time_window'
+                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'}`}
+                                    >
+                                        <span className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 mt-0.5 ${form.nutrition_sub_type === 'time_window' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>⏰</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Khung giờ ăn</p>
+                                            <p className="text-[11px] text-gray-400">Chỉ check-in trong khoảng giờ quy định</p>
+                                        </div>
+                                        {form.nutrition_sub_type === 'time_window' && <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2" />}
+                                    </button>
+                                    {form.nutrition_sub_type === 'time_window' && (
+                                        <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                                                <FaClock className="text-[10px]" /> Khung giờ được check-in
+                                            </p>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] text-gray-500 mb-1">Từ giờ</label>
+                                                    <DatePicker
+                                                        selected={parseTime(form.time_window_start)}
+                                                        onChange={date => {
+                                                            if (date) {
+                                                                const h = String(date.getHours()).padStart(2, '0')
+                                                                const m = String(date.getMinutes()).padStart(2, '0')
+                                                                setField('time_window_start', `${h}:${m}`)
+                                                            }
+                                                        }}
+                                                        showTimeSelect
+                                                        showTimeSelectOnly
+                                                        timeIntervals={15}
+                                                        timeCaption="Giờ"
+                                                        dateFormat="HH:mm"
+                                                        timeFormat="HH:mm"
+                                                        className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
+                                                        wrapperClassName="w-full"
+                                                    />
+                                                </div>
+                                                <span className="text-gray-400 font-bold mt-4">→</span>
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] text-gray-500 mb-1">Đến giờ</label>
+                                                    <DatePicker
+                                                        selected={parseTime(form.time_window_end)}
+                                                        onChange={date => {
+                                                            if (date) {
+                                                                const h = String(date.getHours()).padStart(2, '0')
+                                                                const m = String(date.getMinutes()).padStart(2, '0')
+                                                                setField('time_window_end', `${h}:${m}`)
+                                                            }
+                                                        }}
+                                                        showTimeSelect
+                                                        showTimeSelectOnly
+                                                        timeIntervals={15}
+                                                        timeCaption="Giờ"
+                                                        dateFormat="HH:mm"
+                                                        timeFormat="HH:mm"
+                                                        className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
+                                                        wrapperClassName="w-full"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">💡 Check-in ngoài khung giờ này sẽ bị từ chối</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Mục tiêu (value) */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -416,7 +529,7 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                                 <div className="mt-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800 flex items-center gap-2 text-xs">
                                     <FaFire className="text-orange-500 shrink-0" />
                                     <span className="text-orange-700 dark:text-orange-300">
-                                        Ước tính ~{Math.round(Number(form.goal_value) * (selectedCat.kcal_per_unit || 0)).toLocaleString()} kcal
+                                        Ước tính ~{roundKcal(Number(form.goal_value) * (selectedCat.kcal_per_unit || 0)).toLocaleString()} kcal
                                         ({selectedCat.kcal_per_unit} kcal/km × {form.goal_value} km)
                                     </span>
                                 </div>
@@ -430,11 +543,9 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                                     <FaCalendarAlt className="inline mr-1 text-blue-400" /> Ngày bắt đầu *
                                 </label>
                                 <input
-                                    type="text"
+                                    type="date"
                                     value={form.startDate}
                                     onChange={e => handleDateChange('startDate', e.target.value)}
-                                    placeholder="DD/MM/YYYY"
-                                    maxLength={10}
                                     className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.startDate ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-orange-400'}`}
                                 />
                                 {errors.startDate && <p className="text-xs text-red-500 mt-1">{errors.startDate}</p>}
@@ -444,11 +555,9 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                                     <FaCalendarAlt className="inline mr-1 text-blue-400" /> Ngày kết thúc *
                                 </label>
                                 <input
-                                    type="text"
+                                    type="date"
                                     value={form.endDate}
                                     onChange={e => handleDateChange('endDate', e.target.value)}
-                                    placeholder="DD/MM/YYYY"
-                                    maxLength={10}
                                     className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.endDate ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-orange-400'}`}
                                 />
                                 {errors.endDate && <p className="text-xs text-red-500 mt-1">{errors.endDate}</p>}

@@ -1,7 +1,7 @@
 import mongoose, { ConnectOptions } from 'mongoose';
 import { envConfig } from '../constants/config';
 
-// console.log(`MongoDB URL: ${envConfig.mongoURL}`);
+console.log(`MongoDB URL: ${envConfig.mongoURL}`);
 
 const connectDB = async () => {
   try {

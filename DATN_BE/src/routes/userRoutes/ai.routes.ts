@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express'
+import axios from 'axios'
 import AIUsageLogModel from '~/models/schemas/aiUsageLog.schema'
 
 const aiRouter = Router()
@@ -89,34 +90,26 @@ aiRouter.post('/generate', async (req: Request, res: Response) => {
     }
 
     try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
+        const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+            model: 'llama-3.1-8b-instant',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Bạn là chuyên gia tạo nội dung form sự kiện thể thao. Chỉ trả về JSON object thuần túy, không có markdown hay giải thích.'
+                },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1024
+        }, {
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${GROQ_API_KEY}`
             },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'Bạn là chuyên gia tạo nội dung form sự kiện thể thao. Chỉ trả về JSON object thuần túy, không có markdown hay giải thích.'
-                    },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 2048
-            })
+            timeout: 30000 // 30s timeout
         })
 
-        if (!response.ok) {
-            const errData = await response.json()
-            console.error('[AI Proxy] Groq error:', JSON.stringify(errData))
-            res.status(response.status).json({ message: errData?.error?.message || 'Groq API error' })
-            return
-        }
-
-        const data = await response.json()
+        const data = response.data
         let text = data?.choices?.[0]?.message?.content || ''
 
         // ---- Inject a verified working image URL ----
@@ -134,7 +127,13 @@ aiRouter.post('/generate', async (req: Request, res: Response) => {
 
         res.json({ text })
     } catch (err: any) {
-        res.status(500).json({ message: err.message || 'Internal server error' })
+        if (err.response) {
+            console.error('[AI Proxy] Groq error:', JSON.stringify(err.response.data))
+            res.status(err.response.status).json({ message: err.response.data?.error?.message || 'Groq API error' })
+        } else {
+            console.error('[AI Proxy] Axios error:', err.message)
+            res.status(500).json({ message: err.message || 'Internal server error' })
+        }
     }
 })
 

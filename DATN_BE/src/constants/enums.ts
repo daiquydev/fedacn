@@ -32,7 +32,8 @@ export enum NotificationTypes {
   trainingMilestone,
   challengeJoined,
   challengeCompleted,
-  challengeMilestone
+  challengeMilestone,
+  challengeInvite
 }
 
 // có 2 kiểu type là đủ 5000 follow hoặc gửi minh chứng

@@ -207,13 +207,24 @@ export default function SportEventPreviewCard({ eventId }) {
         const status = error?.response?.status
         const isDeletedOrGone = status === 404 || status === 410
         return (
-            <div className="mt-3 mx-4 md:mx-0 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 flex items-center gap-2">
-                <span className="text-xl opacity-40">🏃</span>
-                <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                    {isDeletedOrGone
-                        ? 'Sự kiện thể thao này đã không còn khả dụng'
-                        : 'Không thể tải thông tin sự kiện thể thao'}
-                </span>
+            <div className="mt-3 mx-4 md:mx-0 rounded-xl overflow-hidden border border-red-200 dark:border-red-900/40 bg-white dark:bg-gray-800/50">
+                <div className="bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2 opacity-50 flex items-center gap-2">
+                    <FaRunning className="text-white" size={13} />
+                    <span className="text-white text-xs font-semibold uppercase tracking-wide">Sự kiện thể thao</span>
+                </div>
+                <div className="px-4 py-5 flex items-center gap-3">
+                    <span className="text-3xl opacity-30">🏃</span>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {isDeletedOrGone
+                                ? 'Sự kiện thể thao này đã bị xóa hoặc không còn tồn tại'
+                                : 'Không thể tải thông tin sự kiện thể thao'}
+                        </p>
+                        {isDeletedOrGone && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Bài chia sẻ vẫn được lưu lại nhưng sự kiện không còn khả dụng</p>
+                        )}
+                    </div>
+                </div>
             </div>
         )
     }

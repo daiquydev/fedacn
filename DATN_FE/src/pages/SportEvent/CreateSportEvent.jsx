@@ -34,12 +34,11 @@ import moment from 'moment'
 const AI_PROXY_ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`
 
 // ==================== DATE/TIME HELPERS ====================
-const isValidDateStr = (val) => {
+// Date input uses type="date" → value is YYYY-MM-DD
+const isValidDateISO = (val) => {
   if (!val || val.length !== 10) return false
-  const [d, m, y] = val.split('/').map(Number)
-  if (!d || !m || !y || y < 2000 || y > 2100) return false
-  const date = new Date(y, m - 1, d)
-  return date.getDate() === d && date.getMonth() === m - 1 && date.getFullYear() === y
+  const date = new Date(val + 'T00:00:00')
+  return !isNaN(date.getTime())
 }
 
 const isValidTimeStr = (val) => {
@@ -48,29 +47,34 @@ const isValidTimeStr = (val) => {
   return h >= 0 && h <= 23 && min >= 0 && min <= 59
 }
 
-const isPastDate = (dateStr) => {
-  if (!isValidDateStr(dateStr)) return false
-  const [d, m, y] = dateStr.split('/').map(Number)
-  const date = new Date(y, m - 1, d)
+const isPastDate = (dateISO) => {
+  if (!isValidDateISO(dateISO)) return false
+  const date = new Date(dateISO + 'T00:00:00')
   const today = new Date(); today.setHours(0, 0, 0, 0)
   return date < today
 }
 
-const parseDateToISO = (dateStr, timeStr = '00:00') => {
-  const [d, m, y] = dateStr.split('/')
-  // Construct UTC ISO string directly to avoid local timezone shifting date back by 1 day
-  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${timeStr}:00.000Z`
+const isToday = (dateISO) => {
+  if (!isValidDateISO(dateISO)) return false
+  const date = new Date(dateISO + 'T00:00:00')
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime() === today.getTime()
 }
 
-// Format digits into DD/MM/YYYY
-const formatDateInput = (raw) => {
-  const digits = raw.replace(/\D/g, '').slice(0, 8)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2)
-  return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4)
+const isPastTime = (timeStr) => {
+  if (!isValidTimeStr(timeStr)) return false
+  const [h, min] = timeStr.split(':').map(Number)
+  const now = new Date()
+  return h < now.getHours() || (h === now.getHours() && min < now.getMinutes())
 }
 
-// Format digits into HH:mm
+const parseDateToISO = (dateISO, timeStr = '00:00') => {
+  // dateISO is already YYYY-MM-DD from type="date" input
+  return `${dateISO}T${timeStr}:00.000Z`
+}
+
+// Format digits into HH:mm (for time input only)
 const formatTimeInput = (raw) => {
   const digits = raw.replace(/\D/g, '').slice(0, 4)
   if (digits.length <= 2) return digits
@@ -89,8 +93,8 @@ const CreateSportEvent = () => {
 
   const [newEvent, setNewEvent] = useState({
     name: '',
-    startDate: '',    // DD/MM/YYYY text
-    endDate: '',      // DD/MM/YYYY text
+    startDate: '',    // YYYY-MM-DD (type="date")
+    endDate: '',      // YYYY-MM-DD (type="date")
     eventTime: '',    // HH:mm text
     location: '',
     category: '',
@@ -102,7 +106,8 @@ const CreateSportEvent = () => {
     detailedDescription: '',
     eventType: 'Ngoài trời',
     requirements: '',
-    benefits: ''
+    benefits: '',
+    requireStrava: false
   })
 
   const [errors, setErrors] = useState({})
@@ -153,7 +158,7 @@ const CreateSportEvent = () => {
     }
     setAiLoading(true)
     try {
-      const today = moment().format('DD/MM/YYYY')
+      const today = moment().format('YYYY-MM-DD')
       const allCategoryNames = categories.map(c => `${c.name} (${c.type})`).join(', ')
       const outdoorCategories = categories.filter(c => c.type === 'Ngoài trời').map(c => c.name).join(', ')
       const indoorCategories = categories.filter(c => c.type === 'Trong nhà').map(c => c.name).join(', ')
@@ -166,7 +171,7 @@ Người dùng muốn tạo một sự kiện thể thao. Dưới đây là mô 
 Hãy điền đầy đủ tất cả các trường sau thành một JSON object hợp lệ. Tuân thủ các quy tắc:
 1. Nếu mô tả đã có thông tin rõ ràng cho một trường → dùng thông tin đó.
 2. Nếu không có → tự suy luận hợp lý, thực tế, phù hợp văn hóa Việt Nam và ngữ cảnh thể thao.
-3. Ngày: định dạng DD/MM/YYYY. startDate phải >= ${today}. endDate phải >= startDate. Chọn ngày trong tương lai gần, hợp lý.
+3. Ngày: định dạng YYYY-MM-DD. startDate phải >= ${today}. endDate phải >= startDate. Chọn ngày trong tương lai gần, hợp lý.
 4. eventType: chỉ được là "Ngoài trời" hoặc "Trong nhà".
    - Hoạt động ngoài trời (category thuộc list: ${outdoorCategories}) → "Ngoài trời"
    - Hoạt động trong nhà (category thuộc list: ${indoorCategories}) → "Trong nhà"
@@ -186,8 +191,8 @@ JSON output (chỉ object, không gì khác):
   "name": string,
   "eventType": "Ngoài trời" | "Trong nhà",
   "category": string,
-  "startDate": "DD/MM/YYYY",
-  "endDate": "DD/MM/YYYY",
+  "startDate": "YYYY-MM-DD",
+  "endDate": "YYYY-MM-DD",
   "eventTime": "HH:mm",
   "location": string,
   "maxParticipants": number,
@@ -245,6 +250,7 @@ JSON output (chỉ object, không gì khác):
         if (parsed.detailedDescription) updated.detailedDescription = parsed.detailedDescription
         if (parsed.requirements) updated.requirements = parsed.requirements
         if (parsed.benefits) updated.benefits = parsed.benefits
+        // We can let AI toggle requireStrava, or default it to false by doing nothing.
         return updated
       })
 
@@ -270,12 +276,10 @@ JSON output (chỉ object, không gì khác):
         break
       case 'startDate':
         if (!value) error = 'Vui lòng nhập ngày bắt đầu'
-        else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
+        else if (!isValidDateISO(value)) error = 'Ngày không hợp lệ'
         else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
-        else if (currentState.endDate && isValidDateStr(currentState.endDate)) {
-          const [sd, sm, sy] = value.split('/').map(Number)
-          const [ed, em, ey] = currentState.endDate.split('/').map(Number)
-          if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd))
+        else if (currentState.endDate && isValidDateISO(currentState.endDate)) {
+          if (new Date(currentState.endDate) < new Date(value))
             setErrors(prev => ({ ...prev, endDate: 'Ngày kết thúc phải sau ngày bắt đầu' }))
           else
             setErrors(prev => ({ ...prev, endDate: null }))
@@ -283,18 +287,17 @@ JSON output (chỉ object, không gì khác):
         break
       case 'endDate':
         if (!value) error = 'Vui lòng nhập ngày kết thúc'
-        else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — định dạng DD/MM/YYYY'
+        else if (!isValidDateISO(value)) error = 'Ngày không hợp lệ'
         else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
-        else if (currentState.startDate && isValidDateStr(currentState.startDate)) {
-          const [sd, sm, sy] = currentState.startDate.split('/').map(Number)
-          const [ed, em, ey] = value.split('/').map(Number)
-          if (new Date(ey, em - 1, ed) < new Date(sy, sm - 1, sd))
+        else if (currentState.startDate && isValidDateISO(currentState.startDate)) {
+          if (new Date(value) < new Date(currentState.startDate))
             error = 'Ngày kết thúc phải sau ngày bắt đầu'
         }
         break
       case 'eventTime':
         if (!value) error = 'Vui lòng nhập thời điểm'
         else if (!isValidTimeStr(value)) error = 'Thời điểm không hợp lệ — định dạng HH:mm'
+        else if (isToday(currentState.startDate) && isPastTime(value)) error = 'Giờ bắt đầu không thể nằm trong quá khứ'
         break
       case 'location':
         if (!value?.trim()) error = 'Vui lòng nhập địa điểm'
@@ -337,9 +340,9 @@ JSON output (chỉ object, không gì khác):
 
   const handleDateChange = (e) => {
     const { name, value } = e.target
-    const formatted = formatDateInput(value)
-    setNewEvent(prev => ({ ...prev, [name]: formatted }))
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
+    // type="date" gives YYYY-MM-DD directly
+    setNewEvent(prev => ({ ...prev, [name]: value }))
+    validateField(name, value)
   }
 
   const handleTimeChange = (e) => {
@@ -359,7 +362,19 @@ JSON output (chỉ object, không gì khác):
     const fields = ['name', 'startDate', 'endDate', 'eventTime', ...(newEvent.eventType === 'Ngoài trời' ? ['location'] : []), 'description', 'image']
     const sErr = {}
     fields.forEach(f => {
-      const e = validateField(f, newEvent[f])
+      let e = null
+      if (f === 'startDate') {
+        if (!newEvent[f]) e = 'Vui lòng nhập ngày bắt đầu'
+        else if (!isValidDateISO(newEvent[f])) e = 'Ngày không hợp lệ'
+        else if (isPastDate(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
+      } else if (f === 'endDate') {
+        if (!newEvent[f]) e = 'Vui lòng nhập ngày kết thúc'
+        else if (!isValidDateISO(newEvent[f])) e = 'Ngày không hợp lệ'
+        else if (isPastDate(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
+        else if (newEvent.startDate && new Date(newEvent[f]) < new Date(newEvent.startDate)) e = 'Ngày kết thúc phải sau ngày bắt đầu'
+      } else {
+        e = validateField(f, newEvent[f])
+      }
       if (e) sErr[f] = e
     })
     setErrors(sErr)
@@ -373,7 +388,6 @@ JSON output (chỉ object, không gì khác):
     if (createMutation.isPending || isNavigating) return
 
     if (!validateForm()) {
-      toast.error('Vui lòng kiểm tra lại các thông tin bắt buộc')
       setTimeout(() => {
         const firstErrEl = document.querySelector('[data-error="true"]')
         if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -399,7 +413,8 @@ JSON output (chỉ object, không gì khác):
       detailedDescription: newEvent.detailedDescription,
       eventType: newEvent.eventType,
       requirements: newEvent.requirements,
-      benefits: newEvent.benefits
+      benefits: newEvent.benefits,
+      requireStrava: newEvent.eventType === 'Ngoài trời' ? newEvent.requireStrava : false
     }
 
     createMutation.mutate(finalData)
@@ -603,6 +618,26 @@ JSON output (chỉ object, không gì khác):
                     </button>
                   </div>
                 </div>
+
+                {/* Yêu cầu Strava Sync */}
+                {newEvent.eventType === 'Ngoài trời' && (
+                  <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800">
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu đo Gps (Strava Sync)</h4>
+                      <p className="text-xs text-orange-700 dark:text-orange-400">Bắt buộc lấy tiến độ từ hoạt động Strava của người dùng</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        name="requireStrava"
+                        className="sr-only peer" 
+                        checked={newEvent.requireStrava}
+                        onChange={(e) => setNewEvent(p => ({ ...p, requireStrava: e.target.checked }))}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -623,13 +658,10 @@ JSON output (chỉ object, không gì khác):
                       Ngày bắt đầu <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="date"
                       name="startDate"
                       value={newEvent.startDate}
                       onChange={handleDateChange}
-                      onBlur={e => validateField('startDate', e.target.value)}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
                       className={inputCls('startDate')}
                     />
                     <ErrorMsg name="startDate" />
@@ -642,13 +674,10 @@ JSON output (chỉ object, không gì khác):
                       Ngày kết thúc <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="date"
                       name="endDate"
                       value={newEvent.endDate}
                       onChange={handleDateChange}
-                      onBlur={e => validateField('endDate', e.target.value)}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
                       className={inputCls('endDate')}
                     />
                     <ErrorMsg name="endDate" />
@@ -677,7 +706,7 @@ JSON output (chỉ object, không gì khác):
                 {/* Gợi ý định dạng */}
                 <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
                   <FaInfoCircle className="mt-0.5 shrink-0" />
-                  <span>Nhập ngày theo định dạng <strong>DD/MM/YYYY</strong> (VD: 15/06/2026) và giờ theo <strong>HH:mm</strong> (VD: 07:30). Không thể chọn ngày trong quá khứ.</span>
+                  <span>Chọn ngày từ lịch và nhập giờ theo định dạng <strong>HH:mm</strong> (VD: 07:30). Không thể chọn ngày trong quá khứ.</span>
                 </div>
 
                 {/* Địa điểm — chỉ hiện khi là sự kiện ngoài trời */}
@@ -914,11 +943,11 @@ JSON output (chỉ object, không gì khác):
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
                       <FaCalendarAlt className="text-green-500" />
-                      <span>Bắt đầu: {newEvent.startDate || '--/--/----'}</span>
+                      <span>Bắt đầu: {newEvent.startDate ? newEvent.startDate.split('-').reverse().join('/') : '--/--/----'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
                       <FaCalendarAlt className="text-red-400" />
-                      <span>Kết thúc: {newEvent.endDate || '--/--/----'}</span>
+                      <span>Kết thúc: {newEvent.endDate ? newEvent.endDate.split('-').reverse().join('/') : '--/--/----'}</span>
                     </div>
                     {newEvent.eventTime && (
                       <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">

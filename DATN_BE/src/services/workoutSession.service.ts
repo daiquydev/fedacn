@@ -1,5 +1,6 @@
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import { Types } from 'mongoose'
+import { roundKcal } from '~/utils/math.utils'
 import trainingService from '~/services/userServices/training.services'
 
 class WorkoutSessionService {
@@ -41,11 +42,14 @@ class WorkoutSessionService {
         let totalSets = 0
         let totalReps = 0
         let totalCalories = 0
+        let totalSkippedSets = 0
 
         const exercises = data.exercises || session.exercises
         exercises.forEach((ex: any) => {
             ex.sets?.forEach((set: any) => {
-                if (set.completed) {
+                if (set.skipped) {
+                    totalSkippedSets++
+                } else if (set.completed) {
                     totalSets++
                     totalReps += set.reps || 0
                     totalVolume += (set.reps || 0) * (set.weight || 0)
@@ -66,7 +70,8 @@ class WorkoutSessionService {
                     total_volume: totalVolume,
                     total_sets: totalSets,
                     total_reps: totalReps,
-                    total_calories: Math.round(totalCalories),
+                    total_calories: roundKcal(totalCalories),
+                    total_skipped_sets: totalSkippedSets,
                     duration_minutes: durationMinutes,
                     status: 'completed'
                 }

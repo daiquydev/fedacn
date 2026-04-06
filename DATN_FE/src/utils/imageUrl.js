@@ -24,6 +24,11 @@ export const getImageUrl = (imagePath) => {
     return normalized
   }
 
+  // Base64 data URI -> tra ve truc tiep
+  if (normalized.startsWith('data:')) {
+    return normalized
+  }
+
   // Path tuong doi bat dau bang '/'
   if (normalized.startsWith('/')) {
     return `${DEFAULT_API_BASE_URL}${normalized}`

@@ -1,5 +1,6 @@
 import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
+import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import NotificationModel from '~/models/schemas/notification.schema'
 import { NotificationTypes } from '~/constants/enums'
 import { Types } from 'mongoose'
@@ -12,7 +13,12 @@ class SportEventService {
     search,
     category,
     sortBy = 'popular',
-    userId
+    userId,
+    eventType,
+    status,
+    dateFrom,
+    dateTo,
+    joined
   }: {
     page?: number
     limit?: number
@@ -20,41 +26,81 @@ class SportEventService {
     category?: string
     sortBy?: string
     userId?: string
+    eventType?: string
+    status?: string
+    dateFrom?: string
+    dateTo?: string
+    joined?: string
   }) {
     const condition: any = { isDeleted: { $ne: true } }
 
     if (search) {
-      condition.$text = { $search: search }
+      condition.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } }
+      ]
     }
 
     if (category && category !== 'all') {
       condition.category = category
     }
 
-    const skip = (page - 1) * limit
-
-    let query = SportEventModel.find(condition)
-      .populate('createdBy', 'name avatar')
-      .populate('participants_ids', 'name avatar')
-      .skip(skip)
-      .limit(limit)
-
-    // Sort logic
-    if (sortBy === 'popular') {
-      query = query.sort({ participants: -1 })
-    } else if (sortBy === 'newest') {
-      query = query.sort({ createdAt: -1 })
-    } else if (sortBy === 'earliest') {
-      query = query.sort({ startDate: 1 })
+    if (eventType && eventType !== 'all') {
+      condition.eventType = eventType
     }
 
-    const events = await query.exec()
-    const total = await SportEventModel.countDocuments(condition)
+    // Status filter: ongoing, ended, upcoming
+    const now = new Date()
+    if (status === 'ongoing') {
+      condition.startDate = { $lte: now }
+      condition.endDate = { $gte: now }
+    } else if (status === 'ended') {
+      condition.endDate = { $lt: now }
+    } else if (status === 'upcoming') {
+      condition.startDate = { $gt: now }
+    }
+
+    // Date range filter
+    if (dateFrom) {
+      condition.startDate = { ...condition.startDate, $gte: new Date(dateFrom) }
+    }
+    if (dateTo) {
+      condition.startDate = { ...condition.startDate, $lte: new Date(dateTo + 'T23:59:59') }
+    }
+
+    // Joined filter
+    if (joined === 'true' && userId) {
+      condition.participants_ids = new Types.ObjectId(userId)
+    }
+
+    const skip = (page - 1) * limit
+
+    let sortOption: any = { participants: -1 }
+    if (sortBy === 'popular') sortOption = { participants: -1 }
+    else if (sortBy === 'newest') sortOption = { createdAt: -1 }
+    else if (sortBy === 'oldest') sortOption = { createdAt: 1 }
+    else if (sortBy === 'soonest') sortOption = { startDate: 1 }
+    else if (sortBy === 'earliest') sortOption = { startDate: 1 }
+    else if (sortBy === 'ongoing') sortOption = { endDate: 1 }
+    else if (sortBy === 'ended') sortOption = { endDate: -1 }
+
+    const [events, total] = await Promise.all([
+      SportEventModel.find(condition)
+        .populate('createdBy', 'name avatar')
+        .populate('participants_ids', 'name avatar')
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      SportEventModel.countDocuments(condition)
+    ])
+
     const totalPage = Math.ceil(total / limit)
 
     // Calculate isJoined if userId is provided
-    const resultEvents = events.map((event) => {
-      const eventObj = event.toObject() as SportEvent
+    let resultEvents = events.map((event) => {
+      const eventObj = event.toObject() as any
       if (userId && eventObj.participants_ids) {
         eventObj.isJoined = eventObj.participants_ids.some((participant: any) => {
           const id = participant._id ? participant._id.toString() : participant.toString()
@@ -65,6 +111,57 @@ class SportEventService {
       }
       return eventObj
     })
+
+    // Inject myProgress for joined events
+    if (userId) {
+      const joinedEventIds = resultEvents
+        .filter((e: any) => e.isJoined)
+        .map((e: any) => new Types.ObjectId(e._id.toString()))
+
+      if (joinedEventIds.length > 0) {
+        // Count unique progress days per event for this user
+        const progressAgg = await SportEventProgressModel.aggregate([
+          {
+            $match: {
+              eventId: { $in: joinedEventIds },
+              userId: new Types.ObjectId(userId),
+              is_deleted: { $ne: true }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                eventId: '$eventId',
+                day: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: '+07:00' } }
+              }
+            }
+          },
+          {
+            $group: {
+              _id: '$_id.eventId',
+              completedDays: { $sum: 1 }
+            }
+          }
+        ])
+
+        const progressMap = new Map<string, number>()
+        progressAgg.forEach((row: any) => progressMap.set(row._id.toString(), row.completedDays))
+
+        resultEvents = resultEvents.map((e: any) => {
+          if (!e.isJoined) return e
+          const eid = e._id.toString()
+          const completedDays = progressMap.get(eid) || 0
+          const start = new Date(e.startDate); start.setHours(0, 0, 0, 0)
+          const end = new Date(e.endDate); end.setHours(0, 0, 0, 0)
+          const totalRequiredDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+          const progressPercent = Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100)
+          return {
+            ...e,
+            myProgress: { completedDays, totalRequiredDays, progressPercent }
+          }
+        })
+      }
+    }
 
     return { events: resultEvents, totalPage, page, limit, total }
   }
@@ -169,8 +266,8 @@ class SportEventService {
       targetUnit: targetUnit || '',
       requirements: requirements || '',
       benefits: benefits || '',
-      participants: 0,
-      participants_ids: []
+      participants: 1,
+      participants_ids: [createdBy]
     })
 
     try {
@@ -279,6 +376,11 @@ class SportEventService {
       throw new Error('Event is full')
     }
 
+    // Block joining ended events
+    if (event.endDate && new Date(event.endDate) < new Date()) {
+      throw new Error('Sự kiện đã kết thúc, không thể tham gia')
+    }
+
     event.participants_ids?.push(new Types.ObjectId(userId))
     event.participants += 1
 
@@ -292,6 +394,11 @@ class SportEventService {
 
     if (!event) {
       throw new Error('Sport event not found')
+    }
+
+    // Block creator from leaving — they must manage the event
+    if (event.createdBy?.toString() === userId) {
+      throw new Error('Người tạo sự kiện không thể rời khỏi sự kiện')
     }
 
     const index = event.participants_ids?.findIndex((id) => id.toString() === userId)
@@ -325,17 +432,33 @@ class SportEventService {
   }
 
   // Get joined sport events
-  async getJoinedEventsService(userId: string, page: number = 1, limit: number = 10) {
+  async getJoinedEventsService(userId: string, page: number = 1, limit: number = 10, status?: string) {
     const skip = (page - 1) * limit
 
-    const events = await SportEventModel.find({ participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } })
-      .populate('createdBy', 'name avatar')
-      .populate('participants_ids', 'name avatar')
-      .skip(skip)
-      .limit(limit)
-      .sort({ startDate: 1 })
+    const condition: any = { participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } }
 
-    const total = await SportEventModel.countDocuments({ participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } })
+    // Status filter
+    const now = new Date()
+    if (status === 'ongoing') {
+      condition.startDate = { $lte: now }
+      condition.endDate = { $gte: now }
+    } else if (status === 'ended') {
+      condition.endDate = { $lt: now }
+    } else if (status === 'upcoming') {
+      condition.startDate = { $gt: now }
+    }
+
+    const [events, total] = await Promise.all([
+      SportEventModel.find(condition)
+        .populate('createdBy', 'name avatar')
+        .populate('participants_ids', 'name avatar')
+        .skip(skip)
+        .limit(limit)
+        .sort({ startDate: status === 'ended' ? -1 : 1 })
+        .exec(),
+      SportEventModel.countDocuments(condition)
+    ])
+
     const totalPage = Math.ceil(total / limit)
 
     return { events, totalPage, page, limit, total }
@@ -361,6 +484,55 @@ class SportEventService {
 
     await notification.save()
     return { notificationId: notification._id, eventId, friendId }
+  }
+
+  // Remove participant from sport event (creator only)
+  async removeParticipantService(eventId: string, creatorId: string, targetUserId: string) {
+    const event = await SportEventModel.findById(eventId)
+    if (!event) {
+      throw new Error('Sport event not found')
+    }
+
+    // Verify the requester is the event creator
+    const eventCreatorId = event.createdBy?.toString()
+    if (eventCreatorId !== creatorId) {
+      throw new Error('Only the event creator can remove participants')
+    }
+
+    // Prevent kicking the event creator
+    if (targetUserId === eventCreatorId) {
+      throw new Error('Không thể xóa người tạo sự kiện')
+    }
+
+    // Check if the target user is actually a participant
+    const index = event.participants_ids?.findIndex((id) => id.toString() === targetUserId)
+    if (index === undefined || index === -1) {
+      throw new Error('User is not a participant of this event')
+    }
+
+    // Remove participant
+    event.participants_ids?.splice(index, 1)
+    event.participants = Math.max(0, event.participants - 1)
+    await event.save()
+
+    // Send notification to the removed user
+    const notification = new NotificationModel({
+      sender_id: new Types.ObjectId(creatorId),
+      receiver_id: new Types.ObjectId(targetUserId),
+      content: `đã xóa bạn khỏi sự kiện thể thao "${event.name}"`,
+      name_notification: `Bạn đã bị xóa khỏi sự kiện: ${event.name}`,
+      link_id: eventId,
+      type: NotificationTypes.sportEventInvite,
+      is_read: false
+    })
+    await notification.save()
+
+    // Return updated event with populated fields
+    const updatedEvent = await SportEventModel.findById(eventId)
+      .populate('createdBy', 'name avatar')
+      .populate('participants_ids', 'name avatar')
+
+    return updatedEvent
   }
 }
 

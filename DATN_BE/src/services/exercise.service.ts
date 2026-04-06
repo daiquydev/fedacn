@@ -1,5 +1,5 @@
 import ExerciseModel from '~/models/schemas/exercise.schema'
-
+import { roundKcal } from '~/utils/math.utils'
 class ExerciseService {
     async getAllExercises() {
         return ExerciseModel.find({ is_active: true, isDeleted: { $ne: true } })
@@ -75,7 +75,7 @@ class ExerciseService {
                 estimated_kcal = (ex.calories_per_min || 5) * (durationMinutes / 60) * 45
             }
 
-            estimated_kcal = Math.round(estimated_kcal)
+            estimated_kcal = roundKcal(estimated_kcal)
             return { exercise: ex.toObject(), estimated_kcal }
         })
 

@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import React, { useMemo, useState } from 'react'
 import {
   FaTimes, FaCalendarCheck, FaChevronRight,
@@ -45,7 +46,10 @@ function getDayMeta(dateStr, challengeStart, challengeEnd, progressByDate, goalV
   const isFuture = isAfter(date, todayDate)
 
   const entries = progressByDate[dateStr] || []
-  const total = entries.reduce((s, e) => s + (e.value || 0), 0)
+  const total = entries.reduce((s, e) => {
+    const isValid = e.validation_status !== 'invalid_time' && e.ai_review_valid !== false;
+    return isValid ? s + (e.value || 0) : s;
+  }, 0)
   const hasDone = inRange && total >= goalValue
   const hasPartial = inRange && total > 0 && !hasDone
 
@@ -344,7 +348,10 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
   const completedDays = useMemo(() =>
     allChallengeDays.filter(ds => {
       const entries = progressByDate[ds] || []
-      return entries.reduce((s, e) => s + (e.value || 0), 0) >= goalValue
+      return entries.reduce((s, e) => {
+        const isValid = e.validation_status !== 'invalid_time' && e.ai_review_valid !== false;
+        return isValid ? s + (e.value || 0) : s;
+      }, 0) >= goalValue
     }).length,
     [allChallengeDays, progressByDate, goalValue]
   )
@@ -561,22 +568,34 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
                     <p className="text-[10px] text-gray-400 text-center py-3">Không có hoạt động vào ngày này</p>
                   ) : (
                     <div className="space-y-1.5">
-                      {selectedDayEntries.map(entry => (
+                      {selectedDayEntries.map(entry => {
+                        const isLate = entry.validation_status === 'invalid_time'
+                        const isInvalidAI = entry.ai_review_valid === false
+                        const isInvalid = isLate || isInvalidAI
+                        
+                        return (
                         <button
                           key={entry._id}
                           onClick={() => setSelectedEntry(entry)}
-                          className="w-full text-left flex items-center justify-between p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-sm transition-all group"
+                          className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg border transition-all group ${
+                             isInvalid 
+                               ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-75 grayscale' 
+                               : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-sm'
+                          }`}
                         >
                           <div className="flex items-center gap-2">
-                            <div className={`w-7 h-7 rounded-md bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-[9px] font-bold`}>
+                            <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white text-[9px] font-bold ${isInvalid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-gradient-to-br ' + gradient}`}>
                               {new Date(entry.date || entry.createdAt).getDate()}
                             </div>
                             <div>
-                              <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                                +{entry.value} {entry.unit}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-[11px] font-semibold ${isInvalid ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  +{isInvalid ? 0 : entry.value} {entry.unit}
+                                </p>
+                                {isInvalid && <span className="text-[8px] font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-1 py-0.5 rounded leading-none">{isLate ? 'Trễ giờ' : 'Không hợp lệ'}</span>}
+                              </div>
                               {entry.notes && (
-                                <p className="text-[9px] text-gray-400 truncate max-w-[180px]">{entry.notes}</p>
+                                <p className="text-[9px] text-gray-400 truncate max-w-[150px]">{entry.notes}</p>
                               )}
                             </div>
                           </div>
@@ -584,12 +603,12 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
                             <div className="flex gap-1.5 text-[9px] text-gray-400">
                               {entry.distance && <span>📍{entry.distance}km</span>}
                               {entry.duration_minutes && <span>⏱{entry.duration_minutes}p</span>}
-                              {entry.calories && <span>🔥{Math.round(entry.calories)}</span>}
+                              {entry.calories && <span>🔥{roundKcal(entry.calories)}</span>}
                             </div>
                             <FaChevronRight className="text-[10px] text-gray-300 group-hover:text-orange-400 transition" />
                           </div>
                         </button>
-                      ))}
+                      )})}
                     </div>
                   )}
                 </div>

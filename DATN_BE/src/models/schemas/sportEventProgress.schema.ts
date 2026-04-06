@@ -15,6 +15,7 @@ export interface SportEventProgress {
   source?: 'manual' | 'video_call' | 'gps'
   sessionId?: Types.ObjectId
   activeSeconds?: number
+  stravaActivityId?: string
   is_deleted?: boolean
   createdAt?: Date
   updatedAt?: Date
@@ -35,6 +36,7 @@ const SportEventProgressSchema = new mongoose.Schema<SportEventProgress>(
     source: { type: String, enum: ['manual', 'video_call', 'gps'], default: 'manual' },
     sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'sport_event_sessions', default: null },
     activeSeconds: { type: Number, default: null },
+    stravaActivityId: { type: String },
     is_deleted: { type: Boolean, default: false }
   },
   {
@@ -46,6 +48,7 @@ const SportEventProgressSchema = new mongoose.Schema<SportEventProgress>(
 // Create compound index for efficient querying
 SportEventProgressSchema.index({ eventId: 1, userId: 1, date: -1 })
 SportEventProgressSchema.index({ eventId: 1, date: -1 })
+SportEventProgressSchema.index({ stravaActivityId: 1 }, { unique: true, sparse: true })
 
 const SportEventProgressModel = mongoose.model('sport_event_progress', SportEventProgressSchema)
 

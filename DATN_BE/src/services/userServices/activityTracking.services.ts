@@ -2,6 +2,7 @@ import ActivityTrackingModel, { ActivityTracking } from '~/models/schemas/activi
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import { Types } from 'mongoose'
+import { roundKcal } from '~/utils/math.utils'
 
 class ActivityTrackingService {
     // Start a new activity
@@ -22,6 +23,15 @@ class ActivityTrackingService {
         const event = await SportEventModel.findById(eventId)
         if (!event) {
             throw new Error('Event not found')
+        }
+
+        // Block progress tracking if event is not ongoing
+        const now = new Date()
+        if (event.startDate && new Date(event.startDate) > now) {
+            throw new Error('Sự kiện chưa bắt đầu, không thể ghi tiến độ')
+        }
+        if (event.endDate && new Date(event.endDate) < now) {
+            throw new Error('Sự kiện đã kết thúc, không thể ghi tiến độ')
         }
 
         const isParticipant = event.participants_ids?.some((id) => id.toString() === userId)
@@ -164,7 +174,7 @@ class ActivityTrackingService {
         const distanceKm = activity.totalDistance / 1000
         const durationMinutes = Math.round(activity.totalDuration / 60)
         const durationHours = activity.totalDuration / 3600
-        const caloriesRounded = Math.round(activity.calories)
+        const caloriesRounded = roundKcal(activity.calories)
 
         // Determine progress value based on the event's target unit
         let progressValue: number

@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   FaMedal,
   FaTrophy,
@@ -11,68 +12,38 @@ import {
 } from "react-icons/fa";
 import { MdHistory, MdErrorOutline } from "react-icons/md";
 import moment from "moment";
-import toast from "react-hot-toast";
 import { getJoinedEvents } from "../../../apis/sportEventApi";
 
 export default function EventHistory() {
   const navigate = useNavigate();
 
-  const [pastEvents, setPastEvents] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1)
+  const ITEMS_PER_PAGE = 20
 
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStartDate, setFilterStartDate] = useState("");
-  const [filterEndDate, setFilterEndDate] = useState("");
+  const { data: historyData, isLoading, error: fetchError } = useQuery({
+    queryKey: ['eventHistory', page],
+    queryFn: () => getJoinedEvents({ page, limit: ITEMS_PER_PAGE, status: 'ended' }),
+    keepPreviousData: true
+  })
 
-  const [sortConfig, setSortConfig] = useState({
-    key: "date",
-    direction: "desc",
-  });
+  const rawEvents = historyData?.data?.result?.events || []
+  const totalPage = historyData?.data?.result?.totalPage || 1
+  const error = fetchError ? 'Đang tải lịch sử sự kiện không thành công.' : null
 
-  useEffect(() => {
-    const fetchPastEvents = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await getJoinedEvents({ page: 1, limit: 100 });
-        const events = response?.data?.result?.events || response?.data?.result || [];
-
-        // Filter only past/completed events and map to expected format
-        const now = new Date();
-        const completedEvents = events
-          .filter(event => {
-            const endDate = new Date(event.end_date || event.endDate || event.date);
-            return endDate < now || event.status === 'completed';
-          })
-          .map(event => ({
-            id: event._id || event.id,
-            name: event.name || event.title || '',
-            date: event.start_date || event.startDate || event.date,
-            endDate: event.end_date || event.endDate,
-            location: event.location || '',
-            category: event.category || event.sport_type || '',
-            participants: event.participant_count || event.participants || 0,
-            performance: event.user_result?.status || 'Completed',
-            ranking: event.user_result?.ranking || null,
-            totalParticipants: event.participant_count || event.max_participants || 0,
-            achievement: event.user_result?.achievement || 'Participant',
-            time: event.user_result?.time || '',
-          }));
-
-        setPastEvents(completedEvents);
-      } catch (err) {
-        console.error(err);
-        setError("Không thể tải lịch sử sự kiện.");
-        toast.error("Lỗi tải dữ liệu");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPastEvents();
-  }, []);
+  const pastEvents = useMemo(() => rawEvents.map(event => ({
+    id: event._id || event.id,
+    name: event.name || event.title || '',
+    date: event.start_date || event.startDate || event.date,
+    endDate: event.end_date || event.endDate,
+    location: event.location || '',
+    category: event.category || event.sport_type || '',
+    participants: event.participant_count || event.participants || 0,
+    performance: event.user_result?.status || 'Completed',
+    ranking: event.user_result?.ranking || null,
+    totalParticipants: event.participant_count || event.max_participants || 0,
+    achievement: event.user_result?.achievement || 'Participant',
+    time: event.user_result?.time || '',
+  })), [rawEvents])
 
   const handleEventClick = (eventId) => {
     navigate(`/sport-event/${eventId}`);
@@ -192,6 +163,7 @@ export default function EventHistory() {
       )}
 
       {!isLoading && !error && (
+        <>
         <table className="w-full border mt-6">
           <thead>
             <tr>
@@ -231,6 +203,18 @@ export default function EventHistory() {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {totalPage > 1 && (
+          <div className="flex justify-center items-center gap-3 mt-6">
+            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+              className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium">Trước</button>
+            <span className="text-sm text-gray-500">Trang {page} / {totalPage}</span>
+            <button disabled={page >= totalPage} onClick={() => setPage(p => p + 1)}
+              className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium">Sau</button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

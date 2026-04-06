@@ -1,5 +1,6 @@
 import { omit } from 'lodash'
 import { ObjectId } from 'mongodb'
+import { roundKcal } from '~/utils/math.utils'
 import { AlbumStatus, BlogStatus, RecipeStatus, RequestType, UserRoles, UserStatus } from '~/constants/enums'
 import { CreateUserAdminBody, GetListUserAdminQuery } from '~/models/requests/userAdmin.request'
 import AlbumModel from '~/models/schemas/album.schema'
@@ -641,7 +642,7 @@ class UserAdminService {
       },
       workoutStats: {
         totalSessions,
-        totalKcal: Math.round(totalKcal),
+        totalKcal: roundKcal(totalKcal),
         dailySessions
       },
       communityStats: {

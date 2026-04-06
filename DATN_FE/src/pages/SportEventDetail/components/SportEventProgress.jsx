@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -29,6 +30,7 @@ import moment from 'moment'
 import toast from 'react-hot-toast'
 import { getUserActivities, softDeleteActivity } from '../../../apis/sportEventApi'
 import sportCategoryApi from '../../../apis/sportCategoryApi'
+import StravaSyncModal from './StravaSyncModal'
 import { getSportIcon } from '../../../utils/sportIcons'
 import ActivityShareModal from '../../../components/SportEvent/ActivityShareModal'
 import ActivityDetailModal from '../../../components/SportEvent/ActivityDetailModal'
@@ -112,6 +114,7 @@ export default function SportEventProgress({
   const { id } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
+  const [isOpenStravaModal, setIsOpenStravaModal] = useState(false)
   const activityListRef = useRef(null)
   const activityItemRefs = useRef({})
 
@@ -162,6 +165,8 @@ export default function SportEventProgress({
     setShareActivity(activity)
   }
 
+
+
   // Filter GPS activities by time range
   const filteredActivities = useMemo(() => {
     if (customRange) {
@@ -200,7 +205,7 @@ export default function SportEventProgress({
   const gpsStats = useMemo(() => {
     if (!filteredActivities.length) return null
     const totalDistance = filteredActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
-    const totalCalories = filteredActivities.reduce((sum, a) => sum + Math.round(a.calories), 0)
+    const totalCalories = filteredActivities.reduce((sum, a) => sum + roundKcal(a.calories), 0)
     const totalDuration = filteredActivities.reduce((sum, a) => sum + a.totalDuration, 0)
     const avgSpeed = totalDuration > 0 ? (totalDistance / (totalDuration / 3600)).toFixed(2) : 0
 
@@ -288,7 +293,7 @@ export default function SportEventProgress({
           let value = 0
           switch (activeMetric) {
             case 'distance': value = Number(distance.toFixed(2)); break
-            case 'calories': value = Math.round(a.calories); break
+            case 'calories': value = roundKcal(a.calories); break
             case 'sessions': value = 1; break
             case 'speed': value = avgSpeed; break
             default: value = 0
@@ -299,7 +304,7 @@ export default function SportEventProgress({
             fullDate: moment(a.startTime).format('YYYY-MM-DD'),
             value: value,
             distance: Number(distance.toFixed(2)),
-            calories: Math.round(a.calories),
+            calories: roundKcal(a.calories),
             sessions: 1,
             avgSpeed: avgSpeed,
             duration: duration
@@ -314,7 +319,7 @@ export default function SportEventProgress({
         const fd = moment(a.startTime).format('YYYY-MM-DD')
         if (!dayMap[fd]) dayMap[fd] = { distance: 0, calories: 0, sessions: 0, duration: 0 }
         dayMap[fd].distance += (a.totalDistance / 1000)
-        dayMap[fd].calories += Math.round(a.calories)
+        dayMap[fd].calories += roundKcal(a.calories)
         dayMap[fd].sessions += 1
         dayMap[fd].duration += a.totalDuration
       })
@@ -561,6 +566,17 @@ export default function SportEventProgress({
         />
       )}
 
+      {/* Strava Sync Modal */}
+      <StravaSyncModal
+        isOpen={isOpenStravaModal}
+        onClose={() => setIsOpenStravaModal(false)}
+        eventId={id}
+        onImportSuccess={() => {
+          queryClient.invalidateQueries(['userActivities', id])
+          queryClient.invalidateQueries(['sportEvent', id])
+        }}
+      />
+
       {/* Activity Tracking Button - only for outdoor events */}
       {isOutdoor && (
         <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 shadow-lg text-white">
@@ -569,20 +585,32 @@ export default function SportEventProgress({
               <h3 className="text-xl font-bold mb-1">🏃 Theo dõi hoạt động GPS</h3>
               <p className="text-sm opacity-90">Bắt đầu theo dõi quãng đường và tốc độ bằng GPS cho ngày hôm nay</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               {gpsStats?.weeklyStreak > 0 && (
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 text-center">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 text-center w-full sm:w-auto mb-2 sm:mb-0">
                   <p className="text-lg font-black">🔥 {gpsStats.weeklyStreak}</p>
                   <p className="text-[10px] opacity-80">tuần liên tiếp</p>
                 </div>
               )}
-              <button
-                onClick={() => navigate(`/sport-event/${id}/tracking`)}
-                className="flex-shrink-0 bg-white text-red-500 px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center gap-2"
-              >
-                <FaMapMarkerAlt />
-                Bắt đầu
-              </button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                {(!event?.requireStrava) && (
+                  <button
+                    onClick={() => navigate(`/sport-event/${id}/tracking`)}
+                    className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <FaMapMarkerAlt />
+                    Bắt đầu
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsOpenStravaModal(true)}
+                  className={`flex-1 sm:flex-none bg-[#fc4c02] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-[#e34402] transition shadow-lg flex items-center justify-center gap-2 border border-white/20 ${event?.requireStrava ? 'w-full px-8' : ''}`}
+                  title="Đồng bộ dữ liệu từ Strava"
+                >
+                  <svg className="w-5 h-5 fill-current text-white shrink-0" viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"></path></svg>
+                  {event?.requireStrava ? 'Đồng bộ Strava' : 'Strava'}
+                </button>
+              </div>
             </div>
           </div>
           {todayGpsStats && (
@@ -835,7 +863,7 @@ export default function SportEventProgress({
                           if (isOutdoor) {
                             const dayActs = completedActivities.filter(a => moment(a.startTime).format('YYYY-MM-DD') === d.fullDate)
                             const dist = d.distance != null ? d.distance : Number((dayActs.reduce((s, a) => s + a.totalDistance / 1000, 0)).toFixed(2))
-                            const cal = d.calories != null ? d.calories : dayActs.reduce((s, a) => s + Math.round(a.calories), 0)
+                            const cal = d.calories != null ? d.calories : dayActs.reduce((s, a) => s + roundKcal(a.calories), 0)
                             const sess = d.sessions != null ? d.sessions : dayActs.length
                             const dur = dayActs.reduce((s, a) => s + a.totalDuration, 0)
                             const spd = d.avgSpeed != null ? d.avgSpeed : (dur > 0 ? Number((dist / (dur / 3600)).toFixed(2)) : 0)
@@ -1004,7 +1032,7 @@ export default function SportEventProgress({
                           </span>
                           <span className="flex items-center gap-1">
                             <FaFire className="text-[10px] text-orange-400" />
-                            {Math.round(activity.calories)} kcal
+                            {roundKcal(activity.calories)} kcal
                           </span>
                         </div>
                       </div>
@@ -1046,7 +1074,7 @@ export default function SportEventProgress({
                 <strong>{event?.category || deleteActivity.activityType} — {(deleteActivity.totalDistance / 1000).toFixed(2)} km</strong>
               </p>
               <p className="text-xs text-gray-400 mb-6">
-                {moment(deleteActivity.startTime).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteActivity.totalDuration)} • {Math.round(deleteActivity.calories)} kcal
+                {moment(deleteActivity.startTime).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteActivity.totalDuration)} • {roundKcal(deleteActivity.calories)} kcal
               </p>
             </div>
             <div className="flex gap-3">

@@ -274,15 +274,13 @@ function ParticipantsTab() {
   const [selectedChallengeId, setSelectedChallengeId] = useState(null)
 
   const { data: listData, isLoading: loadingList } = useQuery({
-    queryKey: ['admin-challenges-list'],
-    queryFn: () => getChallenges({ page: 1, limit: 100 }),
+    queryKey: ['admin-challenges-list', search],
+    queryFn: () => getChallenges({ page: 1, limit: 50, search: search || undefined }),
     staleTime: 5000
   })
 
   const challenges = listData?.data?.result?.challenges || []
-  const filtered = search
-    ? challenges.filter(c => c.title?.toLowerCase().includes(search.toLowerCase()))
-    : challenges
+  const filtered = challenges
 
   const { data: partData, isLoading: loadingPart } = useQuery({
     queryKey: ['admin-challenge-participants', selectedChallengeId],
@@ -463,7 +461,7 @@ function ParticipantsTab() {
 function StatsTab() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-challenges-stats'],
-    queryFn: () => getChallenges({ page: 1, limit: 200 }),
+    queryFn: () => getChallenges({ page: 1, limit: 50 }),
     staleTime: 10000
   })
 

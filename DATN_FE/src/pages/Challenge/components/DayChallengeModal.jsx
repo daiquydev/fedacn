@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../utils/mathUtils'
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -9,11 +10,22 @@ import { format, isBefore, isAfter, startOfDay } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import ActivityDetailModal from '../../../components/SportEvent/ActivityDetailModal'
 import ActivityShareModal from '../../../components/SportEvent/ActivityShareModal'
+import ChallengeProgressShareModal from './ChallengeProgressShareModal'
 import ActivityEntryDetailView from './ActivityEntryDetailView'
 import NutritionDetailView from './NutritionDetailView'
 import FitnessDetailView from './FitnessDetailView'
 import toast from 'react-hot-toast'
 import { deleteChallengeProgress } from '../../../apis/challengeApi'
+
+/**
+ * Returns display name for an activity entry based on challenge type.
+ */
+function getEntryDisplayName(challengeType, challenge, entry) {
+  if (challengeType === 'outdoor_activity') return challenge?.category || 'Hoạt động ngoài trời'
+  if (challengeType === 'nutrition') return entry?.food_name || 'Ăn uống'
+  if (challengeType === 'fitness') return 'Thể dục'
+  return challenge?.category || 'Hoạt động'
+}
 
 const TYPE_CONFIG = {
   outdoor_activity: {
@@ -133,6 +145,18 @@ export default function DayChallengeModal({
   const isFuture = isAfter(selectedDate, today)
   const isToday = !isPast && !isFuture
 
+  // Time-window check for nutrition challenges
+  const isTimeWindowChallenge = type === 'nutrition' && challenge?.nutrition_sub_type === 'time_window'
+      && challenge?.time_window_start && challenge?.time_window_end
+  const isInsideTimeWindow = (() => {
+      if (!isTimeWindowChallenge) return true
+      const now = new Date()
+      const currentMinutes = now.getHours() * 60 + now.getMinutes()
+      const [sh, sm] = challenge.time_window_start.split(':').map(Number)
+      const [eh, em] = challenge.time_window_end.split(':').map(Number)
+      return currentMinutes >= sh * 60 + sm && currentMinutes <= eh * 60 + em
+  })()
+
   const dateFormatted = useMemo(() => {
     try {
       return format(selectedDate, "EEEE, dd/MM/yyyy", { locale: vi })
@@ -145,15 +169,36 @@ export default function DayChallengeModal({
   const dayStats = useMemo(() => {
     let totalDuration = 0, totalCalories = 0, totalDistance = 0
     dayEntries.forEach(e => {
-      totalDuration += (e.duration_minutes || 0) * 60
-      totalCalories += (e.calories || 0)
-      totalDistance += (e.distance || 0)
+      const isValid = e.validation_status !== 'invalid_time' && e.ai_review_valid !== false;
+      if (isValid) {
+        totalDuration += (e.duration_minutes || 0) * 60
+        totalCalories += (e.calories || 0)
+        totalDistance += (e.distance || 0)
+      }
     })
     const avgSpeed = totalDuration > 0 && totalDistance > 0
       ? (totalDistance / (totalDuration / 3600)).toFixed(1)
       : null
     return { totalDuration, totalCalories, totalDistance, avgSpeed }
   }, [dayEntries])
+
+  // Track distinct completed exercises for fitness challenges
+  const fitnessCompletedExerciseIds = useMemo(() => {
+    if (type !== 'fitness') return new Set()
+    const ids = new Set()
+    dayEntries.forEach(e => {
+       const isValid = e.validation_status !== 'invalid_time' && e.ai_review_valid !== false;
+       if (isValid && Array.isArray(e.completed_exercises)) {
+         e.completed_exercises.forEach(ce => {
+           if (ce.completed) {
+               const idStr = typeof ce.exercise_id === 'string' ? ce.exercise_id : (ce.exercise_id?._id || ce.exercise_id?.toString())
+               if (idStr) ids.add(idStr.toString())
+           }
+         })
+       }
+    })
+    return ids
+  }, [dayEntries, type])
 
   const handleStartGPS = () => {
     onClose()
@@ -162,19 +207,25 @@ export default function DayChallengeModal({
 
   const handleShare = (e, entry) => {
     e.stopPropagation()
-    const distKm = entry.distance ? Number(entry.distance) : 0
-    const durationSec = entry.duration_minutes ? entry.duration_minutes * 60 : 0
-    setShareActivity({
-      _id: entry.activity_id || entry._id,
-      hasGpsRoute: !!entry.activity_id,
-      activityType: challenge?.category || 'Chạy bộ',
-      totalDistance: distKm * 1000,
-      totalDuration: durationSec,
-      avgSpeed: entry.avg_speed ? entry.avg_speed / 3.6 : 0,
-      calories: entry.calories || 0,
-      startTime: entry.createdAt || entry.date,
-      status: 'completed'
-    })
+    if (type === 'outdoor_activity') {
+      // Outdoor: use GPS ActivityShareModal
+      const distKm = entry.distance ? Number(entry.distance) : 0
+      const durationSec = entry.duration_minutes ? entry.duration_minutes * 60 : 0
+      setShareActivity({
+        _id: entry.activity_id || entry._id,
+        hasGpsRoute: !!entry.activity_id,
+        activityType: challenge?.category || 'Chạy bộ',
+        totalDistance: distKm * 1000,
+        totalDuration: durationSec,
+        avgSpeed: entry.avg_speed ? entry.avg_speed / 3.6 : 0,
+        calories: entry.calories || 0,
+        startTime: entry.createdAt || entry.date,
+        status: 'completed'
+      })
+    } else {
+      // Fitness / Nutrition: use ChallengeProgressShareModal
+      setShareActivity(entry)
+    }
   }
 
   const CategoryIcon = ACTIVITY_ICONS[challenge?.category] || config.icon
@@ -199,6 +250,13 @@ export default function DayChallengeModal({
               <h3 className="font-bold text-white text-base leading-tight">{challenge?.title || 'Thử thách'}</h3>
               <p className="text-white/70 text-xs mt-0.5 capitalize">{dateFormatted}</p>
             </div>
+            {/* Time-window badge */}
+            {isTimeWindowChallenge && (
+              <div className="ml-auto flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full text-white text-[10px] font-semibold">
+                <FaClock className="text-[9px]" />
+                ⏰ {challenge.time_window_start} – {challenge.time_window_end}
+              </div>
+            )}
           </div>
         </div>
 
@@ -276,7 +334,7 @@ export default function DayChallengeModal({
                     {dayStats.totalCalories > 0 && (
                       <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[11px] font-medium">
                         <FaFire className="text-[9px]" />
-                        {Math.round(dayStats.totalCalories)} kcal
+                        {roundKcal(dayStats.totalCalories)} kcal
                       </div>
                     )}
                     {dayStats.avgSpeed && (
@@ -288,6 +346,32 @@ export default function DayChallengeModal({
                   </div>
                 )}
               </div>
+
+              {/* ── Fitness Exercise Checklist ── */}
+              {type === 'fitness' && challenge?.exercises && challenge.exercises.length > 0 && (
+                <div className="bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/50 rounded-2xl p-4 mt-2">
+                  <h5 className="text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wider mb-3">
+                    Bài tập yêu cầu ({challenge.exercises.length})
+                  </h5>
+                  <div className="space-y-2">
+                    {challenge.exercises.map(ex => {
+                        const exIdStr = typeof ex.exercise_id === 'string' ? ex.exercise_id : (ex.exercise_id?._id || ex.exercise_id?.toString())
+                        const isDone = fitnessCompletedExerciseIds.has(exIdStr?.toString())
+                        return (
+                          <div key={exIdStr} className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700">
+                             <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDone ? 'bg-green-100 dark:bg-green-900/40 text-green-500' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                                 {isDone ? <FaCheck size={10} /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-500"></span>}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${isDone ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>{ex.exercise_name}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">{ex.sets?.length || 1} hiệp tập</p>
+                             </div>
+                          </div>
+                        )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* ── Horizontal Bar Chart — Activity Entries ── */}
               {dayEntries.length > 0 && (
@@ -311,6 +395,9 @@ export default function DayChallengeModal({
                         ? format(new Date(entry.createdAt), 'HH:mm')
                         : ''
                       const displayValue = progressValue % 1 === 0 ? progressValue : Number(progressValue).toFixed(2)
+                      const isLate = entry.validation_status === 'invalid_time'
+                      const isInvalidAI = entry.ai_review_valid === false
+                      const isInvalid = isLate || isInvalidAI
 
                       return (
                         <div
@@ -319,36 +406,43 @@ export default function DayChallengeModal({
                             if (hasActivityLink) setSelectedActivityId(entry.activity_id)
                             else setSelectedEntryDetail(entry)
                           }}
-                          className={`rounded-xl border transition-all overflow-hidden cursor-pointer border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800`}
+                          className={`rounded-xl border transition-all overflow-hidden cursor-pointer border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 ${isInvalid ? 'opacity-60 grayscale' : ''}`}
                         >
                           {/* Entry header */}
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm"
-                                  style={{ background: config.gradientCSS }}>
+                                  style={{ background: isInvalid ? '#9ca3af' : config.gradientCSS }}>
                                   <EntryIcon />
                                 </div>
                                 <div>
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-sm font-bold text-gray-800 dark:text-white">
-                                      {challenge?.category || config.label}
+                                      {getEntryDisplayName(type, challenge, entry)}
                                     </span>
-                                    <span className="text-sm font-black" style={{ color: config.ringColor }}>
+                                    <span className="text-sm font-black" style={{ color: isInvalid ? '#9ca3af' : config.ringColor }}>
                                       {displayValue} {goalUnit}
                                     </span>
+                                    {isInvalid && (
+                                      <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-md whitespace-nowrap">
+                                        {isLate ? 'Trễ giờ' : 'Không hợp lệ'}
+                                      </span>
+                                    )}
                                   </div>
                                   <span className="text-[10px] text-gray-400">{timeStr}</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <button
-                                  onClick={(e) => handleShare(e, entry)}
-                                  className="p-1 rounded-md text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition"
-                                  title="Chia sẻ"
-                                >
-                                  <FaShareAlt className="text-[10px]" />
-                                </button>
+                                {!isInvalid && (
+                                  <button
+                                    onClick={(e) => handleShare(e, entry)}
+                                    className="p-1 rounded-md text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition"
+                                    title="Chia sẻ"
+                                  >
+                                    <FaShareAlt className="text-[10px]" />
+                                  </button>
+                                )}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setDeleteEntry(entry) }}
                                   className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
@@ -368,7 +462,7 @@ export default function DayChallengeModal({
                               </span>
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-900/20 text-[10px] font-medium text-orange-600 dark:text-orange-400">
                                 <FaFire className="text-[8px]" />
-                                {entry.calories ? Math.round(entry.calories) : 0} kcal
+                                {entry.calories ? roundKcal(entry.calories) : 0} kcal
                               </span>
                               {type === 'outdoor_activity' && (
                                 <>
@@ -423,12 +517,23 @@ export default function DayChallengeModal({
                       <FaLocationArrow /> 🛰️ Bắt đầu GPS Tracking
                     </button>
                   ) : (
-                    <button
-                      onClick={onStartTracking}
-                      className={`w-full py-3.5 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-bold text-sm hover:shadow-lg transition flex items-center justify-center gap-2.5`}
-                    >
-                      <config.icon /> Bắt đầu thực hiện
-                    </button>
+                    <div>
+                      {isTimeWindowChallenge && !isInsideTimeWindow && (
+                        <div className="mb-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 text-left">
+                          <FaClock className="shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-semibold">Đã ngoài khung giờ ({challenge.time_window_start} – {challenge.time_window_end})</p>
+                            <p className="mt-0.5 opacity-90">Hệ thống vẫn cho phép ghi nhận hoạt động nhưng tiến độ sẽ không được cộng dồn.</p>
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        onClick={onStartTracking}
+                        className={`w-full py-3.5 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-bold text-sm hover:shadow-lg transition flex items-center justify-center gap-2.5`}
+                      >
+                        <config.icon /> Bắt đầu thực hiện
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -478,7 +583,7 @@ export default function DayChallengeModal({
         )}
 
         {/* ── Activity Share Modal ── */}
-        {shareActivity && (
+        {shareActivity && type === 'outdoor_activity' && (
           <ActivityShareModal
             activity={shareActivity}
             event={{ category: challenge?.category || 'Chạy bộ', name: challenge?.title }}
@@ -488,13 +593,22 @@ export default function DayChallengeModal({
           />
         )}
 
+        {/* ── Challenge Progress Share Modal (fitness / nutrition) ── */}
+        {shareActivity && type !== 'outdoor_activity' && (
+          <ChallengeProgressShareModal
+            entry={shareActivity}
+            challenge={challenge}
+            onClose={() => setShareActivity(null)}
+          />
+        )}
+
         {/* ── Entry Detail View (type-specific) ── */}
         {selectedEntryDetail && (
           type === 'outdoor_activity'
             ? <ActivityEntryDetailView entry={selectedEntryDetail} challenge={challenge} onClose={() => setSelectedEntryDetail(null)} />
             : type === 'nutrition'
-              ? <NutritionDetailView entry={selectedEntryDetail} onClose={() => setSelectedEntryDetail(null)} />
-              : <FitnessDetailView entry={selectedEntryDetail} onClose={() => setSelectedEntryDetail(null)} />
+              ? <NutritionDetailView entry={selectedEntryDetail} challenge={challenge} dayTotal={dayTotal} onClose={() => setSelectedEntryDetail(null)} />
+              : <FitnessDetailView entry={selectedEntryDetail} challenge={challenge} dayTotal={dayTotal} onClose={() => setSelectedEntryDetail(null)} />
         )}
 
         {/* Delete Confirmation Modal */}
@@ -511,7 +625,7 @@ export default function DayChallengeModal({
                 </p>
                 <p className="text-xs text-gray-400 mb-6">
                   {deleteEntry.createdAt ? format(new Date(deleteEntry.createdAt), 'HH:mm dd/MM/yyyy') : ''}
-                  {deleteEntry.calories ? ` • ${Math.round(deleteEntry.calories)} kcal` : ''}
+                  {deleteEntry.calories ? ` • ${roundKcal(deleteEntry.calories)} kcal` : ''}
                 </p>
               </div>
               <div className="flex gap-3">

@@ -4,6 +4,7 @@ import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportCategoryModel from '~/models/schemas/sportCategory.schema'
 import { Types } from 'mongoose'
+import { roundKcal } from '~/utils/math.utils'
 
 // ==================== CALORIE CALCULATION ====================
 // Lấy kcal_per_unit từ SportCategory (kcal/phút cho Trong nhà)
@@ -17,7 +18,7 @@ async function getKcalPerMinute(category: string): Promise<number> {
 }
 
 function calcCalories(kcalPerMinute: number, activeSeconds: number): number {
-    return Math.round((activeSeconds / 60) * kcalPerMinute)
+    return roundKcal((activeSeconds / 60) * kcalPerMinute)
 }
 
 // Derive progress value based on event's targetUnit

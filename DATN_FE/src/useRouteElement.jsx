@@ -41,7 +41,6 @@ const CreateTraining = lazy(() => import('./pages/Training/CreateTraining'))
 const ChallengeList = lazy(() => import('./pages/Challenge/Challenge'))
 const ChallengeDetail = lazy(() => import('./pages/Challenge/ChallengeDetail'))
 const MyChallenge = lazy(() => import('./pages/Challenge/MyChallenge'))
-const CreateChallenge = lazy(() => import('./pages/Challenge/CreateChallenge'))
 const ChallengeTracking = lazy(() => import('./pages/Challenge/ChallengeTracking'))
 // MealSchedule components - converted to lazy loading
 const MyMealSchedule = lazy(() => import('./pages/MealSchedule/MyMealSchedule'))
@@ -666,16 +665,7 @@ export default function useRouteElement() {
             </MainLayout>
           )
         },
-        {
-          path: '/challenge/create',
-          element: (
-            <MainLayout>
-              <Suspense>
-                <CreateChallenge />
-              </Suspense>
-            </MainLayout>
-          )
-        },
+
         {
           path: '/challenge/:id',
           element: (

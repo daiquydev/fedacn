@@ -1,14 +1,5 @@
-import { seedIngredientsData } from './seedIngredients'
-import { seedRecipesData } from './seedRecipes'
-
 export const initializeDatabase = async () => {
-  console.log('Initializing lowdb database...')
-
-  // Seed ingredients data
-  seedIngredientsData()
-
-  // Seed recipes data
-  seedRecipesData()
+  console.log('Initializing database...')
 
   // NOTE: Sport events KHÔNG được seed tự động khi khởi động server
   // để tránh xóa mất data do người dùng tạo.

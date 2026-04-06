@@ -55,6 +55,7 @@ import { getImageUrl } from '../../../utils/imageUrl'
 import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
 import SportEventPreviewCard, { extractSportEventId, cleanSportEventMarker } from '../../Post/SportEventPreviewCard'
 import ActivityPreviewCard, { extractActivityIds, cleanActivityMarker } from '../../Post/ActivityPreviewCard'
+import ChallengeActivityPreviewCard, { extractChallengeActivityIds, cleanChallengeActivityMarker, ChallengeProgressPreviewCard, extractChallengeProgressIds, cleanChallengeProgressMarker } from '../../Post/ChallengeActivityPreviewCard'
 import ChallengePreviewCard, { extractChallengeId, cleanChallengeMarker } from '../../Post/ChallengePreviewCard'
 import IndoorPreviewCard, { extractIndoorSessionIds, cleanIndoorSessionMarker } from '../../Post/IndoorPreviewCard'
 
@@ -300,19 +301,32 @@ function CheckTypeOfPost({
           </div>
         </div>
         <ShowMoreContent className='px-4 text-sm whitespace-pre-line pb-5 md:px-0'>
-          <p className=''>{cleanIndoorSessionMarker(cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content))))}</p>
+          <p className=''>{cleanIndoorSessionMarker(cleanChallengeProgressMarker(cleanChallengeMarker(cleanChallengeActivityMarker(cleanActivityMarker(cleanSportEventMarker(data.content))))))}</p>
         </ShowMoreContent>
         <CheckLengthOfImages navigate={navigate} data={data} images={data?.images} />
         {/* Sport Event Preview */}
         {extractSportEventId(data.content) && (
           <SportEventPreviewCard eventId={extractSportEventId(data.content)} />
         )}
-        {/* Activity Progress Preview */}
-        {extractActivityIds(data.content) && (
+        {/* Sport Event Activity Preview */}
+        {extractActivityIds(data.content)?.eventId && (
           <ActivityPreviewCard
             activityId={extractActivityIds(data.content).activityId}
             eventId={extractActivityIds(data.content).eventId}
-            challengeId={extractActivityIds(data.content).challengeId}
+          />
+        )}
+        {/* Challenge Activity Preview (outdoor GPS) */}
+        {extractChallengeActivityIds(data.content) && (
+          <ChallengeActivityPreviewCard
+            activityId={extractChallengeActivityIds(data.content).activityId}
+            challengeId={extractChallengeActivityIds(data.content).challengeId}
+          />
+        )}
+        {/* Challenge Progress Preview (nutrition / fitness) */}
+        {extractChallengeProgressIds(data.content) && (
+          <ChallengeProgressPreviewCard
+            progressId={extractChallengeProgressIds(data.content).progressId}
+            challengeId={extractChallengeProgressIds(data.content).challengeId}
           />
         )}
         {/* Challenge Preview */}
@@ -441,7 +455,7 @@ function CheckTypeOfPost({
         </div>
       </div>
       <ShowMoreContent className='px-4  whitespace-pre-line text-sm pb-5 md:px-0'>
-        <p className=''>{cleanIndoorSessionMarker(cleanChallengeMarker(cleanActivityMarker(cleanSportEventMarker(data.content))))}</p>
+        <p className=''>{cleanIndoorSessionMarker(cleanChallengeProgressMarker(cleanChallengeMarker(cleanChallengeActivityMarker(cleanActivityMarker(cleanSportEventMarker(data.content))))))}</p>
       </ShowMoreContent>
       {/* Challenge Preview (shared posts) */}
       {extractChallengeId(data.content) && (
@@ -451,12 +465,25 @@ function CheckTypeOfPost({
       {extractSportEventId(data.content) && (
         <SportEventPreviewCard eventId={extractSportEventId(data.content)} />
       )}
-      {/* Activity Progress Preview (shared posts) */}
-      {extractActivityIds(data.content) && (
+      {/* Sport Event Activity Preview (shared posts) */}
+      {extractActivityIds(data.content)?.eventId && (
         <ActivityPreviewCard
           activityId={extractActivityIds(data.content).activityId}
           eventId={extractActivityIds(data.content).eventId}
-          challengeId={extractActivityIds(data.content).challengeId}
+        />
+      )}
+      {/* Challenge Activity Preview (shared posts — outdoor GPS) */}
+      {extractChallengeActivityIds(data.content) && (
+        <ChallengeActivityPreviewCard
+          activityId={extractChallengeActivityIds(data.content).activityId}
+          challengeId={extractChallengeActivityIds(data.content).challengeId}
+        />
+      )}
+      {/* Challenge Progress Preview (shared posts — nutrition / fitness) */}
+      {extractChallengeProgressIds(data.content) && (
+        <ChallengeProgressPreviewCard
+          progressId={extractChallengeProgressIds(data.content).progressId}
+          challengeId={extractChallengeProgressIds(data.content).challengeId}
         />
       )}
       {/* Indoor Session Preview (shared posts) */}

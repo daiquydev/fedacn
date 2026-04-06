@@ -21,6 +21,9 @@ export const joinSportEvent = (id) => http.post(`/sport-events/${id}/join`)
 // Leave sport event
 export const leaveSportEvent = (id) => http.post(`/sport-events/${id}/leave`)
 
+// Remove participant from sport event (creator only)
+export const removeParticipant = (eventId, targetUserId) => http.post(`/sport-events/${eventId}/remove-participant`, { targetUserId })
+
 // Get my events
 export const getMyEvents = (params) => http.get('/sport-events/user/my-events', { params })
 

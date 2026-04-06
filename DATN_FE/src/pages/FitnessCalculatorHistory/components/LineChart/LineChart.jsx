@@ -37,27 +37,19 @@ const METRIC_CONFIGS = [
   { key: 'IBW', preKey: 'pre_IBW', label: 'IBW', unit: 'kg', icon: <GiBodyHeight />, gradient: 'from-red-600 to-rose-400', color: 'rgb(220,38,38)', fillColor: 'rgba(220,38,38,0.1)', link: '/fitness/fitness-calculator/IBW' }
 ]
 
-function parseTextDate(str) {
-  if (!str) return null
-  const parts = str.split('/')
-  if (parts.length !== 3) return null
-  const [d, m, y] = parts
-  if (!d || !m || !y || y.length !== 4) return null
-  const date = moment(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`)
-  return date.isValid() ? date : null
-}
-
 function filterByTime(arr, timeRange, customStart, customEnd) {
   if (!arr || arr.length === 0) return []
   const sorted = [...arr].sort((a, b) => new Date(a.date) - new Date(b.date))
   if (timeRange === 'all') return sorted
   if (timeRange === 'custom') {
-    const start = parseTextDate(customStart)
-    const end = parseTextDate(customEnd)
-    if (!start || !end) return sorted
+    // customStart / customEnd are YYYY-MM-DD from type="date" input
+    if (!customStart || !customEnd) return sorted
+    const start = moment(customStart, 'YYYY-MM-DD')
+    const end = moment(customEnd, 'YYYY-MM-DD')
+    if (!start.isValid() || !end.isValid()) return sorted
     return sorted.filter(item => {
       const d = moment(item.date)
-      return d.isSameOrAfter(start.clone().startOf('day')) && d.isSameOrBefore(end.clone().endOf('day'))
+      return d.isSameOrAfter(start.startOf('day')) && d.isSameOrBefore(end.endOf('day'))
     })
   }
   const range = TIME_RANGES.find(r => r.key === timeRange)
@@ -242,23 +234,18 @@ export default function LineChart({ profile }) {
 
             {timeRange === 'custom' ? (
               <div className='flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-700'>
-                <p className='text-[10px] text-gray-400'>Nhập ngày theo định dạng DD/MM/YYYY</p>
                 <div className='flex items-center gap-2'>
                   <input
-                    type='text'
+                    type='date'
                     value={customStart}
                     onChange={e => setCustomStart(e.target.value)}
-                    placeholder='Bắt đầu: 01/01/2025'
-                    maxLength={10}
                     className='flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none'
                   />
                   <span className='text-gray-400 text-xs'>→</span>
                   <input
-                    type='text'
+                    type='date'
                     value={customEnd}
                     onChange={e => setCustomEnd(e.target.value)}
-                    placeholder='Kết thúc: 31/12/2025'
-                    maxLength={10}
                     className='flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none'
                   />
                 </div>

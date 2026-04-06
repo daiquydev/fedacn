@@ -227,11 +227,22 @@ export default function ChallengePreviewCard({ challengeId }) {
         const status = error?.response?.status
         const isGone = status === 404 || status === 410
         return (
-            <div className="mt-3 mx-4 md:mx-0 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 flex items-center gap-2">
-                <span className="text-xl opacity-40">🏆</span>
-                <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                    {isGone ? 'Thử thách này đã không còn khả dụng' : 'Không thể tải thông tin thử thách'}
-                </span>
+            <div className="mt-3 mx-4 md:mx-0 rounded-xl overflow-hidden border border-orange-200 dark:border-orange-900/40 bg-white dark:bg-gray-800/50">
+                <div className="bg-gradient-to-r from-orange-500 to-amber-600 px-4 py-2 opacity-50 flex items-center gap-2">
+                    <FaTrophy className="text-white" size={11} />
+                    <span className="text-white text-xs font-semibold uppercase tracking-wide">Thử thách</span>
+                </div>
+                <div className="px-4 py-5 flex items-center gap-3">
+                    <span className="text-3xl opacity-30">🏆</span>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {isGone ? 'Thử thách này đã bị xóa hoặc không còn tồn tại' : 'Không thể tải thông tin thử thách'}
+                        </p>
+                        {isGone && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Bài chia sẻ vẫn được lưu lại nhưng thử thách không còn khả dụng</p>
+                        )}
+                    </div>
+                </div>
             </div>
         )
     }

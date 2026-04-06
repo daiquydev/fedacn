@@ -2,8 +2,21 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaUtensils, FaArrowLeft, FaPlus, FaTrash, FaSave, FaTimes, FaCheck, FaExchangeAlt, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox';
 import { getMealSchedules, updateMealSchedule } from '../../apis/mealScheduleApi';
+
+const parseTime = (timeStr) => {
+  if (!timeStr) return new Date();
+  const [hours, minutes] = timeStr.split(':');
+  const d = new Date();
+  d.setHours(parseInt(hours, 10));
+  d.setMinutes(parseInt(minutes, 10));
+  d.setSeconds(0);
+  d.setMilliseconds(0);
+  return d;
+};
 
 export default function MealPlanEdit() {
   const { id } = useParams();
@@ -510,11 +523,23 @@ export default function MealPlanEdit() {
                           Thời gian
                         </label>
                         {isEditing ? (
-                          <input
-                            type="time"
-                            value={meal.time}
-                            onChange={(e) => handleUpdateMeal(currentDay, mealType.id, 'time', e.target.value)}
+                          <DatePicker
+                            selected={parseTime(meal.time)}
+                            onChange={date => {
+                              if (date) {
+                                const h = String(date.getHours()).padStart(2, '0');
+                                const m = String(date.getMinutes()).padStart(2, '0');
+                                handleUpdateMeal(currentDay, mealType.id, 'time', `${h}:${m}`);
+                              }
+                            }}
+                            showTimeSelect
+                            showTimeSelectOnly
+                            timeIntervals={15}
+                            timeCaption="Giờ"
+                            dateFormat="HH:mm"
+                            timeFormat="HH:mm"
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-green-500"
+                            wrapperClassName="w-full"
                           />
                         ) : (
                           <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">

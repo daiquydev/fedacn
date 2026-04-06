@@ -25,6 +25,7 @@ export default function FitnessCheckinModal({ challenge, onClose, onSubmit, isLo
       state: {
         challengeId: challenge?._id,
         challengeTitle: challenge?.title,
+        challengeExercises: challenge?.exercises || [],
         referrer: 'challenge'
       }
     })

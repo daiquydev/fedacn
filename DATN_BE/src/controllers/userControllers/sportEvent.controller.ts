@@ -3,7 +3,7 @@ import sportEventService from '~/services/userServices/sportEvent.services'
 
 export const getAllSportEventsController = async (req: Request, res: Response) => {
   try {
-    const { page, limit, search, category, sortBy } = req.query
+    const { page, limit, search, category, sortBy, eventType, status, dateFrom, dateTo, joined } = req.query
     const userId = (req as any).decoded?.user_id
     const result = await sportEventService.getAllSportEventsService({
       page: Number(page) || 1,
@@ -11,7 +11,12 @@ export const getAllSportEventsController = async (req: Request, res: Response) =
       search: search as string,
       category: category as string,
       sortBy: sortBy as string,
-      userId
+      userId,
+      eventType: eventType as string,
+      status: status as string,
+      dateFrom: dateFrom as string,
+      dateTo: dateTo as string,
+      joined: joined as string
     })
     return res.json({
       result,
@@ -220,7 +225,7 @@ export const getMyEventsController = async (req: Request, res: Response) => {
 
 export const getJoinedEventsController = async (req: Request, res: Response) => {
   try {
-    const { page, limit } = req.query
+    const { page, limit, status } = req.query
     const userId = (req as any).decoded?.user_id
 
     if (!userId) {
@@ -229,7 +234,7 @@ export const getJoinedEventsController = async (req: Request, res: Response) => 
       })
     }
 
-    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 10)
+    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string)
     return res.json({
       result,
       message: 'Get joined sport events successfully'
@@ -278,6 +283,31 @@ export const getPublicUserEventsController = async (req: Request, res: Response)
     })
   } catch (error) {
     return res.status(500).json({
+      message: (error as Error).message
+    })
+  }
+}
+
+export const removeParticipantController = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { targetUserId } = req.body
+    const userId = (req as any).decoded?.user_id
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+    if (!targetUserId) {
+      return res.status(400).json({ message: 'targetUserId is required' })
+    }
+
+    const result = await sportEventService.removeParticipantService(id, userId, targetUserId)
+    return res.json({
+      result,
+      message: 'Participant removed successfully'
+    })
+  } catch (error) {
+    return res.status(400).json({
       message: (error as Error).message
     })
   }

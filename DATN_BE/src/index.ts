@@ -9,16 +9,13 @@ import connectDB from './services/database.services'
 import usersRouter from './routes/userRoutes/user.routes'
 import blogsRouter from './routes/userRoutes/blog.routes'
 import authUserRouter from './routes/userRoutes/authUser.routes'
+import stravaRouter from './routes/userRoutes/strava.routes'
 import { defaultErrorHandler } from './middlewares/error.middleware'
 import postsRouter from './routes/userRoutes/post.routes'
 import authAdminRouter from './routes/adminRoutes/authAdmin.routes'
 import activitiesRouter from './routes/userRoutes/activity.routes'
 import calculatorsRouter from './routes/userRoutes/calculator.routes'
 import workoutScheduleRouter from './routes/userRoutes/workoutSchedule.routes'
-import recipesRouter from './routes/userRoutes/recipe.routes'
-import albumsRouter from './routes/userRoutes/album.routes'
-import ingredientsRouter from './routes/userRoutes/ingredient.routes'
-import mealSchedulesRouter from './routes/userRoutes/mealSchedule.routes'
 import seachRouter from './routes/userRoutes/search.routes'
 import userAdminRouter from './routes/adminRoutes/userAdmin.routes'
 import inspectorRouter from './routes/adminRoutes/inspector.routes'
@@ -26,12 +23,7 @@ import writterRouter from './routes/adminRoutes/writter.routes'
 import { createServer } from 'http'
 import initSocket from './utils/socket'
 import notificationsRouter from './routes/userRoutes/notification.routes'
-import mealPlansRouter from './routes/userRoutes/mealPlan.routes'
-import userMealSchedulesRouter from './routes/userRoutes/userMealSchedule.routes'
-import { trainRecipesRecommender } from './utils/recommend'
 import { initializeDatabase } from './config/initDatabase'
-import nutritionRouter from './routes/userRoutes/nutrition.routes'
-import lowdbRecipesRouter from './routes/userRoutes/lowdbRecipes.routes'
 import personalDashboardRouter from './routes/userRoutes/personalDashboard.routes'
 import sportEventRouter from './routes/userRoutes/sportEvent.routes'
 import sportCategoryRouter from './routes/userRoutes/sportCategory.routes'
@@ -119,25 +111,17 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/api/auth/users', authUserRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/strava', stravaRouter)
 app.use('/api/blogs', blogsRouter)
 app.use('/api/posts/public', publicLimiter) // Apply higher limit to public posts
 app.use('/api/posts', postsRouter)
 app.use('/api/activities', activitiesRouter)
 app.use('/api/calculators', calculatorsRouter)
 app.use('/api/workout-schedules', workoutScheduleRouter)
-app.use('/api/meal-schedules', mealSchedulesRouter)
-app.use('/api/recipes', recipesRouter)
-app.use('/api/albums', albumsRouter)
-app.use('/api/ingredients', ingredientsRouter)
 app.use('/api/search', seachRouter)
 app.use('/api/notifications', notificationsRouter)
-app.use('/api/meal-plans/public', publicLimiter) // Apply higher limit to public meal plans
-app.use('/api/meal-plans', mealPlansRouter)
-app.use('/api/user-meal-schedules', userMealSchedulesRouter)
 
 // New lowdb-based APIs
-app.use('/api/lowdb-recipes', lowdbRecipesRouter)
-app.use('/api/nutrition', nutritionRouter)
 app.use('/api/personal-dashboard', personalDashboardRouter)
 app.use('/api/sport-events', sportEventRouter)
 app.use('/api/sport-categories', sportCategoryRouter)
@@ -172,7 +156,6 @@ async function startServer() {
     await connectDB()
 
     // Initialize database and seed data after connection
-    trainRecipesRecommender()
     await initializeDatabase()
 
     httpServer.listen(port, () => {

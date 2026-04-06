@@ -1,3 +1,4 @@
+import { roundKcal } from '../../../../utils/mathUtils'
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { currentAccount } from '../../../../apis/userApi'
@@ -476,9 +477,9 @@ function getRecommendedCalories(healthData) {
   let calories = healthData.tdee
 
   if (healthData.health_goal === 'Giảm cân') {
-    calories = Math.round(calories - 500)
+    calories = roundKcal(calories - 500)
   } else if (healthData.health_goal === 'Tăng cân' || healthData.health_goal === 'Tăng cơ bắp') {
-    calories = Math.round(calories + 500)
+    calories = roundKcal(calories + 500)
   }
 
   return `${calories} calo`

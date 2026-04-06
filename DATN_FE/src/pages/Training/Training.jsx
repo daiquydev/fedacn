@@ -1,9 +1,12 @@
+import { roundKcal } from '../../utils/mathUtils'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import Model from 'react-body-highlighter'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 import {
   FaDumbbell, FaChevronLeft, FaChevronRight, FaCheck, FaTrash, FaPlus, FaPlay,
   FaStopwatch, FaWeight, FaRunning, FaTimes, FaRedo, FaInfoCircle, FaGripVertical,
@@ -79,6 +82,17 @@ const formatScheduleLabel = (schedule) => {
   const days = (schedule.days_of_week || []).map(d => DAY_LABELS[d]).join(', ')
   const time = schedule.time_of_day || ''
   return `${days}${time ? ` lúc ${time}` : ''}`
+}
+
+const parseTime = (timeStr) => {
+  if (!timeStr) return new Date()
+  const [hours, minutes] = timeStr.split(':')
+  const d = new Date()
+  d.setHours(parseInt(hours, 10))
+  d.setMinutes(parseInt(minutes, 10))
+  d.setSeconds(0)
+  d.setMilliseconds(0)
+  return d
 }
 
 // ─── SaveWorkoutModal (3-step: tên → hỏi lịch → form lịch) ─────────────────
@@ -225,9 +239,23 @@ const SaveWorkoutModal = ({ exerciseSets, onSaved, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   ⏰ Giờ tập
                 </label>
-                <input type="time" value={schedule.time_of_day}
-                  onChange={e => setSchedule(prev => ({ ...prev, time_of_day: e.target.value }))}
+                <DatePicker
+                  selected={parseTime(schedule.time_of_day)}
+                  onChange={date => {
+                    if (date) {
+                      const h = String(date.getHours()).padStart(2, '0')
+                      const m = String(date.getMinutes()).padStart(2, '0')
+                      setSchedule(prev => ({ ...prev, time_of_day: `${h}:${m}` }))
+                    }
+                  }}
+                  showTimeSelect
+                  showTimeSelectOnly
+                  timeIntervals={15}
+                  timeCaption="Giờ"
+                  dateFormat="HH:mm"
+                  timeFormat="HH:mm"
                   className="px-3 py-2 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-blue-400 outline-none transition text-sm w-full"
+                  wrapperClassName="w-full"
                 />
               </div>
 
@@ -409,9 +437,24 @@ const SavedWorkoutsModal = ({ workouts = [], onLoad, onClose, onDelete, onUpdate
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">⏰ Giờ tập</label>
-                      <input type="time" value={tempSchedule.time_of_day}
-                        onChange={e => setTempSchedule(p => ({ ...p, time_of_day: e.target.value }))}
-                        className="w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm outline-none focus:border-blue-400" />
+                      <DatePicker
+                        selected={parseTime(tempSchedule.time_of_day)}
+                        onChange={date => {
+                          if (date) {
+                            const h = String(date.getHours()).padStart(2, '0')
+                            const m = String(date.getMinutes()).padStart(2, '0')
+                            setTempSchedule(p => ({ ...p, time_of_day: `${h}:${m}` }))
+                          }
+                        }}
+                        showTimeSelect
+                        showTimeSelectOnly
+                        timeIntervals={15}
+                        timeCaption="Giờ"
+                        dateFormat="HH:mm"
+                        timeFormat="HH:mm"
+                        className="w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm outline-none focus:border-blue-400"
+                        wrapperClassName="w-full"
+                      />
                     </div>
                     <div>
                       <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">🔔 Nhắc nhở</label>
@@ -598,12 +641,12 @@ const KcalResultStep = ({ result, onConfirm, onBack }) => {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
             <p className="text-xs text-blue-500 font-medium mb-1">BMR</p>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{Math.round(bmr)}</p>
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{roundKcal(bmr)}</p>
             <p className="text-xs text-gray-400">kcal/ngày (nghỉ ngơi)</p>
           </div>
           <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center">
             <p className="text-xs text-green-500 font-medium mb-1">TDEE</p>
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{Math.round(tdee)}</p>
+            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{roundKcal(tdee)}</p>
             <p className="text-xs text-gray-400">kcal/ngày ({activityLabel})</p>
           </div>
         </div>
@@ -1498,7 +1541,7 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
       calories_per_unit_default: ex.default_sets?.[0]?.calories_per_unit ?? 10,
       sets: (ex.default_sets && ex.default_sets.length > 0)
         ? ex.default_sets.map(s => ({ ...s, completed: false }))
-        : [{ set_number: 1, reps: 10, weight: 0, calories_per_unit: 10, completed: false }]
+        : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10, completed: false }]
     }))
   )
   const [expandedEx, setExpandedEx] = useState(0)
@@ -1513,7 +1556,7 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
   const addSet = (exIdx) => {
     setExerciseSets(prev => {
       const u = [...prev]; const last = u[exIdx].sets[u[exIdx].sets.length - 1]
-      u[exIdx] = { ...u[exIdx], sets: [...u[exIdx].sets, { set_number: u[exIdx].sets.length + 1, reps: last?.reps || 10, weight: last?.weight || 0, calories_per_unit: last?.calories_per_unit ?? 10, completed: false }] }
+      u[exIdx] = { ...u[exIdx], sets: [...u[exIdx].sets, { set_number: u[exIdx].sets.length + 1, reps: last?.reps || 10, weight: last?.weight || 1, calories_per_unit: last?.calories_per_unit ?? 10, completed: false }] }
       return u
     })
   }
@@ -1584,12 +1627,14 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 text-xs font-bold">{set.set_number}</span>
                             </td>
                             <td className="px-2 py-2">
-                              <input type="number" value={set.reps} onChange={e => updateSet(exIdx, si, 'reps', e.target.value)} min={0}
+                              <input type="number" value={set.reps} onChange={e => updateSet(exIdx, si, 'reps', e.target.value)} min={1}
+                                onBlur={e => updateSet(exIdx, si, 'reps', Math.max(1, Number(e.target.value) || 1))}
                                 className="w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 text-center focus:ring-2 focus:ring-blue-300 outline-none" />
                             </td>
                             <td className="px-2 py-2">
                               <div className="relative">
-                                <input type="number" value={set.weight} onChange={e => updateSet(exIdx, si, 'weight', e.target.value)} min={0} step={0.5}
+                                <input type="number" value={set.weight} onChange={e => updateSet(exIdx, si, 'weight', e.target.value)} min={1} step={0.5}
+                                  onBlur={e => updateSet(exIdx, si, 'weight', Math.max(1, Number(e.target.value) || 1))}
                                   className="w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 text-center focus:ring-2 focus:ring-blue-300 outline-none pr-8" />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-medium">kg</span>
                               </div>
@@ -1641,13 +1686,29 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
   )
 }
 
-// Step 5: Active Workout Session (timer running)
+// Step 5: Active Workout Session (timer running) — Set-by-Set with Time Gate
 const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, onQuit }) => {
   const [currentExIndex, setCurrentExIndex] = useState(0)
   const [exerciseSets, setExerciseSets] = useState(initialSets)
   const [timer, setTimer] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
+  // Per-set time gate: track when each set becomes "active" (startTime)
+  const [setStartTimes, setSetStartTimes] = useState({}) // key: "exIdx-setIdx" => timestamp
+  const [now, setNow] = useState(Date.now())
+  // Track total paused time per set to freeze time gate during pause
+  const [pauseStartTime, setPauseStartTime] = useState(null) // when pause started
+  const [setPausedDurations, setSetPausedDurations] = useState({}) // key: "exIdx-setIdx" => accumulated ms paused
+
+  // Rest timer between sets
+  const [restCountdown, setRestCountdown] = useState(0)
+  const [isResting, setIsResting] = useState(false)
+  const REST_DURATION = 60 // seconds
+
+  // Minimum time per set: reps × 3s, at least 5s
+  const getMinTime = (set) => Math.max((set.reps || 1) * 3, 5)
+
+  // Main session timer
   React.useEffect(() => {
     let interval
     if (!isPaused) {
@@ -1655,6 +1716,71 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
     }
     return () => clearInterval(interval)
   }, [isPaused])
+
+  // Track pause start/end to accumulate paused durations per set
+  React.useEffect(() => {
+    if (isPaused) {
+      setPauseStartTime(Date.now())
+    } else if (pauseStartTime) {
+      // Resuming: add paused duration to all active (started but uncompleted) sets
+      const pausedMs = Date.now() - pauseStartTime
+      setSetPausedDurations(prev => {
+        const updated = { ...prev }
+        Object.keys(setStartTimes).forEach(key => {
+          const [exIdx, setIdx] = key.split('-').map(Number)
+          const set = exerciseSets[exIdx]?.sets[setIdx]
+          if (set && !set.completed && !set.skipped) {
+            updated[key] = (updated[key] || 0) + pausedMs
+          }
+        })
+        return updated
+      })
+      setPauseStartTime(null)
+    }
+  }, [isPaused])
+
+  // Tick `now` every second for time gate countdowns (only when not paused)
+  React.useEffect(() => {
+    if (isPaused) return
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [isPaused])
+
+  // Auto-start tracking the first uncompleted set of current exercise
+  React.useEffect(() => {
+    const ex = exerciseSets[currentExIndex]
+    if (!ex) return
+    const firstUncompleted = ex.sets.findIndex(s => !s.completed && !s.skipped)
+    if (firstUncompleted === -1) return
+    const key = `${currentExIndex}-${firstUncompleted}`
+    if (!setStartTimes[key]) {
+      setSetStartTimes(prev => ({ ...prev, [key]: Date.now() }))
+    }
+  }, [currentExIndex, exerciseSets])
+
+  // Rest timer countdown
+  React.useEffect(() => {
+    if (!isResting || restCountdown <= 0) return
+    const interval = setInterval(() => {
+      setRestCountdown(prev => {
+        if (prev <= 1) {
+          setIsResting(false)
+          // Start tracking the next uncompleted set
+          const ex = exerciseSets[currentExIndex]
+          if (ex) {
+            const nextIdx = ex.sets.findIndex(s => !s.completed && !s.skipped)
+            if (nextIdx !== -1) {
+              const key = `${currentExIndex}-${nextIdx}`
+              setSetStartTimes(prev2 => ({ ...prev2, [key]: Date.now() }))
+            }
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isResting, restCountdown, currentExIndex, exerciseSets])
 
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600)
@@ -1666,8 +1792,10 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
   }
 
   const currentExercise = exerciseSets[currentExIndex]
-  const isCurrentCompleted = currentExercise?.sets.every(s => s.completed)
-  const completedExCount = exerciseSets.filter(ex => ex.sets.every(s => s.completed)).length
+  const isCurrentCompleted = currentExercise?.sets.every(s => s.completed || s.skipped)
+  const completedExCount = exerciseSets.filter(ex => ex.sets.every(s => s.completed || s.skipped)).length
+  const completedSetCount = currentExercise?.sets.filter(s => s.completed).length || 0
+  const skippedSetCount = currentExercise?.sets.filter(s => s.skipped).length || 0
   const allDone = completedExCount === exerciseSets.length
 
   const totalCalories = useMemo(() => {
@@ -1676,52 +1804,129 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
     return Math.round(cal)
   }, [exerciseSets])
 
-  const updateSet = (setIndex, field, value) => {
+  // Get remaining gate time for a specific set (accounts for paused time)
+  const getGateRemaining = (exIdx, setIdx) => {
+    const key = `${exIdx}-${setIdx}`
+    const start = setStartTimes[key]
+    if (!start) return Infinity
+    const set = exerciseSets[exIdx]?.sets[setIdx]
+    if (!set) return Infinity
+    const minTime = getMinTime(set)
+    const pausedMs = setPausedDurations[key] || 0
+    // If currently paused, also add current pause duration
+    const currentPauseMs = (isPaused && pauseStartTime) ? (Date.now() - pauseStartTime) : 0
+    const elapsed = Math.floor((now - start - pausedMs - currentPauseMs) / 1000)
+    return Math.max(minTime - elapsed, 0)
+  }
+
+  // Check if a set can be completed (time gate passed + it's the next uncompleted set)
+  const canCompleteSet = (setIdx) => {
+    const set = currentExercise?.sets[setIdx]
+    if (!set || set.completed || set.skipped) return false
+    if (isResting || isPaused) return false
+    // Must be the first uncompleted set (sequential order)
+    const firstUncompleted = currentExercise.sets.findIndex(s => !s.completed && !s.skipped)
+    if (setIdx !== firstUncompleted) return false
+    return getGateRemaining(currentExIndex, setIdx) === 0
+  }
+
+  // Complete a single set
+  const completeSet = (setIdx) => {
+    if (!canCompleteSet(setIdx)) return
+
     setExerciseSets(prev => {
       const updated = [...prev]
       updated[currentExIndex] = {
         ...updated[currentExIndex],
         sets: updated[currentExIndex].sets.map((s, i) =>
-          i === setIndex ? { ...s, [field]: Number(value) } : s
+          i === setIdx ? { ...s, completed: true } : s
         )
       }
       return updated
     })
-  }
 
-  const addSet = () => {
-    setExerciseSets(prev => {
-      const updated = [...prev]
-      const lastSet = updated[currentExIndex].sets[updated[currentExIndex].sets.length - 1]
-      updated[currentExIndex] = {
-        ...updated[currentExIndex],
-        sets: [...updated[currentExIndex].sets, {
-          set_number: updated[currentExIndex].sets.length + 1,
-          reps: lastSet?.reps || 10, weight: lastSet?.weight || 0,
-          calories_per_unit: lastSet?.calories_per_unit ?? 10, completed: false
-        }]
+    // Check if there are more uncompleted sets in this exercise
+    const remainingUncompleted = currentExercise.sets.filter((s, i) => i !== setIdx && !s.completed && !s.skipped)
+    if (remainingUncompleted.length > 0) {
+      // Start rest timer before next set
+      setRestCountdown(REST_DURATION)
+      setIsResting(true)
+      toast(`Set ${setIdx + 1} hoàn thành! Nghỉ ${REST_DURATION}s...`, { icon: '✅', duration: 2000 })
+    } else {
+      // All sets done for this exercise
+      toast.success(`Hoàn thành: ${currentExercise.exercise_name} 💪`)
+      // Auto-advance to next uncompleted exercise
+      const nextIdx = exerciseSets.findIndex((ex, i) => i > currentExIndex && !ex.sets.every(s => s.completed || s.skipped))
+      if (nextIdx !== -1) {
+        setTimeout(() => setCurrentExIndex(nextIdx), 500)
       }
-      return updated
-    })
-  }
-
-  // Mark ALL sets of current exercise as completed
-  const completeCurrentExercise = () => {
-    setExerciseSets(prev => {
-      const updated = [...prev]
-      updated[currentExIndex] = {
-        ...updated[currentExIndex],
-        sets: updated[currentExIndex].sets.map(s => ({ ...s, completed: true }))
-      }
-      return updated
-    })
-    toast.success(`Hoàn thành: ${currentExercise.exercise_name} 💪`)
-    // Auto-advance to next uncompleted exercise
-    const nextIdx = exerciseSets.findIndex((ex, i) => i > currentExIndex && !ex.sets.every(s => s.completed))
-    if (nextIdx !== -1) {
-      setTimeout(() => setCurrentExIndex(nextIdx), 300)
     }
   }
+
+  // Skip (drop) the active set — user can't finish it
+  const skipSet = (setIdx) => {
+    const set = currentExercise?.sets[setIdx]
+    if (!set || set.completed || set.skipped) return
+    // Must be the active (first uncompleted) set
+    const firstUncompleted = currentExercise.sets.findIndex(s => !s.completed && !s.skipped)
+    if (setIdx !== firstUncompleted) return
+
+    setExerciseSets(prev => {
+      const updated = [...prev]
+      updated[currentExIndex] = {
+        ...updated[currentExIndex],
+        sets: updated[currentExIndex].sets.map((s, i) =>
+          i === setIdx ? { ...s, skipped: true } : s
+        )
+      }
+      return updated
+    })
+
+    toast(`Set ${setIdx + 1} đã bỏ qua`, { icon: '⏭️', duration: 1500 })
+
+    // Check remaining
+    const remainingUncompleted = currentExercise.sets.filter((s, i) => i !== setIdx && !s.completed && !s.skipped)
+    if (remainingUncompleted.length > 0) {
+      // No rest timer for skipped sets — go straight to next
+      const nextIdx = currentExercise.sets.findIndex((s, i) => i > setIdx && !s.completed && !s.skipped)
+      if (nextIdx !== -1) {
+        const key = `${currentExIndex}-${nextIdx}`
+        setSetStartTimes(prev => ({ ...prev, [key]: Date.now() }))
+      }
+    } else {
+      // All sets done/skipped for this exercise
+      const hasAnyCompleted = currentExercise.sets.some((s, i) => i !== setIdx && s.completed)
+      if (hasAnyCompleted) {
+        toast.success(`Hoàn thành: ${currentExercise.exercise_name} 💪`)
+      }
+      const nextExIdx = exerciseSets.findIndex((ex, i) => i > currentExIndex && !ex.sets.every(s => s.completed || s.skipped))
+      if (nextExIdx !== -1) {
+        setTimeout(() => setCurrentExIndex(nextExIdx), 500)
+      }
+    }
+  }
+
+  // Skip rest timer
+  const skipRest = () => {
+    setIsResting(false)
+    setRestCountdown(0)
+    // Start tracking the next uncompleted set
+    const nextIdx = currentExercise.sets.findIndex(s => !s.completed && !s.skipped)
+    if (nextIdx !== -1) {
+      const key = `${currentExIndex}-${nextIdx}`
+      setSetStartTimes(prev => ({ ...prev, [key]: Date.now() }))
+    }
+  }
+
+  // When switching exercise, reset resting state
+  const handleSwitchExercise = (idx) => {
+    setIsResting(false)
+    setRestCountdown(0)
+    setCurrentExIndex(idx)
+  }
+
+  // Find the active (first uncompleted/non-skipped) set index for current exercise
+  const activeSetIdx = currentExercise?.sets.findIndex(s => !s.completed && !s.skipped) ?? -1
 
   return (
     <div>
@@ -1744,6 +1949,26 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
         </div>
       </div>
 
+      {/* Rest Timer Overlay */}
+      {isResting && (
+        <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=')]"/>
+          </div>
+          <div className="relative">
+            <p className="text-xs font-medium opacity-90 mb-1">⏸ NGHỈ GIỮA SET</p>
+            <div className="text-5xl font-black font-mono my-2">{restCountdown}s</div>
+            <div className="w-full bg-white/20 rounded-full h-2 mb-3">
+              <div className="bg-white rounded-full h-2 transition-all duration-1000" style={{ width: `${(restCountdown / REST_DURATION) * 100}%` }}/>
+            </div>
+            <button onClick={skipRest}
+              className="px-5 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium backdrop-blur-sm transition">
+              Bỏ qua nghỉ ▶
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Current exercise card */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border-2 p-4 mb-4 ${isCurrentCompleted ? 'border-green-400' : 'border-blue-200 dark:border-blue-800'}`}>
         <div className="flex items-center justify-between mb-3">
@@ -1751,52 +1976,111 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
             <p className="text-xs text-blue-600 font-medium">Bài tập {currentExIndex + 1} / {exerciseSets.length}</p>
             <h3 className="text-lg font-bold">{currentExercise.exercise_name}</h3>
           </div>
-          {isCurrentCompleted && <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">✓ Đã hoàn thành</span>}
+          {isCurrentCompleted
+            ? <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">✓ Đã hoàn thành</span>
+            : <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-full text-[10px] font-medium">
+                {completedSetCount}/{currentExercise.sets.length} sets
+                {skippedSetCount > 0 && <span className="text-gray-400 ml-1">({skippedSetCount} bỏ)</span>}
+              </span>
+          }
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="px-3 py-2 text-[11px] font-bold text-gray-500 text-center w-12">SET</th>
-                <th className="px-3 py-2 text-[11px] font-bold text-gray-500 text-center">Reps (Số lần)</th>
-                <th className="px-3 py-2 text-[11px] font-bold text-gray-500 text-center">Weight (Mức tạ)</th>
-                <th className="px-3 py-2 text-[11px] font-bold text-orange-500 text-center">kcal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {currentExercise.sets.map((set, si) => (
-                <tr key={si} className={set.completed ? 'bg-green-50 dark:bg-green-900/20' : ''}>
-                  <td className="px-3 py-2.5 text-center">
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${set.completed ? 'bg-green-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-blue-600'}`}>{set.set_number}</span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center font-medium">{set.reps} lần</td>
-                  <td className="px-3 py-2.5 text-center font-medium">{set.weight} kg</td>
-                  <td className="px-3 py-2.5 text-center">
-                    <span className="font-bold text-orange-600">{((set.reps || 0) * (set.weight || 0) * (set.calories_per_unit ?? 10)).toFixed(0)}</span>
-                    <span className="text-[10px] text-orange-400 ml-0.5">kcal</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Set-by-set list */}
+        <div className="space-y-2">
+          {currentExercise.sets.map((set, si) => {
+            const isActive = si === activeSetIdx
+            const gateRemaining = getGateRemaining(currentExIndex, si)
+            const canComplete = canCompleteSet(si)
+            const kcal = ((set.reps || 0) * (set.weight || 0) * (set.calories_per_unit ?? 10))
 
-        {!isCurrentCompleted && (
-          <button onClick={completeCurrentExercise}
-            className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold flex items-center justify-center gap-2 hover:from-green-600 hover:to-emerald-700 shadow-lg text-base">
-            <FaCheck /> Hoàn thành bài tập
-          </button>
-        )}
+            return (
+              <div key={si} className={`rounded-xl border-2 p-3 transition-all duration-300
+                ${set.completed
+                  ? 'border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-700'
+                  : set.skipped
+                    ? 'border-gray-300 bg-gray-100 dark:bg-gray-800 dark:border-gray-600 opacity-60'
+                    : isActive
+                      ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-600 shadow-md'
+                      : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 opacity-50'
+                }`}>
+                <div className="flex items-center gap-3">
+                  {/* Set number badge */}
+                  <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all
+                    ${set.completed ? 'bg-green-500 text-white' : set.skipped ? 'bg-gray-400 text-white' : isActive ? 'bg-blue-500 text-white animate-pulse' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                    {set.completed ? <FaCheck /> : set.skipped ? <FaTimes /> : set.set_number}
+                  </span>
+
+                  {/* Set info */}
+                  <div className="flex-1 min-w-0">
+                    <div className={`flex items-center gap-3 text-sm ${set.skipped ? 'line-through text-gray-400' : ''}`}>
+                      <span className="font-medium">{set.reps} <span className="text-gray-400 text-xs">lần</span></span>
+                      <span className="text-gray-300 dark:text-gray-600">•</span>
+                      <span className="font-medium">{set.weight} <span className="text-gray-400 text-xs">kg</span></span>
+                      <span className="text-gray-300 dark:text-gray-600">•</span>
+                      <span className="font-bold text-orange-600">{kcal.toFixed(0)} <span className="text-[10px] text-orange-400">kcal</span></span>
+                    </div>
+                    {/* Time gate progress for active set */}
+                    {isActive && !set.completed && !set.skipped && gateRemaining > 0 && (
+                      <div className="mt-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                            <div className={`h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-1000 ${isPaused ? 'opacity-50' : ''}`}
+                              style={{ width: `${Math.max(0, (1 - gateRemaining / getMinTime(set)) * 100)}%` }}/>
+                          </div>
+                          <span className={`text-[10px] font-mono font-bold w-8 text-right ${isPaused ? 'text-orange-500' : 'text-blue-500'}`}>
+                            {isPaused ? '⏸' : `${gateRemaining}s`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action buttons */}
+                  {set.completed ? (
+                    <span className="text-green-500 text-xs font-bold px-2">XONG</span>
+                  ) : set.skipped ? (
+                    <span className="text-gray-400 text-xs font-bold px-2">BỎ</span>
+                  ) : isActive ? (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {/* Skip (drop) set button */}
+                      <button
+                        onClick={() => skipSet(si)}
+                        className="px-2 py-2 rounded-lg text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all"
+                        title="Bỏ set này">
+                        <FaTimes />
+                      </button>
+                      {/* Complete set button */}
+                      <button
+                        onClick={() => completeSet(si)}
+                        disabled={!canComplete}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all
+                          ${canComplete
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                          }`}>
+                        {canComplete
+                          ? <><FaCheck /> Xong</>
+                          : <><FaStopwatch /> {gateRemaining}s</>
+                        }
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-gray-400 px-2">Chờ...</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Exercise nav */}
       <div className="flex gap-3 mb-4">
-        <button onClick={() => currentExIndex > 0 && setCurrentExIndex(currentExIndex - 1)} disabled={currentExIndex === 0}
+        <button onClick={() => currentExIndex > 0 && handleSwitchExercise(currentExIndex - 1)} disabled={currentExIndex === 0}
           className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium disabled:opacity-30 flex items-center justify-center gap-2">
           <FaChevronLeft /> Bài trước
         </button>
-        <button onClick={() => currentExIndex < exerciseSets.length - 1 && setCurrentExIndex(currentExIndex + 1)} disabled={currentExIndex === exerciseSets.length - 1}
+        <button onClick={() => currentExIndex < exerciseSets.length - 1 && handleSwitchExercise(currentExIndex + 1)} disabled={currentExIndex === exerciseSets.length - 1}
           className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-medium disabled:opacity-30 flex items-center justify-center gap-2">
           Bài tiếp <FaChevronRight />
         </button>
@@ -1808,8 +2092,9 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
         <div className="space-y-1 max-h-40 overflow-y-auto">
           {exerciseSets.map((ex, i) => {
             const done = ex.sets.every(s => s.completed)
+            const setsDone = ex.sets.filter(s => s.completed).length
             return (
-              <button key={i} onClick={() => setCurrentExIndex(i)}
+              <button key={i} onClick={() => handleSwitchExercise(i)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition
                   ${i === currentExIndex ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 font-medium' :
                     done ? 'bg-green-50 dark:bg-green-900/20 text-green-700' :
@@ -1818,8 +2103,11 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
                   ${done ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
                   {done ? <FaCheck /> : i + 1}
                 </span>
-                {ex.exercise_name}
-                {done && <span className="ml-auto text-green-500 text-xs font-bold">✓</span>}
+                <span className="flex-1 truncate">{ex.exercise_name}</span>
+                {done
+                  ? <span className="text-green-500 text-xs font-bold">✓</span>
+                  : setsDone > 0 && <span className="text-[10px] text-blue-500 font-medium">{setsDone}/{ex.sets.length}</span>
+                }
               </button>
             )
           })}
@@ -1828,7 +2116,7 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
 
       {/* Single bottom button: Bỏ tập OR Hoàn thành */}
       {allDone ? (
-        <button onClick={() => onComplete(exerciseSets)}
+        <button onClick={() => onComplete(exerciseSets, timer)}
           className="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold flex items-center justify-center gap-2 hover:from-green-600 hover:to-emerald-700 shadow-lg text-lg">
           <FaCheck /> Hoàn thành tập luyện 🎉
         </button>
@@ -1958,6 +2246,22 @@ export default function Training() {
       setCalcStep('setup')
       // Clear navigation state to prevent re-triggering on back
       window.history.replaceState({}, '')
+    }
+  }, [])
+
+  // Handle navigation from Challenge (Fitness Checkin)
+  useEffect(() => {
+    if (location.state?.referrer === 'challenge' && location.state?.challengeExercises?.length > 0) {
+      const exercises = location.state.challengeExercises.map(ex => ({
+        ...ex,
+        _id: ex.exercise_id,
+        name: ex.exercise_name,
+        name_vi: ex.exercise_name_vi || '',
+        default_sets: ex.sets?.length > 0 ? ex.sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }]
+      }))
+      setSelectedExercises(exercises)
+      setMode('from_challenge')
+      setCalcStep('setup')
     }
   }, [])
 
@@ -2139,7 +2443,7 @@ export default function Training() {
     }
     createSessionMutation.mutate(sessionData)
     if (mode === 'normal') setCurrentStep(4)
-    else if (mode === 'from_saved') setCalcStep('workout')
+    else if (mode === 'from_saved' || mode === 'from_challenge') setCalcStep('workout')
     else setSmartStep('workout')
   }
 
@@ -2193,22 +2497,21 @@ export default function Training() {
     }
   }
 
-  const handleComplete = async (exerciseSets) => {
+  const handleComplete = async (exerciseSets, timerSeconds = 0) => {
     const challengeId = location.state?.challengeId
     const challengeTitle = location.state?.challengeTitle
 
     // Calculate total calories and duration from completed sets
     let totalCalories = 0
-    let totalDuration = 0
     exerciseSets.forEach(ex => {
       ex.sets.forEach(s => {
         if (s.completed) totalCalories += (s.reps || 0) * (s.weight || 0) * (s.calories_per_unit ?? 10)
       })
     })
-    // Estimate duration: assume ~3 min per completed set
-    const completedSets = exerciseSets.reduce((acc, ex) => acc + ex.sets.filter(s => s.completed).length, 0)
-    totalDuration = Math.max(completedSets * 3, 10) // min 10 minutes
-    totalCalories = Math.round(totalCalories)
+    totalCalories = roundKcal(totalCalories)
+
+    // Duration logic: Use real elapsed time (minimum 1 minute), no estimations
+    let finalDurationMin = Math.max(1, Math.round((timerSeconds || 0) / 60))
 
     // Complete workout session first
     if (sessionId) {
@@ -2218,14 +2521,25 @@ export default function Training() {
     // If came from challenge, record progress
     if (challengeId) {
       try {
+        const completed_exercises = exerciseSets.map(ex => {
+          const isCompleted = ex.sets.some(s => s.completed && !s.skipped)
+          return {
+            exercise_id: ex.exercise_id,
+            exercise_name: ex.exercise_name,
+            completed: isCompleted
+          }
+        })
+        const numCompleted = completed_exercises.filter(e => e.completed).length
+
         await addChallengeProgress(challengeId, {
-          value: 1,
+          value: numCompleted || 1, // Store number of exercises completed in this session
           notes: `Buổi tập từ Training${challengeTitle ? ': ' + challengeTitle : ''}`,
-          duration_minutes: totalDuration,
+          duration_minutes: finalDurationMin,
           calories: totalCalories || undefined,
           source: 'workout_session',
           workout_session_id: sessionId || undefined,
-          exercises_count: exerciseSets.length
+          exercises_count: exerciseSets.length,
+          completed_exercises
         })
         toast.success('🎉 Phiên tập hoàn thành và đã ghi nhận vào thử thách!')
       } catch (err) {
@@ -2264,7 +2578,7 @@ export default function Training() {
   // Determine what step indicator to show and for which mode
   const showSmartWorkoutHeader = mode === 'smart' && !['workout'].includes(smartStep)
   const showNormalHeader = mode === 'normal' && currentStep < 4
-  const showCalcHeader = mode === 'from_calculator' || mode === 'from_saved'
+  const showCalcHeader = mode === 'from_calculator' || mode === 'from_saved' || mode === 'from_challenge'
 
   return (
     <div>
@@ -2276,8 +2590,12 @@ export default function Training() {
               <GiWeightLiftingUp className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Tập luyện</h1>
-              <p className="text-white/75 text-xs mt-0.5">Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn</p>
+              <h1 className="text-xl font-bold text-white">
+                {mode === 'from_challenge' ? `\u{1F3CB}\uFE0F ${location.state?.challengeTitle || 'Tập luyện thử thách'}` : 'Tập luyện'}
+              </h1>
+              <p className="text-white/75 text-xs mt-0.5">
+                {mode === 'from_challenge' ? 'Hoàn thành bài tập để ghi nhận tiến độ thử thách' : 'Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
@@ -2357,6 +2675,18 @@ export default function Training() {
             />
           )}
           {mode === 'from_saved' && calcStep === 'workout' && preparedSets && (
+            <WorkoutSessionStep exerciseSets={preparedSets} sessionId={sessionId} onComplete={handleComplete} onQuit={handleQuit} />
+          )}
+
+          {/* ── FROM CHALLENGE MODE (Thử thách thể dục → 2 steps) ── */}
+          {mode === 'from_challenge' && calcStep === 'setup' && selectedExercises.length > 0 && (
+            <SetupStep
+              selectedExercises={selectedExercises}
+              onStartWorkout={handleStartWorkout}
+              onBack={() => { navigate(-1) }}
+            />
+          )}
+          {mode === 'from_challenge' && calcStep === 'workout' && preparedSets && (
             <WorkoutSessionStep exerciseSets={preparedSets} sessionId={sessionId} onComplete={handleComplete} onQuit={handleQuit} />
           )}
 

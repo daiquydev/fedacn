@@ -19,7 +19,6 @@ import NotificationModel from '~/models/schemas/notification.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import RecipeCategoryModel from '~/models/schemas/recipeCategory.schema'
 import { ErrorWithStatus } from '~/utils/error'
-import { getRecommendations } from '~/utils/recommend'
 import { deleteFileFromS3, uploadFileToS3 } from '~/utils/s3'
 
 class RecipeService {
@@ -1030,34 +1029,7 @@ class RecipeService {
       )
     }
 
-    const recommendRecipes = getRecommendations(recipe_id)
-    console.log(recommendRecipes)
-
-    // tìm những recipe cùng trong recommendRecipes
-
-    const arrayRecommendRecipes = recommendRecipes.map((recommendRecipe) => new ObjectId(recommendRecipe.id))
-
-    console.log(arrayRecommendRecipes)
-
-    // lấy ra những recipe có id trong arrayRecommendRecipes và sắp xếp theo thứ tự trong arrayRecommendRecipes
-
-    const arrayRecipes = await Promise.all(
-      arrayRecommendRecipes.map(async (recommendRecipe) => {
-        const recipe = await RecipeModel.findById(recommendRecipe).select({
-          title: 1,
-          image: 1,
-          description: 1,
-          time: 1,
-          difficult_level: 1,
-          createdAt: 1
-        })
-        return recipe
-      })
-    )
-
-    console.log(arrayRecipes)
-
-    // const arrayRecipes
+    const arrayRecipes: any[] = []
 
     return { recipe, arrayRecipes }
   }

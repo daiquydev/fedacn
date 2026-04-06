@@ -15,7 +15,8 @@ const AI_STATUS = {
   IDLE: 'idle',
   LOADING: 'loading',
   APPROVED: 'approved',
-  REJECTED: 'rejected'
+  REJECTED: 'rejected',
+  UNVERIFIED: 'unverified'
 }
 
 export default function NutritionCheckinModal({ challenge, onClose, onSubmit, isLoading }) {
@@ -55,9 +56,9 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
       setAiStatus(valid ? AI_STATUS.APPROVED : AI_STATUS.REJECTED)
       setAiReason(reason || '')
     } catch {
-      // On error, be lenient — allow check-in
-      setAiStatus(AI_STATUS.APPROVED)
-      setAiReason('Không thể xác minh ảnh, cho phép ghi nhận.')
+      // On error, mark as unverified
+      setAiStatus(AI_STATUS.UNVERIFIED)
+      setAiReason('Không thể kết nối AI để kiểm tra ảnh. Ảnh sẽ được tính là không hợp lệ.')
     }
   }, [challenge])
 
@@ -109,17 +110,12 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
   const canCheckin = () => {
     if (!previewUrl) return false // must have image
     if (aiStatus === AI_STATUS.LOADING) return false // wait for AI
-    if (aiStatus === AI_STATUS.REJECTED) return false // AI rejected
     return true
   }
 
   const handleSubmit = () => {
     if (!previewUrl) {
       toast.error('Vui lòng tải ảnh bữa ăn lên')
-      return
-    }
-    if (aiStatus === AI_STATUS.REJECTED) {
-      toast.error('Ảnh không hợp lệ với thử thách. Vui lòng chọn ảnh khác.')
       return
     }
 
@@ -170,15 +166,21 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
       )
     }
 
-    if (aiStatus === AI_STATUS.REJECTED) {
+    if (aiStatus === AI_STATUS.UNVERIFIED || aiStatus === AI_STATUS.REJECTED) {
+      const isUnverified = aiStatus === AI_STATUS.UNVERIFIED;
       return (
         <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
           <FaTimesCircle className="text-red-500 shrink-0 mt-0.5" size={14} />
           <div className="flex-1">
-            <span className="text-xs font-semibold text-red-700 dark:text-red-400">❌ Ảnh không phù hợp</span>
+            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
+              {isUnverified ? '⚠️ Ảnh chưa kiểm tra' : '❌ Ảnh không phù hợp'}
+            </span>
             {aiReason && (
               <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">{aiReason}</p>
             )}
+            <p className="text-xs text-red-700 dark:text-red-400 mt-1.5 font-medium bg-red-100 dark:bg-red-900/40 p-1.5 rounded-md border border-red-200 dark:border-red-800">
+              ⚠️ Nếu tiếp tục, hệ thống vẫn ghi nhận nhưng hoạt động này sẽ <b>KHÔNG được tính</b> vào tiến độ chung.
+            </p>
             <button
               onClick={resetImage}
               className="mt-1.5 text-xs text-red-600 dark:text-red-400 underline hover:no-underline font-medium"
@@ -267,7 +269,7 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
                     src={previewUrl}
                     alt="Preview"
                     className={`w-full h-48 object-cover rounded-xl transition-all ${
-                      aiStatus === AI_STATUS.REJECTED ? 'opacity-60 ring-2 ring-red-400' :
+                      (aiStatus === AI_STATUS.REJECTED || aiStatus === AI_STATUS.UNVERIFIED) ? 'opacity-60 ring-2 ring-red-400' :
                       aiStatus === AI_STATUS.APPROVED ? 'ring-2 ring-emerald-400' : ''
                     }`}
                   />
@@ -351,8 +353,7 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
               disabled={isLoading || !canCheckin()}
               title={
                 !previewUrl ? 'Vui lòng tải ảnh lên' :
-                aiStatus === AI_STATUS.LOADING ? 'Đang xác minh ảnh...' :
-                aiStatus === AI_STATUS.REJECTED ? 'Ảnh không hợp lệ, chọn ảnh khác' : ''
+                aiStatus === AI_STATUS.LOADING ? 'Đang xác minh ảnh...' : ''
               }
               className={`flex-1 py-3 rounded-xl text-white font-bold text-sm transition flex items-center justify-center gap-2 ${
                 canCheckin() && !isLoading

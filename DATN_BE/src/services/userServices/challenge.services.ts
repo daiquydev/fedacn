@@ -27,7 +27,11 @@ class ChallengeService {
         kcal_per_unit,
         start_date_iso,
         end_date_iso,
-        visibility
+        visibility,
+        nutrition_sub_type,
+        time_window_start,
+        time_window_end,
+        exercises
     }: {
         creator_id: string
         title: string
@@ -46,9 +50,24 @@ class ChallengeService {
         start_date_iso?: string
         end_date_iso?: string
         visibility?: string
+        // nutrition time-window fields
+        nutrition_sub_type?: 'free' | 'time_window'
+        time_window_start?: string
+        time_window_end?: string
+        // fitness exercises
+        exercises?: Array<{ exercise_id: string; exercise_name: string; sets?: Array<{ set_number: number; reps: number; weight: number; calories_per_unit: number }> }>
     }) {
         if (!title || !title.trim()) throw new Error('Tên thử thách không được để trống')
         if (!challenge_type) throw new Error('Vui lòng chọn loại thử thách')
+
+        // Fitness: auto-set goal based on exercises count
+        if (challenge_type === 'fitness') {
+            if (!exercises || exercises.length === 0) throw new Error('Vui lòng chọn ít nhất 1 bài tập')
+            goal_type = 'exercises_completed'
+            goal_value = exercises.length
+            goal_unit = 'bài tập'
+        }
+
         if (!goal_type) throw new Error('Vui lòng chọn loại mục tiêu')
         if (!goal_value || goal_value <= 0) throw new Error('Giá trị mục tiêu phải lớn hơn 0')
         if (!goal_unit) throw new Error('Vui lòng chọn đơn vị mục tiêu')
@@ -78,7 +97,21 @@ class ChallengeService {
             badge_emoji: badge_emoji || '🏆',
             linked_meal_plan_id: linked_meal_plan_id ? new Types.ObjectId(linked_meal_plan_id) : null,
             category: category || '',
-            kcal_per_unit: kcal_per_unit || 0
+            kcal_per_unit: kcal_per_unit || 0,
+            // nutrition time-window
+            nutrition_sub_type: challenge_type === 'nutrition' ? (nutrition_sub_type || 'free') : 'free',
+            time_window_start: (challenge_type === 'nutrition' && nutrition_sub_type === 'time_window') ? (time_window_start || null) : null,
+            time_window_end: (challenge_type === 'nutrition' && nutrition_sub_type === 'time_window') ? (time_window_end || null) : null,
+            // fitness exercises
+            exercises: challenge_type === 'fitness' && Array.isArray(exercises)
+                ? exercises.map(ex => ({
+                    exercise_id: new Types.ObjectId(ex.exercise_id),
+                    exercise_name: ex.exercise_name,
+                    sets: Array.isArray(ex.sets) && ex.sets.length > 0
+                        ? ex.sets.map((s: any, idx: number) => ({ set_number: s.set_number || idx + 1, reps: s.reps || 10, weight: s.weight || 0, calories_per_unit: s.calories_per_unit || 10 }))
+                        : [{ set_number: 1, reps: 10, weight: 0, calories_per_unit: 10 }]
+                }))
+                : []
         })
 
         await challenge.save()
@@ -179,7 +212,9 @@ class ChallengeService {
         const allowedFields = [
             'title', 'description', 'image', 'is_public', 'badge_emoji',
             'category', 'kcal_per_unit', 'goal_type', 'goal_value', 'goal_unit',
-            'start_date', 'end_date', 'visibility'
+            'start_date', 'end_date', 'visibility',
+            'nutrition_sub_type', 'time_window_start', 'time_window_end',
+            'exercises'
         ]
         const safeUpdate: any = {}
         for (const key of allowedFields) {
@@ -311,6 +346,7 @@ class ChallengeService {
         calories?: number
         workout_session_id?: string
         exercises_count?: number
+        completed_exercises?: Array<{ exercise_id: string; exercise_name?: string; completed?: boolean }>
         source?: string
         gps_route?: any[]
         max_speed?: number
@@ -324,6 +360,23 @@ class ChallengeService {
 
         if (new Date() > new Date(challenge.end_date)) {
             throw new Error('Thử thách đã hết hạn')
+        }
+
+        let validationStatus = 'valid'
+
+        // Time-window check for nutrition challenges
+        if (challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window'
+            && challenge.time_window_start && challenge.time_window_end) {
+            // Get current time in Vietnam timezone (UTC+7)
+            const nowVN = new Date(Date.now() + 7 * 60 * 60 * 1000)
+            const currentMinutes = nowVN.getUTCHours() * 60 + nowVN.getUTCMinutes()
+            const [startH, startM] = challenge.time_window_start.split(':').map(Number)
+            const [endH, endM] = challenge.time_window_end.split(':').map(Number)
+            const windowStart = startH * 60 + startM
+            const windowEnd = endH * 60 + endM
+            if (currentMinutes < windowStart || currentMinutes > windowEnd) {
+                validationStatus = 'invalid_time'
+            }
         }
 
         const participant = await ChallengeParticipantModel.findOne({
@@ -383,8 +436,16 @@ class ChallengeService {
             calories: data.calories || null,
             workout_session_id: data.workout_session_id ? new Types.ObjectId(data.workout_session_id) : null,
             exercises_count: data.exercises_count || null,
+            completed_exercises: Array.isArray(data.completed_exercises)
+                ? data.completed_exercises.map((ex: any) => ({
+                    exercise_id: new Types.ObjectId(ex.exercise_id),
+                    exercise_name: ex.exercise_name || '',
+                    completed: ex.completed !== false
+                }))
+                : [],
             source,
-            activity_id: activityId
+            activity_id: activityId,
+            validation_status: validationStatus
         })
         await progress.save()
 
@@ -392,58 +453,75 @@ class ChallengeService {
         const today = this.getTodayString()
         participant.last_activity_at = new Date()
 
-        // Track active days
-        if (!participant.active_days.includes(today)) {
-            participant.active_days.push(today)
-        }
+        if (validationStatus === 'valid') {
+            // Track active days
+            if (!participant.active_days.includes(today)) {
+                participant.active_days.push(today)
+            }
 
-        // Check if today's goal is met
-        const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
+            // Check if today's goal is met
+            const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
 
-        const todaysProgressList = await ChallengeProgressModel.find({
-            challenge_id: new Types.ObjectId(challengeId),
-            user_id: new Types.ObjectId(userId),
-            date: { $gte: startOfDay, $lte: endOfDay },
-            is_deleted: { $ne: true }
-        });
-        const todaySum = todaysProgressList.reduce((sum, p) => sum + p.value, 0);
+            const todaysProgressList = await ChallengeProgressModel.find({
+                challenge_id: new Types.ObjectId(challengeId),
+                user_id: new Types.ObjectId(userId),
+                date: { $gte: startOfDay, $lte: endOfDay },
+                is_deleted: { $ne: true },
+                validation_status: { $ne: 'invalid_time' },
+                ai_review_valid: { $ne: false }
+            });
 
-        if (!participant.completed_days) participant.completed_days = []
-        if (todaySum >= challenge.goal_value && !participant.completed_days.includes(today)) {
-            participant.completed_days.push(today)
-            // Current value represents the number of successful days
-            participant.current_value = participant.completed_days.length
-        }
+            // Fitness: count distinct completed exercises; Others: sum value
+            let todaySum: number
+            if (challenge.challenge_type === 'fitness') {
+                const completedExerciseIds = new Set<string>()
+                todaysProgressList.forEach(p => {
+                    (p.completed_exercises || []).forEach(ce => {
+                        if (ce.completed) completedExerciseIds.add(ce.exercise_id.toString())
+                    })
+                })
+                todaySum = completedExerciseIds.size
+            } else {
+                todaySum = todaysProgressList.reduce((sum, p) => sum + p.value, 0);
+            }
 
-        // Recalculate streak based on completed_days (days that met the daily goal)
-        participant.streak_count = this.calculateStreak(participant.completed_days || [])
+            if (!participant.completed_days) participant.completed_days = []
+            if (todaySum >= challenge.goal_value && !participant.completed_days.includes(today)) {
+                participant.completed_days.push(today)
+                // Current value represents the number of successful days
+                participant.current_value = participant.completed_days.length
+            }
 
-        // Check completion based on total days requirement
-        const safeStartDate = new Date(challenge.start_date)
-        const safeEndDate = new Date(challenge.end_date)
-        safeStartDate.setHours(0, 0, 0, 0)
-        safeEndDate.setHours(0, 0, 0, 0)
-        const totalRequiredDays = Math.max(1, Math.ceil((safeEndDate.getTime() - safeStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+            // Recalculate streak based on completed_days (days that met the daily goal)
+            participant.streak_count = this.calculateStreak(participant.completed_days || [])
 
-        if (participant.completed_days.length >= totalRequiredDays && !participant.is_completed) {
-            participant.is_completed = true
-            participant.completed_at = new Date()
-            participant.status = 'completed'
+            // Check completion based on total days requirement
+            const safeStartDate = new Date(challenge.start_date)
+            const safeEndDate = new Date(challenge.end_date)
+            safeStartDate.setHours(0, 0, 0, 0)
+            safeEndDate.setHours(0, 0, 0, 0)
+            const totalRequiredDays = Math.max(1, Math.ceil((safeEndDate.getTime() - safeStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
-            // Send completion notification
-            try {
-                await new NotificationModel({
-                    sender_id: null,
-                    receiver_id: new Types.ObjectId(userId),
-                    content: `Chúc mừng! Bạn đã hoàn thành thử thách "${challenge.title}" ${challenge.badge_emoji}`,
-                    name_notification: 'Hoàn thành thử thách!',
-                    link_id: challenge._id.toString(),
-                    type: NotificationTypes.challengeCompleted,
-                    is_read: false
-                }).save()
-            } catch {
-                // Notification errors should not break the flow
+            if (participant.completed_days.length >= totalRequiredDays && !participant.is_completed) {
+                participant.is_completed = true
+                participant.completed_at = new Date()
+                participant.status = 'completed'
+
+                // Send completion notification
+                try {
+                    await new NotificationModel({
+                        sender_id: null,
+                        receiver_id: new Types.ObjectId(userId),
+                        content: `Chúc mừng! Bạn đã hoàn thành thử thách "${challenge.title}" ${challenge.badge_emoji}`,
+                        name_notification: 'Hoàn thành thử thách!',
+                        link_id: challenge._id.toString(),
+                        type: NotificationTypes.challengeCompleted,
+                        is_read: false
+                    }).save()
+                } catch {
+                    // Notification errors should not break the flow
+                }
             }
         }
 
@@ -460,6 +538,7 @@ class ChallengeService {
 
         const progressList = await ChallengeProgressModel.find(condition)
             .populate('user_id', 'name avatar')
+            .populate('workout_session_id')
             .sort({ date: -1 })
             .skip(skip)
             .limit(limit)
@@ -476,6 +555,17 @@ class ChallengeService {
         })
         if (!activity) throw new Error('Hoạt động không tồn tại')
         return activity
+    }
+
+    async getChallengeProgressEntry(challengeId: string, progressId: string) {
+        const entry = await ChallengeProgressModel.findOne({
+            _id: new Types.ObjectId(progressId),
+            challenge_id: new Types.ObjectId(challengeId),
+            is_deleted: { $ne: true }
+        })
+            .populate('workout_session_id')
+        if (!entry) throw new Error('Hoạt động không tồn tại')
+        return entry
     }
 
     // ==================== LEADERBOARD ====================
@@ -545,29 +635,63 @@ class ChallengeService {
         const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
         const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
-        // Bulk-fetch today's check-in sums for all participants in one aggregation
+        // Bulk-fetch today's progress for all participants
         const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
         const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999)
         const userIds = participants.map(p => p.user_id instanceof Types.ObjectId ? p.user_id : (p.user_id as any)?._id)
 
-        const todayAgg = await ChallengeProgressModel.aggregate([
-            {
-                $match: {
-                    challenge_id: new Types.ObjectId(challengeId),
-                    user_id: { $in: userIds.map(id => new Types.ObjectId(id.toString())) },
-                    date: { $gte: startOfDay, $lte: endOfDay },
-                    is_deleted: { $ne: true }
+        let todayMap = new Map<string, number>()
+
+        if (challenge.challenge_type === 'fitness') {
+            // Fitness: count distinct completed exercises per user
+            const fitAgg = await ChallengeProgressModel.aggregate([
+                {
+                    $match: {
+                        challenge_id: new Types.ObjectId(challengeId),
+                        user_id: { $in: userIds.map(id => new Types.ObjectId(id.toString())) },
+                        date: { $gte: startOfDay, $lte: endOfDay },
+                        is_deleted: { $ne: true },
+                        validation_status: { $ne: 'invalid_time' },
+                        ai_review_valid: { $ne: false }
+                    }
+                },
+                { $unwind: { path: '$completed_exercises', preserveNullAndEmptyArrays: false } },
+                { $match: { 'completed_exercises.completed': true } },
+                {
+                    $group: {
+                        _id: '$user_id',
+                        exercise_ids: { $addToSet: '$completed_exercises.exercise_id' }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        today_sum: { $size: '$exercise_ids' }
+                    }
                 }
-            },
-            {
-                $group: {
-                    _id: '$user_id',
-                    today_sum: { $sum: '$value' }
+            ])
+            fitAgg.forEach(row => todayMap.set(row._id.toString(), row.today_sum))
+        } else {
+            const todayAgg = await ChallengeProgressModel.aggregate([
+                {
+                    $match: {
+                        challenge_id: new Types.ObjectId(challengeId),
+                        user_id: { $in: userIds.map(id => new Types.ObjectId(id.toString())) },
+                        date: { $gte: startOfDay, $lte: endOfDay },
+                        is_deleted: { $ne: true },
+                        validation_status: { $ne: 'invalid_time' },
+                        ai_review_valid: { $ne: false }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$user_id',
+                        today_sum: { $sum: '$value' }
+                    }
                 }
-            }
-        ])
-        const todayMap = new Map<string, number>()
-        todayAgg.forEach(row => todayMap.set(row._id.toString(), row.today_sum))
+            ])
+            todayAgg.forEach(row => todayMap.set(row._id.toString(), row.today_sum))
+        }
 
         return {
             participants: participants.map((p, index) => {
@@ -596,6 +720,9 @@ class ChallengeService {
     }
 
     async getUserProgress(challengeId: string, userId: string) {
+        const challenge = await ChallengeModel.findById(challengeId)
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+
         // Get participant info
         const participant = await ChallengeParticipantModel.findOne({
             challenge_id: new Types.ObjectId(challengeId),
@@ -612,16 +739,25 @@ class ChallengeService {
             is_deleted: { $ne: true }
         }).sort({ date: -1 })
 
+        // Calculate totalRequiredDays (same logic as getLeaderboard & getParticipants)
+        const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
+        const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
+        const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+
+        // completedDays = number of days where daily goal was met
+        const completedDays = (participant as any).completed_days?.length || participant.current_value
+        const progressPercent = Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100)
+
         return {
             participant: {
                 user: participant.user_id,
-                current_value: participant.current_value,
-                goal_value: participant.goal_value,
-                progress_percent: participant.goal_value > 0
-                    ? Math.min(Math.round((participant.current_value / participant.goal_value) * 100), 100) : 0,
+                current_value: completedDays,
+                goal_value: totalRequiredDays,
+                progress_percent: progressPercent,
                 is_completed: participant.is_completed,
                 streak_count: participant.streak_count,
                 active_days: participant.active_days,
+                completed_days: (participant as any).completed_days || [],
                 joined_at: participant.joined_at,
                 last_activity_at: participant.last_activity_at
             },
@@ -666,16 +802,30 @@ class ChallengeService {
         const allEntries = await ChallengeProgressModel.find({
             challenge_id: new Types.ObjectId(challengeId),
             user_id: new Types.ObjectId(userId),
-            is_deleted: { $ne: true }
+            is_deleted: { $ne: true },
+            validation_status: { $ne: 'invalid_time' },
+            ai_review_valid: { $ne: false }
         })
 
         // Recalculate active_days and completed_days
         const dayMap = new Map<string, number>()
+        const dayExerciseMap = new Map<string, Set<string>>()
         allEntries.forEach(e => {
             const vnOffset = 7 * 60 * 60 * 1000
             const vnDate = new Date(new Date(e.date).getTime() + vnOffset)
             const dayStr = vnDate.toISOString().split('T')[0]
-            dayMap.set(dayStr, (dayMap.get(dayStr) || 0) + e.value)
+
+            if (challenge && challenge.challenge_type === 'fitness') {
+                // Fitness: count distinct completed exercises
+                if (!dayExerciseMap.has(dayStr)) dayExerciseMap.set(dayStr, new Set())
+                const exSet = dayExerciseMap.get(dayStr)!
+                ;(e.completed_exercises || []).forEach(ce => {
+                    if (ce.completed) exSet.add(ce.exercise_id.toString())
+                })
+                dayMap.set(dayStr, exSet.size)
+            } else {
+                dayMap.set(dayStr, (dayMap.get(dayStr) || 0) + e.value)
+            }
         })
 
         const activeDays = Array.from(dayMap.keys()).sort()
@@ -801,7 +951,55 @@ class ChallengeService {
             }))
         }
 
+        // Inject participants_preview (top 5 users) for each challenge
+        const allChallengeIds = resultChallenges.map((c: any) => c._id)
+        if (allChallengeIds.length > 0) {
+            const allParticipants = await ChallengeParticipantModel.find({
+                challenge_id: { $in: allChallengeIds.map((id: any) => new Types.ObjectId(id.toString())) },
+                status: { $ne: 'quit' }
+            })
+                .populate('user_id', 'name avatar')
+                .sort({ joined_at: 1 })
+                .lean()
+
+            // Group by challenge_id, take top 5
+            const previewMap = new Map<string, any[]>()
+            allParticipants.forEach((p: any) => {
+                const cid = p.challenge_id.toString()
+                if (!previewMap.has(cid)) previewMap.set(cid, [])
+                const arr = previewMap.get(cid)!
+                if (arr.length < 5) {
+                    arr.push(p.user_id)
+                }
+            })
+
+            resultChallenges = resultChallenges.map((c: any) => ({
+                ...c,
+                participants_preview: previewMap.get(c._id.toString()) || []
+            }))
+        }
+
         return { challenges: resultChallenges, totalPage, page, limit, total }
+    }
+
+    // ==================== INVITE FRIEND ====================
+
+    async inviteFriendToChallenge(challengeId: string, inviterId: string, friendId: string) {
+        const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+
+        const notification = new NotificationModel({
+            sender_id: new Types.ObjectId(inviterId),
+            receiver_id: new Types.ObjectId(friendId),
+            content: `đã mời bạn tham gia thử thách "${challenge.title}"`,
+            name_notification: `Lời mời tham gia: ${challenge.title}`,
+            link_id: challengeId,
+            type: NotificationTypes.challengeInvite,
+            is_read: false
+        })
+
+        await notification.save()
+        return { notificationId: notification._id, challengeId, friendId }
     }
 
     // ==================== HELPERS ====================
