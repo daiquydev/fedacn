@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { FaMedal, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import { getImageUrl } from '../../../utils/imageUrl'
@@ -61,7 +61,7 @@ export default function TrainingLeaderboard({ TrainingId }) {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <input
             type="text"
-            placeholder="Tìm kiếm người tham gia..."
+            placeholder="Tìm người tham gia..."
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:text-gray-200"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

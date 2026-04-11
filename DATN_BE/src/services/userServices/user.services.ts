@@ -8,8 +8,7 @@ import {
   NotificationTypes,
   RecipeStatus,
   RequestType,
-  UserRoles,
-  UserStatus
+  UserRoles
 } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USER_MESSAGE } from '~/constants/messages'
@@ -75,7 +74,7 @@ class UsersService {
   }
   async getMe({ user_id }: { user_id: string }) {
     const me = await UserModel.aggregate([
-      { $match: { _id: new ObjectId(user_id), status: UserStatus.active } },
+      { $match: { _id: new ObjectId(user_id), isDeleted: { $ne: true } } },
       // lấy những người follow mình
       {
         $lookup: {
@@ -94,14 +93,14 @@ class UsersService {
           as: 'followers'
         }
       },
-      // lọc ra những người bị banned trong mảng followers dùng addfields
+      // lọc follower Đã xóa
       {
         $addFields: {
           followers: {
             $filter: {
               input: '$followers',
               as: 'follower',
-              cond: { $eq: ['$$follower.status', UserStatus.active] }
+              cond: { $ne: ['$$follower.isDeleted', true] }
             }
           }
         }
@@ -153,7 +152,7 @@ class UsersService {
             $filter: {
               input: '$followings',
               as: 'following',
-              cond: { $eq: ['$$following.status', UserStatus.active] }
+              cond: { $ne: ['$$following.isDeleted', true] }
             }
           }
         }
@@ -292,7 +291,7 @@ class UsersService {
   async getUserById({ id, user_id }: { id: string; user_id: string }) {
     const user = await UserModel.aggregate([
       {
-        $match: { _id: new ObjectId(id), status: UserStatus.active }
+        $match: { _id: new ObjectId(id), isDeleted: { $ne: true } }
       },
       // lấy những người follow mình
       {
@@ -312,14 +311,14 @@ class UsersService {
           as: 'followers'
         }
       },
-      // lọc ra những người bị banned trong mảng followers
+      // lọc follower Đã xóa
       {
         $addFields: {
           followers: {
             $filter: {
               input: '$followers',
               as: 'follower',
-              cond: { $eq: ['$$follower.status', UserStatus.active] }
+              cond: { $ne: ['$$follower.isDeleted', true] }
             }
           }
         }
@@ -464,7 +463,7 @@ class UsersService {
       {
         $match: {
           _id: { $ne: new ObjectId(user_id) },
-          status: UserStatus.active,
+          isDeleted: { $ne: true },
           role: { $nin: [UserRoles.admin, UserRoles.inspector, UserRoles.writter] }
         }
       },

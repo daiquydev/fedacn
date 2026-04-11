@@ -27,6 +27,18 @@ import TimeRangeDropdown from '../../../components/SportEvent/TimeRangeDropdown'
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+// Chuẩn hoá đơn vị hiển thị: calories / calo / cal → kcal
+function displayUnit(unit) {
+    const u = (unit || '').toLowerCase().trim()
+    if (u === 'calories' || u === 'calo' || u === 'cal') return 'kcal'
+    return unit || 'kcal'
+}
+
+// Làm tròn số thực tối đa 2 chữ số thập phân, bỏ số 0 thừa
+function roundKcal(v) {
+    return Math.round((v || 0) * 100) / 100
+}
+
 // Định dạng giây → chuỗi rõ đơn vị: "48p 00s" hoặc "1g 01p 01s"
 function formatDuration(secs) {
     if (!secs || secs <= 0) return '0p 00s'
@@ -469,11 +481,19 @@ export default function IndoorEventProgress({ event, userProgress }) {
                         )}
                     </div>
 
-                    {!isEnded && canJoin && (
+                    {isEnded ? (
+                        <div className="flex-shrink-0 bg-white/20 px-6 py-3 rounded-xl font-bold text-sm text-center shadow-sm flex items-center justify-center">
+                            Sự kiện đã kết thúc
+                        </div>
+                    ) : (
                         <button
-                            onClick={() => setShowVideoCall(true)}
-                            className="flex-shrink-0 flex items-center gap-2 bg-white text-blue-600 px-6 py-3
-                         rounded-xl font-bold text-sm hover:bg-blue-50 transition shadow-lg"
+                            onClick={() => canJoin && setShowVideoCall(true)}
+                            disabled={!canJoin}
+                            className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg
+                                ${canJoin
+                                    ? 'bg-white text-blue-600 hover:bg-blue-50 cursor-pointer'
+                                    : 'bg-white/30 text-white/60 cursor-not-allowed'
+                                }`}
                         >
                             <FaPlay className="text-xs" />
                             Tham gia Video Call
@@ -493,7 +513,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                             <p className="text-xs opacity-80">Thời gian hôm nay</p>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{todayStats.totalCalories}</p>
+                            <p className="text-2xl font-bold">{roundKcal(todayStats.totalCalories).toFixed(2)}</p>
                             <p className="text-xs opacity-80">kcal</p>
                         </div>
                     </div>
@@ -520,7 +540,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                             Mục tiêu cá nhân:{' '}
                             <span className="font-semibold text-gray-700 dark:text-gray-300">
-                                {progressStats?.perPersonTarget > 0 ? `${progressStats.perPersonTarget.toFixed(2)} ${event.targetUnit}` : 'Chưa thiết lập'}
+                                {progressStats?.perPersonTarget > 0 ? `${progressStats.perPersonTarget.toFixed(2)} ${displayUnit(event.targetUnit)}` : 'Chưa thiết lập'}
                             </span>
                         </p>
                         <div className="p-4 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/30 bg-indigo-50 dark:bg-indigo-900/10 max-w-sm">
@@ -529,7 +549,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tiến độ đạt được</span>
                             </div>
                             <p className="text-2xl font-black text-gray-800 dark:text-white">
-                                {progressStats ? Number(progressStats.total).toFixed(2) : 0} <span className="text-sm font-medium text-gray-400">{event.targetUnit}</span>
+                                {progressStats ? roundKcal(progressStats.total).toFixed(2) : 0} <span className="text-sm font-medium text-gray-400">{displayUnit(event.targetUnit)}</span>
                             </p>
                         </div>
                     </div>
@@ -582,7 +602,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
                             </div>
                             <p className="text-xl font-black text-gray-800 dark:text-white">
-                                {indoorStats.totalCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
+                                {roundKcal(indoorStats.totalCalories).toFixed(2)} <span className="text-sm font-medium text-gray-400">kcal</span>
                             </p>
                         </div>
 
@@ -840,7 +860,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <FaFire className="text-[10px] text-orange-400" />
-                                                    {vs.caloriesBurned} kcal
+                                                    {roundKcal(vs.caloriesBurned).toFixed(2)} kcal
                                                 </span>
                                                 <span className="font-medium text-blue-500">
                                                     AI {aiPct}%
@@ -868,7 +888,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                 <strong>{deleteSession.sessionId?.title || 'Video Call'}</strong>
                             </p>
                             <p className="text-xs text-gray-400 mb-6">
-                                {moment(deleteSession.joinedAt).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteSession.activeSeconds)} • {deleteSession.caloriesBurned} kcal
+                                {moment(deleteSession.joinedAt).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteSession.activeSeconds)} • {roundKcal(deleteSession.caloriesBurned).toFixed(2)} kcal
                             </p>
                         </div>
                         <div className="flex gap-3">

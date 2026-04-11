@@ -53,7 +53,8 @@ export default function IndoorPreviewCard({ sessionId, eventId }) {
         queryKey: ['sportEvent-preview', eventId],
         queryFn: () => getSportEvent(eventId),
         enabled: Boolean(eventId),
-        staleTime: 5 * 60 * 1000
+        staleTime: 5 * 60 * 1000,
+        retry: false
     })
     
     const event = eventData?.data?.result || eventData?.result

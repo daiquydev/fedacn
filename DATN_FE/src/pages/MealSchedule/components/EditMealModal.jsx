@@ -133,7 +133,7 @@ export default function EditMealModal({ meal, onClose, onSave, isNew = false }) 
                 type="text"
                 value={formData.time}
                 onChange={handleChange}
-                placeholder="VD: 7:00 - 8:00"
+                placeholder="Nhập thời gian"
                 className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
@@ -156,7 +156,7 @@ export default function EditMealModal({ meal, onClose, onSave, isNew = false }) 
                 step="1"
                 value={formData.calories}
                 onChange={handleChange}
-                placeholder="Lượng calo (kcal)"
+                placeholder="Nhập lượng calo (kcal)"
                 className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />

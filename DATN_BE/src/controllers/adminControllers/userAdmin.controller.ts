@@ -59,26 +59,6 @@ export const deleteUserByIdController = async (req: Request, res: Response) => {
   })
 }
 
-export const banUserByIdController = async (req: Request, res: Response) => {
-  const { user_id } = req.body
-  const result = await userAdminService.banUserByIdService(user_id)
-
-  return res.json({
-    result,
-    message: ADMIN_MESSAGE.BAN_USER_BY_ID_SUCCESS
-  })
-}
-
-export const unbanUserByIdController = async (req: Request, res: Response) => {
-  const { user_id } = req.body
-  const result = await userAdminService.unbanUserByIdService(user_id)
-
-  return res.json({
-    result,
-    message: ADMIN_MESSAGE.UNBAN_USER_BY_ID_SUCCESS
-  })
-}
-
 export const createWritterAndInspectorController = async (req: Request, res: Response) => {
   const { name, email, user_name, role } = req.body
   const result = await userAdminService.createWritterAndInspectorService({

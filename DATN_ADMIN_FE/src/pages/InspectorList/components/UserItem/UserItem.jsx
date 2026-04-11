@@ -1,79 +1,34 @@
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { toast } from 'react-hot-toast'
-import { banUserAdmin, deleteUserAdmin, unbanUserAdmin } from '../../../../apis/adminApi'
+import { deleteUserAdmin, restoreUserAdmin } from '../../../../apis/adminApi'
 import { useState } from 'react'
 import { queryClient } from '../../../../main'
 import ConfirmBox from '../../../../components/GlobalComponents/ConfirmBox'
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 
-export default function UserItem({ user }) {
+export default function UserItem({ user, listDeleted }) {
   const [openDelete, setOpenDelete] = useState(false)
-  const [openBan, setOpenBan] = useState(false)
-
-  const handleOpenDelete = () => {
-    setOpenDelete(true)
-  }
-  const handleCloseDelete = () => {
-    setOpenDelete(false)
-  }
-
-  const handleOpenBan = () => {
-    setOpenBan(true)
-  }
-
-  const handleCloseBan = () => {
-    setOpenBan(false)
-  }
+  const [openRestore, setOpenRestore] = useState(false)
 
   const deleteUserMutation = useSafeMutation({
     mutationFn: () => deleteUserAdmin(user._id),
     onSuccess: () => {
-      toast.success('Xóa người dùng thành công')
-      queryClient.invalidateQueries({
-        queryKey: ['inspector-list']
-      })
-      handleCloseDelete()
+      toast.success('Xóa mềm thành công')
+      queryClient.invalidateQueries({ queryKey: ['inspector-list'] })
+      setOpenDelete(false)
     }
   })
-  const handleDelete = () => {
-    deleteUserMutation.mutate()
-  }
 
-  const banMutation = useSafeMutation({
-    mutationFn: (body) => banUserAdmin(body)
-  })
-
-  const unbanMutation = useSafeMutation({
-    mutationFn: (body) => unbanUserAdmin(body)
-  })
-
-  const handleBan = () => {
-    if (user?.status === 0) {
-      unbanMutation.mutate(
-        { user_id: user._id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({
-              queryKey: ['inspector-list']
-            })
-            toast.success('Mở khóa thành công')
-          }
-        }
-      )
-    } else {
-      banMutation.mutate(
-        { user_id: user._id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({
-              queryKey: ['inspector-list']
-            })
-            toast.success('Khóa thành công')
-          }
-        }
-      )
+  const restoreMutation = useSafeMutation({
+    mutationFn: () => restoreUserAdmin({ user_id: user._id }),
+    onSuccess: () => {
+      toast.success('Khôi phục thành công')
+      queryClient.invalidateQueries({ queryKey: ['inspector-list'] })
+      setOpenRestore(false)
     }
-  }
+  })
+
+  const isUserDeleted = !!user?.isDeleted
 
   return (
     <>
@@ -84,6 +39,7 @@ export default function UserItem({ user }) {
               <img
                 className='rounded-full object-cover max-w-none w-8 h-8'
                 src={user.avatar === '' ? useravatar : user.avatar}
+                alt=''
               />
             </div>
             <div>
@@ -93,9 +49,9 @@ export default function UserItem({ user }) {
           </div>
         </td>
         <td className='px-6 py-4 whitespace-nowrap'>
-          {user.status === 0 ? (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-300 text-black dark:bg-pink-200'>
-              Bị khóa
+          {isUserDeleted ? (
+            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-100'>
+              Đã xóa
             </span>
           ) : (
             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
@@ -110,41 +66,37 @@ export default function UserItem({ user }) {
           </span>
         </td>
         <td className='px-6 py-4 mt-2 flex item-center whitespace-nowrap  text-sm font-medium'>
-          {user.status === 1 ? (
-            <div onClick={handleOpenBan} className='text-indigo-600 cursor-pointer hover:text-indigo-900'>
-              Khóa
-            </div>
+          {listDeleted || isUserDeleted ? (
+            <button
+              type='button'
+              onClick={() => setOpenRestore(true)}
+              className='text-emerald-600 cursor-pointer hover:text-emerald-900'
+            >
+              Khôi phục
+            </button>
           ) : (
-            <div onClick={handleOpenBan} className='text-gray-500 cursor-pointer'>
-              Mở khóa
-            </div>
+            <button type='button' onClick={() => setOpenDelete(true)} className='text-red-600 cursor-pointer hover:text-red-900'>
+              Xóa mềm
+            </button>
           )}
-
-          <div onClick={handleOpenDelete} className='ml-2 cursor-pointer text-red-600 hover:text-red-900'>
-            Xóa
-          </div>
           <span>
             {openDelete && (
               <ConfirmBox
-                closeModal={handleCloseDelete}
-                handleDelete={handleDelete}
+                closeModal={() => setOpenDelete(false)}
+                handleDelete={() => deleteUserMutation.mutate()}
                 isPending={deleteUserMutation.isPending}
-                title={'Xác nhận xóa'}
-                subtitle={'Bạn có chắc chắn muốn xóa người dùng chứ'}
+                title='Xác nhận xóa mềm'
+                subtitle='Bạn có chắc chắn muốn xóa mềm tài khoản này? (có thể khôi phục)'
               />
             )}
-            {openBan && (
+            {openRestore && (
               <ConfirmBox
-                closeModal={handleCloseBan}
-                handleDelete={handleBan}
-                isPending={user.status === 1 ? banMutation.isPending : unbanMutation.isPending}
-                title={user.status === 1 ? 'Xác nhận khóa' : 'Xác nhận mở khóa'}
-                subtitle={
-                  user.status === 1
-                    ? 'Bạn có chắc chắn muốn khóa người dùng chứ'
-                    : 'Bạn có chắc chắn muốn mở khóa người dùng chứ'
-                }
-                tilteButton={user.status === 1 ? 'Khóa' : 'Mở khóa'}
+                closeModal={() => setOpenRestore(false)}
+                handleDelete={() => restoreMutation.mutate()}
+                isPending={restoreMutation.isPending}
+                title='Xác nhận khôi phục'
+                subtitle='Khôi phục tài khoản này?'
+                tilteButton='Khôi phục'
               />
             )}
           </span>

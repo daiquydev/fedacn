@@ -362,7 +362,7 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                             <input
                                 value={form.title}
                                 onChange={e => { setField('title', e.target.value); const err = validateField('title', e.target.value); setErrors(p => ({ ...p, title: err })) }}
-                                placeholder="VD: Chạy 100km trong tháng 4"
+                                placeholder="Nhập tên thử thách"
                                 className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.title ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-orange-400'}`}
                             />
                             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
@@ -610,7 +610,7 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                                 onChange={e => setField('description', e.target.value)}
                                 rows={3}
                                 maxLength={500}
-                                placeholder="Mô tả ngắn về thử thách của bạn..."
+                                placeholder="Mô tả ngắn về thử thách..."
                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-orange-400 outline-none transition text-sm resize-none"
                             />
                             <p className="text-[10px] text-gray-400 text-right mt-0.5">{form.description.length}/500</p>

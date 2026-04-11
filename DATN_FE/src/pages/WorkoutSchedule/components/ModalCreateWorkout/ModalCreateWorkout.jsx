@@ -103,7 +103,7 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
                 id='name'
                 register={register}
                 errors={errors.name}
-                placeholder='Nhập tên lịch tập của bạn'
+                placeholder='Nhập tên lịch tập'
               />
               <Input
                 title='Nhập cân nặng (kg)'
@@ -112,7 +112,7 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
                 id='weight'
                 register={register}
                 errors={errors.weight}
-                placeholder='Nhập cân nặng của bạn'
+                placeholder='Nhập cân nặng (kg)'
               />
               <Input
                 title='Nhập lượng kcal muốn đốt cháy (kcal)'
@@ -121,7 +121,7 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
                 id='calo_target'
                 register={register}
                 errors={errors.calo_target}
-                placeholder='Nhập lượng kcal muốn đốt cháy của bạn'
+                placeholder='Nhập mục tiêu calo (kcal)'
               />
               <div className='flex flex-wrap items-center justify-between gap-1 mb-3'>
                 {' '}

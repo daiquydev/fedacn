@@ -41,6 +41,7 @@ export interface IChallenge {
     is_deleted: boolean
     participants_count: number
     badge_emoji: string
+    difficulty: 'easy' | 'medium' | 'hard'
 
     // Nutrition sub-type (time-window restriction)
     nutrition_sub_type?: 'free' | 'time_window'
@@ -106,6 +107,11 @@ const ChallengeSchema = new mongoose.Schema<IChallenge>(
         is_deleted: { type: Boolean, default: false },
         participants_count: { type: Number, default: 0 },
         badge_emoji: { type: String, default: '🏆' },
+        difficulty: {
+            type: String,
+            enum: ['easy', 'medium', 'hard'],
+            default: 'medium'
+        },
 
         // Nutrition sub-type (time-window restriction)
         nutrition_sub_type: {

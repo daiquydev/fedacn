@@ -160,7 +160,7 @@ export default function ModalUpdateMeal({ handleCloseModalUpdateMeal, meal }) {
                   id='weight_target'
                   register={register}
                   errors={errors.weight_target}
-                  placeholder='Nhập cân nặng mục tiêu của bạn'
+                  placeholder='Nhập mục tiêu cân nặng (kg)'
                 />
               )}
               <div className='flex flex-wrap items-center justify-between gap-1 mb-3'>

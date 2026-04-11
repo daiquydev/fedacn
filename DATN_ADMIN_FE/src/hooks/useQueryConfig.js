@@ -10,6 +10,7 @@ export default function useQueryConfig() {
       search: queryParams.search,
       sort: queryParams.sort || 'desc',
       status: queryParams.status,
+      isDeleted: queryParams.isDeleted,
       category_blog_id: queryParams.category_blog_id,
       category_recipe_id: queryParams.category_recipe_id,
       difficult_level: queryParams.difficult_level,

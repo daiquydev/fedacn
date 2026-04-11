@@ -1,9 +1,19 @@
 import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
+import SportEventVideoSessionModel from '~/models/schemas/sportEventVideoSession.schema'
 import NotificationModel from '~/models/schemas/notification.schema'
+import PostModel from '~/models/schemas/post.schema'
 import { NotificationTypes } from '~/constants/enums'
 import { Types } from 'mongoose'
+import { ErrorWithStatus } from '~/utils/error'
+import HTTP_STATUS from '~/constants/httpStatus'
+
+// Mirror of sportEventProgress.services.ts isKcalUnit (avoids circular import)
+function isKcalUnit(targetUnit: string): boolean {
+  const u = (targetUnit || '').toLowerCase().trim()
+  return u === 'kcal' || u === 'calo' || u === 'calories' || u === 'cal'
+}
 
 class SportEventService {
   // Get all sport events
@@ -76,9 +86,152 @@ class SportEventService {
 
     const skip = (page - 1) * limit
 
-    let sortOption: any = { participants: -1 }
-    if (sortBy === 'popular') sortOption = { participants: -1 }
-    else if (sortBy === 'newest') sortOption = { createdAt: -1 }
+    // For 'popular' (smart default): sort by status priority (ongoing → upcoming → ended),
+    // then by startDate ascending within each group.
+    // Uses aggregation to compute statusOrder at query time.
+    if (sortBy === 'popular') {
+      const aggregationPipeline: any[] = [
+        { $match: condition },
+        {
+          $addFields: {
+            statusOrder: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $and: [{ $lte: ['$startDate', now] }, { $gte: ['$endDate', now] }] },
+                    then: 0 // ongoing
+                  },
+                  {
+                    case: { $gt: ['$startDate', now] },
+                    then: 1 // upcoming
+                  }
+                ],
+                default: 2 // ended
+              }
+            }
+          }
+        },
+        { $sort: { statusOrder: 1, startDate: 1, _id: 1 } }
+      ]
+
+      const [countResult, rawEvents] = await Promise.all([
+        SportEventModel.aggregate([...aggregationPipeline, { $count: 'total' }]),
+        SportEventModel.aggregate([
+          ...aggregationPipeline,
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'createdBy',
+              foreignField: '_id',
+              as: '_createdByArr',
+              pipeline: [{ $project: { name: 1, avatar: 1 } }]
+            }
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'participants_ids',
+              foreignField: '_id',
+              as: 'participants_ids',
+              pipeline: [{ $project: { name: 1, avatar: 1 } }]
+            }
+          },
+          {
+            $addFields: {
+              createdBy: { $arrayElemAt: ['$_createdByArr', 0] }
+            }
+          },
+          { $project: { _createdByArr: 0, statusOrder: 0 } }
+        ])
+      ])
+
+      const total = countResult[0]?.total || 0
+      const totalPage = Math.ceil(total / limit)
+
+      let resultEvents = rawEvents.map((eventObj: any) => {
+        if (userId && eventObj.participants_ids) {
+          eventObj.isJoined = eventObj.participants_ids.some((participant: any) => {
+            const id = participant._id ? participant._id.toString() : participant.toString()
+            return id === userId
+          })
+        } else {
+          eventObj.isJoined = false
+        }
+        return eventObj
+      })
+
+      // Inject eventProgress for joined events
+      if (userId) {
+        const joinedEvents = resultEvents.filter((e: any) => e.isJoined)
+        const joinedEventIds = joinedEvents.map((e: any) => new Types.ObjectId(e._id.toString()))
+
+        if (joinedEventIds.length > 0) {
+          const progressMap = new Map<string, number>()
+
+          const indoorKcalEvents = joinedEvents.filter((e: any) => e.eventType === 'Trong nhà' && isKcalUnit(e.targetUnit || ''))
+          const otherEvents = joinedEvents.filter((e: any) => !(e.eventType === 'Trong nhà' && isKcalUnit(e.targetUnit || '')))
+
+          if (indoorKcalEvents.length > 0) {
+            const vsDateConditions = indoorKcalEvents.map((e: any) => {
+              const cond: any = { eventId: new Types.ObjectId(e._id.toString()) }
+              if (e.startDate) cond.joinedAt = { $gte: new Date(e.startDate) }
+              return cond
+            })
+            const vsAgg = await SportEventVideoSessionModel.aggregate([
+              {
+                $match: {
+                  $and: [
+                    { $or: vsDateConditions },
+                    { $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }] }
+                  ],
+                  status: 'ended',
+                  is_deleted: { $ne: true }
+                }
+              },
+              { $group: { _id: '$eventId', totalGroupProgress: { $sum: '$caloriesBurned' } } }
+            ])
+            vsAgg.forEach((row: any) => progressMap.set(row._id.toString(), row.totalGroupProgress))
+          }
+
+          if (otherEvents.length > 0) {
+            const dateConditions = otherEvents.map((e: any) => {
+              const cond: any = { eventId: new Types.ObjectId(e._id.toString()) }
+              if (e.startDate) cond.date = { $gte: new Date(e.startDate) }
+              return cond
+            })
+            const progressAgg = await SportEventProgressModel.aggregate([
+              {
+                $match: {
+                  $or: dateConditions,
+                  is_deleted: { $ne: true }
+                }
+              },
+              { $group: { _id: '$eventId', totalGroupProgress: { $sum: '$value' } } }
+            ])
+            progressAgg.forEach((row: any) => progressMap.set(row._id.toString(), row.totalGroupProgress))
+          }
+
+          resultEvents = resultEvents.map((e: any) => {
+            if (!e.isJoined) return e
+            const eid = e._id.toString()
+            const totalGroupProgress = progressMap.get(eid) || 0
+            const targetValue = e.targetValue || 0
+            const progressPercent = targetValue > 0
+              ? Math.min(Math.round((totalGroupProgress / targetValue) * 100), 100)
+              : 0
+            return { ...e, myProgress: { totalGroupProgress, targetValue, progressPercent } }
+          })
+        }
+      }
+
+      return { events: resultEvents, totalPage, page, limit, total }
+    }
+
+    // Non-popular sorts: use find().sort() as before
+    let sortOption: any = { createdAt: -1 }
+    if (sortBy === 'newest') sortOption = { createdAt: -1 }
     else if (sortBy === 'oldest') sortOption = { createdAt: 1 }
     else if (sortBy === 'soonest') sortOption = { startDate: 1 }
     else if (sortBy === 'earliest') sortOption = { startDate: 1 }
@@ -112,52 +265,72 @@ class SportEventService {
       return eventObj
     })
 
-    // Inject myProgress for joined events
+    // Inject eventProgress (group progress) for joined events
+    // Mirrors getEventOverallProgressService: indoor kcal → VideoSession, others → SportEventProgress
     if (userId) {
-      const joinedEventIds = resultEvents
-        .filter((e: any) => e.isJoined)
-        .map((e: any) => new Types.ObjectId(e._id.toString()))
+      const joinedEvents = resultEvents.filter((e: any) => e.isJoined)
+      const joinedEventIds = joinedEvents.map((e: any) => new Types.ObjectId(e._id.toString()))
 
       if (joinedEventIds.length > 0) {
-        // Count unique progress days per event for this user
-        const progressAgg = await SportEventProgressModel.aggregate([
-          {
-            $match: {
-              eventId: { $in: joinedEventIds },
-              userId: new Types.ObjectId(userId),
-              is_deleted: { $ne: true }
-            }
-          },
-          {
-            $group: {
-              _id: {
-                eventId: '$eventId',
-                day: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: '+07:00' } }
-              }
-            }
-          },
-          {
-            $group: {
-              _id: '$_id.eventId',
-              completedDays: { $sum: 1 }
-            }
-          }
-        ])
-
         const progressMap = new Map<string, number>()
-        progressAgg.forEach((row: any) => progressMap.set(row._id.toString(), row.completedDays))
+
+        // Split events into two groups by data source
+        const indoorKcalEvents = joinedEvents.filter((e: any) => e.eventType === 'Trong nhà' && isKcalUnit(e.targetUnit || ''))
+        const otherEvents = joinedEvents.filter((e: any) => !(e.eventType === 'Trong nhà' && isKcalUnit(e.targetUnit || '')))
+
+        // ── Indoor kcal: aggregate caloriesBurned from VideoSession (same as getEventOverallProgressService)
+        if (indoorKcalEvents.length > 0) {
+          const vsDateConditions = indoorKcalEvents.map((e: any) => {
+            const cond: any = { eventId: new Types.ObjectId(e._id.toString()) }
+            if (e.startDate) cond.joinedAt = { $gte: new Date(e.startDate) }
+            return cond
+          })
+          const vsAgg = await SportEventVideoSessionModel.aggregate([
+            {
+              $match: {
+                $and: [
+                  { $or: vsDateConditions },
+                  { $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }] }
+                ],
+                status: 'ended',
+                is_deleted: { $ne: true }
+              }
+            },
+            { $group: { _id: '$eventId', totalGroupProgress: { $sum: '$caloriesBurned' } } }
+          ])
+          vsAgg.forEach((row: any) => progressMap.set(row._id.toString(), row.totalGroupProgress))
+        }
+
+        // ── Other events: aggregate value from SportEventProgress (outdoor GPS + indoor non-kcal)
+        if (otherEvents.length > 0) {
+          const dateConditions = otherEvents.map((e: any) => {
+            const cond: any = { eventId: new Types.ObjectId(e._id.toString()) }
+            if (e.startDate) cond.date = { $gte: new Date(e.startDate) }
+            return cond
+          })
+          const progressAgg = await SportEventProgressModel.aggregate([
+            {
+              $match: {
+                $or: dateConditions,
+                is_deleted: { $ne: true }
+              }
+            },
+            { $group: { _id: '$eventId', totalGroupProgress: { $sum: '$value' } } }
+          ])
+          progressAgg.forEach((row: any) => progressMap.set(row._id.toString(), row.totalGroupProgress))
+        }
 
         resultEvents = resultEvents.map((e: any) => {
           if (!e.isJoined) return e
           const eid = e._id.toString()
-          const completedDays = progressMap.get(eid) || 0
-          const start = new Date(e.startDate); start.setHours(0, 0, 0, 0)
-          const end = new Date(e.endDate); end.setHours(0, 0, 0, 0)
-          const totalRequiredDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-          const progressPercent = Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100)
+          const totalGroupProgress = progressMap.get(eid) || 0
+          const targetValue = e.targetValue || 0
+          const progressPercent = targetValue > 0
+            ? Math.min(Math.round((totalGroupProgress / targetValue) * 100), 100)
+            : 0
           return {
             ...e,
-            myProgress: { completedDays, totalRequiredDays, progressPercent }
+            myProgress: { totalGroupProgress, targetValue, progressPercent }
           }
         })
       }
@@ -173,13 +346,11 @@ class SportEventService {
       .populate('participants_ids', 'name avatar')
 
     if (!event) {
-      throw new Error('Sport event not found')
+      throw new ErrorWithStatus({ message: 'Sự kiện thể thao không tồn tại', status: HTTP_STATUS.NOT_FOUND })
     }
 
     if (event.isDeleted) {
-      const err: any = new Error('Sport event has been deleted')
-      err.isDeleted = true
-      throw err
+      throw new ErrorWithStatus({ message: 'Sự kiện thể thao đã bị xóa', status: HTTP_STATUS.NOT_FOUND })
     }
 
     const eventObj = event.toObject() as SportEvent
@@ -357,6 +528,24 @@ class SportEventService {
       throw new Error('Sport event not found')
     }
 
+    // Clean up all post markers referencing this event
+    // Markers: [sport-event:ID], [activity:*:ID], [indoor-session:*:ID]
+    const markerRegex = `\\[sport-event:${eventId}\\]|\\[activity:[a-f0-9]{24}:${eventId}\\]|\\[indoor-session:[a-f0-9]{24}:${eventId}\\]`
+    try {
+      const postsWithMarker = await PostModel.find({ content: { $regex: markerRegex, $options: 'i' } })
+      for (const post of postsWithMarker) {
+        post.content = (post.content || '')
+          .replace(new RegExp(`\\n?\\[sport-event:${eventId}\\]`, 'gi'), '')
+          .replace(new RegExp(`\\n?\\[activity:[a-f0-9]{24}:${eventId}\\]`, 'gi'), '')
+          .replace(new RegExp(`\\n?\\[indoor-session:[a-f0-9]{24}:${eventId}\\]`, 'gi'), '')
+          .trim()
+        await post.save()
+      }
+    } catch (err) {
+      // Non-critical: don't break delete if cleanup fails
+      console.error('Failed to clean post markers for sport event:', eventId, err)
+    }
+
     return event
   }
 
@@ -415,27 +604,72 @@ class SportEventService {
   }
 
   // Get my sport events
-  async getMyEventsService(userId: string, page: number = 1, limit: number = 10) {
+  async getMyEventsService(userId: string, page: number = 1, limit: number = 10, status?: string, search?: string) {
     const skip = (page - 1) * limit
 
-    const events = await SportEventModel.find({ createdBy: userId, isDeleted: { $ne: true } })
-      .populate('createdBy', 'name avatar')
-      .populate('participants_ids', 'name avatar')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
+    const condition: any = { createdBy: userId, isDeleted: { $ne: true } }
 
-    const total = await SportEventModel.countDocuments({ createdBy: userId, isDeleted: { $ne: true } })
+    if (search) {
+      condition.name = { $regex: search, $options: 'i' }
+    }
+
+    const now = new Date()
+    if (status === 'ongoing') {
+      condition.startDate = { $lte: now }
+      condition.endDate = { $gte: now }
+    } else if (status === 'ended') {
+      condition.endDate = { $lt: now }
+    } else if (status === 'upcoming') {
+      condition.startDate = { $gt: now }
+    }
+
+    const [events, total] = await Promise.all([
+      SportEventModel.find(condition)
+        .populate('createdBy', 'name avatar')
+        .populate('participants_ids', 'name avatar')
+        .skip(skip)
+        .limit(limit)
+        .sort({ startDate: status === 'ended' ? -1 : 1 })
+        .exec(),
+      SportEventModel.countDocuments(condition)
+    ])
+
     const totalPage = Math.ceil(total / limit)
 
     return { events, totalPage, page, limit, total }
   }
 
+  // Get event stats
+  async getEventStatsService(userId: string, type: 'created' | 'joined') {
+    const condition: any = { isDeleted: { $ne: true } }
+    if (type === 'created') {
+      condition.createdBy = userId
+    } else {
+      condition.participants_ids = new Types.ObjectId(userId)
+    }
+
+    const now = new Date()
+
+    const [total, ongoing, upcoming, ended] = await Promise.all([
+      SportEventModel.countDocuments(condition),
+      SportEventModel.countDocuments({ ...condition, startDate: { $lte: now }, endDate: { $gte: now } }),
+      SportEventModel.countDocuments({ ...condition, startDate: { $gt: now } }),
+      SportEventModel.countDocuments({ ...condition, endDate: { $lt: now } })
+    ])
+
+    return { total, ongoing, upcoming, ended }
+  }
+
   // Get joined sport events
-  async getJoinedEventsService(userId: string, page: number = 1, limit: number = 10, status?: string) {
+  async getJoinedEventsService(userId: string, page: number = 1, limit: number = 10, status?: string, search?: string) {
     const skip = (page - 1) * limit
 
     const condition: any = { participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } }
+
+    // Search filter
+    if (search) {
+      condition.name = { $regex: search, $options: 'i' }
+    }
 
     // Status filter
     const now = new Date()

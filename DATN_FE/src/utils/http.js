@@ -69,8 +69,9 @@ class Http {
         const status = error.response?.status
         const url = error.config?.url || ''
 
-        // Suppress toast for sport-event preview calls (404/410 = event deleted, handled gracefully by component)
+        // Suppress toast for preview card calls (404/410 = item deleted, handled gracefully by component)
         const isSportEventPreview = /\/sport-events\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
+        const isChallengePreview = /\/challenges\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
 
         // Suppress toast for GET requests fetching a single resource that may not exist
         // Components (ActivityPreviewCard, ActivityDetailModal, etc.) handle the empty state silently
@@ -78,10 +79,11 @@ class Http {
         const isResourceFetch = isGetRequest && (
           /\/sport-events\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}/i.test(url) ||
           /\/challenges\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}/i.test(url) ||
+          /\/challenges\/[a-f0-9]{24}\/progress\/[a-f0-9]{24}/i.test(url) ||
           /\/sport-events\/[a-f0-9]{24}\/video-sessions\/[a-f0-9]{24}/i.test(url) ||
           /\/sport-events\/[a-f0-9]{24}\/sessions\/[a-f0-9]{24}/i.test(url)
         )
-        const isSilentError = isSportEventPreview || isResourceFetch
+        const isSilentError = isSportEventPreview || isChallengePreview || isResourceFetch
 
         // Chỉ toast lỗi không phải 422, 401, và không phải silent resource-fetch errors
         if (!isSilentError && ![HttpStatusCode.UnprocessableEntity, HttpStatusCode.Unauthorized].includes(status)) {

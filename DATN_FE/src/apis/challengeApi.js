@@ -11,6 +11,7 @@ export const quitChallenge = (id) => http.post(`/challenges/${id}/quit`)
 export const inviteFriendToChallenge = (challengeId, friendId) => http.post(`/challenges/${challengeId}/invite`, { friendId })
 export const getMyChallenges = (params) => http.get('/challenges/my', { params })
 export const getMyCreatedChallenges = (params) => http.get('/challenges/my-created', { params })
+export const getChallengeStats = (params) => http.get('/challenges/stats', { params })
 export const getPublicUserChallenges = (userId, params) => http.get(`/challenges/user/${userId}/joined`, { params })
 export const addChallengeProgress = (id, data) => http.post(`/challenges/${id}/progress`, data)
 export const getChallengeProgress = (id, params) => http.get(`/challenges/${id}/progress`, { params })
@@ -26,3 +27,13 @@ export const deleteChallengeProgress = (challengeId, progressId) =>
 
 // AI review meal image against challenge requirements
 export const reviewMealImageAI = (data) => http.post('/ai/review-meal-image', data)
+
+// Day Comments
+export const createChallengeDayComment = (challengeId, body) =>
+  http.post(`/challenges/${challengeId}/day-comments`, body)
+export const getChallengeDayComments = (challengeId, params) =>
+  http.get(`/challenges/${challengeId}/day-comments`, { params })
+export const getChallengeDayChildComments = (challengeId, commentId, params) =>
+  http.get(`/challenges/${challengeId}/day-comments/${commentId}/replies`, { params })
+export const deleteChallengeDayComment = (challengeId, commentId) =>
+  http.delete(`/challenges/${challengeId}/day-comments/${commentId}`)

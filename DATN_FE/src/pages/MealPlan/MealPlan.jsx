@@ -201,7 +201,7 @@ export default function MealPlan() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Tìm kiếm thực đơn..."
+                  placeholder="Tìm thực đơn..."
                   className="w-full py-2 pl-10 pr-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

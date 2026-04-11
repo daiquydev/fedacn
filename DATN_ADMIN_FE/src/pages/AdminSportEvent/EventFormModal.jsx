@@ -79,7 +79,8 @@ export default function EventFormModal({ event, categories, onClose, onSuccess }
         detailedDescription: event?.detailedDescription || '',
         eventType: event?.eventType || 'Ngoài trời',
         requirements: event?.requirements || '',
-        benefits: event?.benefits || ''
+        benefits: event?.benefits || '',
+        requireStrava: event?.requireStrava || false
     })
 
     const [errors, setErrors] = useState({})
@@ -112,7 +113,8 @@ export default function EventFormModal({ event, categories, onClose, onSuccess }
         setForm(prev => ({
             ...prev,
             eventType: type,
-            targetUnit: (type === 'Trong nhà' && prev.targetUnit === 'km') ? 'kcal' : prev.targetUnit
+            targetUnit: (type === 'Trong nhà' && prev.targetUnit === 'km') ? 'kcal' : prev.targetUnit,
+            requireStrava: type === 'Ngoài trời' ? prev.requireStrava : false
         }))
     }
 
@@ -126,7 +128,8 @@ export default function EventFormModal({ event, categories, onClose, onSuccess }
             case 'startDate':
                 if (!value) error = 'Vui lòng nhập ngày bắt đầu'
                 else if (!isValidDateStr(value)) error = 'Ngày không hợp lệ — DD/MM/YYYY'
-                else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+                // Chỉ chặn quá khứ khi tạo mới — khi sửa cho phép giữ/cập nhật sự kiện cũ (đồng bộ với user EditSportEvent)
+                else if (!isEdit && isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
                 else if (currentState.endDate && isValidDateStr(currentState.endDate)) {
                     const [sd, sm, sy] = value.split('/').map(Number)
                     const [ed, em, ey] = currentState.endDate.split('/').map(Number)
@@ -219,7 +222,7 @@ Người dùng muốn tạo một sự kiện thể thao. Dưới đây là mô 
 Hãy điền đầy đủ tất cả các trường sau thành một JSON object hợp lệ. Tuân thủ các quy tắc:
 1. Nếu mô tả đã có thông tin rõ ràng cho một trường → dùng thông tin đó.
 2. Nếu không có → tự suy luận hợp lý, thực tế, phù hợp văn hóa Việt Nam và ngữ cảnh thể thao.
-3. Ngày: định dạng DD/MM/YYYY. startDate phải >= ${today}. endDate phải >= startDate.
+3. Ngày: định dạng DD/MM/YYYY. ${isEdit ? 'startDate có thể là quá khứ nếu phù hợp sự kiện đang chỉnh. ' : `startDate phải >= ${today}. `}endDate phải >= startDate.
 4. eventType: chỉ được là "Ngoài trời" hoặc "Trong nhà".
    - Hoạt động ngoài trời (category thuộc list: ${outdoorCats}) → "Ngoài trời"
    - Hoạt động trong nhà (category thuộc list: ${indoorCats}) → "Trong nhà"
@@ -335,7 +338,8 @@ JSON output:
                 targetUnit: finalUnit,
                 image: form.image,
                 requirements: form.requirements,
-                benefits: form.benefits
+                benefits: form.benefits,
+                requireStrava: form.eventType === 'Ngoài trời' ? !!form.requireStrava : false
             }
 
             if (isEdit) {
@@ -401,7 +405,7 @@ JSON output:
                                     value={aiDescription}
                                     onChange={e => setAiDescription(e.target.value)}
                                     rows={5}
-                                    placeholder='Ví dụ: "Giải chạy bộ bán marathon buổi sáng tại công viên Tao Đàn, TP.HCM, dành cho cộng đồng yêu thể thao, khoảng 100 người, chạy 21km, tổ chức vào cuối tháng 3/2026..."'
+                                    placeholder='Nhập thông tin sự kiện để AI gợi ý (ví dụ: Giải chạy marathon bán thời gian, 100 người tham gia, 21km...)'
                                     className='w-full px-4 py-3 rounded-2xl border-2 border-purple-100 dark:border-purple-900 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none resize-none transition text-sm leading-relaxed'
                                 />
                                 <p className='text-xs text-gray-400 mt-1'>Càng chi tiết, AI càng điền chính xác hơn. Có thể dùng tiếng Việt.</p>
@@ -465,7 +469,7 @@ JSON output:
                                     <label className={labelCls}>Tên sự kiện <span className='text-red-500'>*</span></label>
                                     <input name='name' value={form.name} onChange={handleChange}
                                         onBlur={e => validateField('name', e.target.value)}
-                                        className={inputCls('name')} placeholder='VD: Marathon Sài Gòn Night Run 2026' />
+                                        className={inputCls('name')} placeholder='Nhập tên sự kiện' />
                                     <ErrorMsg name='name' />
                                 </div>
 
@@ -499,6 +503,25 @@ JSON output:
                                         <input name='category' value={form.category} onChange={handleChange} className={inputCls('category')} placeholder='Nhập tên danh mục...' />
                                     )}
                                 </div>
+
+                                {form.eventType === 'Ngoài trời' && (
+                                    <div className='flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800'>
+                                        <div className='flex-1'>
+                                            <h4 className='font-bold text-sm text-orange-900 dark:text-orange-300'>Yêu cầu đo GPS (Strava)</h4>
+                                            <p className='text-xs text-orange-700 dark:text-orange-400'>Bắt buộc lấy tiến độ từ hoạt động Strava của người dùng</p>
+                                        </div>
+                                        <label className='relative inline-flex items-center cursor-pointer'>
+                                            <input
+                                                type='checkbox'
+                                                name='requireStrava'
+                                                className='sr-only peer'
+                                                checked={!!form.requireStrava}
+                                                onChange={(e) => setForm(p => ({ ...p, requireStrava: e.target.checked }))}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500" />
+                                        </label>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -667,12 +690,12 @@ JSON output:
                                     <div>
                                         <label className={labelCls}>Yêu cầu tham gia</label>
                                         <input name='requirements' value={form.requirements} onChange={handleChange}
-                                            className={inputCls('requirements')} placeholder='VD: Sức khỏe ổn định...' />
+                                            className={inputCls('requirements')} placeholder='Nhập yêu cầu tham gia' />
                                     </div>
                                     <div>
                                         <label className={labelCls}>Lợi ích khi tham gia</label>
                                         <input name='benefits' value={form.benefits} onChange={handleChange}
-                                            className={inputCls('benefits')} placeholder='VD: Voucher, huy chương...' />
+                                            className={inputCls('benefits')} placeholder='Nhập quyền lợi tham gia' />
                                     </div>
                                 </div>
                             </div>

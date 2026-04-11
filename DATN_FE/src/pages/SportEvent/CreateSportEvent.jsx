@@ -565,7 +565,7 @@ JSON output (chỉ object, không gì khác):
                     value={newEvent.name}
                     onChange={handleInputChange}
                     onBlur={e => validateField('name', e.target.value)}
-                    placeholder="VD: Marathon Sài Gòn Night Run 2026"
+                    placeholder="Nhập tên sự kiện"
                     className={inputCls('name')}
                   />
                   <ErrorMsg name="name" />
@@ -623,7 +623,7 @@ JSON output (chỉ object, không gì khác):
                 {newEvent.eventType === 'Ngoài trời' && (
                   <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800">
                     <div className="flex-1">
-                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu đo Gps (Strava Sync)</h4>
+                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu đo GPS (Đồng bộ Strava)</h4>
                       <p className="text-xs text-orange-700 dark:text-orange-400">Bắt buộc lấy tiến độ từ hoạt động Strava của người dùng</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -727,7 +727,7 @@ JSON output (chỉ object, không gì khác):
                           setTimeout(() => setShowSuggestions(false), 200)
                           validateField('location', e.target.value)
                         }}
-                        placeholder="Công viên Thống Nhất, Hai Bà Trưng, Hà Nội"
+                        placeholder="Nhập địa điểm"
                         className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white transition outline-none ${errors.location
                           ? 'border-red-400 focus:ring-2 focus:ring-red-500/10'
                           : 'border-gray-100 dark:border-gray-600 focus:border-green-400 focus:ring-4 focus:ring-green-500/10'
@@ -803,7 +803,7 @@ JSON output (chỉ object, không gì khác):
                       value={newEvent.targetValue}
                       onChange={handleInputChange}
                       min={0}
-                      placeholder="0"
+                      placeholder="Nhập số lượng"
                       className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-orange-400 font-bold text-lg text-center"
                     />
                     <select
@@ -881,11 +881,11 @@ JSON output (chỉ object, không gì khác):
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Yêu cầu tham gia</label>
-                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="VD: Sức khỏe ổn định, có kinh nghiệm" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
+                    <input name="requirements" value={newEvent.requirements} onChange={handleInputChange} placeholder="Nhập yêu cầu" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Lợi ích khi tham gia</label>
-                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="VD: Voucher, huy chương, kinh nghiệm..." className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
+                    <input name="benefits" value={newEvent.benefits} onChange={handleInputChange} placeholder="Nhập quyền lợi" className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 transition" />
                   </div>
                 </div>
               </div>

@@ -27,7 +27,7 @@ export default function ChangeSuccess() {
             </div>
             <h1 className='text-2xl font-bold text-gray-900'>Đổi mật khẩu thành công!</h1>
             <p className='mt-3 text-gray-500 text-sm'>
-              Mật khẩu của bạn đã được cập nhật. Bạn có thể đăng nhập với mật khẩu mới.
+              Mật khẩu đã được cập nhật. Bạn có thể đăng nhập với mật khẩu mới.
             </p>
             <Link
               to='/login'

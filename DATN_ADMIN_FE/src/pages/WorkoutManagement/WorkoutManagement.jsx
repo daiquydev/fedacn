@@ -78,19 +78,23 @@ function EquipmentManager() {
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [search, setSearch] = useState('')
+    const [filterEqStatus, setFilterEqStatus] = useState('all') // 'all' | 'active' | 'hidden'
     const [confirmDeleteEquipment, setConfirmDeleteEquipment] = useState(null) // { id, name }
     const [form, setForm] = useState({ name: '', name_en: '', image_url: '', description: '', is_active: true })
 
     const { data, isLoading } = useQuery({ queryKey: ['admin-equipment'], queryFn: adminGetEquipment })
     const items = data?.data?.result || []
 
-    const filteredItems = items.filter(item =>
-        !search || item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.name_en?.toLowerCase().includes(search.toLowerCase()) ||
-        item.description?.toLowerCase().includes(search.toLowerCase())
-    )
-
     const activeCount = items.filter(i => i.is_active !== false).length
+    const hiddenCount = items.length - activeCount
+
+    const filteredItems = items.filter(item => {
+        if (filterEqStatus === 'active' && item.is_active === false) return false
+        if (filterEqStatus === 'hidden' && item.is_active !== false) return false
+        return !search || item.name.toLowerCase().includes(search.toLowerCase()) ||
+            item.name_en?.toLowerCase().includes(search.toLowerCase()) ||
+            item.description?.toLowerCase().includes(search.toLowerCase())
+    })
 
     const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateEquipment(d),
@@ -128,46 +132,42 @@ function EquipmentManager() {
     }
 
     return (
-        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
+        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
 
             {/* ── Hero Banner ── */}
-            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-8 py-8 mb-6 shadow-xl'>
-                <div className='relative z-10 flex items-start justify-between'>
-                    <div>
-                        <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-                        <h1 className='text-3xl font-black text-white mb-2'>Quản lý Thiết bị</h1>
-                        <p className='text-white/80 text-sm max-w-md'>
-                            Quản lý dụng cụ và thiết bị tập luyện trong hệ thống.
-                        </p>
-                    </div>
+            <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-6 py-4 mb-2 shadow-xl'>
+                <div className='relative z-10 flex items-center justify-between'>
+                    <h1 className='text-2xl font-bold text-white'>Quản lý Thiết bị</h1>
                     <button onClick={() => { resetForm(); setShowForm(true) }}
-                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg mt-1 shrink-0'>
+                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg shrink-0'>
                         <FaPlus className='text-xs' /> Thêm mới
                     </button>
+                </div>
+                {/* Filter stat tabs */}
+                <div className='relative z-10 flex gap-2 mt-3'>
+                    {[
+                        { key: 'all', label: 'Tất cả', count: items.length },
+                        { key: 'active', label: 'Hoạt động', count: activeCount },
+                        { key: 'hidden', label: 'Đã ẩn', count: hiddenCount },
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setFilterEqStatus(tab.key)}
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                                filterEqStatus === tab.key ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+                            }`}
+                        >
+                            {tab.label} <span className='font-black'>({tab.count})</span>
+                        </button>
+                    ))}
                 </div>
                 <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
                 <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
                 <FaDumbbell className='absolute right-8 top-8 text-white/10 text-[8rem]' />
             </div>
 
-            {/* ── Stat Cards ── */}
-            <div className='grid grid-cols-3 gap-3 mb-5'>
-                <div className='bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 border-l-blue-400 shadow-sm border border-gray-100 dark:border-slate-700'>
-                    <p className='text-xs text-gray-400 mb-0.5'>Tổng thiết bị</p>
-                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{items.length}</p>
-                </div>
-                <div className='bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 border-l-emerald-400 shadow-sm border border-gray-100 dark:border-slate-700'>
-                    <p className='text-xs text-gray-400 mb-0.5'>Hoạt động</p>
-                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{activeCount}</p>
-                </div>
-                <div className='bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 border-l-slate-400 shadow-sm border border-gray-100 dark:border-slate-700'>
-                    <p className='text-xs text-gray-400 mb-0.5'>Đã ẩn</p>
-                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{items.length - activeCount}</p>
-                </div>
-            </div>
-
             {/* ── Search Bar ── */}
-            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 mb-4 border border-gray-100 dark:border-slate-700'>
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 mb-2 border border-gray-100 dark:border-slate-700'>
                 <div className='relative'>
                     <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs' />
                     <input value={search} onChange={e => setSearch(e.target.value)}
@@ -216,13 +216,13 @@ function EquipmentManager() {
                                 <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Việt *</label>
                                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                                     className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
-                                    placeholder='VD: Tạ tay' />
+                                    placeholder='Nhập tên thiết bị (VI)' />
                             </div>
                             <div>
                                 <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Tên tiếng Anh *</label>
                                 <input value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })}
                                     className='w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all'
-                                    placeholder='VD: Dumbbell' />
+                                    placeholder='Nhập tên thiết bị (EN)' />
                             </div>
                             <div>
                                 <label className='block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'>Mô tả</label>
@@ -460,6 +460,7 @@ function ExerciseManager() {
     const [search, setSearch] = useState('')
     const [filterMuscle, setFilterMuscle] = useState('') // muscle_group _id
     const [filterEquipment, setFilterEquipment] = useState('') // equipment _id
+    const [filterCategory, setFilterCategory] = useState('') // '' | 'strength' | 'cardio' | 'stretching' | 'plyometrics'
     const [status, setStatus] = useState('active') // 'active' | 'deleted'
     const [showMuscleFilter, setShowMuscleFilter] = useState(false)
     const [showEquipmentFilter, setShowEquipmentFilter] = useState(false)
@@ -500,8 +501,8 @@ function ExerciseManager() {
     const [form, setForm] = useState(initForm)
 
     const { data, isLoading } = useQuery({
-        queryKey: ['admin-exercises', search, filterMuscle, filterEquipment, page, status],
-        queryFn: () => adminGetExercises({ search, muscle_group_id: filterMuscle, equipment_id: filterEquipment, page, limit: LIMIT, status }),
+        queryKey: ['admin-exercises', search, filterMuscle, filterEquipment, filterCategory, page, status],
+        queryFn: () => adminGetExercises({ search, muscle_group_id: filterMuscle, equipment_id: filterEquipment, category: filterCategory || undefined, page, limit: LIMIT, status }),
         keepPreviousData: true
     })
     const result = data?.data?.result || {}
@@ -594,9 +595,9 @@ function ExerciseManager() {
     // Active filter count (for badge)
     const activeFilterCount = [filterMuscle, filterEquipment].filter(Boolean).length
 
-    const clearAllFilters = () => { setSearchInput(''); setSearch(''); setFilterMuscle(''); setFilterEquipment(''); setPage(1) }
+    const clearAllFilters = () => { setSearchInput(''); setSearch(''); setFilterMuscle(''); setFilterEquipment(''); setFilterCategory(''); setPage(1) }
 
-    const switchStatus = (s) => { setStatus(s); setPage(1); setFilterMuscle(''); setFilterEquipment(''); setSearchInput(''); setSearch(''); setShowMuscleFilter(false); setShowEquipmentFilter(false) }
+    const switchStatus = (s) => { setStatus(s); setPage(1); setFilterMuscle(''); setFilterEquipment(''); setFilterCategory(''); setSearchInput(''); setSearch(''); setShowMuscleFilter(false); setShowEquipmentFilter(false) }
 
     const handleDeleteClick = (ex) => setConfirmDelete({ id: ex._id, name: ex.name })
     const handleDeleteConfirm = () => {
@@ -605,27 +606,39 @@ function ExerciseManager() {
     }
 
     return (
-        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
+        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
             {/* ── Hero Banner ── */}
-            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 px-8 py-8 mb-6 shadow-xl'>
-                <div className='relative z-10 flex items-start justify-between'>
-                    <div>
-                        <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-                        <h1 className='text-3xl font-black text-white mb-2'>Quản lý Bài tập</h1>
-                        <p className='text-white/80 text-sm max-w-md'>Quản lý toàn bộ bài tập trong hệ thống, bao gồm nhóm cơ và kcal tiêu thụ.</p>
-                    </div>
+            <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 px-6 py-4 mb-2 shadow-xl'>
+                <div className='relative z-10 flex items-center justify-between'>
+                    <h1 className='text-2xl font-bold text-white'>Quản lý Bài tập</h1>
                     <button onClick={() => { resetForm(); setShowForm(true) }}
-                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg mt-1 shrink-0'>
+                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg shrink-0'>
                         <FaPlus className='text-xs' /> Thêm bài tập
                     </button>
                 </div>
 
-                {/* Status tabs inside banner */}
-                <div className='relative z-10 flex gap-2 mt-5'>
+                {/* Status tabs */}
+                <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
                     <button onClick={() => switchStatus('active')}
-                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'active' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-                        <FaCheckCircle className='text-xs' /> Đang hoạt động ({totalActiveCount})
+                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'active' && !filterCategory ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                        <FaCheckCircle className='text-xs' /> Tất cả ({totalActiveCount})
                     </button>
+                    {[
+                        { key: 'strength', label: '💪 Sức mạnh', count: strengthCount },
+                        { key: 'cardio', label: '🏃 Cardio', count: cardioCount },
+                        { key: 'stretching', label: '🧘 Giãn cơ', count: stretchCount },
+                        { key: 'plyometrics', label: '⚡ Bật nhảy', count: plyoCount },
+                    ].map(cat => (
+                        <button
+                            key={cat.key}
+                            onClick={() => { if (status !== 'active') switchStatus('active'); setFilterCategory(cat.key); setPage(1) }}
+                            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                                filterCategory === cat.key ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+                            }`}
+                        >
+                            {cat.label} <span className='font-black'>({cat.count})</span>
+                        </button>
+                    ))}
                     <button onClick={() => switchStatus('deleted')}
                         className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'deleted' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
                         <FaTrash className='text-xs' /> Đã xóa ({deletedCount})
@@ -637,24 +650,8 @@ function ExerciseManager() {
                 <GiBiceps className='absolute right-8 top-8 text-white/10 text-[8rem]' />
             </div>
 
-            {/* ── Stat Cards ── */}
-            <div className='grid grid-cols-2 xl:grid-cols-5 gap-3 mb-5'>
-                {[
-                    { label: 'Tổng bài tập', value: totalActiveCount, color: 'border-l-indigo-400' },
-                    { label: '💪 Sức mạnh', value: strengthCount, color: 'border-l-blue-400' },
-                    { label: '🏃 Cardio', value: cardioCount, color: 'border-l-red-400' },
-                    { label: '🧘 Giãn cơ', value: stretchCount, color: 'border-l-green-400' },
-                    { label: '⚡ Bật nhảy', value: plyoCount, color: 'border-l-orange-400' },
-                ].map(c => (
-                    <div key={c.label} className={`bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border-l-4 ${c.color} shadow-sm border border-gray-100 dark:border-slate-700`}>
-                        <p className='text-xs text-gray-400 mb-0.5'>{c.label}</p>
-                        <p className='text-2xl font-black text-gray-800 dark:text-white'>{c.value}</p>
-                    </div>
-                ))}
-            </div>
-
             {/* ── Smart Search + Filters ── */}
-            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 mb-3 border border-gray-100 dark:border-slate-700'>
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 mb-2 border border-gray-100 dark:border-slate-700'>
                 <div className='flex items-center gap-2'>
                     {/* Search */}
                     <div className='relative flex-1'>
@@ -816,12 +813,12 @@ function ExerciseManager() {
                                 <div className='md:col-span-1'>
                                     <label className={labelClass}>Tên tiếng Anh <span className='text-red-500'>*</span></label>
                                     <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                                        className={inputClass} placeholder='VD: Dumbbell Curl' />
+                                        className={inputClass} placeholder='Nhập tên bài tập (EN)' />
                                 </div>
                                 <div className='md:col-span-1'>
                                     <label className={labelClass}>Tên tiếng Việt</label>
                                     <input value={form.name_vi} onChange={e => setForm({ ...form, name_vi: e.target.value })}
-                                        className={inputClass} placeholder='VD: Cuốn tạ' />
+                                        className={inputClass} placeholder='Nhập tên bài tập (VI)' />
                                 </div>
                                 <div className='md:col-span-1'>
                                     <label className={labelClass}>Loại hình <span className='text-red-500'>*</span></label>
@@ -876,7 +873,7 @@ function ExerciseManager() {
                                     <div>
                                         <label className={labelClass}>💡 Mẹo / Lưu ý</label>
                                         <textarea value={form.tips} onChange={e => setForm({ ...form, tips: e.target.value })}
-                                            rows={2} className={inputClass} placeholder='VD: Giữ lưng thẳng, thở đều...' />
+                                            rows={2} className={inputClass} placeholder='Nhập lưu ý...' />
                                     </div>
                                     <div>
                                         <label className={labelClass}>🔗 URL Video</label>
@@ -931,17 +928,6 @@ function ExerciseManager() {
                 </div>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
-                    <div className='px-5 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between'>
-                        <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            {status === 'deleted' ? (
-                                <span className='inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-semibold'>
-                                    <FaTrash className='text-[10px]' /> Đang xem bài tập đã xóa
-                                </span>
-                            ) : (
-                                <>Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)}</span> / <span className='font-semibold'>{total}</span> bài tập</>
-                            )}
-                        </p>
-                    </div>
                     <div className='overflow-x-auto'>
                         <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                             <thead className='bg-gray-50 dark:bg-slate-900'>

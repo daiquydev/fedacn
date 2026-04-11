@@ -106,7 +106,7 @@ export default function ModalUpdateWorkout({ handleCloseModalUpdateWorkout, work
                 id='name'
                 register={register}
                 errors={errors.name}
-                placeholder='Nhập tên lịch tập của bạn'
+                placeholder='Nhập tên lịch tập'
               />
               <Input
                 title='Nhập lượng kcal muốn đốt cháy (kcal)'
@@ -115,7 +115,7 @@ export default function ModalUpdateWorkout({ handleCloseModalUpdateWorkout, work
                 id='calo_target'
                 register={register}
                 errors={errors.calo_target}
-                placeholder='Nhập lượng kcal muốn đốt cháy của bạn'
+                placeholder='Nhập mục tiêu calo (kcal)'
               />
               <div className='flex flex-wrap items-center justify-between gap-1 mb-3'>
                 <div className='w-full  flex flex-col'>

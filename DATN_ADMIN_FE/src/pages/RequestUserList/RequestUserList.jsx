@@ -3,7 +3,7 @@ import { getAllRequestToChef } from '../../apis/adminApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { omit } from 'lodash'
-import { AiOutlineSearch } from 'react-icons/ai'
+import { HiOutlineMagnifyingGlass } from 'react-icons/hi2'
 import Loading from '../../components/GlobalComponents/Loading'
 // import UserItem from './components/UserItem'
 import Pagination from '../../components/GlobalComponents/Pagination/Pagination'
@@ -90,7 +90,7 @@ export default function RequestUserList() {
                       className='w-full py-2 px-3 placeholder:text-sm rounded-lg border border-red-200 bg-white dark:border-none dark:bg-slate-800'
                     />
                     <button className='absolute right-1 top-1/2 -translate-y-1/2 py-2 px-3 bg-yellow-700 text-white dark:bg-slate-600 rounded-lg'>
-                      <AiOutlineSearch />
+                      <HiOutlineMagnifyingGlass />
                     </button>
                   </div>
                 </form>

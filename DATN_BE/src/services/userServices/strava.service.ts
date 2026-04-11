@@ -3,6 +3,7 @@ import UserModel from '~/models/schemas/user.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import ActivityTrackingModel from '~/models/schemas/activityTracking.schema'
+import SportCategoryModel from '~/models/schemas/sportCategory.schema'
 import sportEventProgressService from '~/services/userServices/sportEventProgress.services'
 import { config } from 'dotenv'
 import { envConfig } from '~/constants/config'
@@ -34,6 +35,27 @@ function decodePolyline(str: string, precision: number = 5): [number, number][] 
     coordinates.push([lat / factor, lng / factor] as [number, number]);
   }
   return coordinates;
+}
+
+// Strava activity.type → tên tiếng Việt
+const STRAVA_TYPE_VI: Record<string, string> = {
+  Run: 'Chạy bộ',
+  Walk: 'Đi bộ',
+  TrailRun: 'Chạy trail',
+  VirtualRun: 'Chạy ảo',
+  Ride: 'Đạp xe đường dài',
+  VirtualRide: 'Đạp xe ảo',
+  MountainBikeRide: 'Đạp xe địa hình',
+  GravelRide: 'Đạp xe sỏi',
+  EBikeRide: 'Đạp xe điện',
+  Hike: 'Leo núi',
+  AlpineSki: 'Trượt tuyết',
+  RockClimbing: 'Leo vách đá',
+  Swim: 'Bơi lội'
+}
+
+function getVietnameseName(stravaType: string): string {
+  return STRAVA_TYPE_VI[stravaType] || stravaType
 }
 
 class StravaService {
@@ -143,6 +165,12 @@ class StravaService {
       })
 
       for (const sportEvent of activeEvents) {
+        // Filter by category: chỉ sync nếu activity.type khớp với stravaTypes của category
+        const allowedTypes = await this.getAllowedStravaTypes(sportEvent.category)
+        if (allowedTypes.length > 0 && !allowedTypes.includes(activity.type)) {
+          continue
+        }
+
         let value = 0
         const unit = (sportEvent.targetUnit || '').toLowerCase().trim()
 
@@ -202,6 +230,14 @@ class StravaService {
     if (!sportEvent) throw new Error('Không tìm thấy sự kiện')
     if (sportEvent.eventType !== 'Ngoài trời') throw new Error('Sự kiện này không hỗ trợ GPS ngoài trời')
 
+    const now = new Date()
+    if (sportEvent.startDate && new Date(sportEvent.startDate) > now) {
+        throw new Error('Sự kiện chưa bắt đầu, không thể đồng bộ dữ liệu')
+    }
+    if (sportEvent.endDate && new Date(sportEvent.endDate) < now) {
+        throw new Error('Sự kiện đã kết thúc, không thể đồng bộ dữ liệu mới')
+    }
+
     const afterEpoch = Math.floor(new Date(sportEvent.startDate).getTime() / 1000)
     const endTime = sportEvent.endDate ? new Date(sportEvent.endDate) : new Date()
     endTime.setHours(23, 59, 59, 999)
@@ -220,11 +256,15 @@ class StravaService {
   }
 
   async previewActivitiesForEvent(userId: string, eventId: string) {
-    const { activities } = await this.fetchRawStravaActivitiesForEvent(userId, eventId)
+    const { sportEvent, activities } = await this.fetchRawStravaActivitiesForEvent(userId, eventId)
     const previewList = []
 
+    // Lấy danh sách Strava types cho phép từ DB theo category của sự kiện
+    const allowedTypes = await this.getAllowedStravaTypes(sportEvent.category)
+
     for (const activity of activities) {
-      if (!['Run', 'Walk', 'Ride', 'Hike'].includes(activity.type)) continue
+      // Filter theo category: nếu có cấu hình stravaTypes thì chỉ lấy các type khớp
+      if (allowedTypes.length > 0 && !allowedTypes.includes(activity.type)) continue
       
       const activityIdStr = activity.id.toString()
       const exists = await SportEventProgressModel.exists({
@@ -240,7 +280,7 @@ class StravaService {
         previewList.push({
           stravaId: activityIdStr,
           name: activity.name,
-          type: activity.type === 'Run' ? 'Chạy bộ' : activity.type === 'Ride' ? 'Đạp xe' : 'Đi bộ',
+          type: getVietnameseName(activity.type),
           startDate: activity.start_date || activity.start_date_local,
           distance: distanceKm,
           movingTime: timeMinutes,
@@ -254,12 +294,16 @@ class StravaService {
   async importActivitiesForEvent(userId: string, eventId: string, activityIds: string[]) {
     const { sportEvent, activities } = await this.fetchRawStravaActivitiesForEvent(userId, eventId)
 
+    // Lấy danh sách Strava types cho phép từ DB
+    const allowedTypes = await this.getAllowedStravaTypes(sportEvent.category)
+
     let syncedCount = 0
     let totalDistanceAdded = 0
     const newActivities = []
 
     for (const activity of activities) {
-      if (!['Run', 'Walk', 'Ride', 'Hike'].includes(activity.type)) continue
+      // Filter theo category
+      if (allowedTypes.length > 0 && !allowedTypes.includes(activity.type)) continue
       
       const activityIdStr = activity.id.toString()
       if (!activityIds.includes(activityIdStr)) continue
@@ -314,7 +358,7 @@ class StravaService {
           await ActivityTrackingModel.create({
             eventId: sportEvent._id,
             userId: userId,
-            activityType: activity.type === 'Run' ? 'Chạy bộ' : activity.type === 'Ride' ? 'Đạp xe' : 'Đi bộ',
+            activityType: getVietnameseName(activity.type),
             status: 'completed',
             startTime: new Date(activity.start_date || activity.start_date_local),
             endTime: new Date(startTimestamp + totalMs),
@@ -335,6 +379,22 @@ class StravaService {
     }
 
     return { syncedCount, totalDistanceAdded, newActivities }
+  }
+
+  /**
+   * Lấy danh sách Strava activity types cho phép từ DB theo tên category
+   * Trả về mảng rỗng nếu category không có cấu hình → cho phép tất cả
+   */
+  private async getAllowedStravaTypes(categoryName: string): Promise<string[]> {
+    try {
+      const category = await SportCategoryModel.findOne({ 
+        name: categoryName, 
+        isDeleted: { $ne: true } 
+      })
+      return category?.stravaTypes?.length ? category.stravaTypes : []
+    } catch {
+      return []
+    }
   }
 }
 

@@ -20,6 +20,7 @@ import { vi } from 'date-fns/locale'
 import ActivityEntryDetailView from './ActivityEntryDetailView'
 import NutritionDetailView from './NutritionDetailView'
 import FitnessDetailView from './FitnessDetailView'
+import ChallengeDayComments from './ChallengeDayComments'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -611,6 +612,13 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
                       )})}
                     </div>
                   )}
+
+                  {/* ── Comment Section ── */}
+                  <ChallengeDayComments
+                    challengeId={challenge._id}
+                    targetUserId={userId}
+                    date={selectedDay}
+                  />
                 </div>
               )}
 

@@ -497,15 +497,7 @@ export default function SportEventDetail() {
                 <span className="px-4 py-1.5 bg-red-500 rounded-full text-sm font-medium">
                   {event.category}
                 </span>
-                {event.difficulty && (() => {
-                  const map = { easy: '😊 Dễ', medium: '💪 Trung bình', hard: '🔥 Khó', expert: '🏆 Chuyên gia' }
-                  const colors = { easy: 'bg-green-500', medium: 'bg-yellow-500', hard: 'bg-orange-500', expert: 'bg-red-600' }
-                  return (
-                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${colors[event.difficulty] || 'bg-gray-500'}`}>
-                      {map[event.difficulty] || event.difficulty}
-                    </span>
-                  )
-                })()}
+
               </div>
               {/* Người tổ chức - trong hero */}
               {event.createdBy && (
@@ -648,7 +640,7 @@ export default function SportEventDetail() {
                 className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
               >
                 <FaShare className="text-sm" />
-                Chia sẻ lên cộng đồng
+                Chia sẻ
               </button>
             </div>
           </div>
@@ -1017,6 +1009,8 @@ export default function SportEventDetail() {
                   event={event}
                   connectedIds={connectedIds}
                   friendIds={friendIds}
+                  currentUserId={me?._id}
+                  creatorId={String(event.createdBy?._id || event.createdBy || '')}
                 />
               ) : (
                 <p className="text-center text-gray-500 py-8">Chưa có người tham gia xếp hạng</p>

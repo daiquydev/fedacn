@@ -1,7 +1,7 @@
 import { omit } from 'lodash'
 import { ObjectId } from 'mongodb'
 import { envConfig } from '~/constants/config'
-import { TokenType, UserStatus } from '~/constants/enums'
+import { TokenType } from '~/constants/enums'
 import { AUTH_USER_MESSAGE } from '~/constants/messages'
 import UserModel from '~/models/schemas/user.schema'
 import { signToken, verifyToken } from '~/utils/jwt'
@@ -63,7 +63,7 @@ class AuthAdminService {
   }
   async getMe({ user_id }: { user_id: string }) {
     const me = await UserModel.aggregate([
-      { $match: { _id: new ObjectId(user_id), status: UserStatus.active } },
+      { $match: { _id: new ObjectId(user_id), isDeleted: { $ne: true } } },
       // bỏ password
       {
         $project: {

@@ -7,21 +7,6 @@ import DeletedPostItem from './components/DeletedPostItem'
 import { useState, useRef, useEffect } from 'react'
 import { getReportPost, getDeletedPosts } from '../../apis/inspectorApi'
 
-function MiniStatCard({ icon: Icon, label, value, color, iconBg }) {
-  return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl px-5 py-4 border-l-4 ${color} shadow-sm border border-gray-100 dark:border-gray-700`}>
-      <div className='flex items-center justify-between'>
-        <div>
-          <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>{label}</p>
-          <p className='text-2xl font-black text-gray-800 dark:text-white'>{(value ?? 0).toLocaleString('vi-VN')}</p>
-        </div>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <Icon className='text-white text-base' />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const tabs = [
   { key: 'reported', label: 'Bài viết bị báo cáo', icon: MdReport },
@@ -128,34 +113,48 @@ export default function ReportList() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
+    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
 
       {/* ── Hero Banner ── */}
-      <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 px-8 py-8 mb-6 shadow-xl'>
+      <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 px-6 py-4 mb-2 shadow-xl'>
         <div className='relative z-10'>
-          <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-          <h1 className='text-3xl font-black text-white mb-2'>Kiểm duyệt Bài viết</h1>
-          <p className='text-white/80 text-sm max-w-md'>
-            Xem xét và xử lý các bài viết bị cộng đồng báo cáo vi phạm.
-          </p>
+          <h1 className='text-2xl font-bold text-white'>Kiểm duyệt Bài viết</h1>
         </div>
 
-        {/* Tabs inside Hero Banner */}
-        <div className='relative z-10 flex gap-2 mt-5'>
-          {tabs.map(tab => (
+        {/* Tabs + contextual stat chips */}
+        <div className='relative z-10 flex items-center justify-between mt-3 flex-wrap gap-2'>
+          <div className='flex gap-2 flex-wrap'>
             <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                activeTab === tab.key
-                  ? 'bg-white text-red-700 shadow-md'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+              onClick={() => handleTabChange('reported')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                activeTab === 'reported' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
               }`}
             >
-              <tab.icon size={15} />
-              {tab.label}
+              <MdReport size={15} />
+              Bị báo cáo <span className='font-black'>({reportedTotal})</span>
             </button>
-          ))}
+            <button
+              onClick={() => handleTabChange('deleted')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                activeTab === 'deleted' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              <MdDeleteSweep size={15} />
+              Đã xóa <span className='font-black'>({deletedTotal})</span>
+            </button>
+          </div>
+          {activeTab === 'reported' && (
+            <div className='flex gap-2 flex-wrap'>
+              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
+                <span className='text-sm font-black text-red-200'>{highRisk}</span>
+                <span className='text-white/70 text-xs'>Nguy cơ cao</span>
+              </div>
+              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
+                <span className='text-sm font-black text-orange-200'>{moderate}</span>
+                <span className='text-white/70 text-xs'>Báo cáo vừa</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
@@ -165,15 +164,8 @@ export default function ReportList() {
       {/* ── Tab: Bài viết bị báo cáo ── */}
       {activeTab === 'reported' && (
         <>
-          {/* Stat Cards */}
-          <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
-            <MiniStatCard icon={MdReport} label='Bài viết cần xét' value={reportedTotal} color='border-l-rose-400' iconBg='bg-gradient-to-br from-rose-400 to-red-600' />
-            <MiniStatCard icon={FaFlag} label='Nguy cơ cao (≥5 báo cáo)' value={highRisk} color='border-l-red-500' iconBg='bg-gradient-to-br from-red-500 to-rose-700' />
-            <MiniStatCard icon={FaFlag} label='Báo cáo vừa (2-4 lần)' value={moderate} color='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
-          </div>
-
           {/* Search */}
-          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
+          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-2 border border-gray-100 dark:border-slate-700'>
             <div className='relative flex-1'>
               <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
               <input
@@ -193,12 +185,6 @@ export default function ReportList() {
           ) : (
             <>
               <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
-                <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
-                  <p className='text-sm text-gray-500 dark:text-gray-400'>
-                    <span className='font-semibold text-gray-800 dark:text-white'>{reportedTotal}</span> bài viết bị báo cáo
-                    {reportedTotalPage > 1 && <span className='text-gray-400'> (trang {reportedPage}/{reportedTotalPage})</span>}
-                  </p>
-                </div>
                 <div className='overflow-x-auto'>
                   <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                     <thead className='bg-gray-50 dark:bg-slate-900'>
@@ -235,13 +221,8 @@ export default function ReportList() {
       {/* ── Tab: Bài viết đã xóa ── */}
       {activeTab === 'deleted' && (
         <>
-          {/* Stat Cards */}
-          <div className='grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6'>
-            <MiniStatCard icon={MdDeleteSweep} label='Tổng bài viết đã xóa' value={deletedTotal} color='border-l-gray-400' iconBg='bg-gradient-to-br from-gray-400 to-gray-600' />
-          </div>
-
           {/* Search */}
-          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-slate-700'>
+          <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-2 border border-gray-100 dark:border-slate-700'>
             <div className='relative flex-1'>
               <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
               <input
@@ -261,12 +242,6 @@ export default function ReportList() {
           ) : (
             <>
               <div className='bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-slate-700'>
-                <div className='px-4 py-3 border-b border-gray-100 dark:border-slate-700'>
-                  <p className='text-sm text-gray-500 dark:text-gray-400'>
-                    <span className='font-semibold text-gray-800 dark:text-white'>{deletedTotal}</span> bài viết đã xóa
-                    {deletedTotalPage > 1 && <span className='text-gray-400'> (trang {deletedPage}/{deletedTotalPage})</span>}
-                  </p>
-                </div>
                 <div className='overflow-x-auto'>
                   <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                     <thead className='bg-gray-50 dark:bg-slate-900'>

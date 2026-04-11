@@ -1,18 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-    FaTrophy, FaSearch, FaTrash, FaUsers, FaChartBar,
-    FaList, FaSync, FaCheck, FaClock, FaBan,
-    FaRunning, FaAppleAlt, FaDumbbell, FaFilter, FaChevronDown
+    FaTrophy, FaSearch, FaTrash, FaUsers, FaCheck, FaClock, FaBan,
+    FaRunning, FaAppleAlt, FaDumbbell, FaFilter, FaChevronDown,
+    FaTimes, FaSortAmountDown, FaUndo, FaBullseye, FaEye, FaEdit, FaPlus
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import adminChallengeApi from '../../apis/challengeApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
+import Loading from '../../components/GlobalComponents/Loading'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
+import ChallengeFormModal from './ChallengeFormModal'
 
-// ──────────────────────────────────────────────
-//  Helpers
-// ──────────────────────────────────────────────
 const TYPE_CONFIG = {
     nutrition: { label: 'Dinh dưỡng', icon: FaAppleAlt, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
     outdoor_activity: { label: 'Ngoài trời', icon: FaRunning, badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
@@ -20,118 +20,496 @@ const TYPE_CONFIG = {
 }
 
 const STATUS_CONFIG = {
-    active: { label: 'Đang hoạt động', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-    completed: { label: 'Hoàn thành', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-    cancelled: { label: 'Đã hủy', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }
+    active: { label: 'Đang hoạt động', icon: FaCheck, cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+    completed: { label: 'Hoàn thành', icon: FaClock, cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+    cancelled: { label: 'Đã hủy', icon: FaBan, cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }
 }
 
 const fmt = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '—'
 
-// ──────────────────────────────────────────────
-//  Stat Card (same style as AdminSportEvent)
-// ──────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, iconBg, borderColor }) {
-    return (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl px-5 py-4 border-l-4 ${borderColor} shadow-sm border border-gray-100 dark:border-gray-700`}>
-            <div className='flex items-center justify-between'>
+// ─── Participants / Overview Modal ───────────────────────────────────────────
+function ParticipantsModal({ challenge, onClose }) {
+    const [activeTab, setActiveTab] = useState('overview')
+
+    const { data, isLoading } = useQuery({
+        queryKey: ['admin-challenge-participants', challenge?._id],
+        queryFn: () => adminChallengeApi.getParticipants(challenge._id),
+        enabled: !!challenge?._id && activeTab === 'participants',
+        staleTime: 5000
+    })
+    const participants = data?.data?.result?.participants || []
+
+    const renderDetails = () => (
+        <div className='p-6 space-y-6'>
+            {/* Background & Basic Info */}
+            <div className='flex gap-4 items-start'>
+                {challenge.image ? (
+                    <img src={challenge.image} alt={challenge.title} className='w-20 h-20 rounded-xl object-cover shrink-0' />
+                ) : (
+                    <div className='w-20 h-20 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-3xl shrink-0 shadow-lg'>
+                        {challenge.badge_emoji || '🏆'}
+                    </div>
+                )}
                 <div>
-                    <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>{label}</p>
-                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{value ?? '—'}</p>
+                    <h4 className='text-lg font-bold text-gray-800 dark:text-white'>{challenge.title}</h4>
+                    <p className='text-sm text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line'>
+                        {challenge.description || 'Chưa có mô tả chi tiết'}
+                    </p>
                 </div>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-                    <Icon className='text-white text-base' />
+            </div>
+
+            <div className='grid grid-cols-2 gap-4'>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Loại & Danh mục</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
+                        {challenge.challenge_type === 'nutrition' ? '🥗 Dinh dưỡng' : challenge.challenge_type === 'outdoor_activity' ? '🏃 Ngoài trời' : '💪 Tập luyện'}
+                        {challenge.category && ` - ${challenge.category}`}
+                    </p>
+                </div>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Mục tiêu</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
+                        <FaBullseye className='text-orange-500' />
+                        {challenge.goal_value} {challenge.goal_unit} <span className="text-xs font-normal text-gray-500">({challenge.goal_type})</span>
+                    </p>
+                </div>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Thời gian diễn ra</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
+                        <FaClock className='text-blue-500' />
+                        {fmt(challenge.start_date)} - {fmt(challenge.end_date)}
+                    </p>
+                </div>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Tham gia / Tương tác</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
+                        <FaUsers className='text-indigo-500' />
+                        {challenge.participants_count || 0} thành viên đã tham gia
+                    </p>
+                </div>
+            </div>
+
+            {/* Cấu hình đặc thù Fitness */}
+            {challenge.challenge_type === 'fitness' && challenge.exercises && challenge.exercises.length > 0 && (
+                <div>
+                    <h5 className='text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-100 dark:border-gray-700 pb-2'>
+                        Yêu cầu bài tập (Fitness)
+                    </h5>
+                    <div className='space-y-3'>
+                        {challenge.exercises.map((ex, i) => (
+                            <div key={i} className='p-3 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg flex justify-between items-center'>
+                                <span className='font-semibold text-sm text-gray-800 dark:text-gray-200'>{ex.exercise_name}</span>
+                                <div className='flex gap-2 flex-wrap max-w-[60%] justify-end text-xs'>
+                                    {ex.sets?.map((set, sIdx) => (
+                                        <span key={sIdx} className='px-2 py-1 bg-white dark:bg-gray-800 rounded font-medium text-gray-600 dark:text-gray-300 shadow-sm'>
+                                            H{set.set_number}: {set.reps} reps {set.weight > 0 ? `(${set.weight}kg)` : ''}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Cấu hình đặc thù Dinh dưỡng */}
+            {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && (
+                <div>
+                    <h5 className='text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2'>
+                        <FaClock className='text-amber-500'/> Khung giờ Check-in
+                    </h5>
+                    <div className='p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-900/50'>
+                        <p className='text-sm text-gray-700 dark:text-gray-300'>
+                            Yêu cầu người dùng thực hiện hoạt động trong khung giờ: <span className='font-bold text-orange-600 dark:text-orange-400'>{challenge.time_window_start || '?'}</span> - <span className='font-bold text-orange-600 dark:text-orange-400'>{challenge.time_window_end || '?'}</span>
+                        </p>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+
+    const renderParticipants = () => (
+        <div className='h-full'>
+            {isLoading ? (
+                <div className='space-y-3 p-6'>{[...Array(5)].map((_, i) => <div key={i} className='h-14 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse' />)}</div>
+            ) : participants.length === 0 ? (
+                <div className='py-14 text-center text-gray-400'>
+                    <FaUsers size={32} className='mx-auto mb-3 opacity-30' />
+                    <p className='text-sm'>Chưa có thành viên nào</p>
+                </div>
+            ) : (
+                <table className='w-full divide-y divide-gray-100 dark:divide-gray-700 relative'>
+                    <thead className='bg-gray-50 dark:bg-gray-900 sticky top-0 z-10'>
+                        <tr>
+                            {['Hạng', 'Người dùng', 'Tiến độ', 'Streak', 'Trạng thái', 'Tham gia'].map(h => (
+                                <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className='divide-y divide-gray-100 dark:divide-gray-700'>
+                        {participants.map(p => {
+                            const user = p.user || {}
+                            const pct = p.progress_percent || 0
+                            return (
+                                <tr key={p.rank} className='hover:bg-amber-50/20 dark:hover:bg-amber-900/5 transition-colors'>
+                                    <td className='px-4 py-3'>
+                                        <span className={`w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold ${
+                                            p.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                                            p.rank === 2 ? 'bg-gray-200 text-gray-600' :
+                                            p.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                                            'bg-gray-100 text-gray-500'
+                                        }`}>{p.rank}</span>
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        <div className='flex items-center gap-2'>
+                                            {user.avatar ? (
+                                                <img src={user.avatar} className='w-7 h-7 rounded-full object-cover ring-1 ring-gray-200' alt='' />
+                                            ) : (
+                                                <div className='w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-xs font-bold text-amber-600 dark:text-amber-300'>
+                                                    {(user.name || user.username || '?')[0]?.toUpperCase()}
+                                                </div>
+                                            )}
+                                            <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>{user.name || user.username || '—'}</span>
+                                        </div>
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        <div className='flex items-center gap-2'>
+                                            <div className='w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5'>
+                                                <div className='bg-gradient-to-r from-amber-400 to-orange-500 h-1.5 rounded-full' style={{ width: `${Math.min(pct, 100)}%` }} />
+                                            </div>
+                                            <span className='text-xs text-gray-500 whitespace-nowrap'>{p.current_value}/{p.total_required_days} ({pct}%)</span>
+                                        </div>
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        <span className='text-xs font-semibold text-orange-600 dark:text-orange-400'>🔥 {p.streak_count || 0}</span>
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        {p.is_completed ? (
+                                            <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium'>
+                                                <FaCheck size={8} /> Hoàn thành
+                                            </span>
+                                        ) : (
+                                            <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium'>
+                                                <FaClock size={8} /> Đang tham gia
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className='px-4 py-3 text-xs text-gray-400'>{fmt(p.joined_at)}</td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    )
+
+    return (
+        <div className='fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4' onClick={e => e.target === e.currentTarget && onClose()}>
+            <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col'>
+                <div className='bg-gradient-to-r from-amber-500 to-orange-500 px-6 pt-4 rounded-t-2xl flex flex-col shrink-0'>
+                    <div className='flex items-center justify-between'>
+                        <h3 className='font-bold text-white flex items-center gap-2 text-base'>
+                            <FaEye size={15} /> Phân tích Thử thách
+                        </h3>
+                        <button onClick={onClose} className='p-1.5 bg-black/10 hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center'>
+                            <FaTimes className='text-white' size={14} />
+                        </button>
+                    </div>
+                    {/* Tabs */}
+                    <div className='flex gap-6 mt-4'>
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`pb-3 font-semibold text-sm transition-all border-b-2 ${activeTab === 'overview' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
+                        >
+                            Tổng quan
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('participants')}
+                            className={`pb-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-1.5 ${activeTab === 'participants' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
+                        >
+                            <FaUsers size={14} /> Thành viên ({challenge.participants_count || 0})
+                        </button>
+                    </div>
+                </div>
+
+                <div className='overflow-y-auto flex-1 bg-white dark:bg-gray-800 rounded-b-2xl' style={{ maxHeight: 'calc(85vh - 100px)' }}>
+                    {activeTab === 'overview' ? renderDetails() : renderParticipants()}
                 </div>
             </div>
         </div>
     )
 }
 
-// ──────────────────────────────────────────────
-//  Tab 1: Danh sách
-// ──────────────────────────────────────────────
-function ChallengeListTab({ stats }) {
-    const qc = useQueryClient()
+// ─── Main Page ───────────────────────────────────────────────────────────────
+export default function AdminChallenge() {
+    const queryClient = useQueryClient()
+    const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
     const [searchInput, setSearchInput] = useState('')
-    const [typeFilter, setTypeFilter] = useState('all')
-    const [statusFilter, setStatusFilter] = useState('all')
+    const [filterType, setFilterType] = useState('all')
+    const [filterCategory, setFilterCategory] = useState('all')
+    const [filterStatus, setFilterStatus] = useState('active')
+    const [sortBy, setSortBy] = useState('newest')
+    const [filterDateFrom, setFilterDateFrom] = useState('')
+    const [filterDateTo, setFilterDateTo] = useState('')
     const [showAdvanced, setShowAdvanced] = useState(false)
-    const [page, setPage] = useState(1)
-    const [confirmId, setConfirmId] = useState(null)
-    const [confirmTitle, setConfirmTitle] = useState('')
-    const LIMIT = 15
+    const [confirmAction, setConfirmAction] = useState(null)
+    const [participantsChallenge, setParticipantsChallenge] = useState(null)
+    const [formChallenge, setFormChallenge] = useState(null) // null=closed, undefined=create, object=edit
+    const LIMIT = 10
+    const debounceRef = useRef(null)
 
-    // Debounce
-    React.useEffect(() => {
-        const t = setTimeout(() => { setSearch(searchInput); setPage(1) }, 500)
-        return () => clearTimeout(t)
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+            setSearch(searchInput)
+            setPage(1)
+        }, 500)
+        return () => clearTimeout(debounceRef.current)
     }, [searchInput])
 
-    const { data, isLoading } = useQuery({
-        queryKey: ['admin-challenges', search, typeFilter, statusFilter, page],
+    // Stats
+    const { data: statsData } = useQuery({
+        queryKey: ['admin-challenge-stats'],
+        queryFn: () => adminChallengeApi.getStats(),
+        staleTime: 10000
+    })
+    const stats = statsData?.data?.result || {}
+
+    // Categories
+    const { data: categoriesData } = useQuery({
+        queryKey: ['admin-categories'],
+        queryFn: () => sportCategoryApi.getAll(),
+        staleTime: 60000
+    })
+    const categories = categoriesData?.data?.result || []
+
+    // Challenge list
+    const isDeletedView = filterStatus === 'deleted'
+    const { data, isLoading, isError, error } = useQuery({
+        queryKey: ['admin-challenges', page, search, filterType, filterCategory, filterStatus, filterDateFrom, filterDateTo, sortBy],
         queryFn: () => adminChallengeApi.getAll({
-            page, limit: LIMIT,
-            search: search || undefined,
-            challenge_type: typeFilter !== 'all' ? typeFilter : undefined,
-            // 'deleted' là chế độ xem riêng, dùng show_deleted=true để lấy is_deleted records
-            status: statusFilter !== 'all' && statusFilter !== 'deleted' ? statusFilter : undefined,
-            show_deleted: statusFilter === 'deleted' ? 'true' : undefined
+            page, limit: LIMIT, search: search || undefined,
+            challenge_type: filterType !== 'all' ? filterType : undefined,
+            category: filterCategory !== 'all' ? filterCategory : undefined,
+            status: !isDeletedView && filterStatus !== 'all' ? filterStatus : undefined,
+            show_deleted: isDeletedView ? 'true' : undefined,
+            dateFrom: filterDateFrom || undefined,
+            dateTo: filterDateTo || undefined,
+            sortBy
         }),
-        keepPreviousData: true,
-        staleTime: 3000
+        keepPreviousData: true
     })
 
     const challenges = data?.data?.result?.challenges || []
-    const total = data?.data?.result?.total || 0
     const totalPage = data?.data?.result?.totalPage || 1
+    const total = data?.data?.result?.total || 0
 
-    // No more client-side status filter needed — it's server-side now
-    const filtered = challenges
+    const invalidate = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['admin-challenges'] })
+        queryClient.invalidateQueries({ queryKey: ['admin-challenge-stats'] })
+    }, [queryClient])
 
-    const cancelMut = useSafeMutation({
+    const softDeleteMutation = useSafeMutation({
         mutationFn: (id) => adminChallengeApi.forceCancel(id),
-        onSuccess: () => {
-            toast.success('Đã xóa thử thách thành công')
-            qc.invalidateQueries({ queryKey: ['admin-challenges'] })
-            qc.invalidateQueries({ queryKey: ['admin-challenge-stats'] })
-            setConfirmId(null)
-        },
-        onError: (e) => toast.error(e?.response?.data?.message || 'Xóa thất bại')
+        onSuccess: () => { toast.success('Đã xóa thử thách'); invalidate() },
+        onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi xóa thử thách')
     })
 
-    const restoreMut = useSafeMutation({
+    const restoreMutation = useSafeMutation({
         mutationFn: (id) => adminChallengeApi.restore(id),
-        onSuccess: () => {
-            toast.success('Đã khôi phục thử thách')
-            qc.invalidateQueries({ queryKey: ['admin-challenges'] })
-            qc.invalidateQueries({ queryKey: ['admin-challenge-stats'] })
-        },
-        onError: (e) => toast.error(e?.response?.data?.message || 'Khôi phục thất bại')
+        onSuccess: () => { toast.success('Đã khôi phục thử thách'); invalidate() },
+        onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khôi phục')
     })
 
-    const activeFilterCount = [typeFilter !== 'all', statusFilter !== 'all'].filter(Boolean).length
+    const activeFilterCount = [
+        filterType !== 'all' && filterType,
+        filterCategory !== 'all' && filterCategory,
+        filterDateFrom,
+        filterDateTo,
+        sortBy !== 'newest' && sortBy
+    ].filter(Boolean).length
+
+    const clearAllFilters = () => {
+        setSearchInput(''); setSearch(''); setFilterType('all')
+        setFilterCategory('all')
+        setFilterStatus('active'); setFilterDateFrom(''); setFilterDateTo('')
+        setSortBy('newest'); setPage(1)
+    }
+
+    const handleConfirm = () => {
+        if (!confirmAction) return
+        if (confirmAction.type === 'delete') softDeleteMutation.mutate(confirmAction.challenge._id)
+        else if (confirmAction.type === 'restore') restoreMutation.mutate(confirmAction.challenge._id)
+        setConfirmAction(null)
+    }
+
+    // Determine active hero tab
+    const getActiveTabKey = () => {
+        if (filterStatus === 'deleted') return 'deleted'
+        if (filterType === 'nutrition' && filterStatus === 'active') return 'nutrition'
+        if (filterType === 'outdoor_activity' && filterStatus === 'active') return 'outdoor'
+        if (filterType === 'fitness' && filterStatus === 'active') return 'fitness'
+        if (filterStatus === 'active' && filterType === 'all') return 'active'
+        if (filterStatus === 'all' && filterType === 'all') return 'all'
+        return null
+    }
+    const activeTabKey = getActiveTabKey()
 
     return (
-        <div>
-            {/* Filter bar */}
-            <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-5 overflow-hidden'>
+        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
+
+            {/* ── Hero Banner ── */}
+            <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 px-6 py-4 mb-2 shadow-xl'>
+                <div className='relative z-10 flex items-center justify-between'>
+                    <h1 className='text-2xl font-bold text-white'>Quản lý Thử thách</h1>
+                    <button onClick={() => setFormChallenge(undefined)}
+                        className='flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-white text-sm font-bold transition-all active:scale-95'>
+                        <FaPlus size={12} /> Tạo thử thách
+                    </button>
+                </div>
+
+                <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
+                    {[
+                        {
+                            key: 'all', label: 'Tất cả', icon: FaTrophy,
+                            count: stats.total,
+                            onClick: () => { setFilterStatus('all'); setFilterType('all'); setPage(1) }
+                        },
+                        {
+                            key: 'active', label: 'Đang hoạt động', icon: FaCheck,
+                            count: stats.active,
+                            onClick: () => { setFilterStatus('active'); setFilterType('all'); setPage(1) }
+                        },
+                        {
+                            key: 'nutrition', label: 'Dinh dưỡng', icon: FaAppleAlt,
+                            count: stats.byType?.nutrition,
+                            onClick: () => { setFilterStatus('active'); setFilterType('nutrition'); setPage(1) }
+                        },
+                        {
+                            key: 'outdoor', label: 'Ngoài trời', icon: FaRunning,
+                            count: stats.byType?.outdoor_activity,
+                            onClick: () => { setFilterStatus('active'); setFilterType('outdoor_activity'); setPage(1) }
+                        },
+                        {
+                            key: 'fitness', label: 'Tập luyện', icon: FaDumbbell,
+                            count: stats.byType?.fitness,
+                            onClick: () => { setFilterStatus('active'); setFilterType('fitness'); setPage(1) }
+                        },
+                        {
+                            key: 'deleted', label: 'Đã xóa', icon: FaTrash,
+                            count: stats.deleted,
+                            onClick: () => { setFilterStatus('deleted'); setFilterType('all'); setPage(1) }
+                        },
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={tab.onClick}
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                                activeTabKey === tab.key ? 'bg-white text-amber-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+                            }`}
+                        >
+                            <tab.icon size={13} />
+                            {tab.label}
+                            <span className='font-black'>({tab.count ?? 0})</span>
+                        </button>
+                    ))}
+                </div>
+
+                <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
+                <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
+            </div>
+
+            {/* ── Analytics Strip ── */}
+            {challenges.length > 0 && (() => {
+                const now = new Date()
+                const activeChallenges = challenges.filter(c => !c.is_deleted)
+                const nutritionCount = activeChallenges.filter(c => c.challenge_type === 'nutrition').length
+                const outdoorCount = activeChallenges.filter(c => c.challenge_type === 'outdoor_activity').length
+                const fitnessCount = activeChallenges.filter(c => c.challenge_type === 'fitness').length
+                const avgParticipants = activeChallenges.length > 0
+                    ? Math.round(activeChallenges.reduce((s, c) => s + (c.participants_count || 0), 0) / activeChallenges.length)
+                    : 0
+                const ongoingCount = activeChallenges.filter(c => new Date(c.start_date) <= now && new Date(c.end_date) > now).length
+
+                const monthData = []
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date()
+                    d.setMonth(d.getMonth() - i)
+                    const m = d.getMonth(); const y = d.getFullYear()
+                    const count = activeChallenges.filter(c => {
+                        const cd = new Date(c.createdAt)
+                        return cd.getMonth() === m && cd.getFullYear() === y
+                    }).length
+                    monthData.push({ label: `T${m + 1}`, count })
+                }
+                const maxCount = Math.max(...monthData.map(m => m.count), 1)
+
+                return (
+                    <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2 overflow-hidden'>
+                        <div className='flex flex-wrap items-center gap-3 px-4 py-3'>
+                            <span className='flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
+                                📊 Thống kê
+                            </span>
+
+                            {[
+                                { label: 'Tổng TC', value: activeChallenges.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'TB thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'DD/NT/TL', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                            ].map(s => (
+                                <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
+                                    <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
+                                    <span className='text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase leading-tight'>{s.label}</span>
+                                </div>
+                            ))}
+
+                            <div className='flex items-end gap-1 ml-auto' style={{ height: 36 }}>
+                                <span className='text-[9px] text-gray-400 mr-1 self-center uppercase font-semibold tracking-wide'>6 tháng</span>
+                                {monthData.map((m, i) => (
+                                    <div key={i} className='flex flex-col items-center gap-0.5' style={{ width: 20 }}>
+                                        <span className='text-[8px] font-bold text-gray-400 leading-none'>{m.count || ''}</span>
+                                        <div
+                                            className='w-full rounded-t bg-gradient-to-t from-amber-600 to-orange-400'
+                                            style={{ height: `${Math.max((m.count / maxCount) * 22, 2)}px` }}
+                                        />
+                                        <span className='text-[8px] text-gray-400 leading-none'>{m.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
+
+            {/* ── Smart Search & Filters ── */}
+            <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-2 overflow-hidden'>
                 <div className='p-4'>
                     <div className='flex gap-2 items-center'>
                         <div className='relative flex-1'>
-                            <FaSearch className='absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs' />
+                            <FaSearch className='absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+                            {searchInput && (
+                                <button
+                                    onClick={() => setSearchInput('')}
+                                    className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors'
+                                >
+                                    <FaTimes size={12} />
+                                </button>
+                            )}
                             <input
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value)}
-                                placeholder='Tìm theo tên thử thách...'
-                                className='w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all'
+                                placeholder='Tìm theo tên thử thách, mô tả...'
+                                className='w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:bg-white dark:focus:bg-slate-600 transition-all'
                             />
                         </div>
                         <button
                             onClick={() => setShowAdvanced(!showAdvanced)}
                             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
                                 showAdvanced || activeFilterCount > 0
-                                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 text-amber-700 dark:text-amber-300'
-                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                                    ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
+                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
                             }`}
                         >
                             <FaFilter size={12} />
@@ -143,22 +521,61 @@ function ChallengeListTab({ stats }) {
                             )}
                             <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
                         </button>
-                        <button
-                            onClick={() => qc.invalidateQueries({ queryKey: ['admin-challenges'] })}
-                            className='flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-colors shrink-0'
-                        >
-                            <FaSync size={11} /> Làm mới
-                        </button>
                     </div>
 
-                    {showAdvanced && (
-                        <div className='grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700'>
+                    {/* Active filter chips */}
+                    {activeFilterCount > 0 && (
+                        <div className='flex flex-wrap gap-2 mt-3'>
+                            {filterType !== 'all' && (
+                                <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'>
+                                    {TYPE_CONFIG[filterType]?.label || filterType}
+                                    <button onClick={() => { setFilterType('all'); setFilterCategory('all'); setPage(1) }} className='hover:text-amber-900 dark:hover:text-amber-100'><FaTimes size={9} /></button>
+                                </span>
+                            )}
+                            {filterCategory !== 'all' && (
+                                <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'>
+                                    🏷️ {filterCategory}
+                                    <button onClick={() => { setFilterCategory('all'); setPage(1) }} className='hover:text-indigo-900 dark:hover:text-indigo-100'><FaTimes size={9} /></button>
+                                </span>
+                            )}
+                            {filterDateFrom && (
+                                <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
+                                    📅 Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
+                                    <button onClick={() => { setFilterDateFrom(''); setPage(1) }} className='hover:text-orange-900 dark:hover:text-orange-100'><FaTimes size={9} /></button>
+                                </span>
+                            )}
+                            {filterDateTo && (
+                                <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
+                                    📅 Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
+                                    <button onClick={() => { setFilterDateTo(''); setPage(1) }} className='hover:text-orange-900 dark:hover:text-orange-100'><FaTimes size={9} /></button>
+                                </span>
+                            )}
+                            {sortBy !== 'newest' && (
+                                <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'>
+                                    ↕️ {sortBy === 'oldest' ? 'Cũ nhất' : sortBy === 'popular' ? 'Phổ biến nhất' : 'Sắp diễn ra'}
+                                    <button onClick={() => { setSortBy('newest'); setPage(1) }} className='hover:text-purple-900 dark:hover:text-purple-100'><FaTimes size={9} /></button>
+                                </span>
+                            )}
+                            <button
+                                onClick={clearAllFilters}
+                                className='inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors'
+                            >
+                                <FaTimes size={9} /> Xóa tất cả
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Collapsible advanced filters */}
+                {showAdvanced && (
+                    <div className='px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700'>
+                        <div className='grid grid-cols-2 lg:grid-cols-5 gap-3 pt-3'>
                             <div>
-                                <label className='block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5'>Loại thử thách</label>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Loại thử thách</label>
                                 <select
-                                    value={typeFilter}
-                                    onChange={e => { setTypeFilter(e.target.value); setPage(1) }}
-                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-400'
+                                    value={filterType}
+                                    onChange={e => { setFilterType(e.target.value); setFilterCategory('all'); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
                                 >
                                     <option value='all'>Tất cả loại</option>
                                     <option value='nutrition'>🥗 Dinh dưỡng</option>
@@ -166,577 +583,332 @@ function ChallengeListTab({ stats }) {
                                     <option value='fitness'>💪 Tập luyện</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className='block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5'>Trạng thái</label>
+
+                            <div className={filterType === 'all' || filterType === 'nutrition' ? 'opacity-50 pointer-events-none' : ''}>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Danh mục con</label>
                                 <select
-                                    value={statusFilter}
-                                    onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-400'
+                                    disabled={filterType === 'all' || filterType === 'nutrition'}
+                                    value={filterCategory}
+                                    onChange={e => { setFilterCategory(e.target.value); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all disabled:bg-gray-100 dark:disabled:bg-gray-800'
+                                >
+                                    <option value='all'>Tất cả danh mục</option>
+                                    {categories.filter(c => c.sport_type === filterType).map(c => (
+                                        <option key={c._id} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Trạng thái</label>
+                                <select
+                                    value={filterStatus}
+                                    onChange={e => { setFilterStatus(e.target.value); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
                                 >
                                     <option value='all'>Tất cả trạng thái</option>
                                     <option value='active'>Đang hoạt động</option>
                                     <option value='completed'>Hoàn thành</option>
                                     <option value='cancelled'>Đã hủy</option>
+                                    <option value='deleted'>Đã xóa</option>
                                 </select>
                             </div>
+
+                            <div>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Từ ngày</label>
+                                <input
+                                    type='date'
+                                    value={filterDateFrom}
+                                    onChange={e => { setFilterDateFrom(e.target.value); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
+                                />
+                            </div>
+
+                            <div>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Đến ngày</label>
+                                <input
+                                    type='date'
+                                    value={filterDateTo}
+                                    onChange={e => { setFilterDateTo(e.target.value); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
+                                />
+                            </div>
                         </div>
-                    )}
-                </div>
-            </div>
 
-            {/* Count + toggle xem đã xóa */}
-            <div className='flex items-center justify-between mb-3'>
-                <p className='text-xs text-gray-500 dark:text-gray-400'>
-                    Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{filtered.length}</span> / {total} thử thách
-                </p>
-                <button
-                    onClick={() => {
-                        const next = statusFilter === 'deleted' ? 'all' : 'deleted'
-                        setStatusFilter(next)
-                        setPage(1)
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        statusFilter === 'deleted'
-                            ? 'bg-red-50 dark:bg-red-900/20 border-red-300 text-red-700 dark:text-red-300'
-                            : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300'
-                    }`}
-                >
-                    <FaTrash size={10} />
-                    {statusFilter === 'deleted' ? 'Ẩn đã xóa' : 'Xem đã xóa'}
-                </button>
-            </div>
-
-            {/* Table */}
-            {isLoading ? (
-                <div className='space-y-2'>{[...Array(6)].map((_, i) => <div key={i} className='h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse' />)}</div>
-            ) : filtered.length === 0 ? (
-                <div className='py-14 text-center text-gray-400'>
-                    <FaTrophy size={36} className='mx-auto mb-3 opacity-30' />
-                    <p className='text-sm'>Không có thử thách nào</p>
-                </div>
-            ) : (
-                <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700'>
-                    <div className='overflow-x-auto'>
-                        <table className='w-full divide-y divide-gray-200 dark:divide-gray-700'>
-                            <thead className='bg-gray-50 dark:bg-gray-900'>
-                                <tr>
-                                    {['STT', 'Thử thách', 'Loại', 'Trạng thái', 'Người tham gia', 'Thời gian', 'Người tạo', 'Hành động'].map(h => (
-                                        <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className='divide-y divide-gray-100 dark:divide-gray-700'>
-                                {filtered.map((c, idx) => {
-                                    const typeCfg = TYPE_CONFIG[c.challenge_type] || {}
-                                    const statusCfg = STATUS_CONFIG[c.status] || {}
-                                    const TypeIcon = typeCfg.icon || FaTrophy
-                                    const creator = c.creator_id
-                                    return (
-                                        <tr key={c._id} className='hover:bg-amber-50/30 dark:hover:bg-amber-900/5 transition-colors'>
-                                            <td className='px-4 py-3 text-sm text-gray-500 dark:text-gray-400'>{(page - 1) * LIMIT + idx + 1}</td>
-                                            <td className='px-4 py-3 min-w-[200px]'>
-                                                <div className='flex items-center gap-2.5'>
-                                                    {c.image ? (
-                                                        <img src={c.image} alt={c.title} className='w-9 h-9 rounded-lg object-cover shrink-0' onError={e => { e.target.style.display = 'none' }} />
-                                                    ) : (
-                                                        <div className='w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-base shrink-0'>
-                                                            {c.badge_emoji || '🏆'}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className='font-semibold text-gray-800 dark:text-white text-sm max-w-[180px] truncate'>{c.title}</p>
-                                                        <p className='text-xs text-gray-400 truncate max-w-[180px]'>{c.category || c.goal_type}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className='px-4 py-3 whitespace-nowrap'>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${typeCfg.badge}`}>
-                                                    <TypeIcon size={9} />
-                                                    {typeCfg.label || c.challenge_type}
-                                                </span>
-                                            </td>
-                                            <td className='px-4 py-3 whitespace-nowrap'>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.cls}`}>
-                                                    {c.status === 'active' ? <FaCheck size={9} /> : c.status === 'cancelled' ? <FaBan size={9} /> : <FaClock size={9} />}
-                                                    {statusCfg.label || c.status}
-                                                </span>
-                                            </td>
-                                            <td className='px-4 py-3 whitespace-nowrap'>
-                                                <span className='flex items-center gap-1 text-sm text-gray-700 dark:text-gray-200'>
-                                                    <FaUsers size={11} className='text-amber-500' />
-                                                    {c.participants_count || 0}
-                                                </span>
-                                            </td>
-                                            <td className='px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400'>
-                                                <div className='flex flex-col gap-0.5'>
-                                                    <span>🟢 {fmt(c.start_date)}</span>
-                                                    <span>🔴 {fmt(c.end_date)}</span>
-                                                </div>
-                                            </td>
-                                            <td className='px-4 py-3 whitespace-nowrap'>
-                                                <div className='flex items-center gap-1.5'>
-                                                    <div className='w-6 h-6 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-300'>
-                                                        {(creator?.name || creator?.username || '?')[0]?.toUpperCase()}
-                                                    </div>
-                                                    <span className='text-xs text-gray-500 dark:text-gray-400 max-w-[80px] truncate'>{creator?.name || creator?.username || '—'}</span>
-                                                </div>
-                                            </td>
-                                            <td className='px-4 py-3 whitespace-nowrap'>
-                                                <div className='flex items-center gap-1'>
-                                                    {c.is_deleted ? (
-                                                        <button
-                                                            onClick={() => restoreMut.mutate(c._id)}
-                                                            disabled={restoreMut.isPending}
-                                                            title='Khôi phục thử thách'
-                                                            className='p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50'
-                                                        >
-                                                            <FaSync size={13} />
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => { setConfirmId(c._id); setConfirmTitle(c.title) }}
-                                                            title='Xóa thử thách'
-                                                            className='p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors'
-                                                        >
-                                                            <FaTrash size={13} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* Pagination */}
-            {totalPage > 1 && (
-                <div className='flex items-center justify-center gap-2 mt-5'>
-                    <button
-                        disabled={page <= 1}
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
-                    >
-                        ← Trước
-                    </button>
-                    {Array.from({ length: totalPage }, (_, i) => i + 1)
-                        .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
-                        .reduce((acc, p, i, arr) => {
-                            if (i > 0 && p - arr[i - 1] > 1) acc.push('...' + p)
-                            acc.push(p)
-                            return acc
-                        }, [])
-                        .map(p => typeof p === 'number' ? (
-                            <button
-                                key={p}
-                                onClick={() => setPage(p)}
-                                className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                            >
-                                {p}
-                            </button>
-                        ) : <span key={p} className='px-1 text-gray-400'>...</span>)
-                    }
-                    <button
-                        disabled={page >= totalPage}
-                        onClick={() => setPage(p => Math.min(totalPage, p + 1))}
-                        className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
-                    >
-                        Sau →
-                    </button>
-                </div>
-            )}
-
-            {/* Confirm Dialog */}
-            {confirmId && (
-                <ConfirmBox
-                    title='Xóa thử thách?'
-                    subtitle={`Thử thách "${confirmTitle}" sẽ bị xóa khỏi danh sách. Thao tác này có thể được khôi phục.`}
-                    danger={true}
-                    handleDelete={() => cancelMut.mutate(confirmId)}
-                    closeModal={() => setConfirmId(null)}
-                    isPending={cancelMut.isPending}
-                    tilteButton='Xóa'
-                />
-            )}
-        </div>
-    )
-}
-
-// ──────────────────────────────────────────────
-//  Tab 2: Thành viên
-// ──────────────────────────────────────────────
-function ParticipantsTab() {
-    const [searchChallenge, setSearchChallenge] = useState('')
-    const [selectedId, setSelectedId] = useState(null)
-
-    const { data: listData, isLoading: loadingList } = useQuery({
-        queryKey: ['admin-challenges-list', searchChallenge],
-        queryFn: () => adminChallengeApi.getAll({ page: 1, limit: 50, search: searchChallenge || undefined }),
-        staleTime: 10000
-    })
-
-    const challenges = listData?.data?.result?.challenges || []
-    const filtered = challenges
-
-    const { data: partData, isLoading: loadingPart } = useQuery({
-        queryKey: ['admin-challenge-participants', selectedId],
-        queryFn: () => adminChallengeApi.getParticipants(selectedId),
-        enabled: !!selectedId,
-        staleTime: 5000
-    })
-
-    const participants = partData?.data?.result?.participants || []
-    const selectedChallenge = challenges.find(c => c._id === selectedId)
-
-    return (
-        <div className='grid grid-cols-1 lg:grid-cols-5 gap-5'>
-            {/* Left panel: challenge list */}
-            <div className='lg:col-span-2'>
-                <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4'>
-                    <h3 className='text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3'>Chọn thử thách</h3>
-                    <div className='relative mb-3'>
-                        <FaSearch className='absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs' />
-                        <input
-                            value={searchChallenge}
-                            onChange={e => setSearchChallenge(e.target.value)}
-                            placeholder='Tìm thử thách...'
-                            className='w-full pl-7 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-1 focus:ring-amber-400 transition-all'
-                        />
-                    </div>
-                    {loadingList ? (
-                        <div className='space-y-2'>{[...Array(5)].map((_, i) => <div key={i} className='h-10 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse' />)}</div>
-                    ) : (
-                        <div className='space-y-1 max-h-[420px] overflow-y-auto scrollbar-thin pr-1'>
-                            {filtered.map(c => {
-                                const typeCfg = TYPE_CONFIG[c.challenge_type] || {}
-                                const TypeIcon = typeCfg.icon || FaTrophy
-                                return (
+                        <div className='flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700'>
+                            <FaSortAmountDown className='text-gray-400 text-sm shrink-0' />
+                            <span className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase shrink-0'>Sắp xếp:</span>
+                            <div className='flex gap-2 flex-wrap'>
+                                {[
+                                    { value: 'newest', label: 'Mới nhất' },
+                                    { value: 'oldest', label: 'Cũ nhất' },
+                                    { value: 'popular', label: 'Phổ biến nhất' },
+                                    { value: 'earliest', label: 'Sắp diễn ra' }
+                                ].map(s => (
                                     <button
-                                        key={c._id}
-                                        onClick={() => setSelectedId(c._id)}
-                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-2.5 ${
-                                            selectedId === c._id
-                                                ? 'bg-amber-500 text-white shadow-sm'
-                                                : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                        key={s.value}
+                                        onClick={() => { setSortBy(s.value); setPage(1) }}
+                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                                            sortBy === s.value
+                                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-1 ring-amber-300 dark:ring-amber-700'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                                         }`}
                                     >
-                                        <span className='text-base leading-none shrink-0'>{c.badge_emoji || '🏆'}</span>
-                                        <div className='min-w-0 flex-1'>
-                                            <p className='font-medium truncate text-sm'>{c.title}</p>
-                                            <span className={`text-xs ${selectedId === c._id ? 'text-white/70' : 'text-gray-400'}`}>
-                                                {typeCfg.label} • {c.participants_count || 0} người
-                                            </span>
-                                        </div>
+                                        {s.label}
                                     </button>
-                                )
-                            })}
-                            {filtered.length === 0 && <p className='text-xs text-gray-400 text-center py-5'>Không tìm thấy</p>}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Right panel: participants */}
-            <div className='lg:col-span-3'>
-                {!selectedId ? (
-                    <div className='rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-14 text-center text-gray-400'>
-                        <FaUsers size={32} className='mx-auto mb-3 opacity-30' />
-                        <p className='text-sm'>Chọn một thử thách để xem danh sách thành viên</p>
-                    </div>
-                ) : loadingPart ? (
-                    <div className='space-y-3'>{[...Array(5)].map((_, i) => <div key={i} className='h-14 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse' />)}</div>
-                ) : (
-                    <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden'>
-                        <div className='bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 flex items-center justify-between'>
-                            <h3 className='font-bold text-white flex items-center gap-2 text-sm'>
-                                <FaUsers size={13} />
-                                {selectedChallenge?.title}
-                            </h3>
-                            <span className='text-white/80 text-xs font-medium'>{participants.length} thành viên</span>
-                        </div>
-                        {participants.length === 0 ? (
-                            <div className='py-10 text-center text-gray-400 text-sm'>Chưa có thành viên nào</div>
-                        ) : (
-                            <div className='overflow-x-auto'>
-                                <table className='w-full divide-y divide-gray-100 dark:divide-gray-700'>
-                                    <thead className='bg-gray-50 dark:bg-gray-900'>
-                                        <tr>
-                                            {['Hạng', 'Người dùng', 'Tiến độ', 'Streak', 'Trạng thái', 'Tham gia'].map(h => (
-                                                <th key={h} className='px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className='divide-y divide-gray-100 dark:divide-gray-700'>
-                                        {participants.map(p => {
-                                            const user = p.user || {}
-                                            const pct = p.progress_percent || 0
-                                            return (
-                                                <tr key={p.rank} className='hover:bg-amber-50/20 dark:hover:bg-amber-900/5 transition-colors'>
-                                                    <td className='px-4 py-3'>
-                                                        <span className={`w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold ${
-                                                            p.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                                                            p.rank === 2 ? 'bg-gray-200 text-gray-600' :
-                                                            p.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                                                            'bg-gray-100 text-gray-500'
-                                                        }`}>{p.rank}</span>
-                                                    </td>
-                                                    <td className='px-4 py-3'>
-                                                        <div className='flex items-center gap-2'>
-                                                            {user.avatar ? (
-                                                                <img src={user.avatar} className='w-7 h-7 rounded-full object-cover ring-1 ring-gray-200' alt='' />
-                                                            ) : (
-                                                                <div className='w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-xs font-bold text-amber-600 dark:text-amber-300'>
-                                                                    {(user.name || user.username || '?')[0]?.toUpperCase()}
-                                                                </div>
-                                                            )}
-                                                            <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>{user.name || user.username || '—'}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className='px-4 py-3'>
-                                                        <div className='flex items-center gap-2'>
-                                                            <div className='w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5'>
-                                                                <div className='bg-gradient-to-r from-amber-400 to-orange-500 h-1.5 rounded-full' style={{ width: `${Math.min(pct, 100)}%` }} />
-                                                            </div>
-                                                            <span className='text-xs text-gray-500 whitespace-nowrap'>{p.current_value}/{p.total_required_days} ({pct}%)</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className='px-4 py-3'>
-                                                        <span className='text-xs font-semibold text-orange-600 dark:text-orange-400'>🔥 {p.streak_count || 0}</span>
-                                                    </td>
-                                                    <td className='px-4 py-3'>
-                                                        {p.is_completed ? (
-                                                            <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium'>
-                                                                <FaCheck size={8} /> Hoàn thành
-                                                            </span>
-                                                        ) : (
-                                                            <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium'>
-                                                                <FaClock size={8} /> Đang tham gia
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className='px-4 py-3 text-xs text-gray-400'>{fmt(p.joined_at)}</td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
+                                ))}
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
             </div>
-        </div>
-    )
-}
 
-// ──────────────────────────────────────────────
-//  Tab 3: Thống kê
-// ──────────────────────────────────────────────
-function StatsTab() {
-    const { data, isLoading } = useQuery({
-        queryKey: ['admin-challenge-stats'],
-        queryFn: () => adminChallengeApi.getStats(),
-        staleTime: 10000
-    })
-
-    const stats = data?.data?.result || {}
-
-    const { data: listData } = useQuery({
-        queryKey: ['admin-challenges-list'],
-        queryFn: () => adminChallengeApi.getAll({ page: 1, limit: 50 }),
-        staleTime: 15000
-    })
-    const challenges = listData?.data?.result?.challenges || []
-    const topByParticipants = [...challenges].sort((a, b) => (b.participants_count || 0) - (a.participants_count || 0)).slice(0, 5)
-
-    // Mini bar chart data (challenges created per recent 6 months)
-    const monthData = (() => {
-        const arr = []
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date()
-            d.setMonth(d.getMonth() - i)
-            const m = d.getMonth(); const y = d.getFullYear()
-            const count = challenges.filter(c => {
-                if (!c.createdAt) return false
-                const cd = new Date(c.createdAt)
-                return cd.getMonth() === m && cd.getFullYear() === y
-            }).length
-            arr.push({ label: `T${m + 1}`, count })
-        }
-        return arr
-    })()
-    const maxCount = Math.max(...monthData.map(m => m.count), 1)
-
-    if (isLoading) {
-        return <div className='grid grid-cols-2 lg:grid-cols-4 gap-4'>{[...Array(4)].map((_, i) => <div key={i} className='h-28 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse' />)}</div>
-    }
-
-    return (
-        <div className='space-y-5'>
-            {/* Stat cards */}
-            <div className='grid grid-cols-2 lg:grid-cols-4 gap-4'>
-                <StatCard icon={FaTrophy} label='Tổng thử thách' value={stats.total} borderColor='border-l-amber-400' iconBg='bg-gradient-to-br from-amber-400 to-orange-600' />
-                <StatCard icon={FaCheck} label='Đang hoạt động' value={stats.active} borderColor='border-l-emerald-400' iconBg='bg-gradient-to-br from-emerald-400 to-green-600' />
-                <StatCard icon={FaBan} label='Đã hủy' value={stats.cancelled} borderColor='border-l-red-400' iconBg='bg-gradient-to-br from-red-400 to-rose-600' />
-                <StatCard icon={FaUsers} label='Tổng người tham gia' value={stats.totalParticipants} borderColor='border-l-sky-400' iconBg='bg-gradient-to-br from-sky-400 to-blue-600' />
-            </div>
-
-            {/* Type breakdown + Top challenges */}
-            <div className='grid grid-cols-1 lg:grid-cols-2 gap-5'>
-                {/* By type */}
-                <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5'>
-                    <h3 className='font-bold text-gray-800 dark:text-white text-sm mb-4 flex items-center gap-2'>
-                        <FaChartBar className='text-amber-500' /> Phân loại theo loại thử thách
-                    </h3>
-                    <div className='space-y-3'>
-                        {Object.entries(TYPE_CONFIG).map(([key, cfg]) => {
-                            const count = stats.byType?.[key] || 0
-                            const total = stats.total || 1
-                            const pct = Math.round((count / total) * 100)
-                            const Icon = cfg.icon
-                            return (
-                                <div key={key}>
-                                    <div className='flex items-center justify-between mb-1'>
-                                        <span className='flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300'><Icon size={12} /> {cfg.label}</span>
-                                        <span className='text-sm font-semibold text-gray-700 dark:text-gray-100'>{count} ({pct}%)</span>
-                                    </div>
-                                    <div className='w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2'>
-                                        <div className='bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full transition-all' style={{ width: `${pct}%` }} />
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-
-                    {/* Mini chart */}
-                    <p className='text-[10px] text-gray-400 uppercase font-bold tracking-wide mt-5 mb-2'>Thử thách tạo theo tháng</p>
-                    <div className='flex items-end gap-2' style={{ height: 56 }}>
-                        {monthData.map((m, i) => (
-                            <div key={i} className='flex-1 flex flex-col items-center gap-0.5'>
-                                <span className='text-[9px] font-bold text-gray-500'>{m.count}</span>
-                                <div
-                                    className='w-full rounded-t-md bg-gradient-to-t from-amber-600 to-amber-400 transition-all'
-                                    style={{ height: `${Math.max((m.count / maxCount) * 44, 2)}px` }}
-                                />
-                                <span className='text-[9px] text-gray-400'>{m.label}</span>
-                            </div>
-                        ))}
-                    </div>
+            {/* ── Table ── */}
+            {isLoading ? (
+                <Loading />
+            ) : isError ? (
+                <div className='text-center py-16'>
+                    <div className='text-red-500 text-4xl mb-3'>⚠️</div>
+                    <p className='text-gray-500 dark:text-gray-400'>{error?.response?.data?.message || 'Không thể tải dữ liệu'}</p>
+                    <button onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-challenges'] })}
+                        className='mt-3 text-sm text-blue-600 hover:underline'>Thử lại</button>
                 </div>
+            ) : (
+                <>
+                    <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden'>
+                        <div className='overflow-x-auto'>
+                            <table className='w-full divide-y divide-gray-200 dark:divide-slate-700'>
+                                <thead className='bg-gray-50 dark:bg-gray-900'>
+                                    <tr>
+                                        {['STT', 'Thử thách', 'Loại / Danh mục', 'Thời gian', 'Mục tiêu', 'Tiến độ', 'Tham gia', 'Người tạo', 'Hành động'].map(h => (
+                                            <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className='divide-y divide-gray-100 dark:divide-slate-700'>
+                                    {challenges.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={9} className='text-center py-14'>
+                                                <FaTrophy className='mx-auto text-4xl text-gray-300 mb-3' />
+                                                <p className='text-gray-400 text-sm'>Không có thử thách nào</p>
+                                            </td>
+                                        </tr>
+                                    ) : challenges.map((c, idx) => {
+                                        const typeCfg = TYPE_CONFIG[c.challenge_type] || {}
+                                        const statusCfg = STATUS_CONFIG[c.status] || {}
+                                        const TypeIcon = typeCfg.icon || FaTrophy
+                                        const StatusIcon = statusCfg.icon || FaClock
+                                        const creator = c.creator_id
 
-                {/* Top 5 */}
-                <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5'>
-                    <h3 className='font-bold text-gray-800 dark:text-white text-sm mb-4 flex items-center gap-2'>
-                        <FaTrophy className='text-amber-500' /> Top 5 thử thách phổ biến nhất
-                    </h3>
-                    {topByParticipants.length === 0 ? (
-                        <p className='text-sm text-gray-400 text-center py-8'>Chưa có dữ liệu</p>
-                    ) : (
-                        <div className='space-y-3'>
-                            {topByParticipants.map((c, i) => {
-                                const typeCfg = TYPE_CONFIG[c.challenge_type] || {}
-                                return (
-                                    <div key={c._id} className='flex items-center gap-3'>
-                                        <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
-                                            i === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                            i === 1 ? 'bg-gray-200 text-gray-600' :
-                                            i === 2 ? 'bg-orange-100 text-orange-700' :
-                                            'bg-gray-100 text-gray-500'
-                                        }`}>{i + 1}</span>
-                                        <span className='text-base'>{c.badge_emoji || '🏆'}</span>
-                                        <div className='flex-1 min-w-0'>
-                                            <p className='text-sm font-medium text-gray-700 dark:text-gray-200 truncate'>{c.title}</p>
-                                            <p className='text-xs text-gray-400'>{typeCfg.label}</p>
-                                        </div>
-                                        <span className='flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 shrink-0'>
-                                            <FaUsers size={10} /> {c.participants_count || 0}
-                                        </span>
-                                    </div>
+                                        return (
+                                            <tr key={c._id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${c.is_deleted ? 'opacity-60' : ''}`}>
+                                                {/* STT */}
+                                                <td className='px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap'>
+                                                    {(page - 1) * LIMIT + idx + 1}
+                                                </td>
+                                                {/* Challenge name + image */}
+                                                <td className='px-4 py-3 min-w-[200px]'>
+                                                    <div className='flex items-center gap-3'>
+                                                        {c.image ? (
+                                                            <img src={c.image} alt={c.title} className='w-10 h-10 rounded-lg object-cover shrink-0' onError={e => { e.target.style.display = 'none' }} />
+                                                        ) : (
+                                                            <div className='w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-lg shrink-0'>
+                                                                {c.badge_emoji || '🏆'}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <p className='font-semibold text-sm text-gray-800 dark:text-white line-clamp-1'>{c.title}</p>
+                                                            <p className='text-xs text-gray-500 line-clamp-1'>{c.description}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                {/* Type + Category */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    <div>
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${typeCfg.badge}`}>
+                                                            <TypeIcon size={9} />
+                                                            {typeCfg.label || c.challenge_type}
+                                                        </span>
+                                                        {c.category && (
+                                                            <p className='text-xs text-gray-400 mt-0.5'>{c.category}</p>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                {/* Dates */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    <div className='flex flex-col gap-0.5 text-xs text-gray-600 dark:text-gray-300'>
+                                                        <span>🟢 {fmt(c.start_date)}</span>
+                                                        <span>🔴 {fmt(c.end_date)}</span>
+                                                    </div>
+                                                </td>
+                                                {/* Goal */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    <div className='flex items-center gap-1.5'>
+                                                        <FaBullseye className='text-orange-400 text-xs' />
+                                                        <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
+                                                            {c.goal_value} {c.goal_unit}
+                                                        </span>
+                                                    </div>
+                                                    <p className='text-[10px] text-gray-400 mt-0.5'>{c.goal_type}</p>
+                                                </td>
+                                                {/* Progress */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    {c.progressPercent != null ? (
+                                                        <div className='flex items-center gap-2'>
+                                                            <div className='w-20 bg-gray-200 dark:bg-slate-600 rounded-full h-1.5'>
+                                                                <div className='bg-gradient-to-r from-amber-400 to-orange-500 h-1.5 rounded-full' style={{ width: `${Math.min(c.progressPercent, 100)}%` }} />
+                                                            </div>
+                                                            <span className='text-xs text-gray-500 font-medium'>{c.progressPercent}%</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className='text-xs text-gray-400'>—</span>
+                                                    )}
+                                                </td>
+                                                {/* Participants */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    <div className='flex items-center gap-1'>
+                                                        <FaUsers className='text-amber-500 text-xs' />
+                                                        <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>{c.participants_count || 0}</span>
+                                                    </div>
+                                                </td>
+                                                {/* Creator */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    <div className='flex items-center gap-1.5'>
+                                                        {creator?.avatar ? (
+                                                            <img src={creator.avatar} className='w-6 h-6 rounded-full object-cover ring-1 ring-gray-200' alt='' />
+                                                        ) : (
+                                                            <div className='w-6 h-6 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-300'>
+                                                                {(creator?.name || creator?.username || '?')[0]?.toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <span className='text-xs text-gray-500 dark:text-gray-400 max-w-[80px] truncate'>{creator?.name || creator?.username || '—'}</span>
+                                                    </div>
+                                                </td>
+                                                {/* Actions */}
+                                                <td className='px-4 py-3 whitespace-nowrap'>
+                                                    <div className='flex items-center gap-1.5'>
+                                                        {!c.is_deleted && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => setParticipantsChallenge(c)}
+                                                                    title='Xem thành viên'
+                                                                    className='p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
+                                                                >
+                                                                    <FaEye size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setFormChallenge(c)}
+                                                                    title='Chỉnh sửa'
+                                                                    className='p-1.5 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors'
+                                                                >
+                                                                    <FaEdit size={14} />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {c.is_deleted ? (
+                                                            <button
+                                                                onClick={() => setConfirmAction({ type: 'restore', challenge: c })}
+                                                                title='Khôi phục'
+                                                                className='p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors flex items-center gap-1.5'
+                                                            >
+                                                                <FaUndo size={14} />
+                                                                <span className='text-xs font-semibold'>Khôi phục</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setConfirmAction({ type: 'delete', challenge: c })}
+                                                                title='Xóa'
+                                                                className='p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors'
+                                                            >
+                                                                <FaTrash size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPage > 1 && (
+                        <div className='flex items-center justify-center gap-2 mt-5'>
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                            >
+                                ← Trước
+                            </button>
+                            {Array.from({ length: totalPage }, (_, i) => i + 1)
+                                .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+                                .reduce((acc, p, i, arr) => {
+                                    if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+                                    acc.push(p)
+                                    return acc
+                                }, [])
+                                .map(p =>
+                                    typeof p === 'number' ? (
+                                        <button
+                                            key={p}
+                                            onClick={() => setPage(p)}
+                                            className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page ? 'bg-amber-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                        >
+                                            {p}
+                                        </button>
+                                    ) : (
+                                        <span key={p} className='px-1 text-gray-400'>...</span>
+                                    )
                                 )
-                            })}
+                            }
+                            <button
+                                disabled={page >= totalPage}
+                                onClick={() => setPage(p => Math.min(totalPage, p + 1))}
+                                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                            >
+                                Sau →
+                            </button>
                         </div>
                     )}
-                </div>
-            </div>
-        </div>
-    )
-}
+                </>
+            )}
 
-// ──────────────────────────────────────────────
-//  Main export
-// ──────────────────────────────────────────────
-const TABS = [
-    { key: 'list', label: 'Danh sách', icon: FaList },
-    { key: 'members', label: 'Thành viên', icon: FaUsers },
-    { key: 'stats', label: 'Thống kê', icon: FaChartBar }
-]
+            {/* Participants Modal */}
+            {participantsChallenge && (
+                <ParticipantsModal
+                    challenge={participantsChallenge}
+                    onClose={() => setParticipantsChallenge(null)}
+                />
+            )}
 
-export default function AdminChallenge() {
-    const [activeTab, setActiveTab] = useState('list')
+            {/* Challenge Form Modal */}
+            {formChallenge !== null && (
+                <ChallengeFormModal
+                    challenge={formChallenge || null}
+                    onClose={() => setFormChallenge(null)}
+                    onSuccess={() => { setFormChallenge(null); invalidate() }}
+                />
+            )}
 
-    const { data: statsData } = useQuery({
-        queryKey: ['admin-challenge-stats'],
-        queryFn: () => adminChallengeApi.getStats(),
-        staleTime: 10000
-    })
-    const stats = statsData?.data?.result || {}
-
-    return (
-        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
-
-            {/* ── Hero Banner ── */}
-            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 px-8 py-8 mb-6 shadow-xl'>
-                <div className='relative z-10 flex items-start justify-between flex-wrap gap-4'>
-                    <div>
-                        <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-                        <h1 className='text-3xl font-black text-white mb-2'>Quản lý Thử thách</h1>
-                        <p className='text-white/80 text-sm max-w-md'>
-                            Giám sát và kiểm duyệt tất cả thử thách cộng đồng trong hệ thống.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Tabs inside Hero Banner */}
-                <div className='relative z-10 flex gap-2 mt-5 flex-wrap'>
-                    {TABS.map(tab => {
-                        const Icon = tab.icon
-                        return (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                                    activeTab === tab.key
-                                        ? 'bg-white text-amber-700 shadow-md'
-                                        : 'bg-white/20 text-white hover:bg-white/30'
-                                }`}
-                            >
-                                <Icon size={13} />
-                                {tab.label}
-                            </button>
-                        )
-                    })}
-                </div>
-
-                {/* Decorative circles */}
-                <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
-                <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
-            </div>
-
-            {/* Stat Cards */}
-            <div className='grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6'>
-                <StatCard icon={FaTrophy} label='Tổng thử thách' value={stats.total} borderColor='border-l-amber-400' iconBg='bg-gradient-to-br from-amber-400 to-orange-600' />
-                <StatCard icon={FaCheck} label='Đang hoạt động' value={stats.active} borderColor='border-l-emerald-400' iconBg='bg-gradient-to-br from-emerald-400 to-green-600' />
-                <StatCard icon={FaBan} label='Đã hủy' value={stats.cancelled} borderColor='border-l-red-400' iconBg='bg-gradient-to-br from-red-400 to-rose-600' />
-                <StatCard icon={FaUsers} label='Người tham gia' value={stats.totalParticipants} borderColor='border-l-sky-400' iconBg='bg-gradient-to-br from-sky-400 to-blue-600' />
-            </div>
-
-            {/* Tab content */}
-            {activeTab === 'list' && <ChallengeListTab stats={stats} />}
-            {activeTab === 'members' && <ParticipantsTab />}
-            {activeTab === 'stats' && <StatsTab />}
+            {/* Confirm Dialog */}
+            {confirmAction && (
+                <ConfirmBox
+                    title={confirmAction.type === 'delete' ? 'Xóa thử thách?' : 'Khôi phục thử thách?'}
+                    subtitle={
+                        confirmAction.type === 'delete'
+                            ? `Bạn có chắc muốn xóa thử thách "${confirmAction.challenge.title}"? Thao tác này có thể được khôi phục.`
+                            : `Bạn có chắc muốn khôi phục thử thách "${confirmAction.challenge.title}"?`
+                    }
+                    danger={confirmAction.type === 'delete'}
+                    handleDelete={handleConfirm}
+                    closeModal={() => setConfirmAction(null)}
+                    isPending={softDeleteMutation.isPending || restoreMutation.isPending}
+                    tilteButton={confirmAction.type === 'delete' ? 'Xóa' : 'Khôi phục'}
+                />
+            )}
         </div>
     )
 }

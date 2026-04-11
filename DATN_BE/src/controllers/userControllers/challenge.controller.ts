@@ -104,20 +104,29 @@ export const quitChallengeController = async (req: Request, res: Response) => {
 
 export const getMyCreatedChallengesController = async (req: Request, res: Response) => {
     const userId = (req as any).decoded.user_id
-    const { page, limit } = req.query
+    const { page, limit, status } = req.query
 
-    const result = await challengeService.getMyCreatedChallenges(userId, Number(page) || 1, Number(limit) || 20)
+    const result = await challengeService.getMyCreatedChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string)
 
     return res.json({ message: 'Lấy thử thách đã tạo thành công', result })
 }
 
 export const getMyChallengesController = async (req: Request, res: Response) => {
     const userId = (req as any).decoded.user_id
-    const { page, limit } = req.query
+    const { page, limit, status } = req.query
 
-    const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20)
+    const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string)
 
     return res.json({ message: 'Lấy thử thách của tôi thành công', result })
+}
+
+export const getChallengeStatsController = async (req: Request, res: Response) => {
+    const userId = (req as any).decoded.user_id
+    const { type } = req.query
+
+    const result = await challengeService.getChallengeStats(userId, type as string)
+
+    return res.json({ message: 'Lấy thống kê thử thách thành công', result })
 }
 
 export const addProgressController = async (req: Request, res: Response) => {
@@ -204,7 +213,7 @@ export const getPublicUserChallengesController = async (req: Request, res: Respo
 }
 
 export const getFeedController = async (req: Request, res: Response) => {
-    const { scope, challenge_type, search, page, limit } = req.query
+    const { scope, challenge_type, search, page, limit, sortBy, status, dateFrom, dateTo, category } = req.query
     const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
     const result = await challengeService.getChallengeFeed({
@@ -213,7 +222,12 @@ export const getFeedController = async (req: Request, res: Response) => {
         challenge_type: challenge_type as string,
         search: search as string,
         page: Number(page) || 1,
-        limit: Number(limit) || 9
+        limit: Number(limit) || 9,
+        sortBy: sortBy as string,
+        status: status as string,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        category: category as string
     })
 
     return res.json({ message: 'Lấy feed thử thách thành công', result })

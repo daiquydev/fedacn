@@ -44,7 +44,7 @@ export default function MealNoteModal({ isOpen, onClose, onSaveNote, initialNote
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Nhập ghi chú của bạn..."
+              placeholder="Ghi chú cho bữa ăn..."
               className="w-full p-3 min-h-[120px] border border-gray-300 dark:border-gray-600 
                 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none 
                 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600"

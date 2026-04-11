@@ -90,9 +90,9 @@ export default function UserItem({ user }) {
           </div>
         </td>
         <td className='px-6 py-4 whitespace-nowrap'>
-          {user.status === 0 ? (
-            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-300 text-black dark:bg-pink-200'>
-              Bị khóa
+          {user.isDeleted ? (
+            <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-100'>
+              Đã xóa
             </span>
           ) : (
             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>

@@ -202,7 +202,7 @@ export const leaveSportEventController = async (req: Request, res: Response) => 
 
 export const getMyEventsController = async (req: Request, res: Response) => {
   try {
-    const { page, limit } = req.query
+    const { page, limit, status, search } = req.query
     const userId = (req as any).decoded?.user_id
 
     if (!userId) {
@@ -211,7 +211,7 @@ export const getMyEventsController = async (req: Request, res: Response) => {
       })
     }
 
-    const result = await sportEventService.getMyEventsService(userId, Number(page) || 1, Number(limit) || 10)
+    const result = await sportEventService.getMyEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string, search as string)
     return res.json({
       result,
       message: 'Get my sport events successfully'
@@ -225,7 +225,7 @@ export const getMyEventsController = async (req: Request, res: Response) => {
 
 export const getJoinedEventsController = async (req: Request, res: Response) => {
   try {
-    const { page, limit, status } = req.query
+    const { page, limit, status, search } = req.query
     const userId = (req as any).decoded?.user_id
 
     if (!userId) {
@@ -234,10 +234,35 @@ export const getJoinedEventsController = async (req: Request, res: Response) => 
       })
     }
 
-    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string)
+    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string, search as string)
     return res.json({
       result,
       message: 'Get joined sport events successfully'
+    })
+  } catch (error) {
+    return res.status(500).json({
+      message: (error as Error).message
+    })
+  }
+}
+
+export const getEventStatsController = async (req: Request, res: Response) => {
+  try {
+    const { type } = req.query
+    const userId = (req as any).decoded?.user_id
+
+    if (!userId) {
+      return res.status(401).json({
+        message: 'Unauthorized'
+      })
+    }
+
+    const eventType = (type as 'created' | 'joined') || 'created'
+    const result = await sportEventService.getEventStatsService(userId, eventType)
+    
+    return res.json({
+      result,
+      message: 'Get event stats successfully'
     })
   } catch (error) {
     return res.status(500).json({

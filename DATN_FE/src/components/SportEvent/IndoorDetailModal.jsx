@@ -105,8 +105,8 @@ export default function IndoorDetailModal({ session, event, isCompletion = false
           <div className='idm-stat-item'>
             <div className='idm-stat-icon calories'>🔥</div>
             <div>
-              <p className='idm-stat-val'>{caloriesBurned}</p>
-              <p className='idm-stat-lbl'>Kcal</p>
+              <p className='idm-stat-val'>{(Math.round((caloriesBurned || 0) * 100) / 100).toFixed(2)}</p>
+              <p className='idm-stat-lbl'>kcal</p>
             </div>
           </div>
           <div className='idm-stat-item'>

@@ -98,7 +98,7 @@ export default function VideoCallResult({ result, event, onClose }) {
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Calo tiêu thụ</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {caloriesBurned} <span className="text-base font-normal text-gray-500">kcal</span>
+                                {(Math.round((caloriesBurned || 0) * 100) / 100).toFixed(2)} <span className="text-base font-normal text-gray-500">kcal</span>
                             </p>
                         </div>
                     </div>

@@ -236,7 +236,7 @@ export default function MyMealPlans() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg py-2.5 px-3 pr-10 bg-transparent text-gray-900 dark:text-white"
-              placeholder="Tìm theo tên, mô tả, danh mục"
+              placeholder="Tìm thực đơn..."
             />
             <FaUtensils className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>

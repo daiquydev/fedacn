@@ -25,24 +25,6 @@ const STATUS_OPTIONS = [
     { value: 'all', label: 'Tất cả' }
 ]
 
-// ─── Stat Card ───────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, iconBg, borderColor }) {
-    return (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl px-5 py-4 border-l-4 ${borderColor} shadow-sm border border-gray-100 dark:border-gray-700`}>
-            <div className='flex items-center justify-between'>
-                <div>
-                    <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>{label}</p>
-                    <p className='text-2xl font-black text-gray-800 dark:text-white'>{value ?? '—'}</p>
-                </div>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-                    <Icon className='text-white text-base' />
-                </div>
-            </div>
-        </div>
-    )
-}
-
-
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminSportEvent() {
@@ -124,16 +106,17 @@ export default function AdminSportEvent() {
 
     // Count active filters for badge
     const activeFilterCount = [
-        filterCategory, 
-        filterEventType !== 'all' && filterEventType, 
-        filterDateFrom, 
+        filterCategory,
+        filterEventType !== 'all' && filterEventType,
+        filterDateFrom,
         filterDateTo,
         sortBy !== 'newest' && sortBy
     ].filter(Boolean).length
 
     const clearAllFilters = () => {
         setSearchInput(''); setSearch(''); setFilterCategory('')
-        setFilterEventType('all'); setFilterDateFrom(''); setFilterDateTo('')
+        setFilterEventType('all'); setFilterStatus('active')
+        setFilterDateFrom(''); setFilterDateTo('')
         setSortBy('newest'); setPage(1)
     }
 
@@ -150,77 +133,137 @@ export default function AdminSportEvent() {
     }, [])
 
     return (
-        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4'>
+        <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
 
             {/* ── Hero Banner ── */}
-            <div className='relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-500 via-green-500 to-emerald-600 px-8 py-8 mb-6 shadow-xl'>
-                <div className='relative z-10 flex items-start justify-between'>
-                    <div>
-                        <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
-                        <h1 className='text-3xl font-black text-white mb-2'>Quản lý Sự kiện Thể thao</h1>
-                        <p className='text-white/80 text-sm max-w-md'>
-                            Tạo, chỉnh sửa và theo dõi các sự kiện thể thao trong hệ thống.
-                        </p>
-                    </div>
+            <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-500 via-green-500 to-emerald-600 px-6 py-4 mb-2 shadow-xl'>
+                <div className='relative z-10 flex items-center justify-between'>
+                    <h1 className='text-2xl font-bold text-white'>Quản lý Sự kiện Thể thao</h1>
                     <button
                         onClick={() => setModalEvent(null)}
-                        className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0 mt-1'
+                        className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0'
                     >
                         <FaPlus size={12} /> Tạo sự kiện
                     </button>
                 </div>
 
-                {/* Tabs inside Hero Banner */}
-                <div className='relative z-10 flex gap-2 mt-5'>
-                    <button
-                        onClick={() => { setFilterStatus('active'); setPage(1) }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                            filterStatus === 'active'
-                                ? 'bg-white text-emerald-700 shadow-md'
-                                : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                    >
-                        <FaCalendarAlt size={14} />
-                        Đang hoạt động ({stats.active ?? 0})
-                    </button>
-                    <button
-                        onClick={() => { setFilterStatus('deleted'); setPage(1) }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                            filterStatus === 'deleted'
-                                ? 'bg-white text-emerald-700 shadow-md'
-                                : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                    >
-                        <FaTrash size={13} />
-                        Đã xóa ({stats.deleted ?? 0})
-                    </button>
-                    <button
-                        onClick={() => { setFilterStatus('all'); setPage(1) }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
-                            filterStatus === 'all'
-                                ? 'bg-white text-emerald-700 shadow-md'
-                                : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                    >
-                        Tất cả ({stats.total ?? 0})
-                    </button>
+                {/* Filter stat tabs */}
+                <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
+                    {[
+                        {
+                            key: 'all', label: 'Tất cả', icon: FaCalendarAlt,
+                            count: stats.total,
+                            active: filterStatus === 'all' && filterEventType === 'all',
+                            onClick: () => { setFilterStatus('all'); setFilterEventType('all'); setPage(1) }
+                        },
+                        {
+                            key: 'active', label: 'Đang hoạt động', icon: FaCalendarAlt,
+                            count: stats.active,
+                            active: filterStatus === 'active' && filterEventType === 'all',
+                            onClick: () => { setFilterStatus('active'); setFilterEventType('all'); setPage(1) }
+                        },
+                        {
+                            key: 'outdoor', label: 'Ngoài trời', icon: FaRunning,
+                            count: stats.outdoor,
+                            active: filterEventType === 'Ngoài trời',
+                            onClick: () => { setFilterStatus('active'); setFilterEventType('Ngoài trời'); setPage(1) }
+                        },
+                        {
+                            key: 'indoor', label: 'Trong nhà', icon: FaHome,
+                            count: stats.indoor,
+                            active: filterEventType === 'Trong nhà',
+                            onClick: () => { setFilterStatus('active'); setFilterEventType('Trong nhà'); setPage(1) }
+                        },
+                        {
+                            key: 'deleted', label: 'Đã xóa', icon: FaTrash,
+                            count: stats.deleted,
+                            active: filterStatus === 'deleted',
+                            onClick: () => { setFilterStatus('deleted'); setFilterEventType('all'); setPage(1) }
+                        },
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={tab.onClick}
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${tab.active ? 'bg-white text-emerald-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+                                }`}
+                        >
+                            <tab.icon size={13} />
+                            {tab.label}
+                            <span className='font-black'>({tab.count ?? 0})</span>
+                        </button>
+                    ))}
                 </div>
 
                 <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
                 <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
             </div>
 
-            {/* Stat Cards */}
-            <div className='grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6'>
-                <StatCard icon={FaCalendarAlt} label='Tổng sự kiện' value={stats.total} borderColor='border-l-blue-400' iconBg='bg-gradient-to-br from-blue-400 to-blue-600' />
-                <StatCard icon={FaCalendarAlt} label='Đang hoạt động' value={stats.active} borderColor='border-l-emerald-400' iconBg='bg-gradient-to-br from-emerald-400 to-green-600' />
-                <StatCard icon={FaRunning} label='Ngoài trời' value={stats.outdoor} borderColor='border-l-orange-400' iconBg='bg-gradient-to-br from-orange-400 to-amber-600' />
-                <StatCard icon={FaHome} label='Trong nhà' value={stats.indoor} borderColor='border-l-purple-400' iconBg='bg-gradient-to-br from-purple-400 to-violet-600' />
-                <StatCard icon={FaTrash} label='Đã xóa' value={stats.deleted} borderColor='border-l-red-400' iconBg='bg-gradient-to-br from-red-400 to-rose-600' />
-            </div>
+            {/* ── Event Analytics — compact strip above search ── */}
+            {events.length > 0 && (() => {
+                const now = new Date()
+                const outdoorCount = events.filter(e => e.eventType === 'Ngoài trời' && !e.isDeleted).length
+                const indoorCount = events.filter(e => e.eventType === 'Trong nhà' && !e.isDeleted).length
+                const activeEvents = events.filter(e => !e.isDeleted)
+                const avgParticipants = activeEvents.length > 0
+                    ? Math.round(activeEvents.reduce((s, e) => s + (e.participants || 0), 0) / activeEvents.length)
+                    : 0
+                const ongoingCount = activeEvents.filter(e => new Date(e.startDate) <= now && new Date(e.endDate) > now).length
+
+                const monthData = []
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date()
+                    d.setMonth(d.getMonth() - i)
+                    const m = d.getMonth(); const y = d.getFullYear()
+                    const count = activeEvents.filter(e => {
+                        const cd = new Date(e.createdAt)
+                        return cd.getMonth() === m && cd.getFullYear() === y
+                    }).length
+                    monthData.push({ label: `T${m + 1}`, count })
+                }
+                const maxCount = Math.max(...monthData.map(m => m.count), 1)
+
+                return (
+                    <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2 overflow-hidden'>
+                        <div className='flex flex-wrap items-center gap-3 px-4 py-3'>
+                            {/* Label */}
+                            <span className='flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
+                                📊 Thống kê
+                            </span>
+
+                            {/* 4 stat pills */}
+                            {[
+                                { label: 'Tổng SK', value: activeEvents.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'TB thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'Ngoài/Trong nhà', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                            ].map(s => (
+                                <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
+                                    <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
+                                    <span className='text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase leading-tight'>{s.label}</span>
+                                </div>
+                            ))}
+
+                            {/* Mini bar chart */}
+                            <div className='flex items-end gap-1 ml-auto' style={{ height: 36 }}>
+                                <span className='text-[9px] text-gray-400 mr-1 self-center uppercase font-semibold tracking-wide'>6 tháng</span>
+                                {monthData.map((m, i) => (
+                                    <div key={i} className='flex flex-col items-center gap-0.5' style={{ width: 20 }}>
+                                        <span className='text-[8px] font-bold text-gray-400 leading-none'>{m.count || ''}</span>
+                                        <div
+                                            className='w-full rounded-t bg-gradient-to-t from-indigo-600 to-blue-400'
+                                            style={{ height: `${Math.max((m.count / maxCount) * 22, 2)}px` }}
+                                        />
+                                        <span className='text-[8px] text-gray-400 leading-none'>{m.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
 
             {/* ── Smart Search & Filters ── */}
-            <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-4 overflow-hidden'>
+            <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-2 overflow-hidden'>
                 {/* Main search row */}
                 <div className='p-4'>
                     <div className='flex gap-2 items-center'>
@@ -243,11 +286,10 @@ export default function AdminSportEvent() {
                         </div>
                         <button
                             onClick={() => setShowAdvanced(!showAdvanced)}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                                showAdvanced || activeFilterCount > 0
+                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showAdvanced || activeFilterCount > 0
                                     ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
                                     : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
-                            }`}
+                                }`}
                         >
                             <FaFilter size={12} />
                             Bộ lọc
@@ -371,11 +413,10 @@ export default function AdminSportEvent() {
                                     <button
                                         key={s.value}
                                         onClick={() => { setSortBy(s.value); setPage(1) }}
-                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                                            sortBy === s.value
+                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${sortBy === s.value
                                                 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-700'
                                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                        }`}
+                                            }`}
                                     >
                                         {s.label}
                                     </button>
@@ -385,78 +426,6 @@ export default function AdminSportEvent() {
                     </div>
                 )}
             </div>
-
-            {/* Event Analytics Dashboard */}
-            {events.length > 0 && (() => {
-                const now = new Date()
-                const outdoorCount = events.filter(e => e.eventType === 'Ngoài trời' && !e.isDeleted).length
-                const indoorCount = events.filter(e => e.eventType === 'Trong nhà' && !e.isDeleted).length
-                const activeEvents = events.filter(e => !e.isDeleted)
-                const avgParticipants = activeEvents.length > 0
-                    ? Math.round(activeEvents.reduce((s, e) => s + (e.participants || 0), 0) / activeEvents.length)
-                    : 0
-                const ongoingCount = activeEvents.filter(e => new Date(e.startDate) <= now && new Date(e.endDate) > now).length
-
-                // Events per month (last 6 months)
-                const monthData = []
-                for (let i = 5; i >= 0; i--) {
-                    const d = new Date()
-                    d.setMonth(d.getMonth() - i)
-                    const m = d.getMonth()
-                    const y = d.getFullYear()
-                    const count = activeEvents.filter(e => {
-                        const cd = new Date(e.createdAt)
-                        return cd.getMonth() === m && cd.getFullYear() === y
-                    }).length
-                    monthData.push({ label: `T${m + 1}`, count })
-                }
-                const maxCount = Math.max(...monthData.map(m => m.count), 1)
-
-                return (
-                    <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-4 overflow-hidden'>
-                        <div className='bg-gradient-to-r from-indigo-600 to-blue-600 px-5 py-3 flex items-center justify-between'>
-                            <h3 className='text-white font-bold text-sm flex items-center gap-2'>📊 Thống kê sự kiện</h3>
-                        </div>
-                        <div className='p-5'>
-                            <div className='grid grid-cols-2 md:grid-cols-4 gap-3 mb-5'>
-                                <div className='text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl'>
-                                    <p className='text-xl font-black text-blue-600'>{activeEvents.length}</p>
-                                    <p className='text-[10px] text-gray-500 uppercase font-bold mt-1'>Tổng sự kiện</p>
-                                </div>
-                                <div className='text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl'>
-                                    <p className='text-xl font-black text-emerald-600'>{ongoingCount}</p>
-                                    <p className='text-[10px] text-gray-500 uppercase font-bold mt-1'>Đang diễn ra</p>
-                                </div>
-                                <div className='text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl'>
-                                    <p className='text-xl font-black text-amber-600'>{avgParticipants}</p>
-                                    <p className='text-[10px] text-gray-500 uppercase font-bold mt-1'>TB thành viên</p>
-                                </div>
-                                <div className='text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl'>
-                                    <p className='text-xl font-black text-purple-600'>
-                                        {outdoorCount}<span className='text-gray-400 mx-1 text-sm font-normal'>/</span>{indoorCount}
-                                    </p>
-                                    <p className='text-[10px] text-gray-500 uppercase font-bold mt-1'>Ngoài / Trong nhà</p>
-                                </div>
-                            </div>
-
-                            {/* Mini CSS Bar Chart */}
-                            <p className='text-[10px] text-gray-400 uppercase font-bold tracking-wide mb-2'>Sự kiện tạo theo tháng</p>
-                            <div className='flex items-end gap-2' style={{ height: 60 }}>
-                                {monthData.map((m, i) => (
-                                    <div key={i} className='flex-1 flex flex-col items-center gap-1'>
-                                        <span className='text-[9px] font-bold text-gray-500'>{m.count}</span>
-                                        <div
-                                            className='w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-blue-400 transition-all'
-                                            style={{ height: `${Math.max((m.count / maxCount) * 48, 2)}px` }}
-                                        />
-                                        <span className='text-[9px] text-gray-400'>{m.label}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )
-            })()}
 
             {/* Table */}
             {isLoading ? (
@@ -471,11 +440,6 @@ export default function AdminSportEvent() {
             ) : (
                 <>
                     <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden'>
-                        <div className='px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between'>
-                            <p className='text-sm text-gray-500 dark:text-gray-400'>
-                                Hiển thị <span className='font-semibold text-gray-800 dark:text-white'>{events.length}</span> / {total} sự kiện
-                            </p>
-                        </div>
                         <div className='overflow-x-auto'>
                             <table className='w-full divide-y divide-gray-200 dark:divide-slate-700'>
                                 <thead className='bg-gray-50 dark:bg-gray-900'>

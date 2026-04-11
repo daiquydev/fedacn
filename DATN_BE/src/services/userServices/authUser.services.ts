@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { omit } from 'lodash'
 import { envConfig } from '~/constants/config'
-import { TokenType, UserStatus } from '~/constants/enums'
+import { TokenType } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { AUTH_USER_MESSAGE } from '~/constants/messages'
 import { UserLoginRequest, UserRegisterRequest } from '~/models/requests/authUser.request'
@@ -144,12 +144,6 @@ class AuthUserService {
       })
     }
     const user = await UserModel.findOne({ email: userInfo.email })
-    if (user && user.status === UserStatus.banned) {
-      return {
-        message: AUTH_USER_MESSAGE.ACCOUNT_BANNED,
-        user: null
-      }
-    }
     if (user && user.isDeleted === true) {
       return {
         message: AUTH_USER_MESSAGE.ACCOUNT_DELETED,
@@ -252,9 +246,6 @@ class AuthUserService {
     const user = await UserModel.findOne({ email })
     if (user) {
       // Defense-in-depth: double-check even though validator should block
-      if (user.status === UserStatus.banned) {
-        return { message: AUTH_USER_MESSAGE.ACCOUNT_BANNED, user: null }
-      }
       if (user.isDeleted === true) {
         return { message: AUTH_USER_MESSAGE.ACCOUNT_DELETED, user: null }
       }
@@ -296,6 +287,9 @@ class AuthUserService {
   async loginAdmin({ user_name, password }: { user_name: string; password: string }) {
     const user = await UserModel.findOne({ user_name })
     if (user) {
+      if (user.isDeleted === true) {
+        return { message: AUTH_USER_MESSAGE.ACCOUNT_DELETED, user: null }
+      }
       const [access_token, refresh_token] = await Promise.all([
         this.signAccessToken({
           user_id: user._id.toString(),
@@ -348,7 +342,7 @@ class AuthUserService {
     const findUser = await UserModel.findOne({ _id: user.user_id })
     if (findUser) {
       // Block banned/deleted users from refreshing tokens
-      if (findUser.status === UserStatus.banned || findUser.isDeleted === true) {
+      if (findUser.isDeleted === true) {
         await RefreshTokenModel.deleteOne({ token: user.refresh_token })
         return null
       }

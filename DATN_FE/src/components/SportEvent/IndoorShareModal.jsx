@@ -281,7 +281,7 @@ function IndoorPreviewCardInModal({ session, event, progressPercent }) {
     const stats = [
         { icon: <FaVideo className="text-blue-500" />, label: 'Tổng thời gian', value: formatDuration(totalSeconds) },
         { icon: <FaClock className="text-indigo-500" />, label: 'AI xác nhận', value: formatDuration(activeSeconds) },
-        { icon: <FaFire className="text-orange-500" />, label: 'Calories', value: `${caloriesBurned} kcal` },
+        { icon: <FaFire className="text-orange-500" />, label: 'kcal', value: `${(Math.round((caloriesBurned || 0) * 100) / 100).toFixed(2)} kcal` },
         { icon: <FaRobot className="text-emerald-500" />, label: `AI (${getAiLabel(aiAccuracy)})`, value: `${aiAccuracy}%` },
     ]
 

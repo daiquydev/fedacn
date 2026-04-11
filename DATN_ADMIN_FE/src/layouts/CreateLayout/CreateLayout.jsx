@@ -1,6 +1,6 @@
 import Header from '../../components/GlobalComponents/Header'
 import Footer from '../../components/GlobalComponents/Footer'
-import { AiOutlineArrowUp } from 'react-icons/ai'
+import { HiOutlineArrowUp } from 'react-icons/hi2'
 import SideBar from '../../components/GlobalComponents/SideBar'
 import { memo } from 'react'
 
@@ -23,7 +23,7 @@ function CreateLayoutInner({ children }) {
               })
             }}
           >
-            <AiOutlineArrowUp className='hidden sm:block fixed bottom-10 cursor-pointer transition-all right-0 bg-blue-300 text-slate-50 text-5xl p-3 rounded-full mb-2 mr-20 hover:bg-blue-500' />
+            <HiOutlineArrowUp className='hidden sm:block fixed bottom-10 cursor-pointer transition-all right-0 bg-blue-300 text-slate-50 text-5xl p-3 rounded-full mb-2 mr-20 hover:bg-blue-500' />
           </div>
           <div className='mt-20'>
             <Footer />

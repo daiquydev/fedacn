@@ -528,7 +528,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
                   type='url'
                   name='imageUrl'
                   id='imageUrl'
-                  placeholder='https://example.com/your-image.jpg'
+                  placeholder='Nhập link hình ảnh'
                   register={register}
                   errors={errors.imageUrl}
                 />
@@ -596,7 +596,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
                     type='number'
                     name='time'
                     id='time'
-                    placeholder='15'
+                    placeholder='Nhập thời gian nấu (phút)'
                     register={register}
                     errors={errors.time}
                     isRequired
@@ -665,7 +665,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
                   type='url'
                   name='video'
                   id='video'
-                  placeholder='https://www.youtube.com/watch?v=...'
+                  placeholder='Nhập link video hướng dẫn'
                   register={register}
                   errors={errors.video}
                 />
@@ -678,7 +678,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
                     <div key={index} className='flex gap-2 items-center'>
                       <input
                         type='text'
-                        placeholder='Nhập từ khóa'
+                        placeholder='Thêm hashtag'
                         value={tag}
                         onChange={(e) => updateTag(index, e.target.value)}
                         className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'
@@ -712,21 +712,21 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
             <div key={index} className='flex gap-2 items-center'>
               <input
                 type='text'
-                placeholder='Tên nguyên liệu'
+                placeholder='Nhập tên nguyên liệu'
                 value={ingredient.name}
                 onChange={(e) => updateIngredient(index, 'name', e.target.value)}
                 className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'
               />
               <input
                 type='text'
-                placeholder='Số lượng'
+                placeholder='Nhập số lượng'
                 value={ingredient.amount}
                 onChange={(e) => updateIngredient(index, 'amount', e.target.value)}
                 className='w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'
               />
               <input
                 type='text'
-                placeholder='Đơn vị'
+                placeholder='Nhập đơn vị'
                 value={ingredient.unit}
                 onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
                 className='w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'
@@ -757,7 +757,7 @@ export default function CreateRecipeModal({ onClose, onRecipeCreated }) {
             <div key={index} className='flex gap-2 items-start'>
               <span className='text-sm font-medium w-8 mt-2'>{index + 1}.</span>
               <textarea
-                placeholder='Mô tả bước thực hiện'
+                placeholder='Nhập chi tiết bước thực hiện...'
                 value={instruction}
                 onChange={(e) => updateInstruction(index, e.target.value)}
                 className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'

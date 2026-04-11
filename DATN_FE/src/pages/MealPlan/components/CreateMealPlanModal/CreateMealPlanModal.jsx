@@ -1104,7 +1104,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                   : 'border border-gray-300 dark:border-gray-600 focus:ring-green-500'
               }`}
               aria-invalid={validationErrors.title}
-              placeholder="Ví dụ: Thực đơn Keto 10 ngày"
+              placeholder="Nhập tên thực đơn"
               required
             />
           </div>
@@ -1190,7 +1190,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-                placeholder="Nhập khi bạn có mục tiêu cụ thể"
+                placeholder="Nhập mục tiêu kcal"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Nhập số nguyên bất kỳ; bỏ trống nếu muốn hệ thống tự tính tổng calories dựa trên thực đơn.
@@ -1324,7 +1324,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
               value={formData.tags.join(', ')}
               onChange={handleTagsChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-              placeholder="keto, low_carb, high_fat"
+              placeholder="Thêm hashtag"
             />
           </div>
 
@@ -1338,7 +1338,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
               value={formData.suitable_for.join(', ')}
               onChange={handleSuitableForChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-              placeholder="keto, low_carb"
+              placeholder="Thêm hashtag"
             />
           </div>
         </div>
@@ -1648,7 +1648,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                                     value={meal.time || ''}
                                     onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'time', e.target.value)}
                                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-                                    placeholder="Ví dụ: 07:30"
+                                    placeholder="Nhập thời gian (HH:mm)"
                                   />
                                 </div>
                                 <div>
@@ -1658,7 +1658,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                                     value={meal.notes || ''}
                                     onChange={(e) => updateMealField(activeDayData.day_number, mealIndex, 'notes', e.target.value)}
                                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
-                                    placeholder="Thêm ghi chú cho bữa ăn"
+                                    placeholder="Nhập ghi chú cho bữa ăn..."
                                   />
                                 </div>
                               </div>
@@ -1686,7 +1686,7 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
                   type="text"
                   value={recipeSearch}
                   onChange={(e) => setRecipeSearch(e.target.value)}
-                  placeholder="Tìm theo tên, thẻ..."
+                  placeholder="Tìm công thức..."
                   className="mt-3 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
                 />
 
@@ -1989,4 +1989,4 @@ export default function CreateMealPlanModal({ onClose, onCreate, initialData = n
       )}
     </form>
   )
-}
+}

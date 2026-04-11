@@ -179,7 +179,7 @@ export default function OutdoorCheckinModal({ challenge, onClose, onSubmit, isLo
             </label>
             <input
               type="number" value={distance} onChange={e => setDistance(e.target.value)}
-              placeholder="5.0" min="0.1" step="0.1"
+              placeholder="Nhập cự ly (km)" min="0.1" step="0.1"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-blue-400 outline-none transition text-sm"
             />
           </div>
@@ -190,7 +190,7 @@ export default function OutdoorCheckinModal({ challenge, onClose, onSubmit, isLo
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">⏱️ Thời gian (phút)</label>
               <input
                 type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)}
-                placeholder="30" min="1"
+                placeholder="Nhập thời gian (phút)" min="1"
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-blue-400 outline-none transition text-sm"
               />
             </div>

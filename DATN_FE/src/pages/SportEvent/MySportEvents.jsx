@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,7 +27,7 @@ import { MdVideocam, MdLeaderboard, MdSportsScore, MdCheckCircle } from 'react-i
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { BsClockHistory, BsCalendarCheck, BsPeopleFill } from 'react-icons/bs'
 import { HiOutlineViewGrid } from 'react-icons/hi'
-import { getMyEvents, getJoinedEvents, deleteSportEvent, getParticipants, getLeaderboard, getEventOverallProgress, removeParticipant } from '../../apis/sportEventApi'
+import { getMyEvents, getJoinedEvents, getEventStats, deleteSportEvent, getParticipants, getLeaderboard, getEventOverallProgress, removeParticipant } from '../../apis/sportEventApi'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
@@ -56,10 +56,64 @@ const MySportEvents = () => {
   const [participantSearch, setParticipantSearch] = useState('')
   const ITEMS_PER_PAGE = 20
 
+  // Filter state for BOTH tabs
+  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'ongoing' | 'upcoming' | 'ended'
+
+  // Debounce sidebar search for created events
+  const [createdDebouncedSearch, setCreatedDebouncedSearch] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setCreatedDebouncedSearch(sidebarSearch), 400)
+    return () => clearTimeout(t)
+  }, [sidebarSearch])
+
+  // Joined tab: search, status filter
+  const [joinedSearch, setJoinedSearch] = useState('')
+  const [joinedDebouncedSearch, setJoinedDebouncedSearch] = useState('')
+  const [joinedStatus, setJoinedStatus] = useState('all')
+  const JOINED_PER_PAGE = 6
+
+  // Debounced search for joined tab
+  useEffect(() => {
+    const t = setTimeout(() => setJoinedDebouncedSearch(joinedSearch), 400)
+    return () => clearTimeout(t)
+  }, [joinedSearch])
+
+  // Reset joined page when filters change
+  useEffect(() => {
+    setJoinedPage(1)
+  }, [joinedDebouncedSearch, statusFilter])
+
+  // Reset created page when filters change
+  useEffect(() => {
+    setCreatedPage(1)
+  }, [createdDebouncedSearch, statusFilter])
+
+  // Reset filter when switching tabs
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    setStatusFilter('all')
+    setMobileShowDetail(false)
+  }
+
   // ─── DATA FETCHING ───────────────────────────────────────
+  const { data: statsData } = useQuery({
+    queryKey: ['eventStats', activeTab],
+    queryFn: () => getEventStats({ type: activeTab }),
+    keepPreviousData: true
+  })
+  
+  const stats = useMemo(() => {
+    return statsData?.data?.result || { total: 0, ongoing: 0, upcoming: 0, ended: 0 }
+  }, [statsData])
+
   const { data: createdEventsData, isLoading: isLoadingCreated } = useQuery({
-    queryKey: ['myCreatedEvents', createdPage],
-    queryFn: () => getMyEvents({ page: createdPage, limit: 50 }),
+    queryKey: ['myCreatedEvents', createdPage, createdDebouncedSearch, statusFilter],
+    queryFn: () => getMyEvents({ 
+      page: createdPage, 
+      limit: 50,
+      search: createdDebouncedSearch || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined
+    }),
     keepPreviousData: true
   })
 
@@ -67,8 +121,13 @@ const MySportEvents = () => {
   const createdTotal = createdEventsData?.data?.result?.total || 0
 
   const { data: joinedEventsData, isLoading: isLoadingJoined } = useQuery({
-    queryKey: ['myJoinedEvents', joinedPage],
-    queryFn: () => getJoinedEvents({ page: joinedPage, limit: ITEMS_PER_PAGE }),
+    queryKey: ['myJoinedEvents', joinedPage, joinedDebouncedSearch, joinedStatus],
+    queryFn: () => getJoinedEvents({
+      page: joinedPage,
+      limit: JOINED_PER_PAGE,
+      search: joinedDebouncedSearch || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined
+    }),
     keepPreviousData: true
   })
 
@@ -122,6 +181,7 @@ const MySportEvents = () => {
     mutationFn: (eventId) => deleteSportEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myCreatedEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['eventStats'] })
       toast.success('Đã xóa sự kiện thành công!')
       setOpenDeleteBox(false)
       setSelectedEventId(null)
@@ -148,21 +208,6 @@ const MySportEvents = () => {
     }
   })
 
-  // ─── COMPUTED STATS ──────────────────────────────────────
-  const stats = useMemo(() => {
-    const now = moment()
-    let ongoing = 0, upcoming = 0, ended = 0
-    createdEvents.forEach((e) => {
-      const start = moment(e.startDate)
-      const end = moment(e.endDate)
-      if (now.isAfter(end)) ended++
-      else if (now.isBefore(start)) upcoming++
-      else ongoing++
-    })
-    return { total: createdTotal, ongoing, upcoming, ended }
-  }, [createdEvents, createdTotal])
-
-  // Sidebar filtered events
   const filteredSidebarEvents = useMemo(() => {
     if (!sidebarSearch.trim()) return createdEvents
     return createdEvents.filter((e) => e.name.toLowerCase().includes(sidebarSearch.toLowerCase()))
@@ -241,23 +286,35 @@ const MySportEvents = () => {
           {/* ═══ STAT CARDS ═══ */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
             {[
-              { label: 'Tổng đã tạo', value: stats.total, icon: HiOutlineViewGrid, color: 'from-blue-500 to-cyan-400' },
-              { label: 'Đang diễn ra', value: stats.ongoing, icon: FaChartLine, color: 'from-emerald-500 to-green-400' },
-              { label: 'Sắp diễn ra', value: stats.upcoming, icon: FaClock, color: 'from-amber-500 to-yellow-400' },
-              { label: 'Đã kết thúc', value: stats.ended, icon: BsClockHistory, color: 'from-gray-500 to-gray-400' }
-            ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 hover:bg-white/15 transition group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white/60 text-xs font-medium uppercase tracking-wider">{label}</p>
-                    <p className="text-3xl font-bold text-white mt-1">{value}</p>
+              { id: 'all', label: activeTab === 'created' ? 'Tổng đã tạo' : 'Tổng đã tham gia', value: stats.total, icon: HiOutlineViewGrid, color: 'from-blue-500 to-cyan-400' },
+              { id: 'ongoing', label: 'Đang diễn ra', value: stats.ongoing, icon: FaChartLine, color: 'from-emerald-500 to-green-400' },
+              { id: 'upcoming', label: 'Sắp diễn ra', value: stats.upcoming, icon: FaClock, color: 'from-amber-500 to-yellow-400' },
+              { id: 'ended', label: 'Đã kết thúc', value: stats.ended, icon: BsClockHistory, color: 'from-gray-500 to-gray-400' }
+            ].map(({ id, label, value, icon: Icon, color }) => {
+              const isActive = statusFilter === id
+              return (
+                <button 
+                  key={id} 
+                  onClick={() => setStatusFilter(id)}
+                  className={`text-left rounded-xl p-4 border transition group relative overflow-hidden ${
+                    isActive 
+                      ? 'bg-white/20 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)]' 
+                      : 'bg-white/10 border-white/15 hover:bg-white/15'
+                  }`}
+                >
+                  {isActive && <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] animate-[shimmer_2s_infinite]" />}
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <p className={`text-xs font-medium uppercase tracking-wider transition-colors ${isActive ? 'text-white font-bold' : 'text-white/60'}`}>{label}</p>
+                      <p className="text-3xl font-bold text-white mt-1">{value}</p>
+                    </div>
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                      <Icon className="text-white text-lg" />
+                    </div>
                   </div>
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                    <Icon className="text-white text-lg" />
-                  </div>
-                </div>
-              </div>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -268,7 +325,7 @@ const MySportEvents = () => {
         <div className="bg-white dark:bg-gray-800 rounded-t-xl shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="flex">
             <button
-              onClick={() => { setActiveTab('created'); setMobileShowDetail(false) }}
+              onClick={() => handleTabChange('created')}
               className={`flex-1 md:flex-none px-6 py-4 font-semibold text-sm transition-all relative ${activeTab === 'created'
                 ? 'text-indigo-600 dark:text-indigo-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -281,7 +338,7 @@ const MySportEvents = () => {
               {activeTab === 'created' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t" />}
             </button>
             <button
-              onClick={() => setActiveTab('joined')}
+              onClick={() => handleTabChange('joined')}
               className={`flex-1 md:flex-none px-6 py-4 font-semibold text-sm transition-all relative ${activeTab === 'joined'
                 ? 'text-indigo-600 dark:text-indigo-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -302,6 +359,7 @@ const MySportEvents = () => {
             <CreatedTabContent
               isLoading={isLoadingCreated}
               events={filteredSidebarEvents}
+              createdTotal={createdTotal}
               selectedEvent={selectedEvent}
               selectedEventId={selectedEventId}
               onSelectEvent={handleSelectEvent}
@@ -328,6 +386,8 @@ const MySportEvents = () => {
               // Mobile
               mobileShowDetail={mobileShowDetail}
               onMobileBack={() => setMobileShowDetail(false)}
+              statusFilter={statusFilter}
+              onClearFilter={() => setStatusFilter('all')}
             />
           ) : (
             <JoinedTabContent
@@ -336,7 +396,13 @@ const MySportEvents = () => {
               navigate={navigate}
               joinedPage={joinedPage}
               joinedTotalPage={joinedTotalPage}
+              joinedTotal={joinedTotal}
               onPageChange={setJoinedPage}
+              joinedSearch={joinedSearch}
+              onSearchChange={setJoinedSearch}
+              JOINED_PER_PAGE={JOINED_PER_PAGE}
+              statusFilter={statusFilter}
+              onClearFilter={() => setStatusFilter('all')}
             />
           )}
         </div>
@@ -386,14 +452,15 @@ const MySportEvents = () => {
 // CREATED TAB — Dashboard layout
 // ═══════════════════════════════════════════════════════════
 function CreatedTabContent({
-  isLoading, events, selectedEvent, selectedEventId, onSelectEvent,
+  isLoading, events, createdTotal, selectedEvent, selectedEventId, onSelectEvent,
   sidebarSearch, onSidebarSearchChange,
   activeSubTab, onSubTabChange,
   participants, participantsTotal, participantsTotalPages, participantPage, participantSearch,
   onParticipantPageChange, onParticipantSearchChange, isLoadingParticipants, onKickClick,
   leaderboard, overallProgress,
   onDeleteClick, navigate,
-  mobileShowDetail, onMobileBack
+  mobileShowDetail, onMobileBack,
+  statusFilter, onClearFilter
 }) {
   if (isLoading) {
     return (
@@ -403,7 +470,25 @@ function CreatedTabContent({
     )
   }
 
-  if (events.length === 0) {
+  if (createdTotal === 0) {
+    if (sidebarSearch || statusFilter !== 'all') {
+      return (
+        <div className="text-center py-20 px-6">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+            <FaSearch className="text-indigo-400 text-3xl" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy sự kiện phù hợp</h3>
+          <p className="text-gray-500 mb-6">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          <button
+            onClick={() => { onSidebarSearchChange(''); onClearFilter(); }}
+            className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-semibold transition"
+          >
+            Xóa bộ lọc
+          </button>
+        </div>
+      )
+    }
+
     return (
       <div className="text-center py-20 px-6">
         <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -437,8 +522,13 @@ function CreatedTabContent({
         </div>
 
         {/* Event list */}
-        <div className="flex-1 overflow-y-auto max-h-[600px]">
-          {events.map((event) => {
+        <div className="flex-1 overflow-y-auto max-h-[600px] scrollbar-thin pr-1">
+          {events.length === 0 ? (
+            <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              Không tìm thấy sự kiện nào phù hợp với "{sidebarSearch}"
+            </div>
+          ) : (
+          events.map((event) => {
             const status = getStatusBadge(event)
             const isSelected = event._id === selectedEventId
             return (
@@ -468,7 +558,7 @@ function CreatedTabContent({
                 </div>
               </button>
             )
-          })}
+          }))}
         </div>
       </div>
 
@@ -717,7 +807,7 @@ function ParticipantsSubTab({ event, participants, participantsTotal, totalPages
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
           <input
             type="text"
-            placeholder="Tìm tên..."
+            placeholder="Tìm người tham gia..."
             value={search}
             onChange={(e) => { onSearchChange(e.target.value); onPageChange(1) }}
             className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
@@ -883,87 +973,142 @@ function SettingsSubTab({ event, onDeleteClick, navigate }) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// JOINED TAB — Card grid
+// JOINED TAB — Card grid with search, status filter, pagination
 // ═══════════════════════════════════════════════════════════
-function JoinedTabContent({ isLoading, events, navigate, joinedPage, joinedTotalPage, onPageChange }) {
-  if (isLoading) {
-    return (
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-gray-50 dark:bg-gray-700 rounded-xl h-64 animate-pulse" />
-        ))}
-      </div>
-    )
-  }
-
-  if (events.length === 0) {
-    return (
-      <div className="text-center py-20 px-6">
-        <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-          <FaTrophy className="text-indigo-400 text-3xl" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Bạn chưa tham gia sự kiện nào</h3>
-        <p className="text-gray-500 mb-6">Khám phá và tham gia các sự kiện thú vị!</p>
-        <Link to="/sport-event" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg">
-          Khám phá sự kiện
-        </Link>
-      </div>
-    )
-  }
-
+function JoinedTabContent({ isLoading, events, navigate, joinedPage, joinedTotalPage, joinedTotal, onPageChange, joinedSearch, onSearchChange, statusFilter, onClearFilter, JOINED_PER_PAGE }) {
   return (
     <div className="p-5">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {events.map((event) => {
-          const status = getStatusBadge(event)
-          return (
-            <div
-              key={event._id}
-              onClick={() => navigate(`/sport-event/${event._id}`)}
-              className="bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-all group border border-gray-100 dark:border-gray-600/50 hover:border-indigo-200 dark:hover:border-indigo-700"
-            >
-              {/* Image */}
-              <div className="relative h-36">
-                <img src={event.image} alt={event.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <span className={`absolute top-2.5 left-2.5 inline-flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-1 rounded-full ${status.color}`}>
-                  {status.dot && <span className="w-1 h-1 rounded-full bg-white animate-pulse" />}
-                  {status.text}
-                </span>
-                <span className="absolute top-2.5 right-2.5 bg-black/40 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-1 rounded-full">
-                  <FaUsers className="inline mr-1" />{event.participants}/{event.maxParticipants}
-                </span>
-              </div>
-              {/* Info */}
-              <div className="p-3.5">
-                <h4 className="text-sm font-bold text-gray-800 dark:text-white truncate mb-2">{event.name}</h4>
-                <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mb-2">
-                  <span className="flex items-center gap-1"><FaCalendarAlt />{moment(event.startDate).format('DD/MM')}</span>
-                  <span className="flex items-center gap-1"><FaClock />{moment(event.startDate).format('HH:mm')}</span>
-                  <span className="flex items-center gap-1">
-                    {event.eventType === 'Trong nhà' ? <MdVideocam /> : <FaMapMarkerAlt />}
-                    {event.eventType}
-                  </span>
-                </div>
-                {/* Mini joined badge */}
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                  <MdCheckCircle /> Đã tham gia
-                </div>
-              </div>
-            </div>
-          )
-        })}
+      {/* Search + Status Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+          <input
+            type="text"
+            placeholder="Tìm sự kiện..."
+            value={joinedSearch}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder:text-gray-400 transition-all"
+          />
+        </div>
       </div>
 
-      {/* Pagination */}
-      {joinedTotalPage > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-6">
-          <button disabled={joinedPage <= 1} onClick={() => onPageChange(p => p - 1)}
-            className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium">Trước</button>
-          <span className="text-sm text-gray-500">Trang {joinedPage} / {joinedTotalPage}</span>
-          <button disabled={joinedPage >= joinedTotalPage} onClick={() => onPageChange(p => p + 1)}
-            className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium">Sau</button>
+      {/* Loading */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(JOINED_PER_PAGE)].map((_, i) => (
+            <div key={i} className="bg-gray-50 dark:bg-gray-700 rounded-xl h-64 animate-pulse" />
+          ))}
         </div>
+      ) : events.length === 0 ? (
+        <div className="text-center py-16 px-6">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+            <FaTrophy className="text-indigo-400 text-3xl" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">
+            {joinedSearch || statusFilter !== 'all' ? 'Không tìm thấy sự kiện phù hợp' : 'Bạn chưa tham gia sự kiện nào'}
+          </h3>
+          <p className="text-gray-500 mb-6">
+            {joinedSearch || statusFilter !== 'all' ? 'Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm' : 'Khám phá và tham gia các sự kiện thú vị!'}
+          </p>
+          {joinedSearch || statusFilter !== 'all' ? (
+            <button
+              onClick={() => { onSearchChange(''); onClearFilter() }}
+              className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-semibold transition"
+            >
+              Xóa bộ lọc
+            </button>
+          ) : (
+            <Link to="/sport-event" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg">
+              Khám phá sự kiện
+            </Link>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {events.map((event) => {
+              const status = getStatusBadge(event)
+              return (
+                <div
+                  key={event._id}
+                  onClick={() => navigate(`/sport-event/${event._id}`)}
+                  className="bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-all group border border-gray-100 dark:border-gray-600/50 hover:border-indigo-200 dark:hover:border-indigo-700"
+                >
+                  {/* Image */}
+                  <div className="relative h-36">
+                    <img src={event.image} alt={event.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <span className={`absolute top-2.5 left-2.5 inline-flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-1 rounded-full ${status.color}`}>
+                      {status.dot && <span className="w-1 h-1 rounded-full bg-white animate-pulse" />}
+                      {status.text}
+                    </span>
+                    <span className="absolute top-2.5 right-2.5 bg-black/40 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-1 rounded-full">
+                      <FaUsers className="inline mr-1" />{event.participants}/{event.maxParticipants}
+                    </span>
+                  </div>
+                  {/* Info */}
+                  <div className="p-3.5">
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-white truncate mb-2">{event.name}</h4>
+                    <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+                      <span className="flex items-center gap-1"><FaCalendarAlt />{moment(event.startDate).format('DD/MM')}</span>
+                      <span className="flex items-center gap-1"><FaClock />{moment(event.startDate).format('HH:mm')}</span>
+                      <span className="flex items-center gap-1">
+                        {event.eventType === 'Trong nhà' ? <MdVideocam /> : <FaMapMarkerAlt />}
+                        {event.eventType}
+                      </span>
+                    </div>
+                    {/* Mini joined badge */}
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                      <MdCheckCircle /> Đã tham gia
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Rich Pagination */}
+          {joinedTotalPage > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                disabled={joinedPage <= 1}
+                onClick={() => { onPageChange(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                ← Trước
+              </button>
+              {Array.from({ length: joinedTotalPage }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === joinedTotalPage || Math.abs(p - joinedPage) <= 2)
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map(p =>
+                  typeof p === 'number' ? (
+                    <button
+                      key={p}
+                      onClick={() => { onPageChange(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                      className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === joinedPage ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                    >
+                      {p}
+                    </button>
+                  ) : (
+                    <span key={p} className="px-1 text-gray-400">...</span>
+                  )
+                )
+              }
+              <button
+                disabled={joinedPage >= joinedTotalPage}
+                onClick={() => { onPageChange(p => Math.min(joinedTotalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -314,8 +314,6 @@ export const ADMIN_MESSAGE = {
   GET_ALL_USER_SUCCESS: 'Lấy danh sách người dùng thành công',
   GET_USER_BY_ID_SUCCESS: 'Lấy thông tin người dùng thành công',
   DELETE_USER_BY_ID_SUCCESS: 'Xóa người dùng thành công',
-  BAN_USER_BY_ID_SUCCESS: 'Khóa tài khoản người dùng thành công',
-  UNBAN_USER_BY_ID_SUCCESS: 'Mở khóa tài khoản người dùng thành công',
   CREATE_WRITTER_AND_INSPECTOR_SUCCESS: 'Tạo người viết và kiểm duyệt thành công',
   EMAIL_ALREADY_EXISTS: 'Email đã tồn tại',
   USER_NAME_ALREADY_EXISTS: 'Tên người dùng đã tồn tại',

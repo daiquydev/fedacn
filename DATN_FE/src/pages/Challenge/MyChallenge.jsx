@@ -15,7 +15,7 @@ import { BsClockHistory, BsPeopleFill } from 'react-icons/bs'
 import { HiOutlineViewGrid } from 'react-icons/hi'
 import {
   getMyCreatedChallenges, getMyChallenges, deleteChallenge,
-  getChallengeLeaderboard, getChallengeParticipants
+  getChallengeLeaderboard, getChallengeParticipants, getChallengeStats
 } from '../../apis/challengeApi'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
@@ -35,7 +35,7 @@ export default function MyChallenge() {
   const queryClient = useQueryClient()
 
   // Main tabs
-  const [activeTab, setActiveTab] = useState('created')
+  const [activeTab, setActiveTab] = useState('created') // 'created' or 'joined'
   // Dashboard state
   const [selectedChallengeId, setSelectedChallengeId] = useState(null)
   const [activeSubTab, setActiveSubTab] = useState('overview')
@@ -50,25 +50,82 @@ export default function MyChallenge() {
   // Pagination
   const [createdPage, setCreatedPage] = useState(1)
   const [joinedPage, setJoinedPage] = useState(1)
-  const ITEMS_PER_PAGE = 20
+  
+  // Filter state for BOTH tabs
+  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'ongoing' | 'upcoming' | 'ended'
+
+  // Debounce sidebar search for created challenges
+  const [createdDebouncedSearch, setCreatedDebouncedSearch] = useState('')
+  React.useEffect(() => {
+    const t = setTimeout(() => setCreatedDebouncedSearch(sidebarSearch), 400)
+    return () => clearTimeout(t)
+  }, [sidebarSearch])
+
+  // Joined tab: search, status filter
+  const [joinedSearch, setJoinedSearch] = useState('')
+  const [joinedDebouncedSearch, setJoinedDebouncedSearch] = useState('')
+  const JOINED_PER_PAGE = 6
+
+  // Debounced search for joined tab
+  React.useEffect(() => {
+    const t = setTimeout(() => setJoinedDebouncedSearch(joinedSearch), 400)
+    return () => clearTimeout(t)
+  }, [joinedSearch])
+
+  // Reset joined page when filters change
+  React.useEffect(() => {
+    setJoinedPage(1)
+  }, [joinedDebouncedSearch, statusFilter])
+
+  // Reset created page when filters change
+  React.useEffect(() => {
+    setCreatedPage(1)
+  }, [createdDebouncedSearch, statusFilter])
+
+  // Reset filter when switching tabs
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    setStatusFilter('all')
+    setMobileShowDetail(false)
+  }
 
   // ─── DATA FETCHING ───────────────────────────────────────
+  const { data: statsData } = useQuery({
+    queryKey: ['challengeStats', activeTab],
+    queryFn: () => getChallengeStats({ type: activeTab }),
+    keepPreviousData: true
+  })
+
+  const stats = useMemo(() => {
+    return statsData?.data?.result || { total: 0, ongoing: 0, upcoming: 0, ended: 0 }
+  }, [statsData])
+
   const { data: createdData, isLoading: isLoadingCreated } = useQuery({
-    queryKey: ['my-created-challenges', createdPage],
-    queryFn: () => getMyCreatedChallenges({ page: createdPage, limit: 50 }),
+    queryKey: ['my-created-challenges', createdPage, createdDebouncedSearch, statusFilter],
+    queryFn: () => getMyCreatedChallenges({ 
+      page: createdPage, 
+      limit: 50,
+      search: createdDebouncedSearch || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined
+    }),
     staleTime: 1000,
     keepPreviousData: true
   })
-  const createdChallenges = createdData?.data?.result?.challenges || []
+  const createdChallenges = createdData?.data?.result?.challenges || createdData?.result?.challenges || []
   const createdTotal = createdData?.data?.result?.total || 0
 
   const { data: joinedData, isLoading: isLoadingJoined } = useQuery({
-    queryKey: ['my-challenges', joinedPage],
-    queryFn: () => getMyChallenges({ page: joinedPage, limit: ITEMS_PER_PAGE }),
+    queryKey: ['my-challenges', joinedPage, joinedDebouncedSearch, statusFilter],
+    queryFn: () => getMyChallenges({ 
+      page: joinedPage, 
+      limit: JOINED_PER_PAGE,
+      search: joinedDebouncedSearch || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined
+    }),
     staleTime: 1000,
     keepPreviousData: true
   })
-  const joinedParticipations = joinedData?.data?.result?.participations || []
+  const joinedParticipations = joinedData?.data?.result?.participations || joinedData?.result?.participations || []
   const joinedTotal = joinedData?.data?.result?.total || 0
   const joinedTotalPage = joinedData?.data?.result?.totalPage || 1
 
@@ -107,6 +164,7 @@ export default function MyChallenge() {
     mutationFn: (id) => deleteChallenge(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
+      queryClient.invalidateQueries({ queryKey: ['challengeStats'] })
       queryClient.invalidateQueries({ queryKey: ['challenges'] })
       toast.success('Đã xóa thử thách thành công!')
       setOpenDeleteBox(false)
@@ -117,20 +175,6 @@ export default function MyChallenge() {
       setOpenDeleteBox(false)
     }
   })
-
-  // ─── COMPUTED STATS ──────────────────────────────────────
-  const stats = useMemo(() => {
-    const now = moment()
-    let ongoing = 0, upcoming = 0, ended = 0
-    createdChallenges.forEach((c) => {
-      const start = moment(c.start_date)
-      const end = moment(c.end_date)
-      if (now.isAfter(end)) ended++
-      else if (now.isBefore(start)) upcoming++
-      else ongoing++
-    })
-    return { total: createdTotal, ongoing, upcoming, ended }
-  }, [createdChallenges, createdTotal])
 
   // Sidebar filtered challenges
   const filteredSidebarChallenges = useMemo(() => {
@@ -190,23 +234,35 @@ export default function MyChallenge() {
           {/* ═══ STAT CARDS ═══ */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
             {[
-              { label: 'Tổng đã tạo', value: stats.total, icon: HiOutlineViewGrid, color: 'from-blue-500 to-cyan-400' },
-              { label: 'Đang diễn ra', value: stats.ongoing, icon: FaChartLine, color: 'from-emerald-500 to-green-400' },
-              { label: 'Sắp diễn ra', value: stats.upcoming, icon: FaClock, color: 'from-amber-500 to-yellow-400' },
-              { label: 'Đã kết thúc', value: stats.ended, icon: BsClockHistory, color: 'from-gray-500 to-gray-400' }
-            ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 hover:bg-white/15 transition group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white/60 text-xs font-medium uppercase tracking-wider">{label}</p>
-                    <p className="text-3xl font-bold text-white mt-1">{value}</p>
+              { id: 'all', label: activeTab === 'created' ? 'Tổng đã tạo' : 'Tổng đã tham gia', value: stats.total, icon: HiOutlineViewGrid, color: 'from-blue-500 to-cyan-400' },
+              { id: 'ongoing', label: 'Đang diễn ra', value: stats.ongoing, icon: FaChartLine, color: 'from-emerald-500 to-green-400' },
+              { id: 'upcoming', label: 'Sắp diễn ra', value: stats.upcoming, icon: FaClock, color: 'from-amber-500 to-yellow-400' },
+              { id: 'ended', label: 'Đã kết thúc', value: stats.ended, icon: BsClockHistory, color: 'from-gray-500 to-gray-400' }
+            ].map(({ id, label, value, icon: Icon, color }) => {
+              const isActive = statusFilter === id
+              return (
+                <button 
+                  key={id} 
+                  onClick={() => setStatusFilter(id)}
+                  className={`text-left rounded-xl p-4 border transition group relative overflow-hidden ${
+                    isActive 
+                      ? 'bg-white/20 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)]' 
+                      : 'bg-white/10 border-white/15 hover:bg-white/15'
+                  }`}
+                >
+                  {isActive && <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] animate-[shimmer_2s_infinite]" />}
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <p className={`text-xs font-medium uppercase tracking-wider transition-colors ${isActive ? 'text-white font-bold' : 'text-white/60'}`}>{label}</p>
+                      <p className="text-3xl font-bold text-white mt-1">{value}</p>
+                    </div>
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                      <Icon className="text-white text-lg" />
+                    </div>
                   </div>
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                    <Icon className="text-white text-lg" />
-                  </div>
-                </div>
-              </div>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -217,7 +273,7 @@ export default function MyChallenge() {
         <div className="bg-white dark:bg-gray-800 rounded-t-xl shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="flex">
             <button
-              onClick={() => { setActiveTab('created'); setMobileShowDetail(false) }}
+              onClick={() => handleTabChange('created')}
               className={`flex-1 md:flex-none px-6 py-4 font-semibold text-sm transition-all relative ${activeTab === 'created'
                 ? 'text-indigo-600 dark:text-indigo-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -230,7 +286,7 @@ export default function MyChallenge() {
               {activeTab === 'created' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t" />}
             </button>
             <button
-              onClick={() => setActiveTab('joined')}
+              onClick={() => handleTabChange('joined')}
               className={`flex-1 md:flex-none px-6 py-4 font-semibold text-sm transition-all relative ${activeTab === 'joined'
                 ? 'text-indigo-600 dark:text-indigo-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -251,6 +307,7 @@ export default function MyChallenge() {
             <CreatedTabContent
               isLoading={isLoadingCreated}
               challenges={filteredSidebarChallenges}
+              createdTotal={createdTotal}
               selectedChallenge={selectedChallenge}
               selectedChallengeId={selectedChallengeId}
               onSelectChallenge={handleSelectChallenge}
@@ -267,6 +324,8 @@ export default function MyChallenge() {
               navigate={navigate}
               mobileShowDetail={mobileShowDetail}
               onMobileBack={() => setMobileShowDetail(false)}
+              statusFilter={statusFilter}
+              onClearFilter={() => setStatusFilter('all')}
             />
           ) : (
             <JoinedTabContent
@@ -275,7 +334,12 @@ export default function MyChallenge() {
               navigate={navigate}
               joinedPage={joinedPage}
               joinedTotalPage={joinedTotalPage}
+              joinedTotal={joinedTotal}
               onPageChange={setJoinedPage}
+              joinedSearch={joinedSearch}
+              onSearchChange={setJoinedSearch}
+              statusFilter={statusFilter}
+              onClearFilter={() => setStatusFilter('all')}
             />
           )}
         </div>
@@ -312,13 +376,14 @@ export default function MyChallenge() {
 // CREATED TAB — Dashboard layout
 // ═══════════════════════════════════════════════════════════
 function CreatedTabContent({
-  isLoading, challenges, selectedChallenge, selectedChallengeId, onSelectChallenge,
+  isLoading, challenges, createdTotal, selectedChallenge, selectedChallengeId, onSelectChallenge,
   sidebarSearch, onSidebarSearchChange,
   activeSubTab, onSubTabChange,
   participants, participantsTotal, isLoadingParticipants,
   leaderboard,
   onDeleteClick, onEditClick, navigate,
-  mobileShowDetail, onMobileBack
+  mobileShowDetail, onMobileBack,
+  statusFilter, onClearFilter
 }) {
   if (isLoading) {
     return (
@@ -328,7 +393,25 @@ function CreatedTabContent({
     )
   }
 
-  if (challenges.length === 0) {
+  if (createdTotal === 0) {
+    if (sidebarSearch || statusFilter !== 'all') {
+      return (
+        <div className="text-center py-20 px-6">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+            <FaSearch className="text-indigo-400 text-3xl" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy thử thách phù hợp</h3>
+          <p className="text-gray-500 mb-6">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          <button
+            onClick={() => { onSidebarSearchChange(''); onClearFilter(); }}
+            className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-semibold transition"
+          >
+            Xóa bộ lọc
+          </button>
+        </div>
+      )
+    }
+
     return (
       <div className="text-center py-20 px-6">
         <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -359,8 +442,13 @@ function CreatedTabContent({
         </div>
 
         {/* Challenge list */}
-        <div className="flex-1 overflow-y-auto max-h-[600px]">
-          {challenges.map((challenge) => {
+        <div className="flex-1 overflow-y-auto max-h-[600px] scrollbar-thin pr-1">
+          {challenges.length === 0 ? (
+            <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              Không tìm thấy thử thách nào phù hợp với "{sidebarSearch}"
+            </div>
+          ) : (
+          challenges.map((challenge) => {
             const status = getStatusBadge(challenge)
             const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
             const isSelected = challenge._id === selectedChallengeId
@@ -393,7 +481,7 @@ function CreatedTabContent({
                 </div>
               </button>
             )
-          })}
+          }))}
         </div>
       </div>
 
@@ -792,7 +880,7 @@ function SettingsSubTab({ challenge, onDeleteClick, onEditClick, navigate }) {
 // ═══════════════════════════════════════════════════════════
 // JOINED TAB — Card grid
 // ═══════════════════════════════════════════════════════════
-function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joinedTotalPage, onPageChange }) {
+function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joinedTotalPage, joinedTotal, onPageChange, joinedSearch, onSearchChange, statusFilter, onClearFilter }) {
   if (isLoading) {
     return (
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -803,7 +891,25 @@ function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joi
     )
   }
 
-  if (participations.length === 0) {
+  if (joinedTotal === 0) {
+    if (joinedSearch || statusFilter !== 'all') {
+      return (
+        <div className="text-center py-20 px-6">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+            <FaSearch className="text-indigo-400 text-3xl" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy thử thách phù hợp</h3>
+          <p className="text-gray-500 mb-6">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          <button
+            onClick={() => { onSearchChange(''); onClearFilter(); }}
+            className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-semibold transition"
+          >
+            Xóa bộ lọc
+          </button>
+        </div>
+      )
+    }
+
     return (
       <div className="text-center py-20 px-6">
         <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -820,9 +926,23 @@ function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joi
 
   return (
     <div className="p-5">
+      {/* Search Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        <div className="relative flex-1 max-w-sm">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm thử thách..."
+            value={joinedSearch}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder:text-gray-400 transition-all"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {participations.map((participation) => {
-          const challenge = participation.challenge_id
+          const challenge = participation.challenge_id || participation.challenge
           if (!challenge) return null
           const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
           const status = getStatusBadge(challenge)
@@ -887,14 +1007,44 @@ function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joi
         })}
       </div>
 
-      {/* Pagination */}
+      {/* Rich Pagination */}
       {joinedTotalPage > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-6">
-          <button disabled={joinedPage <= 1} onClick={() => onPageChange(p => p - 1)}
-            className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium">Trước</button>
-          <span className="text-sm text-gray-500">Trang {joinedPage} / {joinedTotalPage}</span>
-          <button disabled={joinedPage >= joinedTotalPage} onClick={() => onPageChange(p => p + 1)}
-            className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium">Sau</button>
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            disabled={joinedPage <= 1}
+            onClick={() => { onPageChange(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            ← Trước
+          </button>
+          {Array.from({ length: joinedTotalPage }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === joinedTotalPage || Math.abs(p - joinedPage) <= 2)
+            .reduce((acc, p, i, arr) => {
+              if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+              acc.push(p)
+              return acc
+            }, [])
+            .map(p =>
+              typeof p === 'number' ? (
+                <button
+                  key={p}
+                  onClick={() => { onPageChange(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === joinedPage ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={p} className="px-1 text-gray-400">...</span>
+              )
+            )
+          }
+          <button
+            disabled={joinedPage >= joinedTotalPage}
+            onClick={() => { onPageChange(p => Math.min(joinedTotalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            Sau →
+          </button>
         </div>
       )}
     </div>

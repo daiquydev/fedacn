@@ -23,10 +23,13 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
 
   // Map participants_ids to ParticipantsList format
   const eventParticipants = (event.participants_ids || []).map(p => ({
-    id: p._id || p,
+    id: String(p._id || p),
     name: p.name || 'Người dùng',
     avatar: p.avatar ? getImageUrl(p.avatar) : useravatar,
   }));
+
+  // Creator/organizer ID (populated from backend)
+  const creatorId = String(event.createdBy?._id || event.createdBy || '');
 
   const handleClick = () => navigate(`/sport-event/${event._id}`);
   const handleJoin = (e) => { e.stopPropagation(); if (onJoin) onJoin(event._id); };
@@ -38,11 +41,11 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full"
       onClick={handleClick}
     >
       {/* Event Image */}
-      <div className="relative h-48">
+      <div className="relative h-48 overflow-hidden rounded-t-lg">
         <img src={event.image} alt={event.name} className="w-full h-full object-cover" />
 
         {/* Type Badge */}
@@ -56,7 +59,7 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
           </div>
           {!isOnline && (
             <div className="bg-[#fc4c02] text-white font-medium px-2.5 py-0.5 rounded-full text-[10px] flex items-center shadow-sm w-max">
-              <FaLink className="mr-1" /> Strava Sync
+              <FaLink className="mr-1" /> Đồng bộ Strava
             </div>
           )}
         </div>
@@ -99,16 +102,12 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
           </div>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             {isOnline ? <MdVideocam className="mr-2" /> : <FaMapMarkerAlt className="mr-2" />}
-            <span className="truncate">{event.location}</span>
+            <span className="truncate">{isOnline ? 'Video call trực tuyến' : event.location}</span>
           </div>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             {CategoryIcon ? <CategoryIcon className="mr-2" /> : <MdSportsScore className="mr-2" />}
             <span>{event.category}</span>
-            {event.difficulty && (() => {
-              const map = { easy: '😊 Dễ', medium: '💪 TB', hard: '🔥 Khó', expert: '🏆 Pro' }
-              const colors = { easy: 'bg-green-100 text-green-600', medium: 'bg-yellow-100 text-yellow-600', hard: 'bg-orange-100 text-orange-600', expert: 'bg-red-100 text-red-600' }
-              return <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${colors[event.difficulty] || ''}`}>{map[event.difficulty] || event.difficulty}</span>
-            })()}
+
           </div>
         </div>
 
@@ -119,59 +118,64 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
           <div className="mb-4" onClick={(e) => e.stopPropagation()}>
             <ParticipantsList
               participants={eventParticipants}
-              initialLimit={4}
+              initialLimit={5}
               size="sm"
               title={null}
               showCount={false}
               friendIds={friendIds}
               connectedIds={connectedIds}
+              creatorId={creatorId}
+              showExpand={false}
             />
           </div>
         )}
 
-        {/* Progress bar (if joined) */}
-        {event.isJoined && event.myProgress && (
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-medium text-gray-500">Tiến độ</span>
-              <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{event.myProgress.progressPercent}%</span>
+        {/* Bottom Section: Progress + Action */}
+        <div className="mt-auto flex flex-col justify-end">
+          {/* Progress bar (if joined) */}
+          {event.isJoined && event.myProgress && (
+            <div className="mb-3">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-medium text-gray-500">Tiến độ</span>
+                <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{event.myProgress.progressPercent}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-600 transition-all duration-500"
+                  style={{ width: `${event.myProgress.progressPercent}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-600 transition-all duration-500"
-                style={{ width: `${event.myProgress.progressPercent}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Join Button */}
-        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700">
-          {isEnded ? (
-            <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
-              <BsClockHistory /> Sự kiện đã kết thúc
-            </button>
-          ) : event.isJoined ? (
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400 gap-2"
-            >
-              <MdCheckCircle /> Đã tham gia
-            </button>
-          ) : (event.maxParticipants > 0 && event.participants >= event.maxParticipants) ? (
-            <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
-              Đã đầy chỗ
-            </button>
-          ) : (
-            <button
-              onClick={handleJoin}
-              disabled={isJoining}
-              className="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-            >
-              {isJoining ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaPlus className="text-xs" />}
-              Tham gia ngay
-            </button>
           )}
+
+          {/* Join Button */}
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            {isEnded ? (
+              <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
+                <BsClockHistory /> Sự kiện đã kết thúc
+              </button>
+            ) : event.isJoined ? (
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400 gap-2"
+              >
+                <MdCheckCircle /> Đã tham gia
+              </button>
+            ) : (event.maxParticipants > 0 && event.participants >= event.maxParticipants) ? (
+              <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
+                Đã đầy chỗ
+              </button>
+            ) : (
+              <button
+                onClick={handleJoin}
+                disabled={isJoining}
+                className="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+              >
+                {isJoining ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaPlus className="text-xs" />}
+                Tham gia ngay
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

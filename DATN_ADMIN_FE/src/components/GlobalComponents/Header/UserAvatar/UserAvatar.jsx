@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { HiOutlineLogout } from 'react-icons/hi'
+import { HiOutlineArrowRightOnRectangle } from 'react-icons/hi2'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { logoutAccount } from '../../../../apis/authApi'
 
@@ -92,7 +92,7 @@ export default function UserAvatar() {
                 >
                   Đăng xuất
                   <div className='text-base'>
-                    <HiOutlineLogout />
+                    <HiOutlineArrowRightOnRectangle />
                   </div>
                 </div>
               </div>

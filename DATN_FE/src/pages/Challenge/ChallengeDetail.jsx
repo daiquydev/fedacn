@@ -75,11 +75,15 @@ export default function ChallengeDetail() {
   const me = meData?.data?.result?.[0]
   const myFollowers = useMemo(() => me?.followers || [], [me])
   const myFollowings = useMemo(() => me?.followings || [], [me])
+  const followerIds = useMemo(() => new Set(myFollowers.map(p => String(p._id))), [myFollowers])
   const followingIds = useMemo(() => new Set(myFollowings.map(p => String(p._id))), [myFollowings])
   const myFriends = useMemo(
     () => myFollowers.filter(p => followingIds.has(String(p._id))),
     [myFollowers, followingIds]
   )
+  const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
+  const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
+
   const filteredFriendsForInvite = useMemo(() => {
     const kw = friendSearch.toLowerCase().trim()
     return myFriends.filter(f => {
@@ -420,14 +424,21 @@ export default function ChallengeDetail() {
                     Thử thách đã kết thúc
                   </button>
                 ) : (
-                  <button
-                    onClick={() => joinMutation.mutate()}
-                    disabled={joinMutation.isPending}
-                    className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {joinMutation.isPending ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaPlus className="text-xs" />}
-                    Tham gia ngay
-                  </button>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      onClick={() => joinMutation.mutate()}
+                      disabled={joinMutation.isPending}
+                      className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {joinMutation.isPending ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaPlus className="text-xs" />}
+                      {challenge.hasPreviouslyQuit ? 'Tham gia lại' : 'Tham gia ngay'}
+                    </button>
+                    {challenge.hasPreviouslyQuit && (
+                      <p className="text-xs text-yellow-300/80 flex items-center gap-1">
+                        ⚠️ Bạn đã rời thử thách này trước đó. Tham gia lại sẽ bắt đầu từ đầu.
+                      </p>
+                    )}
+                  </div>
                 )
               ) : (
                 <>
@@ -669,6 +680,10 @@ export default function ChallengeDetail() {
             challengeType={challenge.challenge_type}
             goalUnit={challenge.goal_unit}
             onViewProgress={(p) => setSelectedParticipant(p)}
+            friendIds={friendIds}
+            connectedIds={connectedIds}
+            creatorId={String(challenge.creator_id?._id || challenge.creator_id || '')}
+            currentUserId={me?._id}
           />
         )}
       </div>

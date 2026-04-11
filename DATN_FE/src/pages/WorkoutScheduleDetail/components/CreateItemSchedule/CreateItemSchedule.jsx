@@ -244,7 +244,7 @@ export default function CreateItemSchedule({ workout }) {
             errors={errors.time}
             name='time'
             id='time'
-            placeholder='Nhập thời gian'
+            placeholder='Nhập thời gian (phút)'
           />
 
           <button className='block btn btn-sm md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>
@@ -273,7 +273,7 @@ export default function CreateItemSchedule({ workout }) {
                         type='search'
                         id='search_input'
                         {...registerActivity('searchActivity')}
-                        placeholder='Tìm kiếm bài viết'
+                        placeholder='Tìm bài tập...'
                         className='w-full py-2 px-3 placeholder:text-sm rounded-lg border border-red-200 bg-white dark:border-none dark:bg-slate-800'
                       />
                       <button className='absolute right-1 top-1/2 -translate-y-1/2 py-2 px-3 bg-yellow-700 text-white dark:bg-slate-600 rounded-lg'>
@@ -440,7 +440,7 @@ const AcitivityItem = ({ activity, workoutState, setWorkoutState }) => {
                       id='time'
                       register={register}
                       errors={errors.time}
-                      placeholder='Nhập thời gian'
+                      placeholder='Nhập thời gian (phút)'
                     />
 
                     <div className='flex justify-center'>

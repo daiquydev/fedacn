@@ -47,6 +47,19 @@ class SportEventVideoSessionService {
         const event = await SportEventModel.findById(eventId)
         if (!event) throw new Error('Sự kiện không tồn tại')
 
+        const now = new Date()
+        // Cho phép join sớm 10 phút trước khi bắt đầu
+        if (event.startDate) {
+            const startTime = new Date(event.startDate).getTime()
+            if (now.getTime() < startTime - 10 * 60 * 1000) {
+                throw new Error('Sự kiện chưa bắt đầu. Chỉ có thể vào phòng 10 phút trước thời gian quy định.')
+            }
+        }
+        // Chặn join nếu sự kiện đã kết thúc
+        if (event.endDate && new Date(event.endDate) < now) {
+            throw new Error('Sự kiện đã kết thúc, không thể tham gia video call.')
+        }
+
         const isParticipant = event.participants_ids?.some((id) => id.toString() === userId)
         if (!isParticipant) {
             throw new Error('Bạn cần tham gia sự kiện trước khi vào video call')
@@ -58,6 +71,7 @@ class SportEventVideoSessionService {
             userId,
             status: 'active'
         })
+
 
         if (existingActive) {
             // Force-end the stale session without creating progress (totalSeconds = 0 means abandoned)

@@ -3,7 +3,9 @@ import {
     adminGetChallengesController,
     adminGetChallengeStatsController,
     adminDeleteChallengeController,
-    adminRestoreChallengeController
+    adminRestoreChallengeController,
+    adminCreateChallengeController,
+    adminUpdateChallengeController
 } from '~/controllers/adminControllers/adminChallenge.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { checkRole } from '~/middlewares/roles.middleware'
@@ -21,6 +23,8 @@ adminChallengeRouter.use(accessTokenValidator, wrapRequestHandler(checkRole([Use
 
 adminChallengeRouter.get('/stats', wrapRequestHandler(adminGetChallengeStatsController))
 adminChallengeRouter.get('/', wrapRequestHandler(adminGetChallengesController))
+adminChallengeRouter.post('/', wrapRequestHandler(adminCreateChallengeController))
+adminChallengeRouter.put('/:id', wrapRequestHandler(adminUpdateChallengeController))
 adminChallengeRouter.delete('/:id', wrapRequestHandler(adminDeleteChallengeController))
 adminChallengeRouter.patch('/:id/restore', wrapRequestHandler(adminRestoreChallengeController))
 adminChallengeRouter.get('/:id/participants', wrapRequestHandler(getParticipantsController))

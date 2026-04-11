@@ -119,7 +119,7 @@ class AdminSportEventService {
     ) {
         const { name, description, detailedDescription, category, startDate, endDate, location, address, distance,
             maxParticipants, image, eventType, requirements, benefits, organizer, targetValue, targetUnit,
-            difficulty } = data
+            difficulty, requireStrava } = data
 
         if (!name || !name.trim()) {
             throw new Error('Tên sự kiện không được để trống')
@@ -151,6 +151,7 @@ class AdminSportEventService {
             image: image || '',
             createdBy: new Types.ObjectId(adminId),
             eventType,
+            requireStrava: eventType === 'Ngoài trời' ? Boolean(requireStrava) : false,
             participants: 0,
             participants_ids: [],
             requirements: requirements || '',

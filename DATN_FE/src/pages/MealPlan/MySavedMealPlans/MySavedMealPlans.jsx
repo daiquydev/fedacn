@@ -180,7 +180,7 @@ export default function MySavedMealPlans() {
           <input
             type="text"
             className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Tìm kiếm thực đơn..."
+            placeholder="Tìm thực đơn..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

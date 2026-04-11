@@ -93,7 +93,7 @@ export default function InputConfirm() {
 
           <div className='text-center mb-6'>
             <h1 className='text-2xl font-bold text-gray-900'>Xác nhận OTP</h1>
-            <p className='text-sm text-gray-500 mt-1'>Nhập mã 4 số đã gửi đến email của bạn</p>
+            <p className='text-sm text-gray-500 mt-1'>Nhập mã 4 số đã gửi đến Email</p>
           </div>
           <div className='flex justify-center gap-2 mb-6'>
             <OtpInput

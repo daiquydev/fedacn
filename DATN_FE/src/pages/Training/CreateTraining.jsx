@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FaUpload, FaTimes, FaTrophy, FaRunning, FaCalendarAlt, FaUserFriends, FaRedoAlt } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
@@ -179,7 +179,7 @@ export default function CreateTraining() {
                 onChange={handleInputChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-green-500 dark:focus:border-green-400 focus:outline-none"
-                placeholder="VD: Thử thách chạy bộ 30 ngày"
+                placeholder="Nhập tên thử thách"
               />
             </div>
 
@@ -347,7 +347,7 @@ export default function CreateTraining() {
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-green-500 dark:focus:border-green-400 focus:outline-none"
-                  placeholder="VD: 100"
+                  placeholder="Nhập mục tiêu (km)"
                 />
               </div>
 
@@ -387,7 +387,7 @@ export default function CreateTraining() {
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-green-500 dark:focus:border-green-400 focus:outline-none"
-                  placeholder="VD: 100"
+                  placeholder="Nhập mục tiêu (kcal)"
                 />
               </div>
             </div>

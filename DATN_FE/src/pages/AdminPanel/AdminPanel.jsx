@@ -5,7 +5,7 @@ import mealPlanApi from '../../apis/mealPlanApi'
 import { deleteRecipeForChef } from '../../apis/recipeApi'
 import { deletePostForEachUser, getPublicPosts } from '../../apis/postApi'
 import { acceptPostReport, getInspectorRecipes, getPostReports, rejectPostReport, getMealPlanReports } from '../../apis/adminInspectorApi'
-import { getUsersAdmin, banUserAdmin, unbanUserAdmin, deleteUserAdmin } from '../../apis/adminUserApi'
+import { getUsersAdmin, deleteUserAdmin } from '../../apis/adminUserApi'
 import { Link } from 'react-router-dom'
 import { HiShieldCheck, HiSparkles, HiUsers } from 'react-icons/hi'
 import { MdOutlineSpaceDashboard } from 'react-icons/md'
@@ -23,7 +23,7 @@ const quickActions = [
   },
   {
     title: 'Quản lý người dùng',
-    description: 'Khóa/mở tài khoản, xem báo cáo người dùng. (Sẽ bật khi API hoàn tất)',
+    description: 'Xóa mềm / khôi phục người dùng, xem báo cáo. (Sẽ bật khi API hoàn tất)',
     icon: HiUsers,
     ready: false
   },
@@ -130,24 +130,6 @@ export default function AdminPanel() {
       queryClient.invalidateQueries({ queryKey: ['admin-post-reports'] })
     },
     onError: () => toast.error('Xóa báo cáo thất bại')
-  })
-
-  const banUserMutation = useSafeMutation({
-    mutationFn: (id) => banUserAdmin(id),
-    onSuccess: () => {
-      toast.success('Đã khóa user')
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-    },
-    onError: () => toast.error('Khóa user thất bại')
-  })
-
-  const unbanUserMutation = useSafeMutation({
-    mutationFn: (id) => unbanUserAdmin(id),
-    onSuccess: () => {
-      toast.success('Đã mở khóa user')
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-    },
-    onError: () => toast.error('Mở khóa user thất bại')
   })
 
   const deleteUserMutation = useSafeMutation({
@@ -266,7 +248,7 @@ export default function AdminPanel() {
           ))}
         </div>
         <p className='text-sm text-slate-500 dark:text-slate-400 mt-5'>
-          Các tính năng quản trị (khóa tài khoản, duyệt nội dung, xử lý báo cáo) sẽ được bật dần khi API kết nối. Bạn vẫn có thể tiếp tục dùng FE hiện tại; khi có quyền admin, lối tắt này luôn hiển thị trong thanh điều hướng.
+          Các tính năng quản trị (xóa mềm người dùng, duyệt nội dung, xử lý báo cáo) sẽ được bật dần khi API kết nối. Bạn vẫn có thể tiếp tục dùng FE hiện tại; khi có quyền admin, lối tắt này luôn hiển thị trong thanh điều hướng.
         </p>
       </div>
 
@@ -350,25 +332,13 @@ export default function AdminPanel() {
                   <td className='py-2 pr-3 truncate max-w-xs'>{u.name || u.user_name || 'Không tên'}</td>
                   <td className='py-2 pr-3 truncate max-w-xs'>{u.email}</td>
                   <td className='py-2 pr-3'>{u.role}</td>
-                  <td className='py-2 pr-3'>{u.status === 0 ? 'Bị khóa' : 'Hoạt động'}</td>
+                  <td className='py-2 pr-3'>{u.isDeleted ? 'Đã xóa' : 'Hoạt động'}</td>
                   <td className='py-2 pr-3 space-x-2'>
-                    <button
-                      onClick={() => banUserMutation.mutate(u._id)}
-                      className='px-3 py-1 rounded-lg bg-amber-500 text-white text-xs font-semibold'
-                    >
-                      Khóa
-                    </button>
-                    <button
-                      onClick={() => unbanUserMutation.mutate(u._id)}
-                      className='px-3 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold'
-                    >
-                      Mở khóa
-                    </button>
                     <button
                       onClick={() => deleteUserMutation.mutate(u._id)}
                       className='px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-semibold'
                     >
-                      Xóa
+                      Xóa mềm
                     </button>
                   </td>
                 </tr>

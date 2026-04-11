@@ -13,6 +13,7 @@
     "seed:users-posts": "ts-node -r tsconfig-paths/register ./scripts/seedUsersAndPosts.ts",
     "seed:sport-events": "ts-node -r tsconfig-paths/register ./scripts/reseedSportEvents.ts",
     "seed:exercises": "ts-node -r tsconfig-paths/register ./src/scripts/seedExercises.ts",
+    "migrate:user-remove-account-ban": "ts-node -r tsconfig-paths/register ./src/scripts/migrateRemoveUserAccountBan.ts",
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "audit:recipe-instructions": "ts-node -r tsconfig-paths/register ./src/scripts/auditRecipeInstructions.ts",
     "lint": "eslint .",

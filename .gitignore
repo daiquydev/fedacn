@@ -1,5 +1,6 @@
 # LaTeX report files
 laTex_report/
+BAOCAO_LATEX/
 *.aux
 *.log
 *.out

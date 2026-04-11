@@ -2,7 +2,7 @@ import { FaFacebook, FaInstagram, FaTwitter, FaGithub } from 'react-icons/fa'
 
 export default function Footer() {
   return (
-    <footer className='footer mt-[40rem] items-center p-4 bg-gray-200 dark:bg-color-primary-dark dark:text-gray-400 text-xs text-gray-700'>
+    <footer className='footer items-center p-4 bg-gray-200 dark:bg-color-primary-dark dark:text-gray-400 text-xs text-gray-700'>
       <aside className='items-center grid-flow-col'>
         <svg
           width='20'

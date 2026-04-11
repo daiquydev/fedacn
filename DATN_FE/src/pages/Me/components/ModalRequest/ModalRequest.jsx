@@ -43,7 +43,7 @@ export default function ModalRequest({ handleCloseModalRequest, updateRequest })
           type='text'
           name='proof'
           id='proof'
-          placeholder='VD: https://www.facebook.com/...'
+          placeholder='Nhập link chứng minh (Profile, Github...)'
           register={register}
           errors={errors.proof}
         />

@@ -410,9 +410,9 @@ export default function CreateChallengeModal({ open, onClose }) {
     // ==================== AI FILL ====================
     // Contextual placeholders per type (Step 2 hint)
     const AI_PLACEHOLDERS = {
-        outdoor_activity: 'VD: Tôi muốn thử thách chạy bộ buổi sáng, mục tiêu 5km mỗi ngày trong 30 ngày, dành cho người mới bắt đầu',
-        nutrition: 'VD: Thử thách ăn chay buổi sáng từ 7-10h trong vòng 3 tuần, check-in 1 bữa/ngày\nVD: Giảm cân bằng cách ăn sạch, không đường, 2 bữa check-in/ngày trong 2 tháng',
-        fitness: 'VD: Tập gym 4 buổi/tuần trong tháng này, mỗi buổi 45 phút, tổng 16 buổi\nVD: Thử thách plank 30 ngày, bắt đầu từ 1 phút và tăng dần'
+        outdoor_activity: 'Nhập độ dài, mục tiêu và thời gian (ví dụ: chạy bộ 5km mỗi ngày trong 30 ngày)',
+        nutrition: 'Nhập chế độ ăn, số bữa và thời gian (ví dụ: ăn chay 1 bữa/ngày trong 3 tuần)',
+        fitness: 'Nhập chi tiết bài tập (ví dụ: tập gym 4 buổi/tuần, mỗi buổi 45 phút)'
     }
 
     const buildAIPrompt = (desc, today, type) => {
@@ -475,7 +475,7 @@ Quy tắc:
 
 Quy tắc:
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
-2. goal_value: tổng kcal cần đốt MỖI NGÀY hợp lý (thường 200-800 kcal).
+2. suggested_exercises: một mảng chứa tên tiếng Việt của 2 đến 4 bài tập phù hợp với mô tả nhất.
 3. visibility: "public" | "friends" | "private".
 4. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ LUYỆN TẬP THỂ DỤC.
 5. description: tối đa 150 ký tự, tiếng Việt, nói về luyện tập.
@@ -485,7 +485,7 @@ Quy tắc:
   "title": string,
   "startDate": "YYYY-MM-DD",
   "endDate": "YYYY-MM-DD",
-  "goal_value": number,
+  "suggested_exercises": ["tên bài tập"],
   "visibility": "public" | "friends" | "private",
   "description": string
 }`
@@ -551,10 +551,48 @@ Quy tắc:
                 if (parsed.description) updated.description = parsed.description.slice(0, 150)
                 return updated
             })
+
+            // Handle fitness suggested_exercises mapping
+            if (aiType === 'fitness' && Array.isArray(parsed.suggested_exercises)) {
+                const newExercises = []
+                for (const exName of parsed.suggested_exercises) {
+                    if (typeof exName !== 'string') continue
+                    const searchTerm = exName.toLowerCase().trim()
+                    
+                    const match = allExercises.find(ex => {
+                        const nameEn = (ex.name || '').toLowerCase()
+                        const nameVi = (ex.name_vi || '').toLowerCase()
+                        if (!nameEn && !nameVi) return false
+                        return (nameEn && searchTerm.includes(nameEn)) || (nameVi && searchTerm.includes(nameVi)) ||
+                               (nameEn && nameEn.includes(searchTerm)) || (nameVi && nameVi.includes(searchTerm))
+                    })
+                    
+                    if (match && !newExercises.some(ne => ne.exercise_id === match._id)) {
+                         newExercises.push({
+                             exercise_id: match._id,
+                             exercise_name: match.name,
+                             exercise_name_vi: match.name_vi || '',
+                             sets: match.default_sets?.length > 0 ? match.default_sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }]
+                         })
+                    }
+                }
+                setSelectedExercises(newExercises)
+                
+                if (newExercises.length === 0) {
+                     toast.error('AI không tìm thấy bài tập nào khớp trong hệ thống, vui lòng chọn thủ công.')
+                } else if (newExercises.length < parsed.suggested_exercises.length) {
+                     toast.success(`✨ AI đã điền xong! Tìm thấy ${newExercises.length}/${parsed.suggested_exercises.length} bài tập.`)
+                } else {
+                     toast.success('✨ AI đã thêm đầy đủ các bài tập!')
+                }
+            } else {
+                toast.success('✨ AI đã điền xong!')
+            }
+
             setErrors({})
             setShowAIModal(false)
             setAiDesc('')
-            toast.success('✨ AI đã điền xong!')
+
         } catch (err) {
             toast.error(`AI lỗi: ${err.message}`)
         } finally {
@@ -636,7 +674,7 @@ Quy tắc:
                                 <input
                                     value={form.title}
                                     onChange={e => { setField('title', e.target.value); const err = validateField('title', e.target.value); setErrors(p => ({ ...p, title: err })) }}
-                                    placeholder="VD: Chạy 100km trong tháng 4"
+                                    placeholder="Nhập tên thử thách của bạn"
                                     className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.title ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-orange-400'}`}
                                 />
                                 {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
@@ -793,7 +831,7 @@ Quy tắc:
                                             value={exerciseSearch}
                                             onChange={e => { setExerciseSearch(e.target.value); setShowExerciseDropdown(true) }}
                                             onFocus={() => setShowExerciseDropdown(true)}
-                                            placeholder="🔍 Tìm bài tập (VD: Squat, Bench Press...)"
+                                            placeholder="Tìm bài tập..."
                                             className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.exercises ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-purple-400'}`}
                                         />
                                         {showExerciseDropdown && filteredExercises.length > 0 && (
@@ -957,7 +995,7 @@ Quy tắc:
                                     onChange={e => setField('description', e.target.value)}
                                     rows={3}
                                     maxLength={500}
-                                    placeholder="Mô tả ngắn về thử thách của bạn..."
+                                    placeholder="Mô tả ngắn về thử thách..."
                                     className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-orange-400 outline-none transition text-sm resize-none"
                                 />
                                 <p className="text-[10px] text-gray-400 text-right mt-0.5">{form.description.length}/500</p>

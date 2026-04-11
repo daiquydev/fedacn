@@ -9,6 +9,7 @@ import {
     quitChallengeController,
     getMyChallengesController,
     getMyCreatedChallengesController,
+    getChallengeStatsController,
     addProgressController,
     getProgressController,
     getLeaderboardController,
@@ -21,12 +22,19 @@ import {
     getFeedController,
     inviteFriendToChallengeController
 } from '~/controllers/userControllers/challenge.controller'
+import {
+    createChallengeDayCommentController,
+    getChallengeDayCommentsController,
+    getChallengeDayChildCommentsController,
+    deleteChallengeDayCommentController
+} from '~/controllers/userControllers/challengeDayComment.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
 
 const challengeRouter = Router()
 
 // Protected user-specific routes — MUST come before /:id
+challengeRouter.get('/stats', verifyToken, wrapRequestHandler(getChallengeStatsController))
 challengeRouter.get('/my', verifyToken, wrapRequestHandler(getMyChallengesController))
 challengeRouter.get('/my-created', verifyToken, wrapRequestHandler(getMyCreatedChallengesController))
 challengeRouter.get('/user/:userId/joined', wrapRequestHandler(getPublicUserChallengesController))
@@ -62,5 +70,11 @@ challengeRouter.get('/:id/progress/:userId', verifyTokenOptional, wrapRequestHan
 
 // GPS Activity detail (for map modal)
 challengeRouter.get('/:id/activity/:activityId', verifyTokenOptional, wrapRequestHandler(getChallengeActivityController))
+
+// Day Comments
+challengeRouter.post('/:id/day-comments', verifyToken, wrapRequestHandler(createChallengeDayCommentController))
+challengeRouter.get('/:id/day-comments', verifyTokenOptional, wrapRequestHandler(getChallengeDayCommentsController))
+challengeRouter.get('/:id/day-comments/:commentId/replies', verifyTokenOptional, wrapRequestHandler(getChallengeDayChildCommentsController))
+challengeRouter.delete('/:id/day-comments/:commentId', verifyToken, wrapRequestHandler(deleteChallengeDayCommentController))
 
 export default challengeRouter

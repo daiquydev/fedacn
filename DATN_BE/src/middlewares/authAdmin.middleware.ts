@@ -1,5 +1,5 @@
 import { checkSchema } from 'express-validator'
-import { UserRoles, UserStatus } from '~/constants/enums'
+import { UserRoles } from '~/constants/enums'
 import { AUTH_USER_MESSAGE } from '~/constants/messages'
 import UserModel from '~/models/schemas/user.schema'
 import { comparePassword } from '~/utils/crypto'
@@ -18,8 +18,8 @@ export const loginAdminValidator = validate(
             if (user === null) {
               throw new Error(AUTH_USER_MESSAGE.USER_NAME_OR_PASSWORD_INCORRECT)
             }
-            if (user.status === UserStatus.banned) {
-              throw new Error(AUTH_USER_MESSAGE.ACCOUNT_BANNED)
+            if (user.isDeleted === true) {
+              throw new Error(AUTH_USER_MESSAGE.ACCOUNT_DELETED)
             }
             if (user.role === UserRoles.user || user.role === UserRoles.chef) {
               throw new Error(AUTH_USER_MESSAGE.USER_NAME_OR_PASSWORD_INCORRECT)

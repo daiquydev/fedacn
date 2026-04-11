@@ -5,7 +5,10 @@ import ChallengeProgressModel from '~/models/schemas/challengeProgress.schema'
 import ActivityTrackingModel from '~/models/schemas/activityTracking.schema'
 import NotificationModel from '~/models/schemas/notification.schema'
 import FollowModel from '~/models/schemas/follow.schema'
+import PostModel from '~/models/schemas/post.schema'
 import { NotificationTypes } from '~/constants/enums'
+import { ErrorWithStatus } from '~/utils/error'
+import HTTP_STATUS from '~/constants/httpStatus'
 
 class ChallengeService {
     // ==================== CRUD ====================
@@ -28,6 +31,7 @@ class ChallengeService {
         start_date_iso,
         end_date_iso,
         visibility,
+        difficulty,
         nutrition_sub_type,
         time_window_start,
         time_window_end,
@@ -50,6 +54,7 @@ class ChallengeService {
         start_date_iso?: string
         end_date_iso?: string
         visibility?: string
+        difficulty?: 'easy' | 'medium' | 'hard'
         // nutrition time-window fields
         nutrition_sub_type?: 'free' | 'time_window'
         time_window_start?: string
@@ -95,6 +100,7 @@ class ChallengeService {
             status: 'active',
             participants_count: 0,
             badge_emoji: badge_emoji || '🏆',
+            difficulty: difficulty || 'medium',
             linked_meal_plan_id: linked_meal_plan_id ? new Types.ObjectId(linked_meal_plan_id) : null,
             category: category || '',
             kcal_per_unit: kcal_per_unit || 0,
@@ -180,7 +186,7 @@ class ChallengeService {
     async getChallenge(challengeId: string, userId?: string) {
         const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
             .populate('creator_id', 'name avatar email')
-        if (!challenge) throw new Error('Thử thách không tồn tại')
+        if (!challenge) throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
 
         const result: any = challenge.toObject()
 
@@ -199,6 +205,18 @@ class ChallengeService {
             })
             result.isJoined = !!participation
             result.participation = participation ? participation.toObject() : null
+
+            // Kiểm tra xem user đã từng tham gia rồi bỏ chưa
+            if (!participation) {
+                const quitParticipation = await ChallengeParticipantModel.findOne({
+                    challenge_id: new Types.ObjectId(challengeId),
+                    user_id: new Types.ObjectId(userId),
+                    status: 'quit'
+                })
+                result.hasPreviouslyQuit = !!quitParticipation
+            } else {
+                result.hasPreviouslyQuit = false
+            }
         }
 
         return result
@@ -212,13 +230,22 @@ class ChallengeService {
         const allowedFields = [
             'title', 'description', 'image', 'is_public', 'badge_emoji',
             'category', 'kcal_per_unit', 'goal_type', 'goal_value', 'goal_unit',
-            'start_date', 'end_date', 'visibility',
+            'start_date', 'end_date', 'visibility', 'difficulty',
             'nutrition_sub_type', 'time_window_start', 'time_window_end',
             'exercises'
         ]
         const safeUpdate: any = {}
         for (const key of allowedFields) {
             if (updateData[key] !== undefined) safeUpdate[key] = updateData[key]
+        }
+
+        // Fitness: đồng bộ goal_value theo số lượng exercises nếu exercises thay đổi
+        if (safeUpdate.exercises && Array.isArray(safeUpdate.exercises)) {
+            const challenge = await ChallengeModel.findById(challengeId)
+            if (challenge?.challenge_type === 'fitness') {
+                safeUpdate.goal_value = safeUpdate.exercises.length
+                safeUpdate.goal_unit = 'bài tập'
+            }
         }
 
         const updated = await ChallengeModel.findByIdAndUpdate(challengeId, safeUpdate, { new: true })
@@ -234,6 +261,25 @@ class ChallengeService {
         challenge.status = 'cancelled'
         challenge.is_deleted = true
         await challenge.save()
+
+        // Clean up all post markers referencing this challenge
+        // Markers: [challenge:ID], [challenge-activity:*:ID], [challenge-progress:*:ID]
+        const markerRegex = `\\[challenge:${challengeId}\\]|\\[challenge-activity:[a-f0-9]{24}:${challengeId}\\]|\\[challenge-progress:[a-f0-9]{24}:${challengeId}\\]`
+        try {
+            const postsWithMarker = await PostModel.find({ content: { $regex: markerRegex, $options: 'i' } })
+            for (const post of postsWithMarker) {
+                post.content = (post.content || '')
+                    .replace(new RegExp(`\\n?\\[challenge:${challengeId}\\]`, 'gi'), '')
+                    .replace(new RegExp(`\\n?\\[challenge-activity:[a-f0-9]{24}:${challengeId}\\]`, 'gi'), '')
+                    .replace(new RegExp(`\\n?\\[challenge-progress:[a-f0-9]{24}:${challengeId}\\]`, 'gi'), '')
+                    .trim()
+                await post.save()
+            }
+        } catch (err) {
+            // Non-critical: don't break delete if cleanup fails
+            console.error('Failed to clean post markers for challenge:', challengeId, err)
+        }
+
         return challenge
     }
 
@@ -291,9 +337,19 @@ class ChallengeService {
         return participant
     }
 
-    async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20) {
+    async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
         const skip = (page - 1) * limit
-        const condition = { creator_id: new Types.ObjectId(userId), is_deleted: { $ne: true } }
+        const condition: any = { creator_id: new Types.ObjectId(userId), is_deleted: { $ne: true } }
+
+        const now = new Date()
+        if (status === 'ongoing') {
+            condition.start_date = { $lte: now }
+            condition.end_date = { $gte: now }
+        } else if (status === 'ended') {
+            condition.end_date = { $lt: now }
+        } else if (status === 'upcoming') {
+            condition.start_date = { $gt: now }
+        }
 
         const challenges = await ChallengeModel.find(condition)
             .populate('creator_id', 'name avatar')
@@ -307,13 +363,35 @@ class ChallengeService {
         return { challenges, totalPage, page, limit, total }
     }
 
-    async getMyChallenges(userId: string, page: number = 1, limit: number = 20) {
+    async getMyChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
         const skip = (page - 1) * limit
 
-        const participations = await ChallengeParticipantModel.find({
+        let challengeMatchCondition: any = {}
+        const now = new Date()
+        if (status === 'ongoing') {
+            challengeMatchCondition.start_date = { $lte: now }
+            challengeMatchCondition.end_date = { $gte: now }
+        } else if (status === 'ended') {
+            challengeMatchCondition.end_date = { $lt: now }
+        } else if (status === 'upcoming') {
+            challengeMatchCondition.start_date = { $gt: now }
+        }
+
+        let validChallengeIds = null
+        if (Object.keys(challengeMatchCondition).length > 0) {
+            const matchingChallenges = await ChallengeModel.find(challengeMatchCondition, '_id')
+            validChallengeIds = matchingChallenges.map(c => c._id)
+        }
+
+        const condition: any = {
             user_id: new Types.ObjectId(userId),
             status: { $ne: 'quit' }
-        })
+        }
+        if (validChallengeIds) {
+            condition.challenge_id = { $in: validChallengeIds }
+        }
+
+        const participations = await ChallengeParticipantModel.find(condition)
             .populate({
                 path: 'challenge_id',
                 populate: { path: 'creator_id', select: 'name avatar' }
@@ -322,13 +400,42 @@ class ChallengeService {
             .limit(limit)
             .sort({ joined_at: -1 })
 
-        const total = await ChallengeParticipantModel.countDocuments({
-            user_id: new Types.ObjectId(userId),
-            status: { $ne: 'quit' }
-        })
+        const total = await ChallengeParticipantModel.countDocuments(condition)
         const totalPage = Math.ceil(total / limit)
 
         return { participations, totalPage, page, limit, total }
+    }
+
+    async getChallengeStats(userId: string, type: string) {
+        const now = new Date()
+        let total = 0, ongoing = 0, upcoming = 0, ended = 0
+
+        if (type === 'created') {
+            const condition: any = { creator_id: new Types.ObjectId(userId), is_deleted: { $ne: true } }
+            const [t, o, u, e] = await Promise.all([
+                ChallengeModel.countDocuments(condition),
+                ChallengeModel.countDocuments({ ...condition, start_date: { $lte: now }, end_date: { $gte: now } }),
+                ChallengeModel.countDocuments({ ...condition, start_date: { $gt: now } }),
+                ChallengeModel.countDocuments({ ...condition, end_date: { $lt: now } })
+            ])
+            total = t; ongoing = o; upcoming = u; ended = e;
+        } else {
+            const participations = await ChallengeParticipantModel.find({
+                user_id: new Types.ObjectId(userId),
+                status: { $ne: 'quit' }
+            }).select('challenge_id')
+            const challengeIds = participations.map((p: any) => p.challenge_id)
+            const condition: any = { _id: { $in: challengeIds }, is_deleted: { $ne: true } }
+            const [t, o, u, e] = await Promise.all([
+                ChallengeModel.countDocuments(condition),
+                ChallengeModel.countDocuments({ ...condition, start_date: { $lte: now }, end_date: { $gte: now } }),
+                ChallengeModel.countDocuments({ ...condition, start_date: { $gt: now } }),
+                ChallengeModel.countDocuments({ ...condition, end_date: { $lt: now } })
+            ])
+            total = t; ongoing = o; upcoming = u; ended = e;
+        }
+
+        return { total, ongoing, upcoming, ended }
     }
 
     // ==================== PROGRESS ====================
@@ -389,10 +496,13 @@ class ChallengeService {
         // Determine source based on challenge_type
         let source = data.source || 'manual'
         if (challenge.challenge_type === 'nutrition') source = 'photo_checkin'
-        else if (challenge.challenge_type === 'outdoor_activity') source = 'gps_tracking'
         else if (challenge.challenge_type === 'fitness') source = 'workout_session'
+        else if (challenge.challenge_type === 'outdoor_activity') {
+            // Giữ source từ client: 'gps_tracking' (GPS thực) hoặc 'manual_input' (nhập tay)
+            source = data.source === 'manual_input' ? 'manual_input' : 'gps_tracking'
+        }
 
-        // If GPS tracking, always create an ActivityTracking document (even with empty route)
+        // Chỉ tạo ActivityTracking khi có GPS thực (không tạo khi nhập tay)
         let activityId: Types.ObjectId | null = null
         if (source === 'gps_tracking') {
             const distanceMeters = (data.distance || 0) * 1000
@@ -459,14 +569,19 @@ class ChallengeService {
                 participant.active_days.push(today)
             }
 
-            // Check if today's goal is met
-            const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
+            // Check if today's goal is met — dùng VN offset UTC+7 để tránh lệch ngày khi server UTC
+            const vnOffset = 7 * 60 * 60 * 1000
+            const nowVNMs = Date.now() + vnOffset
+            const startOfDayVN = new Date(nowVNMs - (nowVNMs % (24 * 60 * 60 * 1000)))
+            const endOfDayVN = new Date(startOfDayVN.getTime() + 24 * 60 * 60 * 1000 - 1)
+            // Chuyển lại UTC để query MongoDB
+            const startOfDayUTC = new Date(startOfDayVN.getTime() - vnOffset)
+            const endOfDayUTC = new Date(endOfDayVN.getTime() - vnOffset)
 
             const todaysProgressList = await ChallengeProgressModel.find({
                 challenge_id: new Types.ObjectId(challengeId),
                 user_id: new Types.ObjectId(userId),
-                date: { $gte: startOfDay, $lte: endOfDay },
+                date: { $gte: startOfDayUTC, $lte: endOfDayUTC },
                 is_deleted: { $ne: true },
                 validation_status: { $ne: 'invalid_time' },
                 ai_review_valid: { $ne: false }
@@ -553,7 +668,7 @@ class ChallengeService {
             _id: new Types.ObjectId(activityId),
             challengeId: new Types.ObjectId(challengeId)
         })
-        if (!activity) throw new Error('Hoạt động không tồn tại')
+        if (!activity) throw new ErrorWithStatus({ message: 'Hoạt động không tồn tại', status: HTTP_STATUS.NOT_FOUND })
         return activity
     }
 
@@ -564,7 +679,7 @@ class ChallengeService {
             is_deleted: { $ne: true }
         })
             .populate('workout_session_id')
-        if (!entry) throw new Error('Hoạt động không tồn tại')
+        if (!entry) throw new ErrorWithStatus({ message: 'Hoạt động không tồn tại', status: HTTP_STATUS.NOT_FOUND })
         return entry
     }
 
@@ -574,7 +689,7 @@ class ChallengeService {
         const skip = (page - 1) * limit
 
         const challenge = await ChallengeModel.findById(challengeId)
-        if (!challenge) throw new Error('Thử thách không tồn tại')
+        if (!challenge) throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
 
         // Total required days for this challenge
         const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
@@ -635,9 +750,12 @@ class ChallengeService {
         const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
         const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
-        // Bulk-fetch today's progress for all participants
-        const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
-        const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999)
+        // Bulk-fetch today's progress — dùng VN offset UTC+7
+        const _vnOffset = 7 * 60 * 60 * 1000
+        const _nowVNMs = Date.now() + _vnOffset
+        const _startVN = new Date(_nowVNMs - (_nowVNMs % (24 * 60 * 60 * 1000)))
+        const startOfDay = new Date(_startVN.getTime() - _vnOffset)
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1)
         const userIds = participants.map(p => p.user_id instanceof Types.ObjectId ? p.user_id : (p.user_id as any)?._id)
 
         let todayMap = new Map<string, number>()
@@ -752,7 +870,9 @@ class ChallengeService {
             participant: {
                 user: participant.user_id,
                 current_value: completedDays,
-                goal_value: totalRequiredDays,
+                daily_goal: challenge.goal_value,         // mục tiêu hằng ngày (vd: 5 km/ngày, 3 bữa/ngày)
+                total_required_days: totalRequiredDays,   // tổng số ngày cần hoàn thành
+                goal_value: totalRequiredDays,            // giữ lại để tương thích với code cũ
                 progress_percent: progressPercent,
                 is_completed: participant.is_completed,
                 streak_count: participant.streak_count,
@@ -851,7 +971,12 @@ class ChallengeService {
         page = 1,
         limit = 9,
         challenge_type,
-        search
+        search,
+        category,
+        sortBy,
+        status,
+        dateFrom,
+        dateTo
     }: {
         scope?: 'public' | 'friends' | 'mine'
         userId?: string
@@ -859,6 +984,11 @@ class ChallengeService {
         limit?: number
         challenge_type?: string
         search?: string
+        category?: string
+        sortBy?: string
+        status?: string
+        dateFrom?: string
+        dateTo?: string
     }) {
         const skip = (page - 1) * limit
         let challengeIds: Types.ObjectId[] | null = null
@@ -907,7 +1037,29 @@ class ChallengeService {
         }
 
         // ────────── Build query ──────────
-        const condition: any = { status: 'active', is_deleted: { $ne: true } }
+        const condition: any = { is_deleted: { $ne: true } }
+
+        if (status === 'ongoing') {
+            condition.start_date = { $lte: new Date() }
+            condition.end_date = { $gte: new Date() }
+            condition.status = 'active'
+        } else if (status === 'ended') {
+            condition.end_date = { $lt: new Date() }
+        } else if (status === 'upcoming') {
+            condition.start_date = { $gt: new Date() }
+            condition.status = 'active'
+        } else {
+            condition.status = 'active'
+        }
+
+        if (dateFrom) condition.end_date = { ...condition.end_date, $gte: new Date(dateFrom) }
+        if (dateTo) {
+            const toDate = new Date(dateTo)
+            toDate.setHours(23, 59, 59, 999)
+            condition.start_date = { ...condition.start_date, $lte: toDate }
+        }
+
+        if (category && category !== 'all') condition.category = category
 
         if (scope === 'public') {
             condition.is_public = true
@@ -921,11 +1073,114 @@ class ChallengeService {
         const total = await ChallengeModel.countDocuments(condition)
         const totalPage = Math.ceil(total / limit) || 0
 
+        // For popular/default: sort by status priority (ongoing → upcoming → ended) via aggregation
+        if (!sortBy || sortBy === 'popular') {
+            const now = new Date()
+
+            const rawChallenges = await ChallengeModel.aggregate([
+                { $match: condition },
+                {
+                    $addFields: {
+                        statusOrder: {
+                            $switch: {
+                                branches: [
+                                    {
+                                        case: { $and: [{ $lte: ['$start_date', now] }, { $gte: ['$end_date', now] }] },
+                                        then: 0 // ongoing
+                                    },
+                                    {
+                                        case: { $gt: ['$start_date', now] },
+                                        then: 1 // upcoming
+                                    }
+                                ],
+                                default: 2 // ended
+                            }
+                        }
+                    }
+                },
+                { $sort: { statusOrder: 1, start_date: 1, _id: 1 } },
+                { $skip: skip },
+                { $limit: limit },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'creator_id',
+                        foreignField: '_id',
+                        as: '_creatorArr',
+                        pipeline: [{ $project: { name: 1, avatar: 1 } }]
+                    }
+                },
+                { $addFields: { creator_id: { $arrayElemAt: ['$_creatorArr', 0] } } },
+                { $project: { _creatorArr: 0, statusOrder: 0 } }
+            ])
+
+            let resultChallenges: any[] = rawChallenges
+
+            // Inject isJoined + myProgress
+            if (userId) {
+                const userParticipations = participations.length > 0
+                    ? participations
+                    : await ChallengeParticipantModel.find({
+                        user_id: new Types.ObjectId(userId),
+                        challenge_id: { $in: rawChallenges.map((c: any) => c._id) },
+                        status: { $ne: 'quit' }
+                    })
+
+                const joinedMap = new Map<string, any>()
+                userParticipations.forEach((p: any) => {
+                    joinedMap.set(p.challenge_id.toString(), p.toObject ? p.toObject() : p)
+                })
+
+                resultChallenges = resultChallenges.map((c: any) => ({
+                    ...c,
+                    isJoined: joinedMap.has(c._id.toString()),
+                    myProgress: joinedMap.get(c._id.toString()) || null
+                }))
+            }
+
+            // Inject participants_preview (top 5 users)
+            const allChallengeIds = resultChallenges.map((c: any) => c._id)
+            if (allChallengeIds.length > 0) {
+                const allParticipants = await ChallengeParticipantModel.find({
+                    challenge_id: { $in: allChallengeIds.map((id: any) => new Types.ObjectId(id.toString())) },
+                    status: { $ne: 'quit' }
+                })
+                    .populate('user_id', 'name avatar')
+                    .sort({ joined_at: 1 })
+                    .lean()
+
+                const previewMap = new Map<string, any[]>()
+                allParticipants.forEach((p: any) => {
+                    const cid = p.challenge_id.toString()
+                    if (!previewMap.has(cid)) previewMap.set(cid, [])
+                    const arr = previewMap.get(cid)!
+                    if (arr.length < 5) arr.push(p.user_id)
+                })
+
+                resultChallenges = resultChallenges.map((c: any) => ({
+                    ...c,
+                    participants_preview: previewMap.get(c._id.toString()) || []
+                }))
+            }
+
+            return { challenges: resultChallenges, totalPage, page, limit, total }
+        }
+
+        // Non-popular sorts: use find().sort() as before
+        let sortOption: any = { createdAt: -1 }
+        switch (sortBy) {
+            case 'newest': sortOption = { createdAt: -1 }; break;
+            case 'oldest': sortOption = { createdAt: 1 }; break;
+            case 'soonest': sortOption = { start_date: 1 }; break;
+            case 'ending_soon': sortOption = { end_date: 1 }; break;
+            default: sortOption = { createdAt: -1 }; break;
+        }
+
         const challenges = await ChallengeModel.find(condition)
             .populate('creator_id', 'name avatar')
             .skip(skip)
             .limit(limit)
-            .sort({ createdAt: -1 })
+            .sort(sortOption)
 
         let resultChallenges = challenges.map(c => c.toObject())
 
@@ -962,15 +1217,12 @@ class ChallengeService {
                 .sort({ joined_at: 1 })
                 .lean()
 
-            // Group by challenge_id, take top 5
             const previewMap = new Map<string, any[]>()
             allParticipants.forEach((p: any) => {
                 const cid = p.challenge_id.toString()
                 if (!previewMap.has(cid)) previewMap.set(cid, [])
                 const arr = previewMap.get(cid)!
-                if (arr.length < 5) {
-                    arr.push(p.user_id)
-                }
+                if (arr.length < 5) arr.push(p.user_id)
             })
 
             resultChallenges = resultChallenges.map((c: any) => ({

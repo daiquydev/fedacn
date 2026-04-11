@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getChallengeFeed, joinChallenge, quitChallenge } from '../../apis/challengeApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
 import { currentAccount } from '../../apis/userApi'
 import { toast } from 'react-hot-toast'
 import {
@@ -10,11 +11,12 @@ import {
   FaTimes, FaChevronDown, FaSortAmountDown, FaCalendarAlt, FaCheck,
   FaGlobe, FaUserFriends, FaUser
 } from 'react-icons/fa'
-import { MdCheckCircle } from 'react-icons/md'
+import { MdCheckCircle, MdSportsSoccer } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { getImageUrl } from '../../utils/imageUrl'
+import { getSportIcon } from '../../utils/sportIcons'
 import useravatar from '../../assets/images/useravatar.jpg'
 import ParticipantsList from '../../components/ParticipantsList'
 import CreateChallengeModal from './components/CreateChallengeModal'
@@ -46,10 +48,10 @@ function ChallengeCard({ challenge, onJoin, onQuit, joinLoading, friendIds = new
   return (
     <div
       onClick={() => navigate(`/challenge/${challenge._id}`)}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full"
     >
       {/* Image / Gradient Header */}
-      <div className="relative h-48">
+      <div className="relative h-48 overflow-hidden rounded-t-lg">
         {challenge.image ? (
           <img src={getImageUrl(challenge.image)} alt={challenge.title} className="w-full h-full object-cover" />
         ) : (
@@ -117,68 +119,79 @@ function ChallengeCard({ challenge, onJoin, onQuit, joinLoading, friendIds = new
         {/* Participants avatar row */}
         {(() => {
           const previewUsers = (challenge.participants_preview || []).map(p => ({
-            id: p._id || p,
+            id: String(p._id || p),
             name: p.name || 'Người dùng',
             avatar: p.avatar ? getImageUrl(p.avatar) : useravatar,
           }))
+          const creatorId = String(challenge.creator_id?._id || challenge.creator_id || '')
           return previewUsers.length > 0 ? (
             <div className="mb-3" onClick={(e) => e.stopPropagation()}>
               <ParticipantsList
                 participants={previewUsers}
-                initialLimit={4}
+                initialLimit={5}
                 size="sm"
                 title={null}
                 showCount={false}
                 friendIds={friendIds}
                 connectedIds={connectedIds}
+                creatorId={creatorId}
+                showExpand={false}
               />
             </div>
           ) : null
         })()}
 
-        {/* Progress bar (if joined) */}
-        {challenge.isJoined && (
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-medium text-gray-500">Tiến độ</span>
-              <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{progress}%</span>
+        {/* Bottom Section: Progress + Action */}
+        <div className="mt-auto flex flex-col justify-end">
+          {/* Progress bar (if joined) */}
+          {challenge.isJoined && (
+            <div className="mb-3">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-medium text-gray-500">Tiến độ</span>
+                <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{progress}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${config.gradient} transition-all duration-500`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full bg-gradient-to-r ${config.gradient} transition-all duration-500`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Join Button */}
-        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700">
-          {challenge.isJoined ? (
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400 gap-2"
-            >
-              <MdCheckCircle /> Đã tham gia
-            </button>
-          ) : isExpired ? (
-            <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
-              Thử thách đã kết thúc
-            </button>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onJoin(challenge._id) }}
-              disabled={joinLoading}
-              className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-            >
-              {joinLoading ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaPlus className="text-xs" />}
-              Tham gia ngay
-            </button>
           )}
+
+          {/* Join Button */}
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            {challenge.isJoined ? (
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="w-full py-2 bg-green-50 text-green-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-green-900/20 dark:text-green-400 gap-2"
+              >
+                <MdCheckCircle /> Đã tham gia
+              </button>
+            ) : isExpired ? (
+              <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
+                Thử thách đã kết thúc
+              </button>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onJoin(challenge._id) }}
+                disabled={joinLoading}
+                className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+              >
+                {joinLoading ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaPlus className="text-xs" />}
+                Tham gia ngay
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
+}
+
+const formatDateDisplay = (isoDate) => {
+  if (!isoDate || isoDate.length !== 10) return ''
+  return isoDate.split('-').reverse().join('/')
 }
 
 export default function Challenge() {
@@ -186,48 +199,75 @@ export default function Challenge() {
   const queryClient = useQueryClient()
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeType, setActiveType] = useState('all')
+  const [activeType, setActiveType] = useState('all') // 'all', 'nutrition', 'outdoor_activity', 'fitness'
+  const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('popular')
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [filterOngoing, setFilterOngoing] = useState(false)
-  const [page, setPage] = useState(1)
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterJoined, setFilterJoined] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [scope, setScope] = useState('public')
-  const [showScopeMenu, setShowScopeMenu] = useState(false)
-  const scopeRef = useRef(null)
 
-  const SCOPE_OPTIONS = [
-    { value: 'public', label: 'Công khai', icon: FaGlobe, color: 'text-blue-600' },
-    { value: 'friends', label: 'Bạn bè', icon: FaUserFriends, color: 'text-emerald-600' },
-    { value: 'mine', label: 'Của tôi', icon: FaUser, color: 'text-orange-600' }
-  ]
-  const activeScope = SCOPE_OPTIONS.find(s => s.value === scope)
-
-  // Close dropdown on outside click
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   useEffect(() => {
-    const handler = (e) => { if (scopeRef.current && !scopeRef.current.contains(e.target)) setShowScopeMenu(false) }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400)
+    return () => clearTimeout(t)
+  }, [searchTerm])
 
-  const ITEMS_PER_PAGE = 9
+  const toISODate = (yyyymmdd) => {
+    if (!yyyymmdd || yyyymmdd.length !== 10) return undefined
+    return yyyymmdd
+  }
+
+  const resolvedStatus = sortBy === 'ongoing' ? 'ongoing' : sortBy === 'ended' ? 'ended' : sortBy === 'soonest' ? 'upcoming' : undefined
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['challenges-feed', scope, activeType, searchTerm, page],
+    queryKey: ['challenges-feed', {
+        activeType, selectedCategory, debouncedSearch, sortBy, filterJoined, filterDateFrom, filterDateTo, resolvedStatus
+    }],
     queryFn: () => getChallengeFeed({
-      scope,
+      scope: (filterJoined || sortBy === 'joined') ? 'mine' : 'public',
       challenge_type: activeType === 'all' ? undefined : activeType,
-      search: searchTerm || undefined,
-      page,
-      limit: ITEMS_PER_PAGE
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      search: debouncedSearch || undefined,
+      limit: 1000,
+      sortBy: (sortBy === 'ongoing' || sortBy === 'ended') ? 'newest' : (sortBy === 'soonest' ? 'soonest' : sortBy),
+      status: resolvedStatus,
+      dateFrom: toISODate(filterDateFrom),
+      dateTo: toISODate(filterDateTo)
     }),
-    staleTime: 1000
+    staleTime: 1000,
+    keepPreviousData: true
   })
+
+  // Fetch sport categories
+  const { data: categoriesData } = useQuery({
+    queryKey: ['sportCategories'],
+    queryFn: () => sportCategoryApi.getAll()
+  })
+
+  const dbCategories = categoriesData?.data?.result || []
+  const availableCategories = useMemo(() => {
+    if (activeType === 'nutrition') return []
+    if (activeType === 'outdoor_activity') return dbCategories.filter(cat => cat.type === 'Ngoài trời')
+    if (activeType === 'fitness') return dbCategories.filter(cat => cat.type === 'Trong nhà')
+    return dbCategories
+  }, [dbCategories, activeType])
+
+  const categoryIconLookup = useMemo(() => {
+    const map = {}
+    dbCategories.forEach(cat => {
+      map[cat.name] = getSportIcon(cat.icon)
+    })
+    return map
+  }, [dbCategories])
 
   const challenges = data?.data?.result?.challenges || []
   const totalPage = data?.data?.result?.totalPage || 1
+  const totalItems = data?.data?.result?.total || 0
 
-  // Fetch current user's social graph for ParticipantsList social rings
+  // Fetch current user's social graph
   const { data: meData } = useQuery({
     queryKey: ['me'],
     queryFn: currentAccount
@@ -241,8 +281,6 @@ export default function Challenge() {
   const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
   const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
 
-  useEffect(() => { setPage(1) }, [searchTerm, activeType, sortBy, filterOngoing, scope])
-
   const joinMutation = useSafeMutation({
     mutationFn: (id) => joinChallenge(id),
     onSuccess: () => { toast.success('Đã tham gia thử thách!'); queryClient.invalidateQueries({ queryKey: ['challenges-feed'] }) },
@@ -254,20 +292,6 @@ export default function Challenge() {
     onSuccess: () => { toast.success('Đã rời thử thách'); queryClient.invalidateQueries({ queryKey: ['challenges-feed'] }) },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi rời')
   })
-
-  // Sort & filter client-side
-  const sortedChallenges = useMemo(() => {
-    let sorted = [...challenges]
-    if (filterOngoing) {
-      const now = new Date()
-      sorted = sorted.filter(c => new Date(c.start_date) <= now && now <= new Date(c.end_date))
-    }
-    if (sortBy === 'popular') sorted.sort((a, b) => (b.participants_count || 0) - (a.participants_count || 0))
-    else if (sortBy === 'newest') sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    else if (sortBy === 'ending_soon') sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date))
-    else if (sortBy === 'joined') sorted = sorted.filter(c => c.isJoined)
-    return sorted
-  }, [challenges, sortBy, filterOngoing])
 
   // Skeleton
   const SkeletonCard = () => (
@@ -317,7 +341,7 @@ export default function Challenge() {
 
       {/* Search & Filters — matching SportEvent filter card */}
       <div className="container mx-auto px-4 pt-6 pb-2">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
 
           {/* Row 1: Search + Filter toggle */}
           <div className="p-4">
@@ -331,73 +355,37 @@ export default function Challenge() {
                 )}
                 <input
                   type="text"
-                  placeholder="Tìm theo tên thử thách, mô tả..."
+                  placeholder="Tìm theo tên thử thách, mô tả, danh mục..."
                   className="w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div className="flex gap-2 items-center">
-                {/* Scope Dropdown */}
-                <div className="relative" ref={scopeRef}>
-                  <button
-                    onClick={() => setShowScopeMenu(v => !v)}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                      scope !== 'public'
-                        ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300'
-                        : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
-                    }`}
-                  >
-                    {activeScope && <activeScope.icon size={12} className={activeScope.color} />}
-                    <span>{activeScope?.label}</span>
-                    <FaChevronDown size={10} className={`transition-transform ${showScopeMenu ? 'rotate-180' : ''}`} />
-                  </button>
-                  {showScopeMenu && (
-                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
-                      {SCOPE_OPTIONS.map(opt => {
-                        const Icon = opt.icon
-                        return (
-                          <button
-                            key={opt.value}
-                            onClick={() => { setScope(opt.value); setShowScopeMenu(false) }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
-                              scope === opt.value
-                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
-                                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <Icon size={14} className={opt.color} />
-                            {opt.label}
-                            {scope === opt.value && <FaCheck size={10} className="ml-auto text-orange-500" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
                 <button
-                  onClick={() => setFilterOngoing(v => !v)}
+                  onClick={() => setFilterJoined(v => !v)}
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
-                    filterOngoing
+                    filterJoined
                       ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
                       : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600'
                   }`}
                 >
-                  {filterOngoing ? <FaCheck size={10} /> : <FaUsers size={12} />}
-                  Đang diễn ra
+                  {filterJoined ? <FaCheck size={10} /> : <FaUsers size={12} />}
+                  Đang tham gia
                 </button>
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showAdvanced || sortBy !== 'popular'
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                    showAdvanced || sortBy !== 'popular' || !!filterDateFrom || !!filterDateTo
                     ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300'
                     : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
-                    }`}
+                  }`}
                 >
                   <FaFilter size={12} />
                   Bộ lọc
-                  {([sortBy !== 'popular'].filter(Boolean).length > 0) && (
+                  {([sortBy !== 'popular', !!filterDateFrom, !!filterDateTo].filter(Boolean).length > 0) && (
                     <span className="w-5 h-5 rounded-full bg-orange-600 text-white text-[10px] font-bold flex items-center justify-center">
-                      {[sortBy !== 'popular'].filter(Boolean).length}
+                      {[sortBy !== 'popular', !!filterDateFrom, !!filterDateTo].filter(Boolean).length}
                     </span>
                   )}
                   <FaChevronDown size={10} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
@@ -406,34 +394,54 @@ export default function Challenge() {
             </div>
 
             {/* Active filter chips */}
-            {(activeType !== 'all' || sortBy !== 'popular' || searchTerm || filterOngoing || scope !== 'public') && (
+            {(activeType !== 'all' || selectedCategory !== 'all' || sortBy !== 'popular' || searchTerm || filterDateFrom || filterDateTo || filterJoined) && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {scope !== 'public' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                    {scope === 'friends' ? '👥 Bạn bè' : '👤 Của tôi'}
-                    <button onClick={() => setScope('public')}><FaTimes size={9} /></button>
-                  </span>
-                )}
                 {activeType !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                     {TYPE_CONFIG[activeType]?.icon} {TYPE_CONFIG[activeType]?.label}
-                    <button onClick={() => setActiveType('all')}><FaTimes size={9} /></button>
+                    <button onClick={() => { setActiveType('all'); setSelectedCategory('all') }}><FaTimes size={9} /></button>
                   </span>
                 )}
-                {filterOngoing && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                    ✅ Đang diễn ra
-                    <button onClick={() => setFilterOngoing(false)}><FaTimes size={9} /></button>
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    🏅 {selectedCategory}
+                    <button onClick={() => setSelectedCategory('all')} className="hover:text-blue-900"><FaTimes size={9} /></button>
                   </span>
                 )}
                 {sortBy !== 'popular' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                    ↕️ {{ newest: 'Mới nhất', ending_soon: 'Sắp kết thúc', joined: 'Đã tham gia' }[sortBy] || sortBy}
+                     ↕️ {{ newest: 'Mới nhất', oldest: 'Cũ nhất', soonest: 'Sắp diễn ra', ending_soon: 'Sắp kết thúc', ongoing: 'Đang diễn ra', joined: 'Đã tham gia', ended: 'Đã kết thúc' }[sortBy] || sortBy}
                     <button onClick={() => setSortBy('popular')}><FaTimes size={9} /></button>
                   </span>
                 )}
+                {filterDateFrom && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                    📅 Từ {formatDateDisplay(filterDateFrom)}
+                    <button onClick={() => setFilterDateFrom('')}><FaTimes size={9} /></button>
+                  </span>
+                )}
+                {filterDateTo && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                    📅 Đến {formatDateDisplay(filterDateTo)}
+                    <button onClick={() => setFilterDateTo('')}><FaTimes size={9} /></button>
+                  </span>
+                )}
+                {filterJoined && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                    ✅ Đang tham gia
+                    <button onClick={() => setFilterJoined(false)}><FaTimes size={9} /></button>
+                  </span>
+                )}
                 <button
-                  onClick={() => { setSearchTerm(''); setActiveType('all'); setSortBy('popular'); setFilterOngoing(false); setScope('public') }}
+                  onClick={() => {
+                    setSearchTerm('')
+                    setActiveType('all')
+                    setSelectedCategory('all')
+                    setSortBy('popular')
+                    setFilterDateFrom('')
+                    setFilterDateTo('')
+                    setFilterJoined(false)
+                  }}
                   className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition-colors"
                 >
                   <FaTimes size={9} /> Xóa tất cả
@@ -444,10 +452,10 @@ export default function Challenge() {
 
           {/* Row 2: Challenge Type Tabs */}
           <div className="px-4 pb-3">
-            <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl w-full overflow-x-auto no-scrollbar">
+            <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar">
               <button
-                onClick={() => setActiveType('all')}
-                className={`flex-1 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'all'
+                onClick={() => { setActiveType('all'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'all'
                   ? 'bg-white text-orange-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
@@ -455,8 +463,8 @@ export default function Challenge() {
                 Tất cả loại
               </button>
               <button
-                onClick={() => setActiveType('nutrition')}
-                className={`flex-1 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'nutrition'
+                onClick={() => { setActiveType('nutrition'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'nutrition'
                   ? 'bg-white text-emerald-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
@@ -464,8 +472,8 @@ export default function Challenge() {
                 🥗 Ăn uống
               </button>
               <button
-                onClick={() => setActiveType('outdoor_activity')}
-                className={`flex-1 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'outdoor_activity'
+                onClick={() => { setActiveType('outdoor_activity'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'outdoor_activity'
                   ? 'bg-white text-blue-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
@@ -473,8 +481,8 @@ export default function Challenge() {
                 🏃 Ngoài trời
               </button>
               <button
-                onClick={() => setActiveType('fitness')}
-                className={`flex-1 px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'fitness'
+                onClick={() => { setActiveType('fitness'); setSelectedCategory('all') }}
+                className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${activeType === 'fitness'
                   ? 'bg-white text-purple-600 shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
                   }`}
@@ -484,19 +492,82 @@ export default function Challenge() {
             </div>
           </div>
 
+          {/* Row 3: Category Pills (hidden for Nutrition) */}
+          {availableCategories.length > 0 && (
+            <div className="px-4 pb-4">
+              <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+                <button
+                  className={`flex items-center shrink-0 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === 'all'
+                    ? 'bg-orange-50 border-orange-200 text-orange-600 dark:bg-orange-900/20 dark:border-orange-800/50 dark:text-orange-400'
+                    : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-orange-300'
+                   }`}
+                  onClick={() => setSelectedCategory('all')}
+                >
+                  <MdSportsSoccer className={`mr-2 ${selectedCategory === 'all' ? 'text-orange-500' : 'text-gray-400'}`} />
+                  Tất cả môn
+                </button>
+                {availableCategories.map((category) => {
+                  const CatIcon = getSportIcon(category.icon)
+                  return (
+                    <button
+                      key={category._id}
+                      className={`flex items-center shrink-0 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === category.name
+                        ? 'bg-orange-50 border-orange-200 text-orange-600 dark:bg-orange-900/20 dark:border-orange-800/50 dark:text-orange-400'
+                        : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-orange-300'
+                        }`}
+                      onClick={() => setSelectedCategory(category.name)}
+                    >
+                      <CatIcon className={`mr-2 ${selectedCategory === category.name ? 'text-orange-500' : 'text-gray-400'}`} />
+                      {category.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
 
           {/* Collapsible Advanced Filters */}
           {showAdvanced && (
             <div className="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-3 mt-3">
+              <div className="grid grid-cols-2 gap-3 pt-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Từ ngày</label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={filterDateFrom}
+                      onChange={e => setFilterDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Đến ngày</label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={filterDateTo}
+                      onChange={e => setFilterDateTo(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                 <FaSortAmountDown className="text-gray-400 text-sm shrink-0" />
                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase shrink-0">Sắp xếp:</span>
                 <div className="flex gap-2 flex-wrap">
                   {[
                     { value: 'popular', label: 'Phổ biến nhất' },
                     { value: 'newest', label: 'Mới nhất' },
+                    { value: 'oldest', label: 'Cũ nhất' },
+                    { value: 'soonest', label: 'Sắp diễn ra' },
                     { value: 'ending_soon', label: 'Sắp kết thúc' },
-                    { value: 'joined', label: 'Đã tham gia' }
+                    { value: 'ongoing', label: 'Đang diễn ra' },
+                    { value: 'joined', label: 'Đã tham gia' },
+                    { value: 'ended', label: 'Đã kết thúc' }
                   ].map(s => (
                     <button
                       key={s.value}
@@ -518,15 +589,6 @@ export default function Challenge() {
 
       {/* Challenge Grid */}
       <div className="container mx-auto px-4 py-8">
-        {!isLoading && (
-          <div className="mb-6 flex items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{sortedChallenges.length}</span> / {challenges.length} thử thách
-              {totalPage > 1 && <span className="text-gray-400 ml-2">(trang {page}/{totalPage})</span>}
-            </p>
-          </div>
-        )}
-
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
@@ -543,10 +605,10 @@ export default function Challenge() {
               Thử lại
             </button>
           </div>
-        ) : sortedChallenges.length > 0 ? (
+        ) : challenges.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedChallenges.map(challenge => (
+              {challenges.map(challenge => (
                 <ChallengeCard
                   key={challenge._id}
                   challenge={challenge}
@@ -558,35 +620,6 @@ export default function Challenge() {
                 />
               ))}
             </div>
-
-            {/* Pagination */}
-            {totalPage > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                  className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  ← Trước
-                </button>
-                {Array.from({ length: totalPage }, (_, i) => i + 1).map(p => (
-                  <button
-                    key={p}
-                    onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                    className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-orange-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                  >
-                    {p}
-                  </button>
-                ))}
-                <button
-                  disabled={page >= totalPage}
-                  onClick={() => { setPage(p => Math.min(totalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                  className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  Sau →
-                </button>
-              </div>
-            )}
           </>
         ) : (
           <div className="text-center py-16">
@@ -594,7 +627,7 @@ export default function Challenge() {
             <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">Không tìm thấy thử thách phù hợp</h3>
             <p className="text-gray-500 dark:text-gray-500 mb-6">Hãy thử điều chỉnh bộ lọc hoặc tìm kiếm với từ khóa khác</p>
             <button
-              onClick={() => { setSearchTerm(''); setActiveType('all'); setDifficulty('all') }}
+              onClick={() => { setSearchTerm(''); setActiveType('all'); setSelectedCategory('all'); setSortBy('popular'); setFilterDateFrom(''); setFilterDateTo(''); setFilterJoined(false); }}
               className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-semibold transition"
             >
               Xóa bộ lọc

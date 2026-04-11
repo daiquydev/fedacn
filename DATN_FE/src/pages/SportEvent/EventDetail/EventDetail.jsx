@@ -12,6 +12,7 @@ import { getImageUrl } from '../../../utils/imageUrl'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
 import { syncStravaEvent } from '../../../apis/userApi'
+import { getProfileFromLS } from '../../../utils/auth'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -221,8 +222,9 @@ export default function EventDetail() {
     )
   }
 
-  const isParticipant = event.participants_ids?.some(p => p._id === localStorage.getItem('user_id')) || false
-  const isCreator = event.createdBy?._id === localStorage.getItem('user_id') || String(event.createdBy) === localStorage.getItem('user_id')
+  const userId = getProfileFromLS()?._id || localStorage.getItem('user_id')
+  const isParticipant = event.participants_ids?.some(p => String(p._id || p) === String(userId)) || false
+  const isCreator = String(event.createdBy?._id || event.createdBy) === String(userId)
   const isEventInPast = new Date(event.endDate) < new Date()
   const isEventStarted = new Date(event.startDate) <= new Date()
   const isOngoing = isEventStarted && !isEventInPast

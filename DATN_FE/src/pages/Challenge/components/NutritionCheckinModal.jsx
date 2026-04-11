@@ -250,7 +250,7 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
               type="text"
               value={foodName}
               onChange={e => setFoodName(e.target.value)}
-              placeholder="Ví dụ: Cơm gà, Salad rau củ..."
+              placeholder="Nhập tên bữa ăn"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-emerald-400 outline-none transition text-sm"
             />
           </div>
@@ -321,7 +321,7 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
               type="number"
               value={calories}
               onChange={e => setCalories(e.target.value)}
-              placeholder="Ví dụ: 500"
+              placeholder="Nhập lượng calo (kcal)"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-emerald-400 outline-none transition text-sm"
             />
           </div>
@@ -335,7 +335,7 @@ export default function NutritionCheckinModal({ challenge, onClose, onSubmit, is
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              placeholder="Mô tả bữa ăn của bạn..."
+              placeholder="Mô tả bữa ăn..."
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-emerald-400 outline-none transition text-sm resize-none"
             />
           </div>

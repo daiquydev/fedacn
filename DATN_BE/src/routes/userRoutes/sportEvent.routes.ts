@@ -11,7 +11,8 @@ import {
   getJoinedEventsController,
   inviteFriendToEventController,
   getPublicUserEventsController,
-  removeParticipantController
+  removeParticipantController,
+  getEventStatsController
 } from '~/controllers/userControllers/sportEvent.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -37,6 +38,7 @@ const sportEventRouter = Router()
 // Protected routes - MUST come before /:id routes
 sportEventRouter.get('/user/my-events', verifyToken, wrapRequestHandler(getMyEventsController))
 sportEventRouter.get('/user/joined-events', verifyToken, wrapRequestHandler(getJoinedEventsController))
+sportEventRouter.get('/user/event-stats', verifyToken, wrapRequestHandler(getEventStatsController))
 sportEventRouter.get('/user/:userId/joined-events', wrapRequestHandler(getPublicUserEventsController))
 
 // Public routes (with optional auth for isJoined status)

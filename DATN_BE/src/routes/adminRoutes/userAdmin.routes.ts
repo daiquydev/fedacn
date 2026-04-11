@@ -2,7 +2,6 @@ import { Router } from 'express'
 import { UserRoles } from '~/constants/enums'
 import {
   acceptRequestUpgradeController,
-  banUserByIdController,
   createWritterAndInspectorController,
   dashboardController,
   deleteUserByIdController,
@@ -12,7 +11,6 @@ import {
   getUserStatsController,
   rejectRequestUpgradeController,
   restoreUserByIdController,
-  unbanUserByIdController
 } from '~/controllers/adminControllers/userAdmin.controller'
 import {
   getAIUsageAnalyticsController,
@@ -33,20 +31,6 @@ userAdminRouter.get(
 )
 
 
-
-userAdminRouter.put(
-  '/ban',
-  accessTokenValidator,
-  wrapRequestHandler(checkRole([UserRoles.admin])),
-  wrapRequestHandler(banUserByIdController)
-)
-
-userAdminRouter.put(
-  '/unban',
-  accessTokenValidator,
-  wrapRequestHandler(checkRole([UserRoles.admin])),
-  wrapRequestHandler(unbanUserByIdController)
-)
 
 userAdminRouter.put(
   '/restore',

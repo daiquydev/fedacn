@@ -3,8 +3,6 @@ import http from '../utils/http'
 export const getAllUserAdmin = (params) => http.get('/admin', { params })
 export const getUserAdminById = (id) => http.get(`/admin/${id}`)
 export const deleteUserAdmin = (id) => http.delete(`/admin/${id}`)
-export const banUserAdmin = (body) => http.put(`/admin/ban`, body)
-export const unbanUserAdmin = (body) => http.put(`/admin/unban`, body)
 export const restoreUserAdmin = (body) => http.put(`/admin/restore`, body)
 export const getUserStats = () => http.get(`/admin/stats`)
 export const createUserAdmin = (body) => http.post(`/admin/create-user`, body)

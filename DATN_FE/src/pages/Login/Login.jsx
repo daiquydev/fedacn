@@ -86,10 +86,10 @@ export default function Login() {
       </h1>
       <form onSubmit={onSubmit} noValidate>
         <Input
-          title='Email của bạn'
+          title='Email'
           className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
           classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
-          placeholder='Nhập email của bạn'
+          placeholder='Nhập Email'
           register={register}
           errors={errors.email}
           type='email'
@@ -97,7 +97,7 @@ export default function Login() {
           id='email'
         />
         <InputPass
-          title='Mật khẩu của bạn'
+          title='Mật khẩu'
           className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
           classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
           placeholder='Nhập mật khẩu của bạn'

@@ -1238,7 +1238,7 @@ export default function MealPlanDetail() {
                   value={cloneForm.title}
                   onChange={(e) => setCloneForm((prev) => ({ ...prev, title: e.target.value }))}
                   className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Ví dụ: Thực đơn Keto (biến thể cá nhân)"
+                  placeholder="Nhập tên thực đơn"
                 />
               </div>
               <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg p-3">
@@ -1303,7 +1303,7 @@ export default function MealPlanDetail() {
               value={shareForm.content}
               onChange={(e) => setShareForm((prev) => ({ ...prev, content: e.target.value }))}
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="Chia sẻ cảm nhận của bạn về thực đơn này..."
+              placeholder="Chia sẻ cảm nhận..."
             />
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quyền riêng tư</label>

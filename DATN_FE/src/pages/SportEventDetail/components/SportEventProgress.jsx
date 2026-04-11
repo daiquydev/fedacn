@@ -193,7 +193,7 @@ export default function SportEventProgress({
     const today = moment().startOf('day')
     const todaysActivities = completedActivities.filter(a => moment(a.startTime).isSame(today, 'day'))
 
-    const distance = todaysActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
+    const distance = todaysActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
     const duration = todaysActivities.reduce((sum, a) => sum + a.totalDuration, 0)
     return {
       totalSessions: todaysActivities.length,
@@ -205,7 +205,7 @@ export default function SportEventProgress({
   // Aggregate stats from filtered GPS activities (react to time filter)
   const gpsStats = useMemo(() => {
     if (!filteredActivities.length) return null
-    const totalDistance = filteredActivities.reduce((sum, a) => sum + a.totalDistance, 0) / 1000
+    const totalDistance = filteredActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
     const totalCalories = filteredActivities.reduce((sum, a) => sum + roundKcal(a.calories), 0)
     const totalDuration = filteredActivities.reduce((sum, a) => sum + a.totalDuration, 0)
     const avgSpeed = totalDuration > 0 ? (totalDistance / (totalDuration / 3600)).toFixed(2) : 0
@@ -231,6 +231,14 @@ export default function SportEventProgress({
       weeklyStreak: streak
     }
   }, [filteredActivities, completedActivities])
+
+  // Total GPS stats for progress overview — always ALL activities (independent of time filter)
+  const allTimeGpsStats = useMemo(() => {
+    if (!completedActivities.length) return null
+    const totalDistance = completedActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
+    const totalCalories = completedActivities.reduce((sum, a) => sum + roundKcal(a.calories), 0)
+    return { totalDistance, totalCalories, totalSessions: completedActivities.length }
+  }, [completedActivities])
 
   // Calculate stats from userProgress — with NaN/zero guards
   const stats = useMemo(() => {
@@ -288,7 +296,7 @@ export default function SportEventProgress({
 
         return recentActivities.map(a => {
           const duration = a.totalDuration || 0
-          const distance = a.totalDistance / 1000
+          const distance = parseFloat((a.totalDistance / 1000).toFixed(2))
           const avgSpeed = duration > 0 ? Number((distance / (duration / 3600)).toFixed(2)) : 0
 
           let value = 0
@@ -319,7 +327,7 @@ export default function SportEventProgress({
         const d = moment(a.startTime).format('DD/MM')
         const fd = moment(a.startTime).format('YYYY-MM-DD')
         if (!dayMap[fd]) dayMap[fd] = { distance: 0, calories: 0, sessions: 0, duration: 0 }
-        dayMap[fd].distance += (a.totalDistance / 1000)
+        dayMap[fd].distance += parseFloat((a.totalDistance / 1000).toFixed(2))
         dayMap[fd].calories += roundKcal(a.calories)
         dayMap[fd].sessions += 1
         dayMap[fd].duration += a.totalDuration
@@ -546,10 +554,14 @@ export default function SportEventProgress({
   const metricUnit = METRIC_CONFIG[activeMetric]?.label(event?.targetUnit || '')
   const barColor = METRIC_CONFIG[activeMetric]?.color || '#EF4444'
 
-  // Determine displayed stats — prefer GPS data for outdoor events
+  // Determine displayed stats
   const isOutdoor = event?.eventType === 'Ngoài trời'
-  // Progress = always from SportEventProgress (single source of truth)
-  const displayProgress = stats?.totalProgress || 0
+  const isEnded = event?.endDate ? moment().isAfter(moment(event.endDate)) : false
+  const isNotStarted = event?.startDate ? moment().isBefore(moment(event.startDate)) : false
+  
+  // Progress overview: for outdoor events, use GPS total (matches "Quãng đường" when "Tất cả")
+  const displayProgress = isOutdoor && allTimeGpsStats ? allTimeGpsStats.totalDistance : (stats?.totalProgress || 0)
+  // Stats detail: time-filtered from GPS for outdoor, otherwise from SportEventProgress
   const displayDistance = isOutdoor && gpsStats ? gpsStats.totalDistance : stats?.totalDistance
   const displayCalories = isOutdoor && gpsStats ? gpsStats.totalCalories : stats?.totalCalories
   const displaySessions = isOutdoor && gpsStats ? gpsStats.totalSessions : stats?.totalEntries
@@ -594,23 +606,29 @@ export default function SportEventProgress({
                 </div>
               )}
               <div className="flex gap-2 w-full sm:w-auto">
-                {(!event?.requireStrava) && (
-                  <button
-                    onClick={() => navigate(`/sport-event/${id}/tracking`)}
-                    className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <FaMapMarkerAlt />
-                    Bắt đầu
-                  </button>
+                {isEnded || isNotStarted ? (
+                  <div className="flex-1 sm:flex-none bg-white/20 px-4 py-3 rounded-xl font-bold text-sm text-center shadow-sm w-full flex items-center justify-center">
+                    {isEnded ? 'Sự kiện đã kết thúc' : 'Sự kiện chưa bắt đầu'}
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => navigate(`/sport-event/${id}/tracking`)}
+                      className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <FaMapMarkerAlt />
+                      Đo GPS
+                    </button>
+                    <button
+                      onClick={() => setIsOpenStravaModal(true)}
+                      className="flex-1 sm:flex-none bg-[#fc4c02] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-[#e34402] transition shadow-lg flex items-center justify-center gap-2 border border-white/20"
+                      title="Đồng bộ dữ liệu từ Strava"
+                    >
+                      <svg className="w-5 h-5 fill-current text-white shrink-0" viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"></path></svg>
+                      Đồng bộ Strava
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={() => setIsOpenStravaModal(true)}
-                  className={`flex-1 sm:flex-none bg-[#fc4c02] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-[#e34402] transition shadow-lg flex items-center justify-center gap-2 border border-white/20 ${event?.requireStrava ? 'w-full px-8' : ''}`}
-                  title="Đồng bộ dữ liệu từ Strava"
-                >
-                  <svg className="w-5 h-5 fill-current text-white shrink-0" viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"></path></svg>
-                  {event?.requireStrava ? 'Đồng bộ Strava' : 'Strava'}
-                </button>
               </div>
             </div>
           </div>
@@ -637,16 +655,23 @@ export default function SportEventProgress({
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="p-6 flex flex-col md:flex-row items-center gap-8">
           <div className="relative flex-shrink-0">
-            <ProgressRing
-              size={180}
-              strokeWidth={16}
-              percent={stats?.progressPercent || 0}
-              color="#ef4444"
-              colorEnd={stats?.progressPercent >= 100 ? '#22c55e' : '#f97316'}
-              label={`${stats?.progressPercent || 0}%`}
-              sublabel="hoàn thành"
-              showPercent={false}
-            />
+            {(() => {
+              const progressPercent = isOutdoor && allTimeGpsStats && stats?.perPersonTarget > 0
+                ? Math.min(Math.round((allTimeGpsStats.totalDistance / stats.perPersonTarget) * 100), 100)
+                : (stats?.progressPercent || 0)
+              return (
+                <ProgressRing
+                  size={180}
+                  strokeWidth={16}
+                  percent={progressPercent}
+                  color="#ef4444"
+                  colorEnd={progressPercent >= 100 ? '#22c55e' : '#f97316'}
+                  label={`${progressPercent}%`}
+                  sublabel="hoàn thành"
+                  showPercent={false}
+                />
+              )
+            })()}
           </div>
           <div className="flex-1 w-full">
             <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Tiến độ tổng quan</h3>

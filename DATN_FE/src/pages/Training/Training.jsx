@@ -162,7 +162,7 @@ const SaveWorkoutModal = ({ exerciseSets, onSaved, onClose }) => {
                   value={workoutName}
                   onChange={e => setWorkoutName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSaveName()}
-                  placeholder="Ví dụ: Tập ngực thứ 2, Ngày tập chân..."
+                  placeholder="Nhập tên lịch tập"
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-amber-400 outline-none transition text-sm"
                 />
               </div>
@@ -569,17 +569,17 @@ const MetricsStep = ({ metrics, onChange, onCalculate }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cân nặng (kg)</label>
           <input type="number" value={metrics.weight} onChange={e => onChange('weight', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="70" min="30" max="300" />
+            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="Nhập cân nặng (kg)" min="30" max="300" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chiều cao (cm)</label>
           <input type="number" value={metrics.height} onChange={e => onChange('height', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="170" min="100" max="250" />
+            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="Nhập chiều cao (cm)" min="100" max="250" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tuổi</label>
           <input type="number" value={metrics.age} onChange={e => onChange('age', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="25" min="10" max="100" />
+            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="Nhập độ tuổi" min="10" max="100" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Giới tính</label>
@@ -592,7 +592,7 @@ const MetricsStep = ({ metrics, onChange, onCalculate }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thời gian tập (phút)</label>
           <input type="number" value={metrics.duration} onChange={e => onChange('duration', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="45" min="10" max="180" />
+            className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition" placeholder="Nhập thời gian tập (phút)" min="10" max="180" />
         </div>
       </div>
       <div className="mt-4">
@@ -804,7 +804,7 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
               onChange={e => setDescription(e.target.value)}
               rows={6}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 outline-none transition resize-none text-sm"
-              placeholder="Ví dụ: Tôi bị đau lưng kéo dài do ngồi văn phòng nhiều. Tôi muốn cải thiện sức mạnh cơ lưng và giảm đau..."
+              placeholder="Nhập lưu ý của bạn..."
             />
             <p className="text-xs text-gray-400 mt-1 text-right">{description.length} ký tự</p>
           </div>

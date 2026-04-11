@@ -1,35 +1,33 @@
 import { omit } from 'lodash'
 import { ObjectId } from 'mongodb'
 import { roundKcal } from '~/utils/math.utils'
-import { AlbumStatus, BlogStatus, RecipeStatus, RequestType, UserRoles, UserStatus } from '~/constants/enums'
+import { AlbumStatus, BlogStatus, RecipeStatus, RequestType, UserRoles } from '~/constants/enums'
 import { CreateUserAdminBody, GetListUserAdminQuery } from '~/models/requests/userAdmin.request'
 import AlbumModel from '~/models/schemas/album.schema'
 import BlogModel from '~/models/schemas/blog.schema'
-import BookmarkAlbumModel from '~/models/schemas/bookmarkAlbum.schema'
-import BookmarkRecipeModel from '~/models/schemas/bookmarkRecipe.schema'
 import CommentBlogModel from '~/models/schemas/commentBlog.schema'
 import CommentPostModel from '~/models/schemas/commentPost.schema'
-import CommentRecipeModel from '~/models/schemas/commentRecipe.schema'
-import FollowModel from '~/models/schemas/follow.schema'
-import ImagePostModel from '~/models/schemas/imagePost.schema'
 import LikePostModel from '~/models/schemas/likePost.schema'
-import LikeRecipeModel from '~/models/schemas/likeRecipe.schema'
-import MealItemModel from '~/models/schemas/mealItem.schema'
-import MealScheduleModel from '~/models/schemas/mealSchedule.schema'
 import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
 import AIUsageLogModel from '~/models/schemas/aiUsageLog.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import UserModel from '~/models/schemas/user.schema'
-import WorkoutItemModel from '~/models/schemas/workoutItem.schemas'
-import WorkoutScheduleModel from '~/models/schemas/workoutSchedule.schema'
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import { hashPassword } from '~/utils/crypto'
 import { sendAcceptEmailNodeMailer, sendRejectEmailNodeMailer } from '~/utils/emailMailer'
 
 class UserAdminService {
-  async getAllUserService({ page, limit, role, status, search, sort, isDeleted }: GetListUserAdminQuery & { isDeleted?: string }) {
+  async getAllUserService({
+    page,
+    limit,
+    role,
+    status,
+    search,
+    sort,
+    isDeleted
+  }: GetListUserAdminQuery & { isDeleted?: string }) {
     if (!page) {
       page = 1
     }
@@ -46,12 +44,10 @@ class UserAdminService {
       condition.role = UserRoles.user
     }
 
-    // Filter by status (for banned view)
     if (status !== undefined && status !== null && !isNaN(Number(status))) {
       condition.status = Number(status)
     }
 
-    // Filter by isDeleted
     if (isDeleted === 'true') {
       condition.isDeleted = true
     } else {
@@ -220,140 +216,11 @@ class UserAdminService {
     }
   }
   async getUserStatsService() {
-    const [active, banned, deleted] = await Promise.all([
-      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.active, isDeleted: { $ne: true } }),
-      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.banned, isDeleted: { $ne: true } }),
+    const [active, deleted] = await Promise.all([
+      UserModel.countDocuments({ role: UserRoles.user, isDeleted: { $ne: true } }),
       UserModel.countDocuments({ role: UserRoles.user, isDeleted: true })
     ])
-    return { active, banned, deleted, total: active + banned }
-  }
-  async banUserByIdService(user_id: string) {
-    const user = await UserModel.findById(user_id)
-    if (user) {
-      // xóa refresh token của user
-      await RefreshTokenModel.deleteMany({ user_id })
-
-      // xóa post và ảnh post của user
-      const posts = await PostModel.find({ user_id })
-      const post_ids = posts.map((post) => post._id)
-
-      // xóa like và comment của của từng post
-      await LikePostModel.deleteMany({ user_id })
-      await LikePostModel.deleteMany({ post_id: { $in: post_ids } })
-      // tìm comment con của comment của user
-      const comments = await CommentPostModel.find({ user_id })
-      const comment_ids = comments.map((comment) => comment._id)
-      console.log(comment_ids)
-      await CommentPostModel.updateMany({ parent_comment_id: { $in: comment_ids } }, { is_banned: true })
-      await CommentPostModel.updateMany({ user_id }, { is_banned: true })
-      await CommentPostModel.updateMany({ post_id: { $in: post_ids } }, { is_banned: true })
-
-      // lấy các post con của post của user
-      const shared_posts = await PostModel.find({ parent_id: { $in: post_ids } })
-      const shared_post_ids = shared_posts.map((post) => post._id)
-      // xóa like và comment của của từng post
-      await LikePostModel.deleteMany({ post_id: { $in: shared_post_ids } })
-      await CommentPostModel.updateMany({ post_id: { $in: shared_post_ids } }, { is_banned: true })
-      // xóa shared post
-      await PostModel.updateMany({ parent_id: { $in: post_ids } }, { is_banned: true })
-      await PostModel.updateMany({ user_id }, { is_banned: true })
-
-      // tìm album của user
-      // const albums = await AlbumModel.find({ user_id })
-      // const album_ids = albums.map((album) => album._id)
-      // // xóa bookmark của Album
-      // await BookmarkAlbumModel.deleteMany({ album_id: { $in: album_ids } })
-      // await BookmarkAlbumModel.deleteMany({ user_id })
-      // xóa album
-      // await AlbumModel.updateMany({ user_id }, { status: AlbumStatus.banned })
-
-      // tìm blog của user
-      const blogs = await BlogModel.find({ user_id })
-      const blog_ids = blogs.map((blog) => blog._id)
-      // xóa comment của blog
-      await CommentBlogModel.updateMany({ blog_id: { $in: blog_ids } }, { is_banned: true })
-      await CommentBlogModel.updateMany({ user_id }, { is_banned: true })
-      // xóa blog
-      // await BlogModel.updateMany({ user_id }, { status: BlogStatus.banned })
-
-      // tìm recipe của user
-      const recipes = await RecipeModel.find({ user_id })
-      const recipe_ids = recipes.map((recipe) => recipe._id)
-
-      // xóa bookmark, like, comment của recipe
-      await LikeRecipeModel.deleteMany({ recipe_id: { $in: recipe_ids } })
-      await LikeRecipeModel.deleteMany({ user_id })
-      await CommentRecipeModel.updateMany({ recipe_id: { $in: recipe_ids } }, { is_banned: true })
-      await CommentRecipeModel.updateMany({ user_id }, { is_banned: true })
-      // await BookmarkRecipeModel.deleteMany({ recipe_id: { $in: recipe_ids } })
-      // await BookmarkRecipeModel.deleteMany({ user_id })
-      // xóa recipe
-      // await RecipeModel.updateMany({ user_id }, { status: RecipeStatus.banned })
-
-      await UserModel.updateOne({ _id: user_id }, { status: UserStatus.banned })
-
-      return true
-    }
-  }
-  async unbanUserByIdService(user_id: string) {
-    const user = await UserModel.findById(user_id)
-    if (user) {
-      // xóa post và ảnh post của user
-      const posts = await PostModel.find({ user_id })
-      const post_ids = posts.map((post) => post._id)
-
-      // tìm comment con của comment của user
-      const comments = await CommentPostModel.find({ user_id })
-      const comment_ids = comments.map((comment) => comment._id)
-      console.log(comment_ids)
-      await CommentPostModel.updateMany({ parent_comment_id: { $in: comment_ids } }, { is_banned: false })
-      await CommentPostModel.updateMany({ user_id }, { is_banned: false })
-      await CommentPostModel.updateMany({ post_id: { $in: post_ids } }, { is_banned: false })
-
-      // lấy các post con của post của user
-      const shared_posts = await PostModel.find({ parent_id: { $in: post_ids } })
-      const shared_post_ids = shared_posts.map((post) => post._id)
-      // xóa like và comment của của từng post
-
-      await CommentPostModel.updateMany({ post_id: { $in: shared_post_ids } }, { is_banned: false })
-      // xóa shared post
-      await PostModel.updateMany({ parent_id: { $in: post_ids } }, { is_banned: false })
-      await PostModel.updateMany({ user_id }, { is_banned: false })
-
-      // tìm album của user
-      // const albums = await AlbumModel.find({ user_id })
-      // const album_ids = albums.map((album) => album._id)
-      // // xóa bookmark của Album
-      // await BookmarkAlbumModel.deleteMany({ album_id: { $in: album_ids } })
-      // await BookmarkAlbumModel.deleteMany({ user_id })
-      // xóa album
-      // await AlbumModel.updateMany({ user_id }, { status: AlbumStatus.accepted })
-
-      // tìm blog của user
-      const blogs = await BlogModel.find({ user_id })
-      const blog_ids = blogs.map((blog) => blog._id)
-      // xóa comment của blog
-      await CommentBlogModel.updateMany({ blog_id: { $in: blog_ids } }, { is_banned: false })
-      await CommentBlogModel.updateMany({ user_id }, { is_banned: false })
-      // xóa blog
-      // await BlogModel.updateMany({ user_id }, { status: BlogStatus.accepted })
-
-      // tìm recipe của user
-      const recipes = await RecipeModel.find({ user_id })
-      const recipe_ids = recipes.map((recipe) => recipe._id)
-
-      // xóa bookmark, like, comment của recipe
-      await CommentRecipeModel.updateMany({ recipe_id: { $in: recipe_ids } }, { is_banned: false })
-      await CommentRecipeModel.updateMany({ user_id }, { is_banned: false })
-      // await BookmarkRecipeModel.deleteMany({ recipe_id: { $in: recipe_ids } })
-      // await BookmarkRecipeModel.deleteMany({ user_id })
-      // xóa recipe
-      // await RecipeModel.updateMany({ user_id }, { status: RecipeStatus.accepted })
-
-      await UserModel.updateOne({ _id: user_id }, { status: UserStatus.active })
-
-      return true
-    }
+    return { active, deleted, total: active }
   }
   async checkEmailExist(email: string) {
     const user = await UserModel.findOne({ email })
@@ -458,7 +325,7 @@ class UserAdminService {
     // === ACCOUNT ===
     const [user, activeUser] = await Promise.all([
       UserModel.countDocuments({ role: UserRoles.user }),
-      UserModel.countDocuments({ role: UserRoles.user, status: UserStatus.active })
+      UserModel.countDocuments({ role: UserRoles.user, isDeleted: { $ne: true } })
     ])
 
     // === FOOD CONTENT ===

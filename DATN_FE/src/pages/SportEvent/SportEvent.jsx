@@ -308,7 +308,7 @@ const SportEvent = () => {
                 )}
                 <input
                   type="text"
-                  placeholder="Tìm theo tên sự kiện, danh mục, địa điểm..."
+                  placeholder="Tìm sự kiện, danh mục, địa điểm..."
                   className="w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 dark:text-white outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -536,16 +536,6 @@ const SportEvent = () => {
 
       {/* Events Grid */}
       <div className="container mx-auto px-4 py-8">
-        {/* Results Count */}
-        {!isLoading && (
-          <div className="mb-6 flex items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Hiển thị <span className="font-semibold text-gray-900 dark:text-white">{sportEvents.length}</span> / {totalItems} sự kiện
-              {totalPage > 1 && <span className="text-gray-400 ml-2">(trang {page}/{totalPage})</span>}
-            </p>
-          </div>
-        )}
-
         {/* Loading State */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -30,6 +30,9 @@ export const getMyEvents = (params) => http.get('/sport-events/user/my-events', 
 // Get joined events
 export const getJoinedEvents = (params) => http.get('/sport-events/user/joined-events', { params })
 
+// Get event stats (created or joined)
+export const getEventStats = (params) => http.get('/sport-events/user/event-stats', { params })
+
 // Get all joined events for calendar display (higher limit, no pagination)
 export const getJoinedEventsForCalendar = () => http.get('/sport-events/user/joined-events', { params: { limit: 200, page: 1 } })
 

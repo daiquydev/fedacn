@@ -321,7 +321,7 @@ export default function CreateItemSchedule({ meal }) {
               errors={errors.energy}
               name='energy'
               id='energy'
-              placeholder='Nhập lượng calories'
+              placeholder='Nhập lượng calo (kcal)'
             />
             <Input
               title='Nhập lượng protein'
@@ -330,7 +330,7 @@ export default function CreateItemSchedule({ meal }) {
               errors={errors.protein}
               name='protein'
               id='protein'
-              placeholder='Nhập lượng protein'
+              placeholder='Nhập lượng protein (g)'
             />
           </div>
           <div className='flex flex-wrap gap-2 items-center'>
@@ -341,7 +341,7 @@ export default function CreateItemSchedule({ meal }) {
               errors={errors.fat}
               name='fat'
               id='fat'
-              placeholder='Nhập lượng fat'
+              placeholder='Nhập lượng chất béo (g)'
             />
 
             <Input
@@ -351,7 +351,7 @@ export default function CreateItemSchedule({ meal }) {
               errors={errors.carb}
               name='carb'
               id='carb'
-              placeholder='Nhập lượng carb'
+              placeholder='Nhập lượng tinh bột (g)'
             />
           </div>
           <button className='block btn btn-sm md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm  md:order-2'>
@@ -382,7 +382,7 @@ export default function CreateItemSchedule({ meal }) {
                         type='search'
                         id='search_input'
                         {...registerIngredients('searchIngredients')}
-                        placeholder='Tìm kiếm bài viết'
+                        placeholder='Tìm công thức...'
                         className='w-full py-2 px-3 placeholder:text-sm rounded-lg border border-red-200 bg-white dark:border-none dark:bg-slate-800'
                       />
                       <button className='absolute right-1 top-1/2 -translate-y-1/2 py-2 px-3 bg-yellow-700 text-white dark:bg-slate-600 rounded-lg'>
@@ -550,7 +550,7 @@ const IngredientItem = ({ ingredient, setMealState }) => {
                       id='quantity'
                       register={register}
                       errors={errors.quantity}
-                      placeholder='Nhập lượng ăn'
+                      placeholder='Nhập lượng ăn (g)'
                     />
 
                     <div className='flex justify-center'>

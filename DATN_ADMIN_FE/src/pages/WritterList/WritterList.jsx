@@ -49,13 +49,14 @@ export default function WritterList() {
     })
   }
 
-  const handleChangeStatus = (e) => {
+  const handleChangeVisibility = (e) => {
+    const v = e.target.value
+    const base = omit(queryConfig, ['isDeleted', 'status', 'page'])
     navigate({
       pathname: '/writter',
-      search: createSearchParams({
-        ...queryConfig,
-        status: e.target.value
-      }).toString()
+      search: createSearchParams(
+        v === 'deleted' ? { ...base, isDeleted: 'true' } : base
+      ).toString()
     })
   }
 
@@ -68,21 +69,21 @@ export default function WritterList() {
     if (data.searchUsers === '') {
       navigate({
         pathname: '/writter',
-        search: createSearchParams(omit({ ...queryConfig }, ['status', 'page', 'search'])).toString()
+        search: createSearchParams(omit({ ...queryConfig }, ['status', 'isDeleted', 'page', 'search'])).toString()
       })
       return
     }
 
     navigate({
       pathname: '/writter',
-      search: createSearchParams(omit({ ...queryConfig, search: data.searchUsers }, ['status', 'page'])).toString()
+      search: createSearchParams(omit({ ...queryConfig, search: data.searchUsers }, ['status', 'isDeleted', 'page'])).toString()
     })
   })
 
 
 
   return (
-    <div className='h-screen mb-[30rem] text-gray-900 dark:text-white py-4 mx-3'>
+    <div className='h-screen mb-[30rem] text-gray-900 dark:text-white pt-0 pb-4 mx-3'>
       <div className='mx-2'>
         <div className=''>
           <div className='items-center'>
@@ -112,13 +113,13 @@ export default function WritterList() {
                   <option value='asc'>Lâu nhất</option>
                 </select>
                 <select
-                  defaultValue={queryConfig.status}
-                  onChange={handleChangeStatus}
-                  id='status'
+                  value={queryConfig.isDeleted === 'true' ? 'deleted' : 'active'}
+                  onChange={handleChangeVisibility}
+                  id='visibility'
                   className='select  select-sm border bg-white dark:bg-slate-800 dark:border-none'
                 >
-                  <option value='1'>Đang hoạt động</option>
-                  <option value='0'>Bị khóa</option>
+                  <option value='active'>Đang hoạt động</option>
+                  <option value='deleted'>Đã xóa</option>
                 </select>
 
                 <form onSubmit={onSubmitSearch} className=' w-[100%] max-w-[20rem] min-w-[18rem] relative'>
@@ -182,7 +183,7 @@ export default function WritterList() {
                   </thead>
                   <tbody className='bg-white dark:bg-color-primary dark:divide-gray-700 divide-y divide-gray-200'>
                     {data?.data?.result.users.map((user) => {
-                      return <UserItem key={user._id} user={user} />
+                      return <UserItem key={user._id} user={user} listDeleted={queryConfig.isDeleted === 'true'} />
                     })}
                   </tbody>
                 </table>

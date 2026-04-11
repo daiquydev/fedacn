@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { PostStatus, RecipeStatus, UserRoles, UserStatus } from '~/constants/enums'
+import { PostStatus, RecipeStatus, UserRoles } from '~/constants/enums'
 import FollowModel from '~/models/schemas/follow.schema'
 import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
@@ -26,11 +26,11 @@ class SearchService {
       {
         $match: condition
       },
-      // lấy user không bị ban và không phải là mình
+      // lấy user chưa xóa mềm và không phải là mình
       {
         $match: {
           _id: { $ne: new ObjectId(user_id) },
-          status: UserStatus.active,
+          isDeleted: { $ne: true },
           // role phải khác admin, người kiểm duyệt và người viết bài
           role: { $nin: [UserRoles.admin, UserRoles.inspector, UserRoles.writter] }
         }

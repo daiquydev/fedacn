@@ -422,7 +422,7 @@ const EditSportEvent = () => {
                 {newEvent.eventType === 'Ngoài trời' && (
                   <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800">
                     <div className="flex-1">
-                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu đo Gps (Strava Sync)</h4>
+                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu đo GPS (Đồng bộ Strava)</h4>
                       <p className="text-xs text-orange-700 dark:text-orange-400">Bắt buộc lấy tiến độ từ hoạt động Strava của người dùng</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -602,7 +602,7 @@ const EditSportEvent = () => {
                       value={newEvent.targetValue}
                       onChange={handleInputChange}
                       min={0}
-                      placeholder="0"
+                      placeholder="Nhập số người tham gia"
                       className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-orange-400 font-bold text-lg text-center"
                     />
                     <select

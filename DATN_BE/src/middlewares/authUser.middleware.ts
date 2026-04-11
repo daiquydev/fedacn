@@ -12,7 +12,7 @@ import { validate } from '~/utils/validation'
 import { Request, Response, NextFunction } from 'express'
 import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
 import { envConfig } from '~/constants/config'
-import { UserRoles, UserStatus } from '~/constants/enums'
+import { UserRoles } from '~/constants/enums'
 
 // Middleware to verify token
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
@@ -131,9 +131,6 @@ export const loginValidator = validate(
             if (user === null) {
               throw new Error(AUTH_USER_MESSAGE.EMAIL_OR_PASSWORD_INCORRECT)
             }
-            if (user.status === UserStatus.banned) {
-              throw new Error(AUTH_USER_MESSAGE.ACCOUNT_BANNED)
-            }
             if (user.isDeleted === true) {
               throw new Error(AUTH_USER_MESSAGE.ACCOUNT_DELETED)
             }
@@ -172,8 +169,8 @@ export const loginAdminValidator = validate(
             if (user === null) {
               throw new Error(AUTH_USER_MESSAGE.USER_NAME_OR_PASSWORD_INCORRECT)
             }
-            if (user.status === UserStatus.banned) {
-              throw new Error(AUTH_USER_MESSAGE.ACCOUNT_BANNED)
+            if (user.isDeleted === true) {
+              throw new Error(AUTH_USER_MESSAGE.ACCOUNT_DELETED)
             }
             if (user.role === UserRoles.user || user.role === UserRoles.chef) {
               throw new Error(AUTH_USER_MESSAGE.USER_NAME_OR_PASSWORD_INCORRECT)
@@ -229,12 +226,6 @@ export const accessTokenValidator = validate(
                   status: HTTP_STATUS.UNAUTHORIZED
                 });
               }
-              if (freshUser.status === UserStatus.banned) {
-                throw new ErrorWithStatus({
-                  message: AUTH_USER_MESSAGE.ACCOUNT_BANNED,
-                  status: HTTP_STATUS.UNAUTHORIZED
-                });
-              }
               if (freshUser.isDeleted === true) {
                 throw new ErrorWithStatus({
                   message: AUTH_USER_MESSAGE.ACCOUNT_DELETED,
@@ -276,7 +267,7 @@ export const optionalAccessTokenValidator = async (req: Request, res: any, next:
 
     // Realtime DB check
     const freshUser = await UserModel.findById(decoded_authorization.user_id).lean();
-    if (freshUser && freshUser.status !== UserStatus.banned && freshUser.isDeleted !== true) {
+    if (freshUser && freshUser.isDeleted !== true) {
       (req as any).decoded_authorization = decoded_authorization;
     }
   } catch (error) {
@@ -308,12 +299,6 @@ export const refreshTokenValidator = validate(
               if (refresh_token === null) {
                 throw new ErrorWithStatus({
                   message: AUTH_USER_MESSAGE.USED_REFRESH_TOKEN_OR_NOT_EXIST,
-                  status: HTTP_STATUS.UNAUTHORIZED
-                });
-              }
-              if (decoded_refresh_token.status === UserStatus.banned) {
-                throw new ErrorWithStatus({
-                  message: AUTH_USER_MESSAGE.ACCOUNT_BANNED,
                   status: HTTP_STATUS.UNAUTHORIZED
                 });
               }
