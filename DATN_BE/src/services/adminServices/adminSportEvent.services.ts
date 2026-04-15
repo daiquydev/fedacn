@@ -1,6 +1,7 @@
 import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
+import sportEventProgressService from '~/services/userServices/sportEventProgress.services'
 import { Types } from 'mongoose'
 
 class AdminSportEventService {
@@ -12,7 +13,9 @@ class AdminSportEventService {
         category,
         eventType,
         status, // 'active' | 'deleted' | 'all'
-        sortBy = 'newest'
+        sortBy = 'newest',
+        dateFrom,
+        dateTo
     }: {
         page?: number
         limit?: number
@@ -21,6 +24,8 @@ class AdminSportEventService {
         eventType?: string
         status?: string
         sortBy?: string
+        dateFrom?: string
+        dateTo?: string
     }) {
         const condition: any = {}
 
@@ -31,6 +36,14 @@ class AdminSportEventService {
             condition.isDeleted = { $ne: true }
         }
         // status === 'all' => no filter
+
+        // Ngày diễn ra (khớp cách lọc phía user app: theo startDate)
+        if (dateFrom) {
+            condition.startDate = { ...condition.startDate, $gte: new Date(dateFrom) }
+        }
+        if (dateTo) {
+            condition.startDate = { ...condition.startDate, $lte: new Date(`${dateTo}T23:59:59.999`) }
+        }
 
         if (search) {
             condition.$or = [
@@ -200,7 +213,8 @@ class AdminSportEventService {
         if (!existing) throw new Error('Không tìm thấy sự kiện')
 
         // Prevent updating certain fields
-        const { participants, participants_ids, createdBy, isDeleted, deletedAt, ...safeUpdateData } = updateData as any
+        const { participants, participants_ids, createdBy, isDeleted, deletedAt, deletedFromReportModeration, ...safeUpdateData } =
+            updateData as any
 
         // Validate dates if provided
         if (safeUpdateData.startDate && safeUpdateData.endDate) {
@@ -225,18 +239,18 @@ class AdminSportEventService {
     async deleteEventAdmin(eventId: string) {
         const event = await SportEventModel.findByIdAndUpdate(
             eventId,
-            { isDeleted: true, deletedAt: new Date() },
+            { isDeleted: true, deletedAt: new Date(), deletedFromReportModeration: false },
             { new: true }
         )
         if (!event) throw new Error('Không tìm thấy sự kiện')
         return event
     }
 
-    // Admin restore soft-deleted event
+    // Admin restore soft-deleted event — xóa báo cáo để sự kiện không còn vào danh sách kiểm duyệt
     async restoreEventAdmin(eventId: string) {
         const event = await SportEventModel.findByIdAndUpdate(
             eventId,
-            { isDeleted: false, deletedAt: null },
+            { isDeleted: false, deletedAt: null, deletedFromReportModeration: false, report_event: [] },
             { new: true }
         )
         if (!event) throw new Error('Không tìm thấy sự kiện')
@@ -250,6 +264,14 @@ class AdminSportEventService {
         // Also delete related sessions
         await SportEventSessionModel.deleteMany({ eventId: new Types.ObjectId(eventId) })
         return event
+    }
+
+    /** Danh sách người tham gia + tiến độ (cùng logic với API user /progress/participants) */
+    async getEventParticipantsAdmin(
+        eventId: string,
+        opts: { page?: number; limit?: number; search?: string } = {}
+    ) {
+        return sportEventProgressService.getParticipantsService(eventId, opts)
     }
 }
 

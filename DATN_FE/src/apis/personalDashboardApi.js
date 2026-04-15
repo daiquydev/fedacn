@@ -71,3 +71,19 @@ export const getNutritionTrend = async (days = 7) => {
     throw error
   }
 }
+
+// Get training summary overview (range: 24h | 7days | 1month | 6months | all; optional startDate/endDate YYYY-MM-DD)
+export const getTrainingSummary = async (params = 'all') => {
+  try {
+    const q =
+      typeof params === 'string'
+        ? { range: params }
+        : { range: params.range ?? 'all', ...(params.startDate && params.endDate ? { startDate: params.startDate, endDate: params.endDate } : {}) }
+    const response = await http.get('/personal-dashboard/training-summary', { params: q })
+    return response.data
+  } catch (error) {
+    console.error('Error fetching training summary:', error)
+    throw error
+  }
+}    
+

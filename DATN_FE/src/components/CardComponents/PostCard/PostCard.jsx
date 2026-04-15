@@ -5,38 +5,9 @@ import { AiFillHeart } from 'react-icons/ai'
 import { CiHeart } from 'react-icons/ci'
 import { PiShareFatLight } from 'react-icons/pi'
 import { LiaComments } from 'react-icons/lia'
-import moment from 'moment'
-import 'moment/locale/vi'
 import { FaCheckCircle, FaUserFriends } from 'react-icons/fa'
-
-// Vietnamese relative time — no locale dependency
-function fromNowVi(date) {
-  const now = moment()
-  const target = moment(date)
-  const diffMs = target.diff(now)
-  const absSec = Math.abs(diffMs) / 1000
-  const absMin = absSec / 60
-  const absHour = absMin / 60
-  const absDay = absHour / 24
-  const absMonth = absDay / 30
-  const absYear = absDay / 365
-  const future = diffMs > 0
-  let str
-  if (absSec < 45) str = 'vài giây'
-  else if (absSec < 90) str = '1 phút'
-  else if (absMin < 45) str = `${Math.round(absMin)} phút`
-  else if (absMin < 90) str = '1 giờ'
-  else if (absHour < 22) str = `${Math.round(absHour)} giờ`
-  else if (absHour < 36) str = '1 ngày'
-  else if (absDay < 25) str = `${Math.round(absDay)} ngày`
-  else if (absDay < 45) str = '1 tháng'
-  else if (absDay < 345) str = `${Math.round(absMonth)} tháng`
-  else if (absDay < 545) str = '1 năm'
-  else str = `${Math.round(absYear)} năm`
-  return future ? `trong ${str}` : `${str} trước`
-}
+import { formatRelativeTimeVi } from '../../../utils/formatRelativeTimeVi'
 import { deletePostForEachUser, likePost, unlikePost } from '../../../apis/postApi'
-import { } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
 import Comments from '../../../pages/Home/components/Comments'
 import ModalSharePost from '../../../pages/Home/components/ModalSharePost'
@@ -58,6 +29,7 @@ import ActivityPreviewCard, { extractActivityIds, cleanActivityMarker } from '..
 import ChallengeActivityPreviewCard, { extractChallengeActivityIds, cleanChallengeActivityMarker, ChallengeProgressPreviewCard, extractChallengeProgressIds, cleanChallengeProgressMarker } from '../../Post/ChallengeActivityPreviewCard'
 import ChallengePreviewCard, { extractChallengeId, cleanChallengeMarker } from '../../Post/ChallengePreviewCard'
 import IndoorPreviewCard, { extractIndoorSessionIds, cleanIndoorSessionMarker } from '../../Post/IndoorPreviewCard'
+import { useHideShareForPrivateEmbeddedChallenge } from '../../../hooks/useHideShareForPrivateEmbeddedChallenge'
 
 export default function PostCard({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -67,6 +39,8 @@ export default function PostCard({ data }) {
   const { newSocket } = useContext(SocketContext)
   const navigate = useNavigate()
   const location = useLocation()
+  const challengeEmbedContent = [data?.content, data?.parent_post?.content].filter(Boolean).join('\n')
+  const hideShareForPrivateChallenge = useHideShareForPrivateEmbeddedChallenge(challengeEmbedContent)
 
   const checkRefetchApi = () => {
     if (location.pathname === '/home') {
@@ -185,7 +159,7 @@ export default function PostCard({ data }) {
             >
               {data.comment_count} bình luận
             </div>
-            {data.status === 0 ? (
+            {data.status === 0 && !hideShareForPrivateChallenge ? (
               <div
                 onClick={handleOpenSharePost}
                 className='hover:text-red-600 dark:hover:text-pink-600 cursor-pointer transition-all'
@@ -222,7 +196,7 @@ export default function PostCard({ data }) {
             <LiaComments className='mr-1' size={20} />
             <span className='font-medium'>Bình luận</span>
           </div>
-          {data.status === 0 ? (
+          {data.status === 0 && !hideShareForPrivateChallenge ? (
             <div
               onClick={handleOpenSharePost}
               className='flex cursor-pointer justify-center hover:text-red-700 transition-all dark:hover:text-pink-500 duration-150 items-center'
@@ -271,7 +245,7 @@ function CheckTypeOfPost({
                   </div>
                 </div>
                 <div className='flex gap-2 items-center'>
-                  <div className='text-slate-500 dark:text-slate-300'>{fromNowVi(data.createdAt)}</div>
+                  <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
                   {data.status === 0 && (
                     <div>
                       <MdPublic />
@@ -367,7 +341,7 @@ function CheckTypeOfPost({
                   </div>
                 </div>
                 <div className='flex gap-2 items-center'>
-                  <div className='text-slate-500 dark:text-slate-300'>{fromNowVi(data.createdAt)}</div>
+                  <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
                   {data.status === 0 && (
                     <div>
                       <MdPublic />
@@ -430,7 +404,7 @@ function CheckTypeOfPost({
                 </div>
               </div>
               <div className='flex gap-2 items-center'>
-                <div className='text-slate-500 dark:text-slate-300'>{fromNowVi(data.createdAt)}</div>
+                <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
                 {data.status === 0 && (
                   <div>
                     <MdPublic />
@@ -518,7 +492,7 @@ function CheckTypeOfPost({
                   </div>
                   <div className='flex gap-2 items-center'>
                     <div className='text-slate-500 dark:text-slate-300'>
-                      {data.parent_post.createdAt ? fromNowVi(data.parent_post.createdAt) : ''}
+                      {data.parent_post.createdAt ? formatRelativeTimeVi(data.parent_post.createdAt) : ''}
                     </div>
                     {data.parent_post.status === 0 && (
                       <div>

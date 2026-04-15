@@ -35,7 +35,7 @@ export default function ChallengeTracking() {
     })
     const challenge = challengeData?.data?.result
 
-    const activityLabel = challenge?.title || 'Hoạt động ngoài trời'
+    const activityLabel = challenge?.title || 'Ngoài trời'
 
     // Complete: save progress to challenge
     const completeMutation = useSafeMutation({
@@ -119,7 +119,7 @@ export default function ChallengeTracking() {
                     }
                 },
                 () => {
-                    toast.error('Không thể truy cập GPS. Vui lòng cho phép quyền truy cập vị trí.')
+                    toast.error('Không thể bật ghi vị trí. Vui lòng cho phép quyền truy cập vị trí.')
                     tracker.start(actType, { kcalPerKm })
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
@@ -167,7 +167,7 @@ export default function ChallengeTracking() {
         const distanceKm = (tracker.distance / 1000)
         completeMutation.mutate({
             value: Number(distanceKm.toFixed(2)),
-            notes: `GPS Tracking: ${distanceKm.toFixed(2)} km trong ${formatDuration(tracker.duration)}`,
+            notes: `Đã ghi: ${distanceKm.toFixed(2)} km trong ${formatDuration(tracker.duration)}`,
             distance: Number(distanceKm.toFixed(2)),
             duration_minutes: Math.round(tracker.duration / 60),
             avg_speed: Number((tracker.avgSpeed * 3.6).toFixed(2)),
@@ -220,16 +220,16 @@ export default function ChallengeTracking() {
                     </div>
                     <div className='hud-gps-badge'>
                         <span className={`hud-gps-dot ${tracker.gpsError ? 'err' : tracker.gpsAccuracy && tracker.gpsAccuracy < 20 ? 'good' : 'mid'}`} />
-                        <span>GPS {tracker.gpsError ? 'Lỗi' : tracker.gpsAccuracy ? `${Math.round(tracker.gpsAccuracy)}m` : 'Đang tìm...'}</span>
+                        <span>Vị trí {tracker.gpsError ? '— lỗi' : tracker.gpsAccuracy ? `±${Math.round(tracker.gpsAccuracy)}m` : '— đang tìm...'}</span>
                     </div>
                 </div>
 
-                {/* GPS anti-cheat warning */}
+                {/* Cảnh báo tín hiệu vị trí bất thường */}
                 {tracker.gpsFlags.length > 0 && (
                     <div className='hud-warning'>
                         <span>⚠️</span>
                         <div>
-                            <p className='hud-warning-title'>GPS bất thường ({tracker.gpsFlags.length})</p>
+                            <p className='hud-warning-title'>Tín hiệu vị trí bất thường ({tracker.gpsFlags.length})</p>
                             <p className='hud-warning-desc'>
                                 {tracker.gpsFlags.filter(f => f.type === 'teleport').length > 0 && 'Dịch chuyển đột ngột • '}
                                 {tracker.gpsFlags.filter(f => f.type === 'speed').length > 0 && 'Tốc độ vượt ngưỡng'}

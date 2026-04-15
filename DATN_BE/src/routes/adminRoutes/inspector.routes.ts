@@ -20,7 +20,17 @@ import {
   rejectBlogController,
   rejectRecipeController,
   restorePostController,
-  getMealPlanReportsController
+  getMealPlanReportsController,
+  getSportEventReportsController,
+  acceptSportEventReportController,
+  rejectSportEventReportController,
+  getDeletedSportEventsController,
+  restoreSportEventController,
+  getChallengeReportsController,
+  acceptChallengeReportController,
+  rejectChallengeReportController,
+  getDeletedChallengesController,
+  restoreChallengeController
 } from '~/controllers/adminControllers/inspector.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { checkRole } from '~/middlewares/roles.middleware'
@@ -166,6 +176,76 @@ inspectorRouter.get(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
   wrapRequestHandler(getMealPlanReportsController)
+)
+
+inspectorRouter.get(
+  '/sport-event-reports',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(getSportEventReportsController)
+)
+
+inspectorRouter.put(
+  '/sport-event-accept/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(acceptSportEventReportController)
+)
+
+inspectorRouter.put(
+  '/sport-event-reject/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(rejectSportEventReportController)
+)
+
+inspectorRouter.get(
+  '/deleted-sport-events',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(getDeletedSportEventsController)
+)
+
+inspectorRouter.put(
+  '/restore-sport-event/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(restoreSportEventController)
+)
+
+inspectorRouter.get(
+  '/challenge-reports',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(getChallengeReportsController)
+)
+
+inspectorRouter.put(
+  '/challenge-accept/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(acceptChallengeReportController)
+)
+
+inspectorRouter.put(
+  '/challenge-reject/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(rejectChallengeReportController)
+)
+
+inspectorRouter.get(
+  '/deleted-challenges',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(getDeletedChallengesController)
+)
+
+inspectorRouter.put(
+  '/restore-challenge/:id',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin, UserRoles.inspector])),
+  wrapRequestHandler(restoreChallengeController)
 )
 
 export default inspectorRouter

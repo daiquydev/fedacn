@@ -591,7 +591,7 @@ export default function EventDetail() {
                             </button>
                             {event.requireStrava && (
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-2.5">
-                                Sự kiện này chỉ chấp nhận tiến độ GPS từ Strava.
+                                Sự kiện này chỉ chấp nhận hoạt động đã ghi từ Strava.
                               </p>
                             )}
                           </div>

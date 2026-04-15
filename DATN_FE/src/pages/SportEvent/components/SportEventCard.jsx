@@ -31,8 +31,14 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
   // Creator/organizer ID (populated from backend)
   const creatorId = String(event.createdBy?._id || event.createdBy || '');
 
-  const handleClick = () => navigate(`/sport-event/${event._id}`);
-  const handleJoin = (e) => { e.stopPropagation(); if (onJoin) onJoin(event._id); };
+  const eventId = event._id || event.id;
+  const handleClick = () => {
+    if (eventId) navigate(`/sport-event/${eventId}`);
+  };
+  const handleJoin = (e) => {
+    e.stopPropagation();
+    if (onJoin && eventId) onJoin(eventId);
+  };
 
   const isOnline = event.eventType === 'Trong nhà';
   const eventDate = moment(event.startDate);

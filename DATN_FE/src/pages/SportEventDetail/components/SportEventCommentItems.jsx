@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
-import moment from 'moment'
+import { formatRelativeTimeVi } from '../../../utils/formatRelativeTimeVi'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import { useContext, useState } from 'react'
 import InputEmoji from '../../../components/InputComponents/InputEmoji'
@@ -186,7 +186,7 @@ export default function SportEventCommentItems({ comment, post }) {
                 <FaCheckCircle size={12} />
               </div>
             )}
-            <span className='text-slate-500 text-xs dark:text-slate-400'>{moment(comment.createdAt).fromNow()}</span>
+            <span className='text-slate-500 text-xs dark:text-slate-400'>{formatRelativeTimeVi(comment.createdAt)}</span>
           </div>
         <ShowMoreContent className='text-sm dark:text-gray-300' lines={2}>
           <p className=''>{comment.content}</p>
@@ -290,7 +290,7 @@ function CommentChildItems({ comment, profile, navigate, post }) {
                   </div>
                 )}
                 <span className='text-slate-500 text-xs dark:text-slate-400'>
-                  {moment(comment.createdAt).fromNow()}
+                  {formatRelativeTimeVi(comment.createdAt)}
                 </span>
               </div>
             </div>

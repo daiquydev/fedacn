@@ -27,6 +27,7 @@ const ParticipantsList = ({
   connectedIds = new Set(),
   creatorId = '',
   showExpand = true,
+  totalCount,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ const ParticipantsList = ({
   });
 
   const visible = expanded ? sorted : sorted.slice(0, initialLimit);
-  const remaining = sorted.length - visible.length;
+  const remaining = totalCount !== undefined ? Math.max(0, totalCount - visible.length) : (sorted.length - visible.length);
 
   return (
     <div className="inline-flex flex-col">

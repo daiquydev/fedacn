@@ -19,6 +19,7 @@ export interface ActivityTracking {
     challengeId?: Types.ObjectId
     userId: Types.ObjectId
     activityType: string
+    name?: string
     status: 'active' | 'paused' | 'completed' | 'discarded'
     startTime: Date
     endTime?: Date
@@ -63,6 +64,10 @@ const ActivityTrackingSchema = new mongoose.Schema<ActivityTracking>(
         activityType: {
             type: String,
             default: 'Chạy bộ'
+        },
+        name: {
+            type: String,
+            default: 'Hoạt động cá nhân'
         },
         status: {
             type: String,

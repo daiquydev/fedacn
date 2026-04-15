@@ -39,7 +39,7 @@ export default function Login() {
           navigate('/recipes-writter')
         }
         if (data.data.result.user.role === 4) {
-          navigate('/reports')
+          navigate('/reports/posts')
         }
 
         toast.success(data.data.message)

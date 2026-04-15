@@ -2,34 +2,7 @@ import { useContext, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
-
-// Custom Vietnamese relative time (bypasses moment locale issues)
-function fromNowVi(targetMoment) {
-    const now = moment()
-    const diffMs = targetMoment.diff(now)
-    const absSec = Math.abs(diffMs) / 1000
-    const absMin = absSec / 60
-    const absHour = absMin / 60
-    const absDay = absHour / 24
-    const absMonth = absDay / 30
-    const absYear = absDay / 365
-
-    const future = diffMs > 0
-    let str
-    if (absSec < 45) str = 'vài giây'
-    else if (absSec < 90) str = '1 phút'
-    else if (absMin < 45) str = `${Math.round(absMin)} phút`
-    else if (absMin < 90) str = '1 giờ'
-    else if (absHour < 22) str = `${Math.round(absHour)} giờ`
-    else if (absHour < 36) str = '1 ngày'
-    else if (absDay < 25) str = `${Math.round(absDay)} ngày`
-    else if (absDay < 45) str = '1 tháng'
-    else if (absDay < 345) str = `${Math.round(absMonth)} tháng`
-    else if (absDay < 545) str = '1 năm'
-    else str = `${Math.round(absYear)} năm`
-
-    return future ? `trong ${str}` : `${str} trước`
-}
+import { formatRelativeTimeVi } from '../../utils/formatRelativeTimeVi'
 import {
     FaCalendarAlt,
     FaMapMarkerAlt,
@@ -254,10 +227,10 @@ export default function SportEventPreviewCard({ eventId }) {
 
     // Time remaining or elapsed — Vietnamese
     const timeInfo = isEnded
-        ? `Đã kết thúc ${fromNowVi(endDate)}`
+        ? `Đã kết thúc ${formatRelativeTimeVi(endDate)}`
         : isNotStarted
-            ? `Bắt đầu ${fromNowVi(startDate)}`
-            : `Kết thúc ${fromNowVi(endDate)}`
+            ? `Bắt đầu ${formatRelativeTimeVi(startDate)}`
+            : `Kết thúc ${formatRelativeTimeVi(endDate)}`
 
     // Participants list (populated objects)
     const participantsList = event.participants_ids || []

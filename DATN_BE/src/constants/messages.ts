@@ -58,6 +58,18 @@ export const POST_MESSAGE = {
   REPORTED_POST: 'Bài viết đã được báo cáo'
 } as const
 
+export const SPORT_EVENT_MESSAGE = {
+  REPORT_EVENT_SUCCESS: 'Báo cáo sự kiện thành công',
+  REPORTED_EVENT: 'Bạn đã báo cáo sự kiện này rồi',
+  EVENT_NOT_FOUND: 'Không tìm thấy sự kiện'
+} as const
+
+export const CHALLENGE_MESSAGE = {
+  REPORT_CHALLENGE_SUCCESS: 'Báo cáo thử thách thành công',
+  REPORTED_CHALLENGE: 'Bạn đã báo cáo thử thách này rồi',
+  CHALLENGE_NOT_FOUND: 'Không tìm thấy thử thách'
+} as const
+
 export const USER_MESSAGE = {
   GET_USER_SUCCESS: 'Lấy thông tin người dùng thành công',
   UPDATE_USER_SUCCESS: 'Cập nhật thông tin người dùng thành công',
@@ -342,7 +354,17 @@ export const INSPECTOR_MESSAGE = {
   GET_RECIPE_IN_ALBUM_FOR_INSPECTOR_SUCCESS: 'Lấy danh sách công thức trong album cho inspector thành công',
   ACCEPT_ALBUM_SUCCESS: 'Duyệt album thành công',
   REJECT_ALBUM_SUCCESS: 'Từ chối album thành công',
-  GET_MEAL_PLAN_REPORT_SUCCESS: 'Lấy danh sách thực đơn bị báo cáo thành công'
+  GET_MEAL_PLAN_REPORT_SUCCESS: 'Lấy danh sách thực đơn bị báo cáo thành công',
+  GET_SPORT_EVENT_REPORTS_SUCCESS: 'Lấy danh sách sự kiện bị báo cáo thành công',
+  ACCEPT_SPORT_EVENT_REPORT_SUCCESS: 'Đã bỏ qua báo cáo, giữ sự kiện',
+  DELETE_SPORT_EVENT_REPORT_SUCCESS: 'Đã gỡ sự kiện vi phạm',
+  GET_DELETED_SPORT_EVENTS_SUCCESS: 'Lấy danh sách sự kiện đã gỡ thành công',
+  RESTORE_SPORT_EVENT_SUCCESS: 'Khôi phục sự kiện thành công',
+  GET_CHALLENGE_REPORTS_SUCCESS: 'Lấy danh sách thử thách bị báo cáo thành công',
+  ACCEPT_CHALLENGE_REPORT_SUCCESS: 'Đã bỏ qua báo cáo, giữ thử thách',
+  DELETE_CHALLENGE_REPORT_SUCCESS: 'Đã gỡ thử thách vi phạm',
+  GET_DELETED_CHALLENGES_SUCCESS: 'Lấy danh sách thử thách đã gỡ thành công',
+  RESTORE_CHALLENGE_SUCCESS: 'Khôi phục thử thách thành công'
 }
 
 export const WRITTER_MESSAGE = {

@@ -14,6 +14,7 @@ import {
 } from '~/controllers/adminControllers/userAdmin.controller'
 import {
   getAIUsageAnalyticsController,
+  getChallengeAnalyticsController,
   getCommunityAnalyticsController
 } from '~/controllers/adminControllers/analytics.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
@@ -80,6 +81,13 @@ userAdminRouter.get(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin])),
   wrapRequestHandler(getAIUsageAnalyticsController)
+)
+
+userAdminRouter.get(
+  '/analytics/challenges',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getChallengeAnalyticsController)
 )
 
 userAdminRouter.get(

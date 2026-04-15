@@ -8,6 +8,7 @@ import { NotificationTypes } from '~/constants/enums'
 import { Types } from 'mongoose'
 import { ErrorWithStatus } from '~/utils/error'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { SPORT_EVENT_MESSAGE } from '~/constants/messages'
 
 // Mirror of sportEventProgress.services.ts isKcalUnit (avoids circular import)
 function isKcalUnit(targetUnit: string): boolean {
@@ -516,11 +517,15 @@ class SportEventService {
     return event
   }
 
-  // Soft delete sport event
-  async deleteSportEventService(eventId: string) {
+  // Soft delete sport event (deletedFromReportModeration = true chỉ khi gỡ do kiểm duyệt báo cáo)
+  async deleteSportEventService(
+    eventId: string,
+    options?: { deletedFromReportModeration?: boolean }
+  ) {
+    const deletedFromReportModeration = options?.deletedFromReportModeration === true
     const event = await SportEventModel.findByIdAndUpdate(
       eventId,
-      { isDeleted: true, deletedAt: new Date() },
+      { isDeleted: true, deletedAt: new Date(), deletedFromReportModeration },
       { new: true }
     )
 
@@ -767,6 +772,60 @@ class SportEventService {
       .populate('participants_ids', 'name avatar')
 
     return updatedEvent
+  }
+
+  async createReportSportEventService({
+    event_id,
+    user_id,
+    reason
+  }: {
+    event_id: string
+    user_id: string
+    reason: string
+  }) {
+    const existingReport = await SportEventModel.findOne({
+      _id: event_id,
+      'report_event.user_id': user_id
+    })
+    if (existingReport) {
+      throw new ErrorWithStatus({
+        message: SPORT_EVENT_MESSAGE.REPORTED_EVENT,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const updated = await SportEventModel.findOneAndUpdate(
+      { _id: event_id, isDeleted: { $ne: true } },
+      {
+        $push: {
+          report_event: {
+            user_id,
+            reason: reason || ''
+          }
+        }
+      },
+      { new: true }
+    ).populate('createdBy', 'name avatar')
+
+    if (!updated) {
+      throw new ErrorWithStatus({
+        message: SPORT_EVENT_MESSAGE.EVENT_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const creatorId = (updated.createdBy as any)?._id?.toString?.() || (updated as any).createdBy?.toString?.()
+    if (creatorId && creatorId !== user_id) {
+      await NotificationModel.create({
+        receiver_id: creatorId,
+        content: 'Sự kiện của bạn đã bị báo cáo vi phạm',
+        name_notification: reason || 'Vi phạm',
+        link_id: event_id,
+        type: NotificationTypes.reportSportEvent
+      })
+    }
+
+    return updated
   }
 }
 

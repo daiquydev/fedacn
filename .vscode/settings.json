@@ -4,7 +4,7 @@
     "editor.autoClosingBrackets": "languageDefined",
     "editor.codeActions.triggerOnFocusChange": true,
     "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
-    "editor.columnSelection": true,
+    "editor.columnSelection": false,
     "editor.definitionLinkOpensInPeek": true,
     "editor.experimental.treeSitterTelemetry": true,
     "editor.experimental.preferTreeSitter.typescript": true,
@@ -13,5 +13,6 @@
     "editor.experimental.preferTreeSitter.css": true,
     "editor.experimentalGpuAcceleration": "off",
     "agCockpit.criticalThreshold": 30,
-    "agCockpit.refreshInterval": 2000
+    "agCockpit.refreshInterval": 2000,
+    "agq.showPromptCredits": true
 }

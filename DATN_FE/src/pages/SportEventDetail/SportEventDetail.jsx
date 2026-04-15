@@ -18,7 +18,8 @@ import {
   FaSearch,
   FaUserFriends as FaInvite,
   FaCheck,
-  FaBell
+  FaBell,
+  FaFlag
 } from 'react-icons/fa'
 import {
   MdVideocam,
@@ -52,6 +53,7 @@ import useravatar from '../../assets/images/useravatar.jpg'
 import SportEventProgress from './components/SportEventProgress'
 import SportEventLeaderboard from './components/SportEventLeaderboard'
 import SportEventShareModal from '../../components/SportEvent/SportEventShareModal'
+import ModalReportSportEvent from '../SportEvent/components/ModalReportSportEvent'
 import IndoorEventProgress from './components/IndoorEventProgress'
 import ProgressRing from '../../components/SportEvent/ProgressRing'
 
@@ -73,6 +75,7 @@ export default function SportEventDetail() {
   const [showMapPopup, setShowMapPopup] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
   const [friendSearch, setFriendSearch] = useState('')
   const [invitedIds, setInvitedIds] = useState(new Set())
 
@@ -424,6 +427,10 @@ export default function SportEventDetail() {
         />
       )}
 
+      {showReportModal && id && (
+        <ModalReportSportEvent eventId={id} onClose={() => setShowReportModal(false)} />
+      )}
+
       {/* Map Popup Modal */}
       {showMapPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowMapPopup(false)}>
@@ -466,9 +473,10 @@ export default function SportEventDetail() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        {/* Navigation */}
-        <div className="absolute top-6 left-6">
+        {/* Navigation — above bottom overlay (same stacking context, later siblings win without z-index) */}
+        <div className="absolute top-6 left-6 z-30">
           <button
+            type="button"
             onClick={() => navigate('/sport-event')}
             className="flex items-center gap-2 text-white bg-black/30 hover:bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm transition"
           >
@@ -642,6 +650,16 @@ export default function SportEventDetail() {
                 <FaShare className="text-sm" />
                 Chia sẻ
               </button>
+              {me?._id && !isCreator && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(true)}
+                  className="px-5 py-2.5 bg-white/10 hover:bg-amber-500/20 text-white/80 hover:text-amber-200 border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
+                >
+                  <FaFlag className="text-sm" />
+                  Báo cáo
+                </button>
+              )}
             </div>
           </div>
         </div>

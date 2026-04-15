@@ -1,4 +1,5 @@
 import mongoose, { Types } from 'mongoose'
+import moment from 'moment'
 
 export interface SportEvent {
   _id?: Types.ObjectId
@@ -27,6 +28,9 @@ export interface SportEvent {
   difficulty?: string
   isDeleted?: boolean
   deletedAt?: Date | null
+  /** true chỉ khi sự kiện bị gỡ do từ chối báo cáo (kiểm duyệt), không phải BTC tự xóa */
+  deletedFromReportModeration?: boolean
+  report_event?: { user_id: Types.ObjectId; reason: string; created_at: Date }[]
   createdAt?: Date
   updatedAt?: Date
 }
@@ -56,7 +60,15 @@ const SportEventSchema = new mongoose.Schema<SportEvent>(
     targetUnit: { type: String, default: '' },
     difficulty: { type: String, default: '' },
     isDeleted: { type: Boolean, default: false },
-    deletedAt: { type: Date, default: null }
+    deletedAt: { type: Date, default: null },
+    deletedFromReportModeration: { type: Boolean, default: false },
+    report_event: [
+      {
+        user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'users', default: null },
+        reason: { type: String, default: '' },
+        created_at: { type: Date, default: () => moment().toDate() }
+      }
+    ]
   },
   {
     timestamps: true,

@@ -15,6 +15,9 @@ export const updateSportEvent = (id, data) => http.put(`/sport-events/${id}`, da
 // Delete sport event
 export const deleteSportEvent = (id) => http.delete(`/sport-events/${id}`)
 
+// Report sport event (moderation)
+export const reportSportEvent = (id, body) => http.post(`/sport-events/${id}/report`, body)
+
 // Join sport event
 export const joinSportEvent = (id) => http.post(`/sport-events/${id}/join`)
 

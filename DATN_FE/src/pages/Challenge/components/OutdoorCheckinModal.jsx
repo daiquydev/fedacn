@@ -56,12 +56,12 @@ export default function OutdoorCheckinModal({ challenge, onClose, onSubmit, isLo
     onSubmit(data)
   }
 
-  const handleStartGPS = () => {
+  const handleStartRecording = () => {
     onClose()
     navigate(`/challenge/${challenge._id}/tracking`)
   }
 
-  // Step 1: Choose mode (GPS or Manual)
+  // Step 1: Choose mode (ghi hoạt động hoặc nhập tay)
   if (mode === 'choose') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
@@ -77,9 +77,9 @@ export default function OutdoorCheckinModal({ challenge, onClose, onSubmit, isLo
           <div className="p-6 space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">Chọn cách ghi nhận hoạt động</p>
 
-            {/* GPS Tracking Option */}
+            {/* Ghi hoạt động trên bản đồ */}
             <button
-              onClick={handleStartGPS}
+              onClick={handleStartRecording}
               className="w-full p-5 rounded-xl border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 bg-blue-50 dark:bg-blue-900/20 transition-all group"
             >
               <div className="flex items-center gap-4">
@@ -87,8 +87,8 @@ export default function OutdoorCheckinModal({ challenge, onClose, onSubmit, isLo
                   <FaLocationArrow />
                 </div>
                 <div className="text-left flex-1">
-                  <h4 className="font-bold text-gray-800 dark:text-white text-base group-hover:text-blue-600 transition">🛰️ GPS Tracking</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Theo dõi lộ trình bằng GPS. Tự động đo khoảng cách, tốc độ, calo.</p>
+                  <h4 className="font-bold text-gray-800 dark:text-white text-base group-hover:text-blue-600 transition">Bắt đầu ghi</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Ghi lại lộ trình khi bạn di chuyển; tự động tính quãng đường, tốc độ và calo.</p>
                 </div>
               </div>
               <div className="mt-3 text-[11px] text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1 justify-center">

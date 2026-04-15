@@ -18,9 +18,9 @@ import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox
 //  Helper: badge màu theo challenge_type
 // ──────────────────────────────────────────────
 const TYPE_CONFIG = {
-  nutrition: { label: 'Dinh dưỡng', icon: FaAppleAlt, cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  nutrition: { label: 'Ăn uống', icon: FaAppleAlt, cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
   outdoor_activity: { label: 'Ngoài trời', icon: FaRunning, cls: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
-  fitness: { label: 'Tập luyện', icon: FaDumbbell, cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }
+  fitness: { label: 'Thể dục', icon: FaDumbbell, cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }
 }
 
 const STATUS_CONFIG = {
@@ -93,9 +93,9 @@ function ChallengeListTab() {
           className='px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-amber-400 outline-none'
         >
           <option value='all'>Tất cả loại</option>
-          <option value='nutrition'>🥗 Dinh dưỡng</option>
+          <option value='nutrition'>🥗 Ăn uống</option>
           <option value='outdoor_activity'>🏃 Ngoài trời</option>
-          <option value='fitness'>💪 Tập luyện</option>
+          <option value='fitness'>💪 Thể dục</option>
         </select>
         <select
           value={statusFilter}

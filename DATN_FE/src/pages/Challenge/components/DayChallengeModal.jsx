@@ -21,7 +21,7 @@ import { deleteChallengeProgress } from '../../../apis/challengeApi'
  * Returns display name for an activity entry based on challenge type.
  */
 function getEntryDisplayName(challengeType, challenge, entry) {
-  if (challengeType === 'outdoor_activity') return challenge?.category || 'Hoạt động ngoài trời'
+  if (challengeType === 'outdoor_activity') return challenge?.category || 'Ngoài trời'
   if (challengeType === 'nutrition') return entry?.food_name || 'Ăn uống'
   if (challengeType === 'fitness') return 'Thể dục'
   return challenge?.category || 'Hoạt động'
@@ -32,7 +32,7 @@ const TYPE_CONFIG = {
     gradient: 'from-blue-500 to-cyan-500',
     gradientCSS: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
     emoji: '🏃',
-    label: 'Hoạt động ngoài trời',
+    label: 'Ngoài trời',
     icon: FaRunning,
     ringColor: '#3b82f6',
     ringTrack: '#e0e7ff',
@@ -200,7 +200,7 @@ export default function DayChallengeModal({
     return ids
   }, [dayEntries, type])
 
-  const handleStartGPS = () => {
+  const handleStartRecording = () => {
     onClose()
     navigate(`/challenge/${challenge._id}/tracking`)
   }
@@ -208,7 +208,7 @@ export default function DayChallengeModal({
   const handleShare = (e, entry) => {
     e.stopPropagation()
     if (type === 'outdoor_activity') {
-      // Outdoor: use GPS ActivityShareModal
+      // Outdoor: modal chia sẻ hoạt động có lộ trình
       const distKm = entry.distance ? Number(entry.distance) : 0
       const durationSec = entry.duration_minutes ? entry.duration_minutes * 60 : 0
       setShareActivity({
@@ -382,7 +382,7 @@ export default function DayChallengeModal({
                   <div className="space-y-2.5">
                     {dayEntries.map((entry, idx) => {
                       // Primary: entry.value (backend progress value)
-                      // Fallback: entry.distance (GPS data)
+                      // Fallback: entry.distance (từ bản ghi có lộ trình)
                       const progressValue = entry.value || entry.distance || 0
                       const distKm = entry.distance ? Number(entry.distance) : 0
                       const durationSec = (entry.duration_minutes || 0) * 60
@@ -481,7 +481,7 @@ export default function DayChallengeModal({
                               {hasActivityLink && (
                                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
                                   <FaMapMarkerAlt className="text-[8px]" />
-                                  GPS
+                                  Có lộ trình
                                 </span>
                               )}
                             </div>
@@ -511,10 +511,10 @@ export default function DayChallengeModal({
                 <div>
                   {type === 'outdoor_activity' ? (
                     <button
-                      onClick={handleStartGPS}
+                      onClick={handleStartRecording}
                       className={`w-full py-3.5 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-bold text-sm hover:shadow-lg transition flex items-center justify-center gap-2.5`}
                     >
-                      <FaLocationArrow /> 🛰️ Bắt đầu GPS Tracking
+                      <FaLocationArrow /> Bắt đầu ghi
                     </button>
                   ) : (
                     <div>
@@ -540,7 +540,7 @@ export default function DayChallengeModal({
 
               {isToday && isCompleted && type === 'outdoor_activity' && (
                 <button
-                  onClick={handleStartGPS}
+                  onClick={handleStartRecording}
                   className="w-full py-3 rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition flex items-center justify-center gap-2"
                 >
                   <FaLocationArrow /> Tiếp tục hoạt động

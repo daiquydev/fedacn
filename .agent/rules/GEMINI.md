@@ -120,6 +120,16 @@ When user's prompt is NOT in English:
 2. Identify dependent files
 3. Update ALL affected files together
 
+### 🛠️ Tool Execution & Verification (MANDATORY)
+
+**You MUST ALWAYS verify the result of your tool calls before assuming success.**
+
+1. **Verify `replace_file_content` / `multi_replace_file_content` outputs:**
+   - If the tool output says `Error` or `Could not successfully apply any edits`, you MUST STOP, read the file again via `view_file` or `grep_search`, and rewrite your replacement exactly matching the actual file content.
+   - You are FORBIDDEN from telling the user "I updated it" if the tool call failed.
+2. **Be extremely precise with `grep_search`**: Use `MatchPerLine: true` when you need to see lines to edit, and check encoding/exact character matches.
+3. **Check your arrogance:** Never assume your first tool call worked perfectly without reading the explicit `output`.
+
 ### 🗺️ System Map Read
 
 > 🔴 **MANDATORY:** Read `ARCHITECTURE.md` at session start to understand Agents, Skills, and Scripts.
@@ -240,8 +250,7 @@ When user's prompt is NOT in English:
 
 > **Design rules are in the specialist agents, NOT here.**
 
-| Task         | Read                            |
-| ------------ | ------------------------------- |
+| Task         | Read                            
 | Web UI/UX    | `.agent/frontend-specialist.md` |
 | Mobile UI/UX | `.agent/mobile-developer.md`    |
 
@@ -269,5 +278,3 @@ When user's prompt is NOT in English:
 - **Scanners**: `security_scan.py`, `dependency_analyzer.py`
 - **Audits**: `ux_audit.py`, `mobile_audit.py`, `lighthouse_audit.py`, `seo_checker.py`
 - **Test**: `playwright_runner.py`, `test_runner.py`
-
----

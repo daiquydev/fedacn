@@ -1,0 +1,140 @@
+# CHƯƠNG 3: PHÂN TÍCH VÀ ĐẶC TẢ YÊU CẦU HỆ THỐNG
+
+Chương này đi sâu vào việc phân tích và đặc tả chi tiết các yêu cầu mà hệ thống "Mạng xã hội rèn luyện thể dục thể thao cộng đồng FitConnect" cần đáp ứng. Hệ thống tập trung vào việc quản lý các sự kiện thể thao, thử thách cá nhân, hỗ trợ lịch trình tập luyện và chia sẻ trải nghiệm rèn luyện qua mạng xã hội. Nội dung bao gồm các yêu cầu chức năng (những gì hệ thống phải làm), yêu cầu phi chức năng (các tiêu chí về chất lượng, hiệu suất, bảo mật...), mô hình hóa tương tác người dùng thông qua biểu đồ Use Case và đặc tả chi tiết cho các trường hợp sử dụng quan trọng.
+
+## 3.1 Yêu cầu chức năng (Functional Requirements)
+
+Dựa trên mục tiêu và phạm vi đã xác định, hệ thống cần cung cấp các nhóm chức năng chính sau:
+
+### 3.1.1 Quản lý tài khoản và hồ sơ người dùng
+Quản lý tài khoản là nền tảng đầu tiên của bất kỳ hệ thống mạng xã hội nào, cho phép nhận diện và phân biệt người dùng, từ đó cá nhân hóa trải nghiệm và bảo vệ dữ liệu cá nhân. Sự an toàn và liên tục trong việc sử dụng hệ thống được đảm bảo bằng các tính năng bảo mật tài khoản.
+- **Đăng ký và Xác thực (FR-01):** Đăng ký tài khoản hệ thống thông qua tài khoản cá nhân Email hoặc hệ sinh thái Google. Đi kèm chức năng hỗ trợ tự động khôi phục mật khẩu trực tiếp qua Email.
+- **Quản lý hồ sơ cá nhân (FR-02):** Xem và cập nhật thông tin cá nhân (tên, ảnh đại diện, tiểu sử,...). Chủ động quản lý được thông tin kho bài viết đã đăng, kiểm soát các dự án sự kiện, thử thách và lộ trình lịch trình tập luyện mà mình đã tham gia.
+
+### 3.1.2 Quản lý nội dung cộng đồng và tương tác mạng xã hội
+Yếu tố mạng xã hội tại FitConnect đóng vai trò như chất kết dính toàn bộ cộng đồng yêu thể thao. Nền tảng được thiết kế chuyên biệt để mọi người có thể tự do chia sẻ những nỗ lực rèn luyện, kiến thức hữu ích và truyền ngọn lửa động lực đến những người xung quanh.
+- **Quản lý bài viết (FR-03):** Chức năng này trao cho người dùng quyền lưu giữ và chia sẻ hành trình bằng cách tạo mới, chỉnh sửa hoặc xóa các bài viết cá nhân trên không gian cộng đồng. Nền tảng đảm bảo một môi trường mạng xã hội văn minh và sạch sẽ thông qua sự can thiệp của hệ thống Trí tuệ nhân tạo (AI). AI sẽ đóng vai trò như một màng lọc, tự động quét để nhận diện và phát hiện tức thời các hình ảnh hay nội dung độc hại, không đúng với tiêu chuẩn thuần phong mỹ tục.
+- **Tương tác xã hội (FR-04):** Để tăng cường sự gắn kết, hệ sinh thái cung cấp công cụ cho phép người dùng bày tỏ cảm xúc và để lại bình luận động viên trên dòng trạng thái của bạn bè. Hơn thế nữa, chức năng tạo và chia sẻ những bài viết chất lượng, các sự kiện thể thao lớn hay các thử thách rèn luyện hữu ích mà mình tham gia sẽ kích thích bạn bè và mọi người cùng tham gia. Việc tương tác này giúp tinh thần thể thao và kiến thức dinh dưỡng được cộng hưởng và lan tỏa nhanh hơn.
+- **Báo cáo nội dung vi phạm (FR-05):** Giám sát cộng đồng có sự đóng góp lớn từ phía người dùng. Bất kỳ thành viên nào khi quan sát thấy các bài viết chứa thông tin lừa đảo, tiêu cực hoặc có biểu hiện vi phạm tiêu chuẩn cộng đồng đều có thể sử dụng tính năng Báo cáo (Report). Dữ liệu này lập tức được gửi đến Quản trị viên xử lý, góp phần duy trì một môi trường rèn luyện ảo an toàn, tích cực.
+
+### 3.1.3 Sự kiện thể thao (Sport Events)
+Sự kiện thể thao là môi trường cốt lõi để người dùng có thể cùng nhau thi đua, giao lưu và phấn đấu vì mục tiêu chung của sự kiện. Nền tảng được thiết kế chuyên biệt để hỗ trợ linh hoạt cả hai loại hình vận động: ngoài trời và tại nhà.
+- **Tổ chức và tham gia sự kiện (FR-06):** Người dùng có toàn quyền khởi tạo một sự kiện thi đấu mới theo ý tưởng riêng của bản thân, hoặc sử dụng công cụ AI để tự động tạo ra sự kiện dựa trên những gợi ý ban đầu. Bên cạnh đó, người dùng có thể dễ dàng tham gia các sự kiện mở do cộng đồng tổ chức, hoặc tham gia thông qua lời mời từ bạn bè. Để tăng trải nghiệm, hệ thống cung cấp giao diện giúp người dùng liên tục theo dõi tiến độ của bản thân, xem thành tích của bạn bè và nắm bắt được tiến độ chung của toàn sự kiện.
+- **Thi đua sự kiện Ngoài trời và ghi tiến độ thực (FR-07):** Đối với các sự kiện ngoài trời như chạy bộ hay đạp xe, hệ thống cho phép người dùng ghi lại lộ trình bằng định vị GPS trên bản đồ một cách cực kỳ chính xác theo thời gian thực (Real-time tracking). Ngoài ra, nền tảng còn cung cấp tính năng đồng bộ hóa dữ liệu trực tiếp từ hệ thống Strava - một ứng dụng nổi tiếng về định vị, theo dõi hoạt động thể dục thể thao. Người dùng có thể theo dõi biểu đồ lịch sử để biết được quãng đường, thời gian, số calo tiêu thụ cho các hoạt động của mình trong sự kiện. Ngoài ra sự kiện còn cho phép chia sẻ sự kiện,hoạt động của mình lên cộng đồng để thu hút, mời mọi người cùng tham gia vì một mục tiêu chung.
+- **Thi đua sự kiện Trong nhà qua Video Call (FR-08):** Đối với các sự kiện tập luyện tại nhà như Yoga, Cardio,... nền tảng cung cấp không gian sinh hoạt nhóm trực tuyến. Tại đây, mọi người có thể gọi điện tham gia qua Video Call để vừa tập luyện, vừa học hỏi, giao tiếp với các thành viên khác trong sự kiện. Đặc biệt, luồng camera của người dùng được tích hợp ngay với mô hình AI nhận diện chuyển động khuôn mặt. Công nghệ này đảm bảo hệ thống sẽ tự động giám sát và ghi nhận chính xác thời gian thực tế mà người dùng có mặt tại buổi sự kiện tham gia, từ đó loại bỏ tối đa các hành vi gian lận và định hình tính công bằng tuyệt đối cho mọi người trong sự kiện. Sau mỗi buổi video call trực tuyến, hệ thống tự động ghi nhận công sức của người dùng và cho phép người dùng xem lại những hình ảnh của buổi tập, lịch sử các buổi hoạt động mà mình tham gia, mọi người có thể chia sẻ sự kiện, hoạt động của mình để thu hút, mời mọi người cùng tham gia.
+- **Chia sẻ và mời tham gia sự kiện (FR-09):** Nền tảng cung cấp bộ công cụ lan tỏa, cho phép người dùng chia sẻ trực tiếp các sự kiện hấp dẫn hoặc thành tích bản thân đang đạt được lên dòng trạng thái Feed. Tính năng này không chỉ khơi dậy sự tò mò mà còn là lời mời gọi trực quan nhất để thúc giục bạn bè có chung đam mê cùng nhóm họp tham gia vì một mục tiêu chung.
+- **Báo cáo sự kiện vi phạm (FR-10):** Nhằm đảm bảo một sân chơi thể thao lành mạnh, nút Báo cáo (Report) được cung cấp để thành viên nhanh chóng gửi cảnh báo khi phát hiện một Event tổ chức với mục đích lừa đảo, chứa ngôn từ thù địch hoặc cổ xúy các thói quen sai lệch y khoa. Quản trị viên sẽ lập tức tiếp nhận dữ liệu và xử lý kịp thời.
+
+### 3.1.4 Thử thách cộng đồng (Challenges)
+Khác biệt với mục tiêu thi đua chung của Sự kiện thể thao lớn, Thử thách cộng đồng là không gian chuyên biệt nhằm đôn đốc mỗi cá nhân hoàn thành các mục tiêu nhỏ mỗi ngày, qua đó hình thành thói quen rèn luyện kỷ luật.
+- **Tạo và tham gia thử thách cộng đồng (FR-11):** Cho phép người dùng tự do tạo ra các chiến dịch thử thách liên quan đến ăn uống, tập luyện thể dục hay các hoạt động thể thao ngoài trời. Bằng cách kết hợp sâu công nghệ AI, hệ thống tự động sinh ra kịch bản để dễ dàng thiết lập những thử thách phù hợp nhất với từng cá nhân. Người dùng có thể tạo một thử thách cho riêng mình, hoặc tham gia vào các chiến dịch thử thách do bạn bè hay mọi người trong cộng đồng phát động.
+- **Hoàn thành tiến độ thử thách đa hình thái (FR-12):** Tính năng theo dõi tiến độ được áp dụng chuyên biệt cho từng loại hình thử thách. Đối với các thử thách dinh dưỡng, ăn uống, người dùng thực hiện check-in bằng hình ảnh thực tế bữa ăn hằng ngày, sau đó hệ thống sử dụng công nghệ nhận diện AI để xác định hình ảnh đó có hợp lệ với quy định thử thách hay không. Đối với thử thách tập luyện thể hình, người tham gia được tự do lựa chọn các bài tập mà hệ thống cấp phép, sau đó chuyển trực tiếp đến không gian tập luyện để hoàn thành. Đối với thử thách yêu cầu hoạt động thể thao ngoài trời, tương tự với cơ chế sự kiện, hệ thống cho phép người dùng ghi nhận tiến độ di chuyển dựa trên hệ thống định vị GPS theo thời gian thực. Một lịch biểu trực quan giúp người dùng dễ dàng biết được tiến độ mỗi ngày của bản thân và của những mọi người xung quanh. Đặc biệt, nền tảng hỗ trợ bình luận trực tiếp vào các hoạt động của người khác nhằm ghi nhận và tôn vinh sự nỗ lực của họ.
+- **Chia sẻ và mời mọi người tham gia (FR-13):** Nền tảng cung cấp công cụ chia sẻ thành tựu thử thách lên dòng trạng thái Feed nhằm thu hút, truyền năng lượng, đồng thời mời gọi bạn bè xung quanh cùng tham gia để giúp đỡ nhau vượt qua mọi rãnh rỗi.
+- **Báo cáo vi phạm thử thách (FR-14):** Nút báo cáo (Report) được tích hợp để gửi cảnh báo những thử thách chứa nội dung độc hại, lừa đảo, vi phạm chuẩn mực chung, qua đó giúp xây dựng cộng đồng trong sạch.
+
+### 3.1.5 Tính toán các chỉ số sức khỏe và gợi ý tập luyện
+Việc rèn luyện thể thao chỉ thực sự đạt được hiệu quả tối đa khi kết hợp chặt chẽ cùng những hiểu biết khoa học về thể trạng cá nhân. Phân hệ này được thiết kế để đóng vai trò như một chuyên gia y tế riêng của người dùng.
+- **Đo lường các chỉ số sức khỏe (FR-15):** Nền tảng cung cấp một bộ công cụ tính toán chuẩn y khoa, cho phép người dùng dựa vào các thông số cơ thể cơ bản để xuất ra ngay lập tức các chỉ số sức khỏe nền tảng như BMI (Chỉ số khối cơ thể), BMR (Tỷ lệ năng lượng trao đổi chất cơ bản) hay TDEE (Tổng Calo tiêu hao mỗi ngày),...
+- **Trợ lý AI phân tích và gợi ý tập luyện (FR-16):** Từ nguồn số liệu sinh trắc học vừa đo lường, hệ thống Trợ lý ảo AI sẽ tiến hành phân tích sâu tình trạng sức khỏe của người dùng (thừa cân, thiếu cân hay cân đối). Kết hợp với mục tiêu mà người dùng mong muốn đạt được, AI sẽ rà soát toàn bộ kho dữ liệu bài tập khổng lồ trên hệ thống để tự động gợi ý một lộ trình giáo án tập luyện cá nhân hóa, vừa an toàn lại vừa mang lại hiệu quả cao nhất.
+- **Theo dõi biểu đồ sức khỏe theo thời gian (FR-17):** Mọi sự thay đổi về chỉ số cơ địa hay quá trình lên xuống cân nặng đều được hệ thống lưu trữ điện tử một cách an toàn. Nền tảng cung cấp hệ thống biểu đồ trực quan để vẽ lại tương quan sức khỏe của người dùng theo chiều dài thời gian. Tính năng này giúp người dùng dễ dàng theo dõi đồ thị biến thiên, đánh giá tiến bộ của bản thân qua từng tuần, từng tháng để có những điều chỉnh thói quen sống kịp thời.
+
+### 3.1.6 Tập luyện cá nhân
+Thay vì phải phụ thuộc vào các sự kiện thi đua hay thử thách cộng đồng, không gian Tập luyện cá nhân trao cho người dùng đặc quyền tự chủ rèn luyện theo nhịp độ riêng, tập trung hoàn toàn vào việc lắng nghe và cải thiện cơ thể.
+- **Tùy biến giáo án thủ công (FR-18):** Dựa vào thiết bị sẵn có hoặc vùng cơ bắp mục tiêu muốn phát triển, hệ thống cung cấp công cụ lọc thông minh để đề xuất chính xác các bài tập tương ứng. Đi kèm mỗi bài là hệ thống video hướng dẫn thực hành trực quan và thông tin lộ trình chi tiết. Điểm mạnh ở đây là người dùng hoàn toàn có thể tự do xem xét, điều chỉnh khối lượng để cá nhân hoá buổi tập cho phù hợp với khả năng của bản thân.
+- **Tự động hóa bằng Trợ lý AI (FR-19):** Nhằm tối ưu hóa thời gian, hệ thống cho phép người dùng trực tiếp cung cấp mong muốn tập luyện, hoặc để AI tự động phân tích chéo thông qua các chỉ số sức khỏe của người dùng. Từ những dữ liệu này kết hợp với kho dữ liệu bài tập khổng lồ, AI sẽ làm nhiệm vụ tư duy thuật toán và lập tức đưa ra gợi ý tập hợp các bài tập phù hợp và chuẩn xác nhất.
+- **Lưu trữ và Lên lịch biểu (FR-20):** Tất cả các bộ bài tập cá nhân hóa đều có thể lưu trữ vĩnh viễn vào bộ sưu tập cá nhân. Người dùng có thể tạo lịch trình tập luyện mỗi ngày, giúp nâng cao sức khỏe bản thân.
+- **Rèn luyện thể thao độc lập ngoài trời (FR-21):** Ngoài các bài tập cá nhân tại chỗ, nền tảng tích hợp tính năng tập luyện các hoạt động thể thao ngoài trời. Mọi người có thể tập luyện các hoạt động như chạy bộ, đạp xe,.. kết hợp với định vị GPS và bản đồ giúp người dùng biết được thông tin về hoạt động của mình giúp nâng cao sức khỏe và chuẩn bị cho các hoạt động sự kiện, thử thách cộng đồng.
+
+### 3.1.7 Kết nối mạng lưới bạn bè
+Với định vị là một mạng xã hội thể thao toàn diện, nền tảng đóng vai trò như một cầu nối số vững chắc để kết nối cộng đồng. Đây là không gian tương tác mở, nơi những người có chung tư duy sống khỏe có thể gặp gỡ, giao lưu và truyền cảm hứng tích cực cho nhau mỗi ngày.
+- **Theo dõi và Mở rộng mạng lưới (FR-22):** Thông qua công cụ tìm kiếm hoặc danh sách gợi ý, người dùng có thể dễ dàng tiếp cận, kết bạn hoặc nhấn nút theo dõi bất kỳ thành viên nào trên hệ thống. Tính năng này tạo điều kiện để mỗi người tự xây dựng và không ngừng mở rộng vòng kết nối quan hệ cộng đồng, tìm kiếm những người có chung đam mê và mục tiêu rèn luyện sức khỏe.
+- **Cập nhật dòng thời gian tương tác (FR-23):** Một khi mạng lưới bạn bè đã được thiết lập, mọi hoạt động thể thao nổi bật cốt lõi như bắt đầu tham gia một sự kiện, chinh phục một thử thách khó nhằn đều sẽ được cập nhật liên tục trên bảng tin (News Feed). Nhờ đó, người dùng có thể dễ dàng theo dõi sát sao được lịch trình hoạt động và nỗ lực của bạn bè để tương tác và cùng nhau duy trì ngọn lửa động lực mỗi ngày.
+
+### 3.1.8 Lịch trình cá nhân và thông báo
+Việc tham gia song song nhiều hoạt động cộng đồng đòi hỏi người dùng phải có sự phân bổ và theo dõi thời gian thật khoa học. Phân hệ Lịch trình vì thế được thiết kế như một hệ thống điều phối trung tâm, giúp người dùng sắp xếp lịch sinh hoạt, theo dõi sự kiện và quản lý toàn bộ các mục tiêu cá nhân một cách hệ thống nhất.
+- **Theo dõi lịch trình hoạt động (FR-24):** Nền tảng cung cấp một giao diện Lịch (Calendar) trực quan và mang tính cá nhân hóa cao. Mọi luồng hoạt động mà người dùng đã thiết lập tham gia, bao gồm các Sự kiện thể thao cộng đồng, hạn chót của các Thử thách đã đăng ký tham gia, cho đến từng phiên Tập luyện cá nhân hằng ngày, đều được hệ thống tự động trích xuất và đồng bộ chi tiết lên lịch. Tính năng này đóng vai trò bao quát, giúp mỗi người dùng luôn nhận biết rõ ràng lộ trình sắp tới của bản thân để có những sắp xếp thời gian hợp lý nhất mà không bỏ lỡ bất kỳ hoạt động nào.
+- **Hệ thống thông báo và liên kết bảng tin (FR-25):** Tương đương với sức mạnh của Lịch, nền tảng sở hữu cơ chế thông báo (Notifications) thời gian thực nhằm cảnh báo người dùng mỗi khi một mục tiêu quan trọng đến hạn hoặc khi bạn bè tương tác. Đặc biệt hơn, thông tin về lịch sử hoạt động và các dự định tập luyện trong tương lai rút trích thẳng từ Calendar còn có thể được hệ thống đẩy trực tiếp lên bảng tin cộng đồng. Chức năng này không chỉ khơi gợi sự tò mò từ những người theo dõi, mà còn tăng cường sự giao tiếp, hưởng ứng từ mạng lưới bạn bè xung quanh, biến mục tiêu cá nhân thành một hoạt động được toàn cộng đồng ủng hộ.
+
+### 3.1.9 Quản trị Hệ thống toàn diện dành cho Quản trị viên
+Một môi trường mạng xã hội khỏe mạnh luôn cần một bộ sậu kiểm soát mạnh mẽ để duy trì tính minh bạch và quản lý tốt lượng tài nguyên linh hoạt của toàn bộ hệ sinh thái.
+- **Phân tích Dashboard trực quan (FR-26):** Hệ thống cung cấp một bảng điều khiển trung tâm (Dashboard) với các biểu đồ trực quan, giúp Quản trị viên theo dõi sát sao tình hình hoạt động của toàn bộ nền tảng. Tính năng này tổng hợp các số liệu thống kê để đo lường mức độ tương tác, số tài khoản mới, các hoạt động đang diễn ra cũng như sự tăng trưởng tự nhiên của cộng đồng.
+- **Kiểm soát và Xử lý vi phạm (FR-27):** Để bảo vệ sự trong sạch của hệ sinh thái, hệ thống cho phép Quản trị viên tiếp nhận và kiểm duyệt dựa trên hệ thống báo cáo (Report). Công cụ này cấp quyền đánh giá, cảnh cáo hoặc đình chỉ đối với mọi nội dung sai lệch bao gồm các bài viết phản cảm, luồng sự kiện lừa đảo, các thử thách vi phạm tiêu chuẩn, cũng như các tài khoản người dùng phá hoại.
+- **Quản lý toàn diện tài nguyên hệ thống (FR-28):** Quản trị viên nắm trong tay công cụ điều hành đa năng đối với các thực thể dữ liệu của nền tảng. Chức năng này cho phép truy xuất, chỉnh sửa hay xóa bỏ trực tiếp mọi thông tin trên quy mô toàn cầu, trải dài từ danh mục Bài viết (Feed), dữ liệu Người dùng, danh sách Sự kiện, Thử thách, cho tới việc cấu hình nền tảng các bài Tập luyện gốc.
+
+## 3.2 Yêu cầu phi chức năng (Non-Functional Requirements)
+
+Bên cạnh một cấu trúc chức năng đồ sộ, hệ thống để cung cấp được một dịch vụ trọn vẹn bắt buộc phải đáp ứng hàng loạt các công ước khắt khe về mặt kỹ thuật dành cho phần mềm như sau:
+
+### 3.2.1 Hiệu năng hệ thống (Performance)
+Với đặc thù của một nền tảng kết hợp giữa tính năng mạng xã hội và xử lý dữ liệu trực tiếp (Video Call, AI phân tích), hiệu suất hệ thống đóng vai trò thiết yếu quyết định đến trải nghiệm liền mạch của người dùng.
+- **Thời gian phản hồi thông tin (Response Time):** Tốc độ phản hồi và điều hướng khi người dùng tải bản tin cộng đồng (News Feed), tra cứu các biểu đồ sức khỏe hay tải bảng xếp hạng khổng lồ từ các Sự kiện thể thao phải được tối ưu hóa. Tiêu chí kỳ vọng là giữ thời gian trễ dưới ngưỡng chuẩn của ngành phần mềm web (dưới 2.5 - 3.0 giây).
+- **Khả năng chịu tải đa luồng (Load Capacity):** Nền tảng phải có khả năng duy trì thông suốt khi có hàng nghìn kết nối WebSocket tồn tại cùng lúc. Đặc biệt đối với các sự kiện trực tuyến, cụm máy chủ chịu trách nhiệm tiếp nhận và tiền xử lý luồng Frame Camera bằng AI cần có cơ chế cân bằng tải thông minh. Điều này đảm bảo hệ thống có thể đối ứng được lượng lớn người tham gia cục bộ mà hoàn toàn không để xảy ra hiện tượng thất thoát, giật lag hay rớt hình ảnh màn hình.
+
+### 3.2.2 Tính bảo mật và an toàn dữ liệu (Security)
+Các dữ liệu y tế cá nhân như chỉ số sinh học (BMI, TDEE) hay lộ trình định vị GPS cá nhân là những thông tin cực kỳ nhạy cảm liên quan mật thiết đến danh tính người dùng. Vì vậy, vấn đề bảo vệ thông tin được thiết lập ở mức độ cao nhất.
+- **Mã hóa kênh truyền tải:** Mọi luồng dữ liệu trao đổi giữa thiết bị người dùng (Client) và máy chủ (Server) bắt buộc phải được đóng gói và truyền tải xuyên suốt qua giao thức mã hóa SSL/HTTPS. Lớp bảo vệ đầu cuối này nhằm triệt tiêu bề mặt tấn công của kỹ thuật can thiệp trung gian (Man-in-the-middle Attack).
+- **Cơ chế băm mật khẩu:** Dấu hiệu xác thực, tiêu biểu là chuỗi mật khẩu nguyên bản tuyệt đối không bao giờ được lưu trữ dưới dạng thô trên cơ sở dữ liệu. Thay vào đó, chúng bắt buộc phải qua chu trình băm một chiều đồng thời rắc muối (Hashing & Salting) từ phía Backend nhằm thách thức mọi thuật toán bẻ khóa.
+- **Kiểm soát quyền hạn (API Security):** Nền tảng áp dụng cơ chế xác thực chuỗi JWT kết hợp kiểm soát tuyến đường (Route Protection) phân lớp nghiêm ngặt theo vai trò (Role-based). Đơn cử, chỉ duy nhất nhóm Quản trị viên (Admin) mới có đặc quyền thực thi thao tác xóa tài khoản. Ngoài ra, kiến trúc cơ sở phải được trang bị "tấm khiên" chối bỏ các hành vi tiêm nhiễm độc hại như SQL Injection, NoSQL Injection và Cross-Site Scripting (XSS).
+
+### 3.2.3 Tính khả dụng và Độ tin cậy (Availability & Reliability)
+- **Độ sẵn sàng xuyên suốt (Uptime):** Triết lý vận hành của hệ thống là tuyệt đối không để một sự cố đột xuất làm gián đoạn trải nghiệm của cộng đồng. Hệ thống cần được thiết kế dự phòng để chịu được các đợt bùng nổ truy cập, thiết lập cam kết duy trì tỷ lệ sẵn sàng cung cấp dịch vụ ở ngưỡng 99.9%.
+- **Cơ chế sao lưu và phục hồi tự động:** Hệ cơ sở dữ liệu (Database) được tổ chức thông qua cơ chế sao chép phân mảnh đa nhánh (Replication). Đồng thời, máy chủ Cloud định kỳ tự chạy kịch bản trích xuất bản sao (Data Dump) theo ca. Lớp phòng thủ sâu này giúp tạo điểm neo an toàn phục hồi toàn vẹn dữ liệu nếu gặp phải tình trạng rủi ro cơ sở hạ tầng.
+
+### 3.2.4 Tính mở rộng (Scalability)
+- **Nâng cấp hạ tầng linh hoạt:** Máy chủ Backend được xây dựng hoàn toàn tuân theo tiêu chuẩn phi trạng thái (Stateless Rest API), triệt tiêu áp lực phải ghi nhớ bộ nhớ phiên cục bộ. Đặc thù kỹ thuật này hỗ trợ hoàn hảo cho việc phân tán gộp nhóm thành các cụm máy chủ (Cluster) có chung đầu mối Load Balancer (chẳng hạn Nginx) để điều hướng tải. Hạ tầng có khả năng dễ dàng đáp ứng quy mô mở rộng cho số lượng lên đến hàng triệu người dùng mà không đòi hỏi viết lại kiến trúc lõi.
+- **Tái sử dụng thành phần giao diện (Component Reusability):** Ở mức Frontend, mọi khu vực làm việc được phân rã thành các thành phần độc lập nhờ thư viện React. Tính chất này cung cấp tài nguyên cho lập trình viên lắp ghép và tái sử dụng (Reuse) UI logic. Ngay cả khi cần mở rộng thêm các môn thể thao mới, việc gắn các khối Component vào mạch dự án diễn ra vô cùng tiết kiệm thời gian.
+
+### 3.2.5 Tính tương thích (Compatibility)
+- **Thích ứng không gian linh hoạt (Responsive Layout):** Nền tảng giao diện trang bị chức năng tự động phản ứng linh hoạt thông qua quy tắc CSS thông minh (TailwindCSS). Giao diện từ Màn hình Smartphone vừa tay, máy tính bảng (Tablet) cho đến Màn hình máy tính để bàn (PC) đều sở hữu khả năng tự động canh chỉnh tỷ lệ khung hình, đảm bảo sự sắc nét và không phá vỡ liên kết cục ô của các kết quả tính toán biểu đồ chuyên môn.
+- **Đồng bộ chéo trình duyệt (Cross-browser):** Gói mã nguồn phân phối trước khi lên máy chủ đã trải qua khâu dịch thuật ngược về bộ lõi tiêu chuẩn (thông qua Webpack Bundler kết hợp Babel). Điều này giúp hệ thống tương thích tốt mọi kịch bản và chạy tương đồng ngay cả trên môi trường Google Chrome, Microsoft Edge hay trình duyệt khép kín của nền tảng Safari (iOS).
+
+### 3.2.6 Khả năng sử dụng (Usability)
+- Giao diện người dùng phải truyền tải được cảm giác thanh thoát, dễ hiểu và "Sạch" theo đúng định vị thẩm mỹ của FitConnect. Nền tảng áp dụng nguyên lý thiết kế phẳng cùng hệ thống gam màu được định nghĩa đồng nhất từ trang chủ cho tới bảng điều khiển con. Các nút chức năng điều hướng cốt lõi như "Bắt đầu tập luyện" luôn được làm nổi khối dưới dạng Nút Kêu gọi hành động (Call To Action - CTA) thu hút sự tương tác, thân thiện cho cả những người chưa am hiểu nhiều về thiết bị di động.
+
+### 3.2.7 Khả năng bảo trì và phát triển (Maintainability & Developability)
+- **Tính trật tự của cấu trúc mã (Codebase Architecture):** Nền tảng tuân thủ triết lý mã sạch DRY (Don't Repeat Yourself - Không sao chép lặp lại). Hệ sinh thái được chia tách thành các ngăn chức năng phân tầng rõ rệt (Controller, Route, Service, Logic, API, Config). Tính minh bạch của cấu trúc này giúp triệt tiêu hiện tượng thắt nút cổ chai mạch logic, giúp kiểm soát phạm vi rủi ro và giới hạn thời gian nhận diện vấn đề rất thấp.
+- **Ràng buộc định kiểu an toàn (TypeSafe System):** Toàn cụm dự án được chuẩn hóa bằng lớp giáp định danh dữ liệu TypeScript tĩnh thay vì JavaScript đơn giản. Công nghệ TypeSafe mang lại định nghĩa về kiểu loại ngay từ khâu viết code biên dịch, rào lấp triệt để sự đổ vỡ ẩn trên môi trường trực tiếp (Runtime Error). Đây luôn là tiêu chuẩn vững chắc bảo toàn tầm nhìn kỹ thuật để các đội ngũ nhà phát triển đời sau tiếp quản bảo trì.
+
+## 3.3 Mô hình Use Case
+
+Biểu đồ Use Case (Use Case Diagram) được dùng để mô hình hóa các luồng tương tác cấu trúc giữa các tác nhân (Actor) và hệ thống dự án, nhằm đặc tả sát sao các yêu cầu chức năng (Functional Requirements) từ góc nhìn của người dùng cuối.
+
+### 3.3.1 Xác định các tác nhân (Actor)
+Hệ thống dự án "FitConnect" bao gồm 3 nhóm tác nhân chính tham gia tương tác:
+
+**1. Người dùng (User)**
+- **Mô tả:** Là tác nhân chính của hệ thống. Đại diện cho mọi cá nhân có chung sở thích vận động, tập luyện và mong muốn kết nối với mọi người cùng tham gia các sự kiện thể dục thể thao, hoạt động thử thách cộng đồng.
+- **Vai trò và quyền hạn thao tác:**
+  - **Quản lý thông tin cá nhân:** Thực hiện đăng ký, đăng nhập an toàn, khởi tạo và tự do quản lý thông tin hồ sơ cá nhân trên hệ thống.
+  - **Tương tác với mạng xã hội cộng đồng:** Tạo mới, chỉnh sửa nội dung cá nhân và gia tăng tương tác đa chiều đối với các bài viết, sự kiện thể thao hay thử thách cộng đồng.
+  - **Tham gia sự kiện thể dục thể thao:** Toàn quyền tạo và chỉnh sửa các sự kiện thể thao theo hai phân loại chính (hoạt động ngoài trời và hoạt động trong nhà). Tham gia, tương tác với các sự kiện của mạng lưới chung và ghi nhận tiến độ để hoàn thành mục tiêu (đo lường bằng GPS đối với hoạt động ngoài trời, hoặc AI Tracking nhận diện thông qua Video Call đối với hoạt động trong nhà).
+  - **Tham gia thử thách cộng đồng:** Tạo mới và cá nhân hóa các thử thách cộng đồng theo ba hạng mục (ăn uống, thể dục, và thử thách ngoài trời). Tham gia, tương tác với cộng đồng thử thách và ghi nhận tiến độ liên tục theo ngày (ví dụ: chụp ảnh tracking bữa ăn thực tế, thực hiện bài tập thể dục tại chỗ hoặc đo tiến độ GPS khi rèn luyện ngoài trời).
+  - **Tính toán và theo dõi các chỉ số sức khỏe:** Tính toán tự động các chỉ số sinh lý quan trọng (như BMI, BMR, TDEE), theo dõi biểu đồ lịch sử sức khỏe và nhờ Trợ lý AI phân tích để đưa ra những gợi ý bài tập cá nhân phù hợp với thể trạng.
+  - **Tập luyện cá nhân:** Tiến hành tự tập luyện thủ công dựa trên các thông số tự chọn (loại thiết bị có sẵn, nhóm cơ mong muốn tập), hoặc tiếp nhận giáo án do AI phân tích gợi ý, từ đó tự đưa vào hệ thống để lên lịch trình tập luyện mỗi ngày.
+  - **Kết nối bạn bè:** Tìm kiếm kết bạn, theo dõi và tiếp nối tương tác thường xuyên với bạn bè trong mạng lưới.
+  - **Xem lịch trình cá nhân và nhận thông báo:** Quản lý giao diện Lịch để xem và theo dõi lộ trình của các sự kiện thể thao, thử thách cộng đồng hoặc giáo án tập luyện của bản thân. Đồng thời tiếp nhận bảng thông báo tự động từ hệ thống về các bài viết, sự kiện hay thử thách mà mình đang tham gia.
+
+**2. Quản trị viên (Administrator)**
+- **Mô tả:** Phân hệ chuyên trách quản trị hệ thống toàn diện, nắm giữ đặc quyền cao nhất để vận hành tài nguyên cốt lõi của nền tảng.
+- **Vai trò và trách nhiệm chính:**
+  - **Phân tích và theo dõi dữ liệu:** Đánh giá tình trạng hoạt động và mức độ lưu lượng của nền tảng thông qua các biểu đồ trực quan tại màn hình điều khiển trung tâm (Dashboard).
+  - **Kiểm soát vi phạm:** Đóng vai trò là màng lọc cuối cùng, tiến hành kiểm duyệt và đưa ra các quyết định xử phạt đối với các nội dung bài viết, người dùng, sự kiện hay thử thách vi phạm tiêu chuẩn cộng đồng.
+  - **Quản lý tài nguyên tổng thể:** Quản lý và nắm quyền can thiệp vào toàn bộ cơ cấu dữ liệu hệ sinh thái, trải dài từ các thực thể bài viết (Feed), thông tin người dùng, cho đến cấu trúc sự kiện, thử thách và thư viện tập luyện gốc.
+
+**3. Khách (Guest)**
+- **Mô tả:** Là tập hợp những người dùng vãng lai, khởi chạy ứng dụng nhưng chưa thực hiện thao tác xác thực đăng nhập tài khoản.
+- **Vai trò và quyền hạn thao tác:**
+  - Tập người dùng này bị hệ thống giới hạn và chỉ được phép xem lướt qua màn hình giới thiệu hoặc một số bản tin công cộng. Hành vi được định hướng để thực hiện tạo định danh: Đăng ký tạo một tài khoản mới hoặc yêu cầu Khôi phục mật khẩu.
+
+### 3.3.2 Biểu đồ Use Case tổng quát
+
+Lược đồ Use Case phác thảo bản đồ hoạt động các nhóm Use Case chính của kiến trúc:
+- **Quản lý Tài khoản (Core Account):** Đăng ký, Đăng nhập, Sửa Bio, Bảo mật, Quyền Riêng Tư.
+- **Mạng xã hội (Social):** Chức năng Bài đăng (Post), Cảm xúc mạng xã hội, Bình luận chéo, Lên mạng lưới Bạn bè, Kết nối theo dõi, Khám phá hashtag. Báo cáo (Report) vi phạm.
+- **Khối Quản lý Toán Học Sinh Trắc (Calculators):** Đo BMI, TDEE, Tỉ lệ mỡ ảo. Vẽ đồ thị thời gian thực theo Log.
+- **Khối Vận hành Các hoạt động Thể thao Sự kiện (Events & Challenges & Workouts):**
+  - Mở cổng kết nối GPS (Strava) hoặc Nộp ảnh phân tích AI để chống lười và gian lận.
+  - Triển khai Phòng hội ngộ Video streaming tập chung tại nhà.
+  - Tạo Lịch tập, Yêu cầu AI đưa ra lộ trình tập chi tiết.
+- **Lịch trình (Calendar):** Quản lý tiến trình sự kiện tập luyện trong tuần.
+- **Quản trị hệ thống (Admin Panel):** Quản lý Dữ liệu thô (Bài tập, môn học), Xử lý báo cáo Spam, Quản trị user, Thống kê truy cập tổng quan.

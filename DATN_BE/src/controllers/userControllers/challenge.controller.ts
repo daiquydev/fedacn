@@ -1,5 +1,7 @@
 import { Request, Response } from 'express'
 import challengeService from '~/services/userServices/challenge.services'
+import { CHALLENGE_MESSAGE } from '~/constants/messages'
+import HTTP_STATUS from '~/constants/httpStatus'
 
 export const getChallengesController = async (req: Request, res: Response) => {
     const { page, limit, search, challenge_type, difficulty } = req.query
@@ -18,12 +20,28 @@ export const getChallengesController = async (req: Request, res: Response) => {
 }
 
 export const getChallengeController = async (req: Request, res: Response) => {
-    const { id } = req.params
-    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    try {
+        const { id } = req.params
+        const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getChallenge(id, userId)
+        const result = await challengeService.getChallenge(id, userId)
 
-    return res.json({ message: 'Lấy thử thách thành công', result })
+        return res.json({ message: 'Lấy thử thách thành công', result })
+    } catch (error: any) {
+        if (error?.status === HTTP_STATUS.GONE) {
+            return res.status(410).json({
+                message: error.message,
+                isDeleted: true
+            })
+        }
+        if (error?.status === HTTP_STATUS.NOT_FOUND) {
+            return res.status(404).json({ message: error.message })
+        }
+        if (error?.status === HTTP_STATUS.FORBIDDEN) {
+            return res.status(403).json({ message: error.message })
+        }
+        return res.status(500).json({ message: (error as Error).message })
+    }
 }
 
 export const createChallengeController = async (req: Request, res: Response) => {
@@ -213,7 +231,7 @@ export const getPublicUserChallengesController = async (req: Request, res: Respo
 }
 
 export const getFeedController = async (req: Request, res: Response) => {
-    const { scope, challenge_type, search, page, limit, sortBy, status, dateFrom, dateTo, category } = req.query
+    const { scope, challenge_type, search, page, limit, sortBy, status, dateFrom, dateTo, category, visibility } = req.query
     const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
     const result = await challengeService.getChallengeFeed({
@@ -227,7 +245,8 @@ export const getFeedController = async (req: Request, res: Response) => {
         status: status as string,
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
-        category: category as string
+        category: category as string,
+        visibility: visibility as string
     })
 
     return res.json({ message: 'Lấy feed thử thách thành công', result })
@@ -255,5 +274,30 @@ export const inviteFriendToChallengeController = async (req: Request, res: Respo
         return res.status(400).json({
             message: (error as Error).message
         })
+    }
+}
+
+export const reportChallengeController = async (req: Request, res: Response) => {
+    const { id } = req.params
+    const { reason } = req.body
+    const userId = (req as any).decoded?.user_id
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    try {
+        const result = await challengeService.createReportChallengeService({
+            challenge_id: id,
+            user_id: userId,
+            reason: typeof reason === 'string' ? reason : ''
+        })
+        return res.json({
+            result,
+            message: CHALLENGE_MESSAGE.REPORT_CHALLENGE_SUCCESS
+        })
+    } catch (error: any) {
+        const status = error?.status ?? 400
+        return res.status(status).json({ message: error?.message || 'Lỗi báo cáo' })
     }
 }

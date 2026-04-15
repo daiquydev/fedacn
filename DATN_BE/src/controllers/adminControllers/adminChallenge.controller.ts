@@ -41,8 +41,11 @@ export const adminGetChallengesController = async (req: Request, res: Response) 
     ])
 
     const challengeIds = challengesRaw.map(c => c._id)
+    await challengeService.syncCreatorParticipantsForChallenges(challengeIds)
+
     const participants = await ChallengeParticipantModel.find({
-        challenge_id: { $in: challengeIds }
+        challenge_id: { $in: challengeIds },
+        status: { $ne: 'quit' }
     }).lean()
 
     const challenges = challengesRaw.map(challenge => {
@@ -70,6 +73,7 @@ export const adminGetChallengesController = async (req: Request, res: Response) 
 
         return {
             ...challenge,
+            participants_count: cParts.length,
             progressPercent,
             progressTotal: totalCurrentValue, 
             targetValue: totalRequiredDays * cParts.length, 
@@ -100,10 +104,13 @@ export const adminGetChallengeStatsController = async (_req: Request, res: Respo
         ChallengeModel.countDocuments({ ...notDeleted, challenge_type: 'fitness' })
     ])
 
-    const totalParticipants = await ChallengeModel.aggregate([
-        { $match: notDeleted },
-        { $group: { _id: null, total: { $sum: '$participants_count' } } }
-    ])
+    const activeChallengeIds = await ChallengeModel.find(notDeleted).distinct('_id')
+    const totalParticipants = activeChallengeIds.length
+        ? await ChallengeParticipantModel.countDocuments({
+            challenge_id: { $in: activeChallengeIds },
+            status: { $ne: 'quit' }
+        })
+        : 0
 
     // Tổng số Đã xóa (để admin biết)
     const deletedCount = await ChallengeModel.countDocuments({ is_deleted: true })
@@ -113,7 +120,7 @@ export const adminGetChallengeStatsController = async (_req: Request, res: Respo
         result: {
             total, active, completed, cancelled,
             byType: { nutrition, outdoor_activity: outdoor, fitness },
-            totalParticipants: totalParticipants[0]?.total || 0,
+            totalParticipants,
             deleted: deletedCount
         }
     })

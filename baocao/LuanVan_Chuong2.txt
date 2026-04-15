@@ -1,0 +1,128 @@
+# CHƯƠNG 2: KHẢO SÁT HỆ THỐNG LIÊN QUAN
+
+Chương này đi sâu khảo sát các nền tảng công nghệ liên quan và hệ thống hóa những cơ sở lý thuyết hoạt động. Dựa trên việc phân tích ưu, nhược điểm của các ứng dụng đi trước, tác giả đề xuất các giải pháp kỹ thuật và định hướng tính năng làm kim chỉ nam xây dựng "Mạng xã hội rèn luyện thể dục thể thao cộng đồng FitConnect (FedACN)".
+
+## 2.1 Giới thiệu tổng quan
+
+### 2.1.1 Nền tảng Thể thao Mạng xã hội khép kín
+Rèn luyện thể chất là quá trình duy trì và nâng cao sức khỏe dài hạn. Trong nhịp sống hiện đại, người dùng thường bị phân mảnh trải nghiệm khi phải cài đặt nhiều ứng dụng rời rạc (app đo GPS chạy bộ riêng, app tính calo riêng, app mạng xã hội riêng). Vì vậy, tích hợp toàn bộ chu trình từ không gian giao lưu kết bạn, tính toán sức khỏe, đến lên lịch tập luyện vào một "Mạng xã hội khép kín" duy nhất là giải pháp tối ưu nhằm đảm bảo sự tiện lợi và giữ chân cộng đồng.
+
+### 2.1.2 Cảm hứng Cộng đồng từ Sự kiện và Thử thách
+Việc tập luyện cá nhân độc lập thường dễ dẫn đến sự nhàm chán và bỏ cuộc giữa chừng. Do đó, hạt nhân của FitConnect nằm ở việc tổ chức các Sự kiện nhóm (Sport Events) và Thử thách kỷ luật (Challenges). Khi được hòa mình vào môi trường thi đua thực tiễn (như giải chạy bộ ngoài trời kết nối GPS, hay tập luyện tại nhà cùng nhau qua nền tảng Video Call trực tuyến), sự cọ xát và khích lệ từ cộng đồng sẽ tạo ra động lực tâm lý mạnh mẽ để duy trì lối sống khỏe.
+
+### 2.1.3 Cá nhân hóa lộ trình qua các Chỉ số Sinh trắc học
+Đo lường các chỉ số sức khỏe là bước tiên quyết để định lượng tình trạng cơ thể. Các chỉ số như BMI (Chỉ số khối lượng), BMR (Tỷ lệ trao đổi chất cơ bản) và TDEE (Năng lượng tiêu thụ hàng ngày) giúp nhận diện rõ ràng trạng thái thừa/thiếu hụt calo. Tại nền tảng, những thông số này không xuất hiện chỉ để hiển thị biểu đồ khô khan, mà được biến thành "dữ liệu đầu vào" (Input parameters) sống còn nhằm phân tích chuyên sâu cho chu trình tập luyện tiếp theo.
+
+### 2.1.4 Đột phá AI trong Giám sát minh bạch và Trợ lý Ảo
+Đảm bảo tính trung thực trong các phong trào thi đua khai báo từ xa là bài toán vô cùng nan giải. Tích hợp Trí tuệ Nhân tạo (AI) và Thị giác Máy tính (Computer Vision) là lời giải triệt để. AI đảm nhận vai trò bóc tách dữ liệu điểm ảnh chụp các bữa ăn trong Thử thách Dinh dưỡng để xác thực chéo kết quả, cũng như đo lường trực tiếp thời gian vận động thực qua luồng Video Call. Bên cạnh vai trò "Trọng tài", mô hình AI Generative còn đóng vai trò "Huấn luyện viên ảo", thu thập các biến số y tế (BMI/TDEE) để tự cấu trúc ra chuỗi danh sách các Bài tập (Workouts) logic nhất cho hệ thống Lịch trình.
+
+### 2.1.5 Quản lý dữ liệu người dùng và thống kê biểu đồ
+Việc duy trì một nền tảng sức khỏe đòi hỏi khả năng quản lý khối lượng thông tin lưu trữ đồ sộ và bảo vệ quyền riêng tư cá nhân một cách nghiêm ngặt. Hơn thế nữa, đối với một hệ sinh thái vận động, động lực của người tham gia gắn liền với các mô hình trực quan hóa số liệu. Bằng cách thiết lập hệ thống Dashboard thống kê với các biểu đồ trực quan, người dùng cá nhân có thể dễ dàng nắm bắt sự tiến bộ của bản thân qua từng chu trình. Đồng thời, ở khía cạnh vận hành, hệ thống biểu đồ quản trị giúp đội ngũ Admin có góc nhìn toàn cảnh về tăng trưởng cộng đồng và mức độ hoạt động để kịp thời điều hướng nội dung hệ thống.
+
+## 2.2 Khảo sát các hệ thống tương tự
+
+Để hiểu rõ hơn về thị trường và học hỏi kinh nghiệm, chúng tôi đã tiến hành khảo sát một số ứng dụng và nền tảng có chức năng tương tự hoặc liên quan:
+
+### 2.2.1 Ứng dụng Strava
+
+#### **2.2.1.1 Giới thiệu**
+Strava là một ứng dụng di động nổi tiếng cung cấp tính năng theo dõi hoạt động thể dục thể thao, đặc biệt là chạy bộ và đạp xe. Ứng dụng này sử dụng định vị GPS để theo dõi và ghi lại quãng đường, tốc độ, và các chỉ số sức khỏe tự động. Strava hoạt động giống như một mạng xã hội dành cho người yêu thể thao, nơi họ có thể chia sẻ quá trình tập luyện với bạn bè.
+
+#### **2.2.1.2 Ưu điểm**
+Các ưu điểm chính của ứng dụng Strava được liệt kê như bên dưới:
+- Tính năng theo dõi định vị GPS, tốc độ và quãng đường hoạt động ngoài trời cực kỳ chính xác.
+- Đồng bộ hóa dễ dàng với nhiều loại đồng hồ thông minh và thiết bị ngoại vi.
+- Có tính năng Bảng xếp hạng (Leaderboards) giúp người dùng thi đua trên cùng một quãng đường cố định.
+- Chức năng mạng xã hội tốt, cho phép mọi người theo dõi, bình luận và khích lệ lẫn nhau.
+
+#### **2.2.1.3 Nhược điểm**
+Bên cạnh những ưu điểm nổi bật, Strava vẫn còn một số hạn chế cần cải thiện:
+- Ứng dụng tập trung hoàn toàn vào các môn thể thao ngoài trời. Các bài tập trong nhà (Gym, Yoga) bị thiếu hụt tính năng phân tích và thi đua tương tự.
+- Thiếu các tính năng về quản lý dinh dưỡng hay tổ chức thử thách ăn uống (Diet/Nutrition).
+- Không có tính năng tổ chức các Sự kiện tương tác trực tuyến qua video (Video call).
+
+### 2.2.2 Ứng dụng MyFitnessPal
+
+#### **2.2.2.1 Giới thiệu**
+MyFitnessPal là một ứng dụng nổi tiếng trong lĩnh vực theo dõi sức khỏe, đặc biệt là quản lý chế độ ăn uống và tính toán lượng Calo. Người dùng có thể ghi lại lượng calo tiêu thụ, theo dõi thông tin dinh dưỡng của thực phẩm với cơ sở dữ liệu khổng lồ. Ứng dụng này hỗ trợ người dùng đạt các mục tiêu dinh dưỡng cá nhân.
+
+#### **2.2.2.2 Ưu điểm**
+Các ưu điểm chính của ứng dụng MyFitnessPal:
+- Tính toán chi tiết lượng calo đã nạp.
+- Hỗ trợ nhập liệu bằng cách quét mã vạch (Barcode Scanner).
+- Có công cụ tính lượng calo cần thiết đề xuất dựa trên mục tiêu cân nặng mong muốn.
+
+#### **2.2.2.3 Nhược điểm**
+Một số hạn chế của hệ thống:
+- Việc nhập liệu đồ ăn thủ công tốn nhiều thời gian và làm giảm tính hứng thú của người dùng sau một thời gian dài.
+- Tính năng mạng xã hội chưa đủ mạnh và còn đơn giản dưới hình thức diễn đàn.
+- Ứng dụng không tự động gợi ý chi tiết lộ trình tập luyện dựa trên calo mà phải sử dụng các phần mềm chuyên tập luyện khác.
+- Không có kỹ thuật check-in hình ảnh ứng dụng AI thông minh cho các cuộc thi/thử thách trên mạng xã hội.
+
+### 2.2.3 Ứng dụng Nike Training Club (NTC)
+
+#### **2.2.3.1 Giới thiệu**
+Nike Training Club (NTC) là ứng dụng hướng dẫn tập luyện tại nhà được xây dựng và thiết kế bởi Nike. Ứng dụng cung cấp sẵn hàng trăm bài tập thể lực và rèn luyện theo đa dạng chủ đề và độ khó khác nhau (từ Bodyweight đến dùng Tạ). Các khoá học đều có video minh họa chất lượng cao hướng dẫn tỉ mỉ.
+
+#### **2.2.3.2 Ưu điểm**
+- Có ngân hàng cơ sở dữ liệu bài tập lớn, được thiết kế bởi các chuyên gia uy tín.
+- Có video minh họa trực quan rõ nét và sinh động cho từng động tác.
+- Cho phép người dùng lọc tìm kiếm bài tập dựa trên mục tiêu, nhóm cơ và thời gian rảnh rỗi.
+
+#### **2.2.3.3 Nhược điểm**
+- NTC mang xu hướng luyện tập cá nhân độc lập (single-player), không có tính cộng đồng và mạng xã hội.
+- Ứng dụng không có cơ chế Sự kiện (Events) để người dùng cùng rủ nhau thi đua xem ai hoàn thành được nhiều thời lượng hơn.
+- Chỉ đơn thuần đếm giờ qua Timer, ứng dụng không nhận diện xem người tập có đang thực hiện thao tác hay không nên không phù hợp để dùng trong các cuộc thi.
+
+## 2.3 Tổng kết khảo sát
+
+Sau khi phân tích ba hệ thống tiêu biểu (Strava, MyFitnessPal và Nike Training Club), chúng tôi nhận thấy mỗi hệ thống đều có điểm mạnh riêng phục vụ cho một bài toán ngách: Strava xuất sắc ở theo dõi ngoài trời, MyFitnessPal vượt trội ở tính toán chế độ ăn, và NTC dẫn đầu ở thiết kế bài tập trong nhà.
+
+Từ những phân tích trên, hệ thống Mạng xã hội rèn luyện thể dục thể thao FitConnect có thể rút ra một số bài học đáng giá nhằm xây dựng một hệ thống hoàn thiện hơn:
+- **Nhu cầu về một hệ sinh thái tích hợp:** Người dùng đang phải phân tán thời gian cho nhiều ứng dụng. Cần một nền tảng "All-in-one" kết hợp tính năng Sự kiện ngoài trời, Đo lường dinh dưỡng và Bài tập trong nhà.
+- **Tầm quan trọng của Cạnh tranh đồng bộ:** Strava thành công vì khía cạnh thi đua (Leaderboard). Các dự án tập luyện trong nhà cũng cần tích hợp cơ chế Sự kiện đồng bộ có tính cạnh tranh tương tự.
+- **AI là giải pháp chống gian lận và tối ưu hiệu suất:** Cần áp dụng AI vào trong các thử thách ăn uống (để thay cho việc nhập liệu thủ công chậm chạp) và AI vào Camera khi tập thể thao trong nhà (để đo thời gian thực tế, tính toán thành tích khách quan).
+- **Tính cá nhân hóa sâu sắc:** Các chỉ số công cụ tính BMI, TDEE không chỉ sinh ra để hiển thị biểu đồ, mà nên được tái sử dụng để làm thông số đầu vào cho module AI Gợi ý lịch tập luyện (Workout) tiếp theo.
+
+## 2.4 Các tính năng cải tiến đề xuất cho hệ thống
+
+Dựa trên kết quả khảo sát và phân tích các hệ thống hiện có, hệ thống **FitConnect** đề xuất không chỉ kế thừa những tính năng chuẩn kỹ thuật từ các ứng dụng quốc tế mà còn đem đến nhiều sự bổ sung mới mẻ bằng công nghệ thông tin tiên tiến, kết nối mọi người một cách khách quan nhất:
+
+### 2.4.1 Xây dựng mạng xã hội cộng đồng tương tác cao
+Để biến hệ thống theo dõi sức khỏe đơn thuần thành một hệ sinh thái sống động, nền tảng đề xuất tích hợp không gian mạng xã hội (Social Network) chuyên biệt dành cho những người yêu thích thể thao:
+- **Chia sẻ bài viết và thành tích:** Cung cấp môi trường cho phép người dùng tự do đăng tải hình ảnh, cập nhật trạng thái và chia sẻ kết quả tập luyện cá nhân. Qua đó, mỗi cá nhân không chỉ lưu giữ được hành trình rèn luyện của bản thân mà còn dễ dàng nắm bắt các xu hướng sự kiện, thử thách đang thu hút sự chú ý từ cộng đồng.
+- **Tương tác đa chiều:** Tăng cường sự gắn kết giữa các thành viên thông qua các cơ chế tương tác trực tiếp như bày tỏ cảm xúc và để lại bình luận trên bài viết. Những hoạt động trao đổi, động viên chéo này góp phần xây dựng một không gian mạng tích cực, tạo động lực tâm lý mạnh mẽ để duy trì thói quen tập luyện.
+- **Kết nối mạng lưới bạn bè:** Chức năng kết bạn và theo dõi (Follow) giúp người dùng liên tục cập nhật tin tức từ những người có chung sở thích. Nhờ việc quan sát lộ trình tập luyện và các hoạt động thể thao mà bạn bè đang tham gia, người dùng có thể dễ dàng hòa nhập, nhận lời mời và cùng tham gia vào vòng tròn rèn luyện chung.
+
+### 2.4.2 Ứng dụng Trí tuệ nhân tạo (AI) toàn diện
+Khắc phục những hạn chế của các hệ thống đi trước, FitConnect đề xuất tích hợp Trí tuệ nhân tạo sâu rộng vào nền tảng. AI không đơn thuần chỉ là công cụ tính toán, mà đóng vai trò bao quát, bảo vệ và nâng cao chất lượng trải nghiệm của hệ thống không giới hạn:
+- **Sử dụng AI để kiểm duyệt bài viết, hình ảnh, sự kiện, thử thách:** Hệ thống tích hợp module AI Image Verification. Thay vì để đội ngũ quản trị phải xác minh thủ công khối lượng lớn dữ liệu, AI sẽ quét tự động qua hình ảnh và ngôn từ để kiểm duyệt tính hợp lệ, nhận diện và loại bỏ nội dung rác. Đặc biệt đối với các Thử thách kỷ luật cá nhân (như check-in bữa ăn), AI sẽ nhận diện các thành phần dinh dưỡng qua ảnh và tự động chấm điểm tiến độ hằng ngày.
+- **Sử dụng AI để tạo sự kiện thử thách nhanh chóng, chính xác:** Hệ thống cung cấp công cụ AI sinh kịch bản quy tắc. Người dùng hoặc Quản trị viên chỉ cần đưa ra ý tưởng mục tiêu, AI sẽ ngay lập tức tự động thiết lập và khởi tạo luật chơi, nội dung các thử thách, sự kiện một cách thông minh, đúng tiêu chuẩn thể thao.
+- **Sử dụng AI để phân tích chỉ số, tình hình sức khỏe, từ đó gợi ý các bài tập hợp lý:** Thay vì chỉ tính toán cho ra các con số sinh trắc học (BMI, TDEE, BMR) khô khan, hệ thống bơm các chỉ số này vào bộ não phân tích AI Generative. Từ đó, AI hóa thân thành Huấn luyện viên, nhận diện thể trạng và gửi về chuỗi danh sách các bài tập (Suggested Workouts) cá nhân hóa phù hợp lồng ghép thẳng vào bộ lịch trình.
+
+### 2.4.3 Tổ chức sự kiện thể thao đa nền tảng (Trong nhà và Ngoài trời)
+Hệ thống mang đến môi trường sinh hoạt linh hoạt, xóa nhòa khoảng cách địa lý nhằm tăng tính gắn kết cho cộng đồng tập luyện thông qua các đặc điểm:
+- **Tạo và tham gia sự kiện nhanh chóng, dễ dàng:** Người dùng có thể tìm kiếm, tham gia vào các sự kiện cộng đồng có sẵn hoặc tự tay khởi tạo một sự kiện thi đua mới trên nền tảng chỉ với vài thao tác cơ bản.
+- **Tham gia sự kiện cộng đồng ngoài trời hoặc tại nhà:** Nền tảng đáp ứng đa dạng nhu cầu khi cho phép cộng đồng cùng tham gia các tuyến Sự kiện thiên về di chuyển vận động mở (ngoài trời) hoặc các Sự kiện rèn luyện thể lực qua màn hình (tại nhà).
+- **Đo lường thời gian thực minh bạch:** Hệ thống đo chính xác quãng đường GPS theo thời gian thực đối với các hoạt động ngoài trời. Đối với sự kiện tại nhà, hệ thống tích hợp Video Call đo lường chính xác thời gian tham gia vận động thực tế của từng cá nhân.
+- **Hỗ trợ kết nối với Strava:** Cho phép liên kết tài khoản và tự động đồng bộ hóa chéo dữ liệu chạy bộ, đạp xe định vị địa lý từ nền tảng Strava về hệ thống.
+- **Phân tích số liệu chính xác, khoa học:** Mọi tiến độ vận động sau khi hoàn thành đều được hệ thống thu thập, biểu đồ hóa và phân tích các chỉ số thành tích cá nhân một cách khách quan, khoa học nhất.
+
+### 2.4.4 Luồng dữ liệu công cụ sức khỏe – gợi ý lịch tập
+Hệ thống kết nối thông suốt luồng dữ liệu chăm sóc thể chất cá nhân nhằm tối ưu hóa chu trình rèn luyện sức khỏe thông qua các yếu tố:
+- **Người dùng dễ dàng tính toán theo dõi dữ liệu sức khỏe bản thân:** Cung cấp sẵn bộ công cụ tính BMI, BMR, TDEE và biểu đồ lịch sử giúp người dùng tự giám sát cơ thể.
+- **Phân tích sức khỏe, gợi ý các bài tập từ AI:** Dựa trên các chỉ số vừa đo đạc, hệ thống ứng dụng mô hình AI Generative để tự động phân tích và gợi ý chuyên sâu một tập hợp các bài tập tối ưu nhất từ kho dữ liệu bài tập khổng lồ.
+- **Kho dữ liệu bài tập khổng lồ, ứng với đa dạng nhóm cơ, thiết bị phù hợp:** Nền tảng xây dựng vững chắc thư viện bài tập rộng lớn, được phân loại từ các bài tập Body-weight, Cardio cho đến cấu hình theo từng thiết bị Gym cụ thể và nhóm cơ tác động.
+- **Lên lịch tập luyện, thông báo nhắc nhở tập luyện:** Người dùng có thể đưa các bài tập đã chọn vào bộ Lịch cá nhân, đi kèm hệ thống Push Notification để nhắc nhở và đốc thúc quá trình tập luyện đúng hạn.
+
+### 2.4.5 Quản trị Hệ thống thông minh với Dashboard thống kê
+Trang quản trị (Admin Panel) được thiết kế đa nhiệm nhằm đảm bảo luồng thông tin cộng đồng luôn sạch sẽ và quá trình vận hành hệ thống trơn tru:
+- **Quản lý thống kê Dashboard dữ liệu với biểu đồ trực quan:** Giám sát tổng quan các biến động về dữ liệu, tỷ lệ hoạt động của hệ thống thông qua các hình thức biểu đồ (Visual) sinh động theo phân bổ dòng thời gian.
+- **Kiểm soát các nội dung bài viết, sự kiện, thử thách vi phạm:** Phê duyệt nhanh chóng hoặc thắt chặt loại bỏ các bài đăng có nội dung phản cảm sau khi tiếp nhận rà soát báo cáo từ hệ thống tự động hoặc người dùng báo lên.
+- **Quản lý toàn bộ từ bài viết, đến sự kiện, thử thách:** Trao quyền theo dõi và giám sát can thiệp vào tất cả các thực thể phát sinh trong hệ sinh thái ứng dụng, đảm bảo tính chặt chẽ trong nền tảng.
+
+### 2.4.6 Lịch cá nhân hợp nhất 
+Giải quyết bài toán kiểm soát thời gian phân mảnh, tính năng Lịch cá nhân mang lại sự đo lường nhất quán trong lộ trình rèn luyện:
+- **Cho phép người dùng theo dõi các thử thách, sự kiện hay các hạng mục tập luyện của bản thân:** Giao diện lịch hội tụ toàn bộ các hoạt động đã tham gia (từ bài tập Gym cá nhân đến Sự kiện cộng đồng) vào một lịch trình tổng thể duy nhất để dễ dàng theo dõi tiến độ hàng ngày.
+- **Thông báo nhắc nhở mọi người tham gia hoàn thành:** Tích hợp bộ tự động hóa gửi đi các thông báo (Push Notification) đến từng cá nhân để cảnh báo thời hạn sự kiện và đôn đốc mọi người hoàn thiện kỷ luật luyện tập.
+

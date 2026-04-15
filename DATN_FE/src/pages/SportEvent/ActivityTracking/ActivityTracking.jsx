@@ -169,7 +169,7 @@ export default function ActivityTracking() {
                     }
                 },
                 () => {
-                    toast.error('Không thể truy cập GPS. Vui lòng cho phép quyền truy cập vị trí.')
+                    toast.error('Không thể bật ghi vị trí. Vui lòng cho phép quyền truy cập vị trí.')
                     startMutation.mutate({ activityType: actType })
                     tracker.start(actType, { kcalPerKm })
                 },
@@ -303,16 +303,16 @@ export default function ActivityTracking() {
                     </div>
                     <div className='hud-gps-badge'>
                         <span className={`hud-gps-dot ${tracker.gpsError ? 'err' : tracker.gpsAccuracy && tracker.gpsAccuracy < 20 ? 'good' : 'mid'}`} />
-                        <span>GPS {tracker.gpsError ? 'Lỗi' : tracker.gpsAccuracy ? `${Math.round(tracker.gpsAccuracy)}m` : 'Đang tìm...'}</span>
+                        <span>Vị trí {tracker.gpsError ? '— lỗi' : tracker.gpsAccuracy ? `±${Math.round(tracker.gpsAccuracy)}m` : '— đang tìm...'}</span>
                     </div>
                 </div>
 
-                {/* GPS anti-cheat warning */}
+                {/* Cảnh báo tín hiệu vị trí bất thường */}
                 {tracker.gpsFlags.length > 0 && (
                     <div className='hud-warning'>
                         <span>⚠️</span>
                         <div>
-                            <p className='hud-warning-title'>GPS bất thường ({tracker.gpsFlags.length})</p>
+                            <p className='hud-warning-title'>Tín hiệu vị trí bất thường ({tracker.gpsFlags.length})</p>
                             <p className='hud-warning-desc'>
                                 {tracker.gpsFlags.filter(f => f.type === 'teleport').length > 0 && 'Dịch chuyển đột ngột • '}
                                 {tracker.gpsFlags.filter(f => f.type === 'speed').length > 0 && 'Tốc độ vượt ngưỡng'}

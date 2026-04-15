@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { AlbumStatus, BlogStatus, NotificationTypes, RecipeStatus, RecipeTime } from '~/constants/enums'
+import sportEventService from '~/services/userServices/sportEvent.services'
 import {
   GetListAlbumForInspectorQuery,
   GetListBlogForInspectorQuery,
@@ -15,6 +16,10 @@ import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import UserModel from '~/models/schemas/user.schema'
 import MealPlanModel from '~/models/schemas/mealPlan.schema'
+import SportEventModel from '~/models/schemas/sportEvent.schema'
+import ChallengeModel from '~/models/schemas/challenge.schema'
+import adminSportEventService from '~/services/adminServices/adminSportEvent.services'
+import challengeService from '~/services/userServices/challenge.services'
 
 class InspectorService {
   async getAllPostReportService({ page, limit, search }: { page: number; limit: number; search: string }) {
@@ -71,15 +76,54 @@ class InspectorService {
           'user.password': 0
         }
       },
-      // đếm số lượng report
       {
-        $addFields: {
-          report_count: { $size: '$report_post' }
+        $lookup: {
+          from: 'users',
+          let: { ru: '$report_post.user_id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', { $ifNull: ['$$ru', []] }] } } },
+            { $project: { name: 1, user_name: 1, avatar: 1, email: 1 } }
+          ],
+          as: '_reporters_flat'
         }
       },
-      // sắp xếp theo số lượng report giảm dần
       {
-        $sort: { report_count: -1 }
+        $addFields: {
+          report_count: { $size: { $ifNull: ['$report_post', []] } },
+          report_details: {
+            $reverseArray: {
+              $map: {
+                input: { $ifNull: ['$report_post', []] },
+                as: 'r',
+                in: {
+                  reason: '$$r.reason',
+                  created_at: '$$r.created_at',
+                  reporter: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: '$_reporters_flat',
+                          as: 'u',
+                          cond: { $eq: ['$$u._id', '$$r.user_id'] }
+                        }
+                      },
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _reporters_flat: 0,
+          report_post: 0
+        }
+      },
+      {
+        $sort: { report_count: -1, updatedAt: -1 }
       },
       {
         $skip: (page - 1) * limit
@@ -90,7 +134,7 @@ class InspectorService {
     ])
     const total = await PostModel.find(condition).countDocuments()
     const totalPage = Math.ceil(total / limit)
-    return { posts, totalPage, page, limit }
+    return { posts, totalPage, totalPosts: total, page, limit }
   }
 
   async getMealPlanReportsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
@@ -438,7 +482,7 @@ class InspectorService {
     ])
     const total = totalAgg[0]?.total || 0
     const totalPage = Math.ceil(total / limit)
-    return { posts, totalPage, page, limit }
+    return { posts, totalPage, totalPosts: total, page, limit }
   }
   async restorePostService({ post_id }: { post_id: string }) {
     await PostModel.findOneAndUpdate(
@@ -1006,6 +1050,451 @@ class InspectorService {
     //   }
     // )
     return album
+  }
+
+  async getSportEventReportsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const matchStage = {
+      $match: {
+        isDeleted: { $ne: true },
+        ...(search
+          ? {
+              $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { location: { $regex: search, $options: 'i' } }
+              ]
+            }
+          : {}),
+        $expr: { $gt: [{ $size: { $ifNull: ['$report_event', []] } }, 0] }
+      }
+    }
+
+    const sport_events = await SportEventModel.aggregate([
+      matchStage,
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      { $unwind: '$creator' },
+      {
+        $project: {
+          'creator.password': 0
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          let: { ru: '$report_event.user_id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', { $ifNull: ['$$ru', []] }] } } },
+            { $project: { name: 1, user_name: 1, avatar: 1, email: 1 } }
+          ],
+          as: '_reporters_flat'
+        }
+      },
+      {
+        $addFields: {
+          report_count: { $size: { $ifNull: ['$report_event', []] } },
+          report_details: {
+            $reverseArray: {
+              $map: {
+                input: { $ifNull: ['$report_event', []] },
+                as: 'r',
+                in: {
+                  reason: '$$r.reason',
+                  created_at: '$$r.created_at',
+                  reporter: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: '$_reporters_flat',
+                          as: 'u',
+                          cond: { $eq: ['$$u._id', '$$r.user_id'] }
+                        }
+                      },
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _reporters_flat: 0,
+          report_event: 0
+        }
+      },
+      { $sort: { report_count: -1, updatedAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ])
+
+    const totalAggregation = await SportEventModel.aggregate([matchStage, { $count: 'total' }])
+    const total = totalAggregation[0]?.total || 0
+    return {
+      sport_events,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_page: Math.ceil(total / limit) || 1
+      }
+    }
+  }
+
+  async getDeletedSportEventsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const matchStage = {
+      $match: {
+        isDeleted: true,
+        deletedFromReportModeration: true,
+        ...(search
+          ? {
+              $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { location: { $regex: search, $options: 'i' } }
+              ]
+            }
+          : {})
+      }
+    }
+
+    const sport_events = await SportEventModel.aggregate([
+      matchStage,
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      { $unwind: '$creator' },
+      { $project: { 'creator.password': 0 } },
+      {
+        $lookup: {
+          from: 'users',
+          let: { ru: '$report_event.user_id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', { $ifNull: ['$$ru', []] }] } } },
+            { $project: { name: 1, user_name: 1, avatar: 1, email: 1 } }
+          ],
+          as: '_reporters_flat'
+        }
+      },
+      {
+        $addFields: {
+          report_count: { $size: { $ifNull: ['$report_event', []] } },
+          report_details: {
+            $reverseArray: {
+              $map: {
+                input: { $ifNull: ['$report_event', []] },
+                as: 'r',
+                in: {
+                  reason: '$$r.reason',
+                  created_at: '$$r.created_at',
+                  reporter: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: '$_reporters_flat',
+                          as: 'u',
+                          cond: { $eq: ['$$u._id', '$$r.user_id'] }
+                        }
+                      },
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _reporters_flat: 0,
+          report_event: 0
+        }
+      },
+      { $sort: { deletedAt: -1, updatedAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ])
+
+    const totalAggregation = await SportEventModel.aggregate([matchStage, { $count: 'total' }])
+    const total = totalAggregation[0]?.total || 0
+    return {
+      sport_events,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_page: Math.ceil(total / limit) || 1
+      }
+    }
+  }
+
+  async restoreSportEventService({ event_id }: { event_id: string }) {
+    return adminSportEventService.restoreEventAdmin(event_id)
+  }
+
+  async acceptSportEventReportService({ event_id }: { event_id: string }) {
+    const ev = await SportEventModel.findOneAndUpdate(
+      { _id: new ObjectId(event_id) },
+      { $set: { report_event: [] } },
+      { new: true }
+    )
+    return ev
+  }
+
+  async rejectSportEventReportService({ event_id, creator_user_id }: { event_id: string; creator_user_id: string }) {
+    await sportEventService.deleteSportEventService(event_id, { deletedFromReportModeration: true })
+
+    if (creator_user_id) {
+      await NotificationModel.create({
+        receiver_id: creator_user_id,
+        content: 'Một sự kiện của bạn đã bị gỡ bỏ do vi phạm quy định của hệ thống',
+        link_id: event_id,
+        type: NotificationTypes.system
+      })
+    }
+    return true
+  }
+
+  async getChallengeReportsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const matchStage = {
+      $match: {
+        is_deleted: { $ne: true },
+        ...(search
+          ? {
+              $or: [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+              ]
+            }
+          : {}),
+        $expr: { $gt: [{ $size: { $ifNull: ['$report_challenge', []] } }, 0] }
+      }
+    }
+
+    const challenges = await ChallengeModel.aggregate([
+      matchStage,
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'creator_id',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      { $unwind: '$creator' },
+      {
+        $project: {
+          'creator.password': 0
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          let: { ru: '$report_challenge.user_id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', { $ifNull: ['$$ru', []] }] } } },
+            { $project: { name: 1, user_name: 1, avatar: 1, email: 1 } }
+          ],
+          as: '_reporters_flat'
+        }
+      },
+      {
+        $addFields: {
+          report_count: { $size: { $ifNull: ['$report_challenge', []] } },
+          report_details: {
+            $reverseArray: {
+              $map: {
+                input: { $ifNull: ['$report_challenge', []] },
+                as: 'r',
+                in: {
+                  reason: '$$r.reason',
+                  created_at: '$$r.created_at',
+                  reporter: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: '$_reporters_flat',
+                          as: 'u',
+                          cond: { $eq: ['$$u._id', '$$r.user_id'] }
+                        }
+                      },
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _reporters_flat: 0,
+          report_challenge: 0
+        }
+      },
+      { $sort: { report_count: -1, updatedAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ])
+
+    const totalAggregation = await ChallengeModel.aggregate([matchStage, { $count: 'total' }])
+    const total = totalAggregation[0]?.total || 0
+    return {
+      challenges,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_page: Math.ceil(total / limit) || 1
+      }
+    }
+  }
+
+  async getDeletedChallengesService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const matchStage = {
+      $match: {
+        is_deleted: true,
+        deleted_from_report_moderation: true,
+        ...(search
+          ? {
+              $or: [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+              ]
+            }
+          : {})
+      }
+    }
+
+    const challenges = await ChallengeModel.aggregate([
+      matchStage,
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'creator_id',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      { $unwind: '$creator' },
+      { $project: { 'creator.password': 0 } },
+      {
+        $lookup: {
+          from: 'users',
+          let: { ru: '$report_challenge.user_id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', { $ifNull: ['$$ru', []] }] } } },
+            { $project: { name: 1, user_name: 1, avatar: 1, email: 1 } }
+          ],
+          as: '_reporters_flat'
+        }
+      },
+      {
+        $addFields: {
+          report_count: { $size: { $ifNull: ['$report_challenge', []] } },
+          report_details: {
+            $reverseArray: {
+              $map: {
+                input: { $ifNull: ['$report_challenge', []] },
+                as: 'r',
+                in: {
+                  reason: '$$r.reason',
+                  created_at: '$$r.created_at',
+                  reporter: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: '$_reporters_flat',
+                          as: 'u',
+                          cond: { $eq: ['$$u._id', '$$r.user_id'] }
+                        }
+                      },
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _reporters_flat: 0,
+          report_challenge: 0
+        }
+      },
+      { $sort: { deleted_at: -1, updatedAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ])
+
+    const totalAggregation = await ChallengeModel.aggregate([matchStage, { $count: 'total' }])
+    const total = totalAggregation[0]?.total || 0
+    return {
+      challenges,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_page: Math.ceil(total / limit) || 1
+      }
+    }
+  }
+
+  async restoreChallengeService({ challenge_id }: { challenge_id: string }) {
+    const ch = await ChallengeModel.findByIdAndUpdate(
+      new ObjectId(challenge_id),
+      {
+        $set: {
+          is_deleted: false,
+          deleted_from_report_moderation: false,
+          deleted_at: null,
+          report_challenge: [],
+          status: 'active'
+        }
+      },
+      { new: true }
+    )
+    return ch
+  }
+
+  async acceptChallengeReportService({ challenge_id }: { challenge_id: string }) {
+    const ch = await ChallengeModel.findOneAndUpdate(
+      { _id: new ObjectId(challenge_id) },
+      { $set: { report_challenge: [] } },
+      { new: true }
+    )
+    return ch
+  }
+
+  async rejectChallengeReportService({ challenge_id, creator_user_id }: { challenge_id: string; creator_user_id: string }) {
+    await challengeService.softDeleteChallengeFromModeration(challenge_id)
+
+    if (creator_user_id) {
+      await NotificationModel.create({
+        receiver_id: creator_user_id,
+        content: 'Một thử thách của bạn đã bị gỡ bỏ do vi phạm quy định của hệ thống',
+        link_id: challenge_id,
+        type: NotificationTypes.system
+      })
+    }
+    return true
   }
 }
 

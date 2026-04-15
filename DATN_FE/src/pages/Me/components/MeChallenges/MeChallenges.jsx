@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -13,6 +14,8 @@ import {
 import { Link } from 'react-router-dom'
 import { getMyChallenges, getPublicUserChallenges } from '../../../../apis/challengeApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
+
+const LIMIT = 9
 
 const fadeIn = {
   hidden: { opacity: 0, y: 15 },
@@ -61,7 +64,6 @@ function ChallengeCard({ participation }) {
   const isOngoing = now >= startDate && now <= endDate
   const isPast = now > endDate
 
-  // Progress calculation (days completed vs total required days)
   const safeStart = new Date(challenge.start_date)
   safeStart.setHours(0, 0, 0, 0)
   const safeEnd = new Date(challenge.end_date)
@@ -72,7 +74,6 @@ function ChallengeCard({ participation }) {
   )
   const completedDays = participation.current_value || 0
   const progress = Math.min(100, Math.round((completedDays / totalRequiredDays) * 100))
-
   const daysLeft = Math.max(0, Math.ceil((endDate - now) / (24 * 60 * 60 * 1000)))
 
   return (
@@ -95,23 +96,12 @@ function ChallengeCard({ participation }) {
             </span>
           )}
           <div className='absolute inset-0 bg-gradient-to-t from-black/50 to-transparent' />
-
-          {/* Status badge */}
           <div className='absolute top-3 right-3'>
-            <span
-              className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                isOngoing
-                  ? 'bg-emerald-500/90 text-white'
-                  : isPast
-                    ? 'bg-gray-500/90 text-white'
-                    : 'bg-blue-500/90 text-white'
-              }`}
-            >
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOngoing ? 'bg-emerald-500/90 text-white' : isPast ? 'bg-gray-500/90 text-white' : 'bg-blue-500/90 text-white'
+              }`}>
               {isOngoing ? 'Đang diễn ra' : isPast ? 'Đã kết thúc' : 'Sắp diễn ra'}
             </span>
           </div>
-
-          {/* Title overlay */}
           <div className='absolute bottom-3 left-3 right-3'>
             <h3 className='text-white font-bold text-sm truncate'>{challenge.title}</h3>
           </div>
@@ -119,7 +109,6 @@ function ChallengeCard({ participation }) {
 
         {/* Body */}
         <div className='p-4 space-y-2.5'>
-          {/* Type badge */}
           <div className='flex items-center gap-2'>
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 ${config.bg} ${config.text} rounded-full text-xs font-medium`}>
               <TypeIcon className='text-[10px]' />
@@ -132,7 +121,6 @@ function ChallengeCard({ participation }) {
             )}
           </div>
 
-          {/* Dates */}
           <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
             <FaCalendarAlt className='text-emerald-500 flex-shrink-0' />
             <span>
@@ -141,7 +129,6 @@ function ChallengeCard({ participation }) {
             </span>
           </div>
 
-          {/* Days left */}
           {isOngoing && daysLeft > 0 && (
             <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
               <FaClock className='text-orange-400 flex-shrink-0' />
@@ -149,7 +136,6 @@ function ChallengeCard({ participation }) {
             </div>
           )}
 
-          {/* Progress bar */}
           <div>
             <div className='flex justify-between text-xs mb-1'>
               <span className='text-gray-500 dark:text-gray-400 flex items-center gap-1'>
@@ -170,7 +156,6 @@ function ChallengeCard({ participation }) {
             </div>
           </div>
 
-          {/* Streak */}
           {participation.streak_count > 0 && (
             <p className='text-xs text-orange-500 font-medium'>
               🔥 Streak: {participation.streak_count} ngày
@@ -184,25 +169,28 @@ function ChallengeCard({ participation }) {
 
 export default function MeChallenges({ isOwner = true, userId }) {
   const isPublic = Boolean(userId)
+  const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
     queryKey: isPublic
-      ? ['publicUserChallenges', userId, { limit: 20 }]
-      : ['my-challenges', { limit: 20 }],
+      ? ['publicUserChallenges', userId, { page, limit: LIMIT }]
+      : ['my-challenges', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserChallenges(userId, { limit: 20 })
-        : getMyChallenges({ limit: 20 }),
+        ? getPublicUserChallenges(userId, { page, limit: LIMIT })
+        : getMyChallenges({ page, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
-  const participations = data?.data?.result?.participations || []
+  const result = data?.data?.result
+  const participations = result?.participations || []
+  const totalPage = result?.totalPage || 1
 
   if (isLoading) {
     return <Loading className='flex justify-center py-20' />
   }
 
-  if (participations.length === 0) {
+  if (participations.length === 0 && page === 1) {
     return (
       <div className='text-center py-16'>
         <FaTrophy className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
@@ -227,12 +215,55 @@ export default function MeChallenges({ isOwner = true, userId }) {
   }
 
   return (
-    <motion.div variants={stagger} initial='hidden' animate='visible'>
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-        {participations.map((p) => (
-          <ChallengeCard key={p._id} participation={p} />
-        ))}
-      </div>
-    </motion.div>
+    <div>
+      <motion.div variants={stagger} initial='hidden' animate='visible'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {participations.map((p) => (
+            <ChallengeCard key={p._id} participation={p} />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Pagination — cùng style Challenge.jsx */}
+      {totalPage > 1 && (
+        <div className='flex items-center justify-center gap-2 mt-8'>
+          <button
+            disabled={page <= 1}
+            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+          >
+            ← Trước
+          </button>
+          {Array.from({ length: totalPage }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+            .reduce((acc, p, i, arr) => {
+              if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+              acc.push(p)
+              return acc
+            }, [])
+            .map(p =>
+              typeof p === 'number' ? (
+                <button
+                  key={p}
+                  onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={p} className='px-1 text-gray-400'>...</span>
+              )
+            )
+          }
+          <button
+            disabled={page >= totalPage}
+            onClick={() => { setPage(p => Math.min(totalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+          >
+            Sau →
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

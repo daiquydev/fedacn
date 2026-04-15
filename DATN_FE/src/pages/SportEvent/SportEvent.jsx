@@ -51,7 +51,10 @@ function FeaturedBanner({ events, navigate }) {
       <div
         className="relative rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
         style={{ height: 200 }}
-        onClick={() => navigate(`/sport-event/${ev._id}`)}
+        onClick={() => {
+          const id = ev._id || ev.id
+          if (id) navigate(`/sport-event/${id}`)
+        }}
       >
         {/* Background image */}
         <div

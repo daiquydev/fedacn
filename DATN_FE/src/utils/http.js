@@ -71,7 +71,9 @@ class Http {
 
         // Suppress toast for preview card calls (404/410 = item deleted, handled gracefully by component)
         const isSportEventPreview = /\/sport-events\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
-        const isChallengePreview = /\/challenges\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
+        const isChallengePreview =
+          /\/challenges\/[a-f0-9]{24}$/i.test(url) &&
+          (status === 404 || status === 410 || status === HttpStatusCode.Forbidden)
 
         // Suppress toast for GET requests fetching a single resource that may not exist
         // Components (ActivityPreviewCard, ActivityDetailModal, etc.) handle the empty state silently

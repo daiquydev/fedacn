@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { SPORT_EVENT_MESSAGE } from '~/constants/messages'
 import sportEventService from '~/services/userServices/sportEvent.services'
 
 export const getAllSportEventsController = async (req: Request, res: Response) => {
@@ -336,4 +337,25 @@ export const removeParticipantController = async (req: Request, res: Response) =
       message: (error as Error).message
     })
   }
+}
+
+export const reportSportEventController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const { reason } = req.body
+  const userId = (req as any).decoded?.user_id
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' })
+  }
+
+  const result = await sportEventService.createReportSportEventService({
+    event_id: id,
+    user_id: userId,
+    reason: typeof reason === 'string' ? reason : ''
+  })
+
+  return res.json({
+    result,
+    message: SPORT_EVENT_MESSAGE.REPORT_EVENT_SUCCESS
+  })
 }

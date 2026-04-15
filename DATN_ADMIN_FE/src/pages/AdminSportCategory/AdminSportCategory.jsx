@@ -644,7 +644,7 @@ export default function AdminSportCategory() {
                                 />
                                 <p className='text-gray-400 text-[11px] mt-1'>
                                     {watchedType === 'Ngoài trời'
-                                        ? '💡 Số kcal tiêu thụ mỗi km (dùng để tính kcal khi tracking GPS)'
+                                        ? '💡 Số kcal tiêu thụ mỗi km (dùng khi ghi hoạt động ngoài trời có lộ trình)'
                                         : '💡 Số kcal tiêu thụ mỗi phút (dùng để tính kcal khi tham gia video call)'}
                                 </p>
                                 {errors.kcal_per_unit && <p className='text-red-500 text-xs mt-1'>{errors.kcal_per_unit.message}</p>}

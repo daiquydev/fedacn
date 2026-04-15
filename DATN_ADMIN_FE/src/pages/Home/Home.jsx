@@ -1,9 +1,9 @@
 import { BsPeopleFill } from 'react-icons/bs'
 import { MdSportsSoccer } from 'react-icons/md'
-import { FaNewspaper, FaRobot } from 'react-icons/fa'
+import { FaNewspaper, FaTrophy } from 'react-icons/fa'
 import BMIBarChart from './components/PieChart/PieChart'
 import EventTypeDoughnut from './components/EventTypeDoughnut/EventTypeDoughnut'
-import AIUsageSection from './components/AIUsageLineChart/AIUsageLineChart'
+import ChallengeAnalyticsSection from './components/ChallengeAnalyticsSection/ChallengeAnalyticsSection'
 import CommunitySection from './components/CommunitySection/CommunitySection'
 import SportEventCategoryCharts from './components/SportEventCategoryCharts/SportEventCategoryCharts'
 import InfoTooltip from './components/InfoTooltip/InfoTooltip'
@@ -90,7 +90,7 @@ export default function Home() {
           <p className='text-white/70 text-sm font-medium mb-1'>FitConnect Admin</p>
           <h1 className='text-3xl font-black text-white mb-2'>Trang Tổng Quan</h1>
           <p className='text-white/80 text-sm max-w-md'>
-            Theo dõi toàn bộ hoạt động: người dùng, cộng đồng, sự kiện thể thao và AI.
+            Theo dõi toàn bộ hoạt động: người dùng, cộng đồng, sự kiện thể thao và thử thách.
           </p>
         </div>
         <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />
@@ -104,7 +104,7 @@ export default function Home() {
         emoji='📈'
         title='Tổng quan Hệ thống'
         subtitle='Theo dõi quy mô và tăng trưởng nền tảng'
-        infoText='4 chỉ số cốt lõi giúp bạn nắm bắt nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
+        infoText='Bốn chỉ số cốt lõi (người dùng, sự kiện, bài viết, thử thách) giúp nắm nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
       />
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-6'>
         <StatCard
@@ -132,11 +132,11 @@ export default function Home() {
           subText='bị báo cáo'
         />
         <StatCard
-          icon={<FaRobot size={24} />}
+          icon={<FaTrophy size={24} />}
           iconBg='bg-gradient-to-br from-indigo-500 to-violet-700'
-          label='Lượt sử dụng AI'
-          total={result?.aiUsage?.total}
-          subLabel='lượt'
+          label='Số lượng thử thách'
+          total={result?.challenges?.total}
+          subLabel='thử thách'
         />
       </div>
 
@@ -177,16 +177,16 @@ export default function Home() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          NHÓM 3: 🤖 AI & CÔNG NGHỆ
+          NHÓM 3: 🏆 THỬ THÁCH
           ══════════════════════════════════════════════════════════════ */}
       <GroupHeader
-        emoji='🤖'
-        title='AI & Công nghệ'
-        subtitle='Hiệu quả sử dụng AI — tính năng nào hữu ích nhất cho người dùng'
-        infoText='Theo dõi mức độ sử dụng các tính năng AI. Tính năng được dùng nhiều nhất → đầu tư phát triển thêm. Tính năng ít dùng → cần cải thiện UX hoặc quảng bá. Dùng bộ lọc thời gian để so sánh xu hướng.'
+        emoji='🏆'
+        title='Thử thách'
+        subtitle='Phân tích số lượng thử thách mới theo loại (dinh dưỡng, ngoài trời, thể lực)'
+        infoText='Biểu đồ đếm thử thách được tạo trong khoảng thời gian đã chọn. So sánh loại nào được tạo nhiều để điều chỉnh nội dung gợi ý, template và truyền thông. Dùng bộ lọc thời gian để theo dõi xu hướng.'
       />
       <div className='px-2'>
-        <AIUsageSection />
+        <ChallengeAnalyticsSection />
       </div>
 
       <div className='h-10' />

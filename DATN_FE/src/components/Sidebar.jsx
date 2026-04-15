@@ -1,9 +1,9 @@
-﻿// Import icon cho Training
+// Import icon cho Training
 import { FaTrophy } from 'react-icons/fa'
 
 // Trong mảng menu items hoặc cấu trúc danh sách menu, thêm mục Training
 // (Thêm ở vị trí tương tự với SportEvent)
-{
+export const trainingMenu = {
   title: 'Thử thách',
   path: '/training',
   icon: <FaTrophy className="w-6 h-6" />,
@@ -15,11 +15,11 @@ import { FaTrophy } from 'react-icons/fa'
     },
     {
       title: 'Thử thách của tôi',
-      path: '/training/my-Trainings'
+      path: '/training/my-trainings'
     },
     {
       title: 'Tạo thử thách',
       path: '/training/create'
     }
   ]
-} 
+}

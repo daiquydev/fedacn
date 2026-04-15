@@ -222,3 +222,113 @@ export const rejectAlbumController = async (req: Request, res: Response) => {
     message: INSPECTOR_MESSAGE.REJECT_ALBUM_SUCCESS
   })
 }
+
+export const getSportEventReportsController = async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query
+  const result = await inspectorService.getSportEventReportsService({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    search: search as string
+  })
+
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.GET_SPORT_EVENT_REPORTS_SUCCESS
+  })
+}
+
+export const acceptSportEventReportController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await inspectorService.acceptSportEventReportService({ event_id: id })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.ACCEPT_SPORT_EVENT_REPORT_SUCCESS
+  })
+}
+
+export const rejectSportEventReportController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const { user_id } = req.body
+  const result = await inspectorService.rejectSportEventReportService({ event_id: id, creator_user_id: user_id })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.DELETE_SPORT_EVENT_REPORT_SUCCESS
+  })
+}
+
+export const getDeletedSportEventsController = async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query
+  const result = await inspectorService.getDeletedSportEventsService({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    search: search as string
+  })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.GET_DELETED_SPORT_EVENTS_SUCCESS
+  })
+}
+
+export const restoreSportEventController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await inspectorService.restoreSportEventService({ event_id: id })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.RESTORE_SPORT_EVENT_SUCCESS
+  })
+}
+
+export const getChallengeReportsController = async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query
+  const result = await inspectorService.getChallengeReportsService({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    search: search as string
+  })
+
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.GET_CHALLENGE_REPORTS_SUCCESS
+  })
+}
+
+export const acceptChallengeReportController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await inspectorService.acceptChallengeReportService({ challenge_id: id })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.ACCEPT_CHALLENGE_REPORT_SUCCESS
+  })
+}
+
+export const rejectChallengeReportController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const { user_id } = req.body
+  const result = await inspectorService.rejectChallengeReportService({ challenge_id: id, creator_user_id: user_id })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.DELETE_CHALLENGE_REPORT_SUCCESS
+  })
+}
+
+export const getDeletedChallengesController = async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query
+  const result = await inspectorService.getDeletedChallengesService({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    search: search as string
+  })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.GET_DELETED_CHALLENGES_SUCCESS
+  })
+}
+
+export const restoreChallengeController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await inspectorService.restoreChallengeService({ challenge_id: id })
+  return res.json({
+    result,
+    message: INSPECTOR_MESSAGE.RESTORE_CHALLENGE_SUCCESS
+  })
+}

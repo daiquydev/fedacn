@@ -2,8 +2,7 @@ import { roundKcal } from '../../utils/mathUtils'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import moment from 'moment'
-import 'moment/locale/vi'
+import { formatRelativeTimeVi } from '../../utils/formatRelativeTimeVi'
 import { FaUtensils, FaRegCalendarAlt, FaClock, FaFireAlt, FaArrowRight, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { MdDashboard } from 'react-icons/md'
 import {
@@ -34,7 +33,7 @@ const formatDate = (value, fallback = '—') => {
 
 const formatRelativeTime = (value) => {
   if (!value) return 'Chưa có lịch'
-  return moment(value).locale('vi').fromNow()
+  return formatRelativeTimeVi(value)
 }
 
 const clampProgress = (value) => {

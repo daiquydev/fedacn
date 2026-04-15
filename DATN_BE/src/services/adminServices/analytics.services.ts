@@ -1,6 +1,7 @@
 import AIUsageLogModel from '~/models/schemas/aiUsageLog.schema'
+import ChallengeModel from '~/models/schemas/challenge.schema'
+import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.schema'
 import PostModel from '~/models/schemas/post.schema'
-import CommentPostModel from '~/models/schemas/commentPost.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventAttendanceModel from '~/models/schemas/sportEventAttendance.schema'
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
@@ -98,6 +99,56 @@ class AnalyticsService {
     }
   }
 
+  async getChallengeAnalytics(period?: string, startDate?: string, endDate?: string) {
+    const { from, to } = getDateRange(period, startDate, endDate)
+    const dateMatch: any = {}
+    if (from) dateMatch.createdAt = { $gte: from, $lte: to }
+
+    const baseMatch = { is_deleted: { $ne: true }, ...dateMatch }
+
+    const [nutrition, outdoorActivity, fitness] = await Promise.all([
+      ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'nutrition' }),
+      ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'outdoor_activity' }),
+      ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'fitness' })
+    ])
+
+    const dailyRaw = await ChallengeModel.aggregate([
+      { $match: baseMatch },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            challenge_type: '$challenge_type'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.date': 1 } }
+    ])
+
+    const dailyNutrition = dailyRaw
+      .filter((d: any) => d._id.challenge_type === 'nutrition')
+      .map((d: any) => ({ _id: d._id.date, count: d.count }))
+    const dailyOutdoorActivity = dailyRaw
+      .filter((d: any) => d._id.challenge_type === 'outdoor_activity')
+      .map((d: any) => ({ _id: d._id.date, count: d.count }))
+    const dailyFitness = dailyRaw
+      .filter((d: any) => d._id.challenge_type === 'fitness')
+      .map((d: any) => ({ _id: d._id.date, count: d.count }))
+
+    const total = nutrition + outdoorActivity + fitness
+
+    return {
+      nutrition,
+      outdoorActivity,
+      fitness,
+      total,
+      dailyNutrition,
+      dailyOutdoorActivity,
+      dailyFitness
+    }
+  }
+
   async getCommunityAnalytics(period?: string, startDate?: string, endDate?: string) {
     const { from, to } = getDateRange(period, startDate, endDate)
     const dateMatch: any = {}
@@ -124,8 +175,11 @@ class AnalyticsService {
       { $project: { _id: 0, user: 1, count: 1 } }
     ])
 
-    const topCommentUsers = await CommentPostModel.aggregate([
-      { $match: { is_banned: false, ...dateMatch } },
+    const challengeJoinDateMatch: any = {}
+    if (from) challengeJoinDateMatch.joined_at = { $gte: from, $lte: to }
+
+    const topChallengeUsers = await ChallengeParticipantModel.aggregate([
+      { $match: challengeJoinDateMatch },
       { $group: { _id: '$user_id', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 3 },
@@ -261,7 +315,7 @@ class AnalyticsService {
     return {
       topUsers: {
         posts: topPostUsers,
-        comments: topCommentUsers,
+        challenges: topChallengeUsers,
         events: topEventUsers,
         workouts: topWorkoutUsers
       },

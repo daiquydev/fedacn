@@ -595,8 +595,8 @@ export default function SportEventProgress({
         <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 shadow-lg text-white">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h3 className="text-xl font-bold mb-1">🏃 Theo dõi hoạt động GPS</h3>
-              <p className="text-sm opacity-90">Bắt đầu theo dõi quãng đường và tốc độ bằng GPS cho ngày hôm nay</p>
+              <h3 className="text-xl font-bold mb-1">🏃 Ghi hoạt động ngoài trời</h3>
+              <p className="text-sm opacity-90">Bắt đầu ghi quãng đường và tốc độ khi bạn di chuyển trong ngày</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3">
               {gpsStats?.weeklyStreak > 0 && (
@@ -617,7 +617,7 @@ export default function SportEventProgress({
                       className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
                     >
                       <FaMapMarkerAlt />
-                      Đo GPS
+                      Bắt đầu ghi
                     </button>
                     <button
                       onClick={() => setIsOpenStravaModal(true)}

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaTrophy, FaSearch, FaTrash, FaUsers, FaCheck, FaClock, FaBan,
     FaRunning, FaAppleAlt, FaDumbbell, FaFilter, FaChevronDown,
-    FaTimes, FaSortAmountDown, FaUndo, FaBullseye, FaEye, FaEdit, FaPlus
+    FaTimes, FaSortAmountDown, FaUndo, FaBullseye, FaEye
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import adminChallengeApi from '../../apis/challengeApi'
@@ -11,12 +11,11 @@ import sportCategoryApi from '../../apis/sportCategoryApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
-import ChallengeFormModal from './ChallengeFormModal'
 
 const TYPE_CONFIG = {
-    nutrition: { label: 'Dinh dưỡng', icon: FaAppleAlt, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+    nutrition: { label: 'Ăn uống', icon: FaAppleAlt, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
     outdoor_activity: { label: 'Ngoài trời', icon: FaRunning, badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
-    fitness: { label: 'Tập luyện', icon: FaDumbbell, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }
+    fitness: { label: 'Thể dục', icon: FaDumbbell, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }
 }
 
 const STATUS_CONFIG = {
@@ -38,6 +37,11 @@ function ParticipantsModal({ challenge, onClose }) {
         staleTime: 5000
     })
     const participants = data?.data?.result?.participants || []
+    const totalFromParticipantsApi = data?.data?.result?.total
+    const memberCount =
+        activeTab === 'participants' && typeof totalFromParticipantsApi === 'number'
+            ? totalFromParticipantsApi
+            : (challenge.participants_count || 0)
 
     const renderDetails = () => (
         <div className='p-6 space-y-6'>
@@ -62,7 +66,7 @@ function ParticipantsModal({ challenge, onClose }) {
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
                     <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Loại & Danh mục</p>
                     <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
-                        {challenge.challenge_type === 'nutrition' ? '🥗 Dinh dưỡng' : challenge.challenge_type === 'outdoor_activity' ? '🏃 Ngoài trời' : '💪 Tập luyện'}
+                        {challenge.challenge_type === 'nutrition' ? '🥗 Ăn uống' : challenge.challenge_type === 'outdoor_activity' ? '🏃 Ngoài trời' : '💪 Thể dục'}
                         {challenge.category && ` - ${challenge.category}`}
                     </p>
                 </div>
@@ -70,7 +74,7 @@ function ParticipantsModal({ challenge, onClose }) {
                     <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Mục tiêu</p>
                     <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
                         <FaBullseye className='text-orange-500' />
-                        {challenge.goal_value} {challenge.goal_unit} <span className="text-xs font-normal text-gray-500">({challenge.goal_type})</span>
+                        {challenge.goal_value} {challenge.goal_unit}
                     </p>
                 </div>
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
@@ -84,7 +88,7 @@ function ParticipantsModal({ challenge, onClose }) {
                     <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Tham gia / Tương tác</p>
                     <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
                         <FaUsers className='text-indigo-500' />
-                        {challenge.participants_count || 0} thành viên đã tham gia
+                        {memberCount} thành viên đã tham gia
                     </p>
                 </div>
             </div>
@@ -112,7 +116,7 @@ function ParticipantsModal({ challenge, onClose }) {
                 </div>
             )}
 
-            {/* Cấu hình đặc thù Dinh dưỡng */}
+            {/* Cấu hình đặc thù Ăn uống */}
             {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && (
                 <div>
                     <h5 className='text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2'>
@@ -228,7 +232,7 @@ function ParticipantsModal({ challenge, onClose }) {
                             onClick={() => setActiveTab('participants')}
                             className={`pb-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-1.5 ${activeTab === 'participants' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
                         >
-                            <FaUsers size={14} /> Thành viên ({challenge.participants_count || 0})
+                            <FaUsers size={14} /> Thành viên ({memberCount})
                         </button>
                     </div>
                 </div>
@@ -256,7 +260,6 @@ export default function AdminChallenge() {
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [confirmAction, setConfirmAction] = useState(null)
     const [participantsChallenge, setParticipantsChallenge] = useState(null)
-    const [formChallenge, setFormChallenge] = useState(null) // null=closed, undefined=create, object=edit
     const LIMIT = 10
     const debounceRef = useRef(null)
 
@@ -364,10 +367,6 @@ export default function AdminChallenge() {
             <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 px-6 py-4 mb-2 shadow-xl'>
                 <div className='relative z-10 flex items-center justify-between'>
                     <h1 className='text-2xl font-bold text-white'>Quản lý Thử thách</h1>
-                    <button onClick={() => setFormChallenge(undefined)}
-                        className='flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-white text-sm font-bold transition-all active:scale-95'>
-                        <FaPlus size={12} /> Tạo thử thách
-                    </button>
                 </div>
 
                 <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
@@ -383,7 +382,7 @@ export default function AdminChallenge() {
                             onClick: () => { setFilterStatus('active'); setFilterType('all'); setPage(1) }
                         },
                         {
-                            key: 'nutrition', label: 'Dinh dưỡng', icon: FaAppleAlt,
+                            key: 'nutrition', label: 'Ăn uống', icon: FaAppleAlt,
                             count: stats.byType?.nutrition,
                             onClick: () => { setFilterStatus('active'); setFilterType('nutrition'); setPage(1) }
                         },
@@ -393,7 +392,7 @@ export default function AdminChallenge() {
                             onClick: () => { setFilterStatus('active'); setFilterType('outdoor_activity'); setPage(1) }
                         },
                         {
-                            key: 'fitness', label: 'Tập luyện', icon: FaDumbbell,
+                            key: 'fitness', label: 'Thể dục', icon: FaDumbbell,
                             count: stats.byType?.fitness,
                             onClick: () => { setFilterStatus('active'); setFilterType('fitness'); setPage(1) }
                         },
@@ -457,7 +456,7 @@ export default function AdminChallenge() {
                                 { label: 'Tổng TC', value: activeChallenges.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
                                 { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
                                 { label: 'TB thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                                { label: 'DD/NT/TL', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                { label: 'ĂN UỐNG / NGOÀI TRỜI / THỂ DỤC', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
@@ -578,9 +577,9 @@ export default function AdminChallenge() {
                                     className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
                                 >
                                     <option value='all'>Tất cả loại</option>
-                                    <option value='nutrition'>🥗 Dinh dưỡng</option>
+                                    <option value='nutrition'>🥗 Ăn uống</option>
                                     <option value='outdoor_activity'>🏃 Ngoài trời</option>
-                                    <option value='fitness'>💪 Tập luyện</option>
+                                    <option value='fitness'>💪 Thể dục</option>
                                 </select>
                             </div>
 
@@ -749,7 +748,6 @@ export default function AdminChallenge() {
                                                             {c.goal_value} {c.goal_unit}
                                                         </span>
                                                     </div>
-                                                    <p className='text-[10px] text-gray-400 mt-0.5'>{c.goal_type}</p>
                                                 </td>
                                                 {/* Progress */}
                                                 <td className='px-4 py-3 whitespace-nowrap'>
@@ -788,22 +786,13 @@ export default function AdminChallenge() {
                                                 <td className='px-4 py-3 whitespace-nowrap'>
                                                     <div className='flex items-center gap-1.5'>
                                                         {!c.is_deleted && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => setParticipantsChallenge(c)}
-                                                                    title='Xem thành viên'
-                                                                    className='p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
-                                                                >
-                                                                    <FaEye size={14} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setFormChallenge(c)}
-                                                                    title='Chỉnh sửa'
-                                                                    className='p-1.5 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors'
-                                                                >
-                                                                    <FaEdit size={14} />
-                                                                </button>
-                                                            </>
+                                                            <button
+                                                                onClick={() => setParticipantsChallenge(c)}
+                                                                title='Xem thành viên'
+                                                                className='p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
+                                                            >
+                                                                <FaEye size={14} />
+                                                            </button>
                                                         )}
                                                         {c.is_deleted ? (
                                                             <button
@@ -881,15 +870,6 @@ export default function AdminChallenge() {
                 <ParticipantsModal
                     challenge={participantsChallenge}
                     onClose={() => setParticipantsChallenge(null)}
-                />
-            )}
-
-            {/* Challenge Form Modal */}
-            {formChallenge !== null && (
-                <ChallengeFormModal
-                    challenge={formChallenge || null}
-                    onClose={() => setFormChallenge(null)}
-                    onSuccess={() => { setFormChallenge(null); invalidate() }}
                 />
             )}
 

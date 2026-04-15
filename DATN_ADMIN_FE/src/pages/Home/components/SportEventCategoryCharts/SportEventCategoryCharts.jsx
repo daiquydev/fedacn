@@ -12,7 +12,17 @@ import InfoTooltip from '../InfoTooltip/InfoTooltip'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-function CategoryChart({ title, emoji, categories = [], eventColor, participantColor, gradientFrom, gradientTo, totalLabel }) {
+function CategoryChart({
+  title,
+  emoji,
+  categories = [],
+  eventColor,
+  participantColor,
+  eventBorderColor,
+  participantBorderColor,
+  gradientFrom,
+  gradientTo
+}) {
   const labels = categories.map((c) => c.category)
   const totalEvents = categories.reduce((s, c) => s + c.eventCount, 0)
   const totalParticipants = categories.reduce((s, c) => s + c.totalParticipants, 0)
@@ -24,6 +34,8 @@ function CategoryChart({ title, emoji, categories = [], eventColor, participantC
         label: 'Số sự kiện',
         data: categories.map((c) => c.eventCount),
         backgroundColor: eventColor,
+        borderColor: eventBorderColor,
+        borderWidth: 1,
         borderRadius: 6,
         barPercentage: 0.6,
         categoryPercentage: 0.7,
@@ -33,6 +45,8 @@ function CategoryChart({ title, emoji, categories = [], eventColor, participantC
         label: 'Số người tham gia',
         data: categories.map((c) => c.totalParticipants),
         backgroundColor: participantColor,
+        borderColor: participantBorderColor,
+        borderWidth: 1,
         borderRadius: 6,
         barPercentage: 0.6,
         categoryPercentage: 0.7,
@@ -76,7 +90,7 @@ function CategoryChart({ title, emoji, categories = [], eventColor, participantC
     <div className='bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-5 dark:bg-gray-800 dark:border-gray-700 h-full flex flex-col'>
       <div className='flex items-center justify-between mb-3'>
         <p className='text-sm font-bold text-gray-600 dark:text-gray-300'>{emoji} {title}</p>
-        <InfoTooltip text={`Top 5 môn thể thao ${title.toLowerCase()} được tổ chức nhiều nhất. Cột đậm = số sự kiện tạo ra, cột nhạt = số người tham gia. Nếu 1 môn có nhiều sự kiện nhưng ít người → cần quảng bá. Ngược lại → cần tạo thêm sự kiện.`} />
+        <InfoTooltip text={`Top 5 môn thể thao ${title.toLowerCase()} được tổ chức nhiều nhất. Hai màu cột khác nhau: số sự kiện vs số người tham gia. Nếu 1 môn có nhiều sự kiện nhưng ít người → cần quảng bá. Ngược lại → cần tạo thêm sự kiện.`} />
       </div>
 
       {/* Summary stats */}
@@ -115,19 +129,23 @@ export default function SportEventCategoryCharts({ sportEvents = {} }) {
         title='Sự kiện Ngoài trời'
         emoji='🌿'
         categories={topOutdoorCategories}
-        eventColor='rgba(34, 197, 94, 0.8)'
-        participantColor='rgba(16, 185, 129, 0.5)'
+        eventColor='rgba(22, 163, 74, 0.92)'
+        participantColor='rgba(234, 88, 12, 0.88)'
+        eventBorderColor='rgba(21, 128, 61, 0.95)'
+        participantBorderColor='rgba(194, 65, 12, 0.95)'
         gradientFrom='from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
-        gradientTo='from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20'
+        gradientTo='from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20'
       />
       <CategoryChart
         title='Sự kiện Trong nhà'
         emoji='🏠'
         categories={topIndoorCategories}
-        eventColor='rgba(168, 85, 247, 0.8)'
-        participantColor='rgba(139, 92, 246, 0.5)'
+        eventColor='rgba(147, 51, 234, 0.9)'
+        participantColor='rgba(2, 132, 199, 0.88)'
+        eventBorderColor='rgba(126, 34, 206, 0.95)'
+        participantBorderColor='rgba(3, 105, 161, 0.95)'
         gradientFrom='from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20'
-        gradientTo='from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/20 dark:to-pink-900/20'
+        gradientTo='from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20'
       />
     </div>
   )

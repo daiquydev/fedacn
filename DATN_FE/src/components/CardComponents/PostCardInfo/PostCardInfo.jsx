@@ -5,9 +5,8 @@ import { AiFillHeart } from 'react-icons/ai'
 import { CiHeart } from 'react-icons/ci'
 import { PiShareFatLight } from 'react-icons/pi'
 import { LiaComments } from 'react-icons/lia'
-import moment from 'moment'
+import { formatRelativeTimeVi } from '../../../utils/formatRelativeTimeVi'
 import { deletePostForEachUser, likePost, unlikePost } from '../../../apis/postApi'
-import { } from '@tanstack/react-query'
 import { queryClient } from '../../../main'
 import Comments from '../../../pages/Home/components/Comments'
 import ModalSharePost from '../../../pages/Home/components/ModalSharePost'
@@ -26,6 +25,7 @@ import useSound from 'use-sound'
 import like from '../../../assets/sounds/like.mp3'
 import { getImageUrl } from '../../../utils/imageUrl'
 import MealPlanSharePreview from '../../Post/MealPlanSharePreview'
+import { useHideShareForPrivateEmbeddedChallenge } from '../../../hooks/useHideShareForPrivateEmbeddedChallenge'
 
 export default function PostCardInfo({ data }) {
   const [openComment, setOpenComment] = useState(false)
@@ -34,6 +34,8 @@ export default function PostCardInfo({ data }) {
   const [play] = useSound(like)
   const { newSocket } = useContext(SocketContext)
   const navigate = useNavigate()
+  const challengeEmbedContent = [data?.content, data?.parent_post?.content].filter(Boolean).join('\n')
+  const hideShareForPrivateChallenge = useHideShareForPrivateEmbeddedChallenge(challengeEmbedContent)
 
   const checkNavigateProfileUser = () => {
     if (profile._id === data.user._id) {
@@ -136,7 +138,7 @@ export default function PostCardInfo({ data }) {
             >
               {data.comment_count} bình luận
             </div>
-            {data.status === 0 ? (
+            {data.status === 0 && !hideShareForPrivateChallenge ? (
               <div
                 onClick={handleOpenSharePost}
                 className='hover:text-red-600 dark:hover:text-pink-600 cursor-pointer transition-all'
@@ -173,7 +175,7 @@ export default function PostCardInfo({ data }) {
             <LiaComments className='mr-1' size={20} />
             <span className='font-medium'>Bình luận</span>
           </div>
-          {data.status === 0 ? (
+          {data.status === 0 && !hideShareForPrivateChallenge ? (
             <div
               onClick={handleOpenSharePost}
               className='flex cursor-pointer justify-center hover:text-red-700 transition-all dark:hover:text-pink-500 duration-150 items-center'
@@ -221,7 +223,7 @@ function CheckTypeOfPost({
                   </div>
                 </div>
                 <div className='flex gap-2 items-center'>
-                  <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                  <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
                   {data.status === 0 && (
                     <div>
                       <MdPublic />
@@ -274,7 +276,7 @@ function CheckTypeOfPost({
                   </div>
                 </div>
                 <div className='flex gap-2 items-center'>
-                  <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                  <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
                   {data.status === 0 && (
                     <div>
                       <MdPublic />
@@ -330,7 +332,7 @@ function CheckTypeOfPost({
                 </div>
               </div>{' '}
               <div className='flex gap-2 items-center'>
-                <div className='text-slate-500 dark:text-slate-300'>{moment(data.createdAt).fromNow()}</div>
+                <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
                 {data.status === 0 && (
                   <div>
                     <MdPublic />
@@ -379,7 +381,7 @@ function CheckTypeOfPost({
                     </div>
                   </div>
                   <div className='flex gap-2 items-center'>
-                    <div className='text-slate-500 dark:text-slate-300'>{moment(data.parent_post.createdAt).fromNow()}</div>
+                    <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.parent_post.createdAt)}</div>
 
                     {data.parent_post.status === 0 && (
                       <div>

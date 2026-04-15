@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react'
 import { FaCalendarAlt } from 'react-icons/fa'
 
-const PRESETS = [
+const buildPresets = (allLabel) => [
   { label: '24h', value: '24h' },
   { label: '7 ngày', value: '7d' },
   { label: '1 tháng', value: '1m' },
   { label: '6 tháng', value: '6m' },
-  { label: 'Tất cả', value: 'all' },
+  { label: allLabel, value: 'all' },
   { label: 'Tùy chỉnh...', value: 'custom' }
 ]
 
@@ -15,8 +15,10 @@ const PRESETS = [
  * @param {string} value - current filter value (e.g. '7d', '1m', 'all')
  * @param {function} onChange - called with { period } or { startDate, endDate }
  * @param {string} accentColor - tailwind color for active accent (default: 'blue')
+ * @param {string} allLabel - label for the "all time" option (default: 'Tất cả')
  */
-export default function TimeRangeDropdown({ value = '7d', onChange, accentColor = 'blue' }) {
+export default function TimeRangeDropdown({ value = '7d', onChange, accentColor = 'blue', allLabel = 'Tất cả' }) {
+  const PRESETS = buildPresets(allLabel)
   const [showCustom, setShowCustom] = useState(false)
   // type="date" inputs give YYYY-MM-DD directly
   const [startDate, setStartDate] = useState('')

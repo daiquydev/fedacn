@@ -12,6 +12,7 @@ import PostModel from '~/models/schemas/post.schema'
 import RecipeModel from '~/models/schemas/recipe.schema'
 import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
 import AIUsageLogModel from '~/models/schemas/aiUsageLog.schema'
+import ChallengeModel from '~/models/schemas/challenge.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import UserModel from '~/models/schemas/user.schema'
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
@@ -422,11 +423,12 @@ class UserAdminService {
       .filter((d: any) => d._id.feature === 'analyze_workout')
       .map((d: any) => ({ _id: d._id.date, count: d.count }))
 
-    // === SPORT EVENTS ===
-    const [totalEvents, outdoorEvents, indoorEvents] = await Promise.all([
+    // === SPORT EVENTS & CHALLENGES ===
+    const [totalEvents, outdoorEvents, indoorEvents, totalChallenges] = await Promise.all([
       SportEventModel.countDocuments({ isDeleted: { $ne: true } }),
       SportEventModel.countDocuments({ isDeleted: { $ne: true }, eventType: 'Ngoài trời' }),
-      SportEventModel.countDocuments({ isDeleted: { $ne: true }, eventType: 'Trong nhà' })
+      SportEventModel.countDocuments({ isDeleted: { $ne: true }, eventType: 'Trong nhà' }),
+      ChallengeModel.countDocuments({ is_deleted: { $ne: true } })
     ])
 
     // Top 5 thể loại sport theo loại hình — đếm sự kiện + số người tham gia thực tế
@@ -506,6 +508,9 @@ class UserAdminService {
         indoor: indoorEvents,
         topOutdoorCategories,
         topIndoorCategories
+      },
+      challenges: {
+        total: totalChallenges
       },
       workoutStats: {
         totalSessions,

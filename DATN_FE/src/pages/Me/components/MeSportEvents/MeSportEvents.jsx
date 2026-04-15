@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FaRunning, FaCalendarAlt, FaUsers, FaArrowRight, FaMapMarkerAlt } from 'react-icons/fa'
@@ -5,6 +6,8 @@ import { Link } from 'react-router-dom'
 import { getJoinedEvents, getPublicUserJoinedEvents } from '../../../../apis/sportEventApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
+
+const LIMIT = 9
 
 const fadeIn = {
   hidden: { opacity: 0, y: 15 },
@@ -34,13 +37,12 @@ function EventCard({ event }) {
           />
           <div className='absolute inset-0 bg-gradient-to-t from-black/60 to-transparent' />
           <div className='absolute top-3 right-3'>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-              isOngoing
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOngoing
                 ? 'bg-emerald-500/90 text-white'
                 : isPast
                   ? 'bg-gray-500/90 text-white'
                   : 'bg-blue-500/90 text-white'
-            }`}>
+              }`}>
               {isOngoing ? 'Đang diễn ra' : isPast ? 'Đã kết thúc' : 'Sắp diễn ra'}
             </span>
           </div>
@@ -72,26 +74,28 @@ function EventCard({ event }) {
 
 export default function MeSportEvents({ userId }) {
   const isPublic = Boolean(userId)
+  const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
     queryKey: isPublic
-      ? ['publicUserEvents', userId, { page: 1, limit: 20 }]
-      : ['joinedEvents', { page: 1, limit: 20 }],
+      ? ['publicUserEvents', userId, { page, limit: LIMIT }]
+      : ['joinedEvents', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserJoinedEvents(userId, { page: 1, limit: 20 })
-        : getJoinedEvents({ page: 1, limit: 20 }),
+        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT })
+        : getJoinedEvents({ page, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
   const raw = data?.data?.result
   const events = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
+  const totalPage = raw?.totalPage || 1
 
   if (isLoading) {
     return <Loading className='flex justify-center py-20' />
   }
 
-  if (events.length === 0) {
+  if (events.length === 0 && page === 1) {
     return (
       <div className='text-center py-16'>
         <FaRunning className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
@@ -109,12 +113,55 @@ export default function MeSportEvents({ userId }) {
   }
 
   return (
-    <motion.div variants={stagger} initial='hidden' animate='visible'>
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-        {events.map((event) => (
-          <EventCard key={event._id} event={event} />
-        ))}
-      </div>
-    </motion.div>
+    <div>
+      <motion.div variants={stagger} initial='hidden' animate='visible'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {events.map((event) => (
+            <EventCard key={event._id} event={event} />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Pagination — cùng style Challenge.jsx */}
+      {totalPage > 1 && (
+        <div className='flex items-center justify-center gap-2 mt-8'>
+          <button
+            disabled={page <= 1}
+            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+          >
+            ← Trước
+          </button>
+          {Array.from({ length: totalPage }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+            .reduce((acc, p, i, arr) => {
+              if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+              acc.push(p)
+              return acc
+            }, [])
+            .map(p =>
+              typeof p === 'number' ? (
+                <button
+                  key={p}
+                  onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={p} className='px-1 text-gray-400'>...</span>
+              )
+            )
+          }
+          <button
+            disabled={page >= totalPage}
+            onClick={() => { setPage(p => Math.min(totalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+          >
+            Sau →
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

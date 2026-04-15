@@ -12,6 +12,7 @@ import { currentAccount } from '../../apis/userApi'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import { AppContext } from '../../contexts/app.context'
+import { formatRelativeTimeVi } from '../../utils/formatRelativeTimeVi'
 
 // ── Type config ────────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -26,7 +27,7 @@ const TYPE_CONFIG = {
     },
     outdoor_activity: {
         icon: <FaRunning />,
-        label: 'Hoạt động ngoài trời',
+        label: 'Ngoài trời',
         gradient: 'from-blue-500 to-cyan-600',
         badgeBg: 'bg-blue-500',
         accentColor: 'text-blue-400',
@@ -42,34 +43,6 @@ const TYPE_CONFIG = {
         progressFrom: 'from-orange-400',
         progressTo: 'to-amber-500'
     }
-}
-
-// ── Custom Vietnamese relative time ────────────────────────────────────────
-function fromNowVi(targetMoment) {
-    const now = moment()
-    const diffMs = targetMoment.diff(now)
-    const absSec = Math.abs(diffMs) / 1000
-    const absMin = absSec / 60
-    const absHour = absMin / 60
-    const absDay = absHour / 24
-    const absMonth = absDay / 30
-    const absYear = absDay / 365
-
-    const future = diffMs > 0
-    let str
-    if (absSec < 45) str = 'vài giây'
-    else if (absSec < 90) str = '1 phút'
-    else if (absMin < 45) str = `${Math.round(absMin)} phút`
-    else if (absMin < 90) str = '1 giờ'
-    else if (absHour < 22) str = `${Math.round(absHour)} giờ`
-    else if (absHour < 36) str = '1 ngày'
-    else if (absDay < 25) str = `${Math.round(absDay)} ngày`
-    else if (absDay < 45) str = '1 tháng'
-    else if (absDay < 345) str = `${Math.round(absMonth)} tháng`
-    else if (absDay < 545) str = '1 năm'
-    else str = `${Math.round(absYear)} năm`
-
-    return future ? `trong ${str}` : `${str} trước`
 }
 
 // ── Participant avatar strip (max 5 + overflow) ────────────────────────────
@@ -273,10 +246,10 @@ export default function ChallengePreviewCard({ challengeId }) {
     const overallPct = totalGoal > 0 ? Math.min(Math.round((totalProgress / totalGoal) * 100), 100) : 0
 
     const timeInfo = isEnded
-        ? `Đã kết thúc ${fromNowVi(endDate)}`
+        ? `Đã kết thúc ${formatRelativeTimeVi(endDate)}`
         : isNotStarted
-            ? `Bắt đầu ${fromNowVi(startDate)}`
-            : `Kết thúc ${fromNowVi(endDate)}`
+            ? `Bắt đầu ${formatRelativeTimeVi(startDate)}`
+            : `Kết thúc ${formatRelativeTimeVi(endDate)}`
 
     const participantsList = challenge.participants_ids || []
     const totalParticipants = challenge.participants_count || participantsList.length || 0

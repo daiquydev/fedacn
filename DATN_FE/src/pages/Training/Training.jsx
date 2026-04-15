@@ -27,6 +27,9 @@ import { getSavedWorkouts as apiGetSavedWorkouts,
 import { addChallengeProgress } from '../../apis/challengeApi'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 
+import OutdoorSetupStep from './components/OutdoorSetupStep'
+import OutdoorTrackingStep from './components/OutdoorTrackingStep'
+
 // Fallback muscle labels for head/neck (non-selectable)
 const FALLBACK_LABELS = { 'head': 'Đầu', 'neck': 'Cổ' }
 
@@ -482,70 +485,82 @@ const SavedWorkoutsModal = ({ workouts = [], onLoad, onClose, onDelete, onUpdate
 // Mode Selection Screen
 const ModeSelection = ({ onSelect, savedWorkouts = [] }) => (
   <div>
-    <div className="text-center mb-8">
-      <h2 className="text-2xl font-bold mb-2">Chọn chế độ luyện tập</h2>
-      <p className="text-gray-500 dark:text-gray-400">Bạn muốn tập theo cách nào?</p>
+    <div className="text-center mb-4">
+      <h2 className="text-2xl font-bold mb-1">Chọn chế độ luyện tập</h2>
+      <p className="text-gray-500 dark:text-gray-400 text-sm">Bạn muốn tập theo cách nào?</p>
     </div>
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       <button onClick={() => onSelect('normal')}
-        className="group relative p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 hover:border-blue-500 hover:shadow-xl transition-all duration-300 text-left">
-        <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <FaDumbbell className="text-white text-2xl" />
+        className="group relative p-4 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 hover:border-blue-500 hover:shadow-xl transition-all duration-300 text-left">
+        <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+          <FaDumbbell className="text-white text-lg" />
         </div>
-        <h3 className="text-xl font-bold mb-1 text-blue-700 dark:text-blue-300">Tùy chỉnh</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Tự chọn thiết bị, nhóm cơ và bài tập theo ý muốn</p>
-        <div className="mt-4 flex items-center gap-1 text-blue-600 font-medium text-sm">
-          Bắt đầu <FaArrowRight className="text-xs" />
+        <h3 className="text-base font-bold mb-0.5 text-blue-700 dark:text-blue-300">Tùy chỉnh</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Tự chọn thiết bị, nhóm cơ và bài tập theo ý muốn</p>
+        <div className="mt-2 flex items-center gap-1 text-blue-600 font-medium text-xs">
+          Bắt đầu <FaArrowRight className="text-[10px]" />
         </div>
       </button>
       <button onClick={() => onSelect('ai_workout')}
-        className="group relative p-6 rounded-2xl border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:border-purple-500 hover:shadow-xl transition-all duration-300 text-left">
-        <div className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full">AI</div>
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <FaBrain className="text-white text-2xl" />
+        className="group relative p-4 rounded-2xl border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:border-purple-500 hover:shadow-xl transition-all duration-300 text-left">
+        <div className="absolute top-2.5 right-2.5 px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold rounded-full">AI</div>
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+          <FaBrain className="text-white text-lg" />
         </div>
-        <h3 className="text-xl font-bold mb-1 text-purple-700 dark:text-purple-300">AI Gợi ý Tập Luyện 🤖</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Mô tả tình trạng sức khỏe, AI bác sĩ tư vấn và gợi ý bài tập phù hợp</p>
-        <div className="mt-4 flex items-center gap-1 text-purple-600 font-medium text-sm">
-          Bắt đầu <FaArrowRight className="text-xs" />
+        <h3 className="text-base font-bold mb-0.5 text-purple-700 dark:text-purple-300">AI Gợi ý Tập Luyện 🤖</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Mô tả tình trạng sức khỏe, AI bác sĩ tư vấn và gợi ý bài tập phù hợp</p>
+        <div className="mt-2 flex items-center gap-1 text-purple-600 font-medium text-xs">
+          Bắt đầu <FaArrowRight className="text-[10px]" />
+        </div>
+      </button>
+
+      <button onClick={() => onSelect('outdoor')}
+        className="group relative p-4 rounded-2xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 hover:border-amber-500 hover:shadow-xl transition-all duration-300 text-left">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+          <FaRunning className="text-white text-lg" />
+        </div>
+        <h3 className="text-base font-bold mb-0.5 text-orange-700 dark:text-orange-300">Hoạt động ngoài trời</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Chạy bộ, đạp xe… ghi hoạt động theo thời gian thực trên bản đồ</p>
+        <div className="mt-2 flex items-center gap-1 text-orange-600 font-medium text-xs">
+          Bắt đầu <FaArrowRight className="text-[10px]" />
         </div>
       </button>
 
       {/* Card bài tập đã lưu – luôn hiện, khi empty thì hiện prompt */}
       <button onClick={() => onSelect('saved')}
-        className="group relative p-6 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 hover:border-emerald-500 hover:shadow-xl transition-all duration-300 text-left">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <FaBookmark className="text-white text-2xl" />
+        className="group relative p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 hover:border-emerald-500 hover:shadow-xl transition-all duration-300 text-left">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+          <FaBookmark className="text-white text-lg" />
         </div>
         {savedWorkouts.length > 0 ? (
           <>
-            <div className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold rounded-full">
+            <div className="absolute top-2.5 right-2.5 px-1.5 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] font-bold rounded-full">
               {savedWorkouts.length}
             </div>
-            <h3 className="text-xl font-bold mb-1 text-emerald-700 dark:text-emerald-300">Bài tập đã lưu 📋</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <h3 className="text-base font-bold mb-0.5 text-emerald-700 dark:text-emerald-300">Bài tập đã lưu 📋</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {savedWorkouts.slice(0, 2).map(w => w.name).join(', ')}{savedWorkouts.length > 2 ? '...' : ''}
             </p>
-            <div className="mt-3 space-y-1">
-              {savedWorkouts.slice(0, 2).map(w => w.schedule && (
-                <div key={w._id || w.id} className="flex items-center gap-1.5 text-xs text-emerald-600">
-                  <FaCalendarAlt className="text-[10px]" />
+            <div className="mt-1.5 space-y-0.5">
+              {savedWorkouts.slice(0, 1).map(w => w.schedule && (
+                <div key={w._id || w.id} className="flex items-center gap-1 text-[10px] text-emerald-600">
+                  <FaCalendarAlt className="text-[9px]" />
                   <span>{w.name}: {formatScheduleLabel(w.schedule)}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-1 text-emerald-600 font-medium text-sm">
-              Xem danh sách <FaArrowRight className="text-xs" />
+            <div className="mt-2 flex items-center gap-1 text-emerald-600 font-medium text-xs">
+              Xem danh sách <FaArrowRight className="text-[10px]" />
             </div>
           </>
         ) : (
           <>
-            <h3 className="text-xl font-bold mb-1 text-emerald-700 dark:text-emerald-300">Bài tập đã lưu 📋</h3>
-            <p className="text-sm text-gray-400 dark:text-gray-500">Chưa có bài nào. Lưu sau khi chẩn bị!<br />
-              <span className="text-xs">Vào bước "Chuẩn bị" → nhấn "🔖 Lưu bài tập"</span>
+            <h3 className="text-base font-bold mb-0.5 text-emerald-700 dark:text-emerald-300">Bài tập đã lưu 📋</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Chưa có bài nào. Lưu sau khi chuẩn bị!<br />
+              <span className="text-[10px]">Vào bước "Chuẩn bị" → nhấn "🔖 Lưu bài tập"</span>
             </p>
-            <div className="mt-4 flex items-center gap-1 text-emerald-600 font-medium text-sm">
-              Xem thêm <FaArrowRight className="text-xs" />
+            <div className="mt-2 flex items-center gap-1 text-emerald-600 font-medium text-xs">
+              Xem thêm <FaArrowRight className="text-[10px]" />
             </div>
           </>
         )}
@@ -2159,6 +2174,10 @@ export default function Training() {
   // Smart mode step: 'metrics','kcal','equipment','muscles','suggest','setup','workout'
   const [smartStep, setSmartStep] = useState('metrics')
 
+  // Outdoor mode
+  const [outdoorStep, setOutdoorStep] = useState('setup')
+  const [outdoorData, setOutdoorData] = useState(null)
+
   // Shared state
   const [selectedEquipment, setSelectedEquipment] = useState([])
   const [selectedMuscles, setSelectedMuscles] = useState([])
@@ -2372,7 +2391,7 @@ export default function Training() {
   }
   const goBackNormal = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1)
-    else setMode(null)
+    else resetToMenu()
   }
 
   // Smart mode: calculate kcal
@@ -2552,7 +2571,7 @@ export default function Training() {
 
     // Normal flow (no challenge)
     toast.success('🎉 Phiên tập hoàn thành! Tuyệt vời!')
-    navigate('/training/my-Trainings')
+    navigate('/training/my-trainings')
   }
 
   const handleQuit = () => {
@@ -2569,9 +2588,9 @@ export default function Training() {
   }
 
   const resetToMenu = () => {
-    setMode(null); setCurrentStep(0); setSmartStep('metrics'); setCalcStep('setup')
+    setMode(null); setCurrentStep(0); setSmartStep('metrics'); setCalcStep('setup'); setOutdoorStep('setup')
     setSelectedEquipment([]); setSelectedMuscles([]); setSelectedExercises([])
-    setPreparedSets(null); setSuggestData(null); setKcalResult(null)
+    setPreparedSets(null); setSuggestData(null); setKcalResult(null); setOutdoorData(null)
     setShowSaveModal(false); setCurrentExerciseSetsToSave(null); setShowSavedModal(false)
   }
 
@@ -2591,24 +2610,18 @@ export default function Training() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">
-                {mode === 'from_challenge' ? `\u{1F3CB}\uFE0F ${location.state?.challengeTitle || 'Tập luyện thử thách'}` : 'Tập luyện'}
+                {mode === 'from_challenge' ? `\u{1F3CB}\uFE0F ${location.state?.challengeTitle || 'Tập luyện thử thách'}` : mode === 'outdoor' ? 'Hoạt động ngoài trời' : 'Tập luyện'}
               </h1>
               <p className="text-white/75 text-xs mt-0.5">
-                {mode === 'from_challenge' ? 'Hoàn thành bài tập để ghi nhận tiến độ thử thách' : 'Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn'}
+                {mode === 'from_challenge' ? 'Hoàn thành bài tập để ghi nhận tiến độ thử thách' : mode === 'outdoor' ? 'Ghi quãng đường và tốc độ khi bạn di chuyển' : 'Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
-            <button onClick={() => navigate('/training/my-Trainings')}
+            <button onClick={() => navigate('/training/my-trainings')}
               className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-xl transition backdrop-blur">
               📋 Lịch sử tập luyện
             </button>
-            {mode && (
-              <button onClick={resetToMenu}
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-xl transition backdrop-blur">
-                ← Chọn lại chế độ
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -2663,6 +2676,25 @@ export default function Training() {
           )}
           {mode === 'from_calculator' && calcStep === 'workout' && preparedSets && (
             <WorkoutSessionStep exerciseSets={preparedSets} sessionId={sessionId} onComplete={handleComplete} onQuit={handleQuit} />
+          )}
+
+          {/* ── OUTDOOR MODE ── */}
+          {mode === 'outdoor' && outdoorStep === 'setup' && (
+            <OutdoorSetupStep 
+              onStart={(data) => {
+                setOutdoorData(data)
+                setOutdoorStep('tracking')
+              }} 
+              onBack={() => setMode(null)} 
+            />
+          )}
+          {mode === 'outdoor' && outdoorStep === 'tracking' && outdoorData && (
+            <OutdoorTrackingStep 
+              name={outdoorData.name}
+              category={outdoorData.category}
+              targetKm={outdoorData.targetKm}
+              onDiscard={resetToMenu}
+            />
           )}
 
           {/* ── FROM SAVED MODE (Bài tập đã lưu → 2 steps) ── */}
@@ -2743,8 +2775,8 @@ export default function Training() {
         {/* Normal mode nav buttons (steps 0-2) */}
         {mode === 'normal' && currentStep < 3 && (
           <div className="flex gap-4">
-            <button onClick={goBackNormal} disabled={currentStep === 0}
-              className="flex-1 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium disabled:opacity-30 flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <button onClick={goBackNormal}
+              className="flex-1 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700">
               <FaChevronLeft /> Quay lại
             </button>
             <button onClick={goNextNormal} disabled={!canGoNextNormal()}

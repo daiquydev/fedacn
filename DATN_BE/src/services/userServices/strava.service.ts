@@ -228,7 +228,7 @@ class StravaService {
 
     const sportEvent = await SportEventModel.findById(eventId)
     if (!sportEvent) throw new Error('Không tìm thấy sự kiện')
-    if (sportEvent.eventType !== 'Ngoài trời') throw new Error('Sự kiện này không hỗ trợ GPS ngoài trời')
+    if (sportEvent.eventType !== 'Ngoài trời') throw new Error('Sự kiện này không hỗ trợ ghi hoạt động ngoài trời')
 
     const now = new Date()
     if (sportEvent.startDate && new Date(sportEvent.startDate) > now) {

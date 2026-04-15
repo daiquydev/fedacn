@@ -8,6 +8,10 @@ import MealPlanModel from '~/models/schemas/mealPlan.schema'
 import UserModel from '~/models/schemas/user.schema'
 import { roundKcal } from '~/utils/math.utils'
 import { ScheduleStatus, MealItemStatus } from '~/constants/enums'
+import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
+import ActivityTrackingModel from '~/models/schemas/activityTracking.schema'
+import { buildTrainingCreatedAtFilter } from '~/utils/trainingDateRange.utils'
+
 
 class PersonalDashboardService {
   async getPersonalDashboardStats(userId: string) {
@@ -469,6 +473,73 @@ class PersonalDashboardService {
         protein: Math.round(result.reduce((sum, d) => sum + d.actual.protein, 0) / result.length),
         carbs: Math.round(result.reduce((sum, d) => sum + d.actual.carbs, 0) / result.length),
         fat: Math.round(result.reduce((sum, d) => sum + d.actual.fat, 0) / result.length)
+      }
+    }
+  }
+
+  async getTrainingSummary(userId: string, range: string = 'all', startDateStr?: string, endDateStr?: string) {
+    const userObjectId = new ObjectId(userId)
+
+    const matchQueryWorkout: any = { user_id: userObjectId, status: 'completed' }
+    const matchQueryOutdoor: any = { userId: String(userId), eventId: null, challengeId: null, status: 'completed', is_deleted: { $ne: true } }
+
+    const dateFilter = buildTrainingCreatedAtFilter(range, startDateStr, endDateStr)
+    Object.assign(matchQueryWorkout, dateFilter)
+    Object.assign(matchQueryOutdoor, dateFilter)
+
+    const [workoutAgg, outdoorAgg, totalWorkoutCount, totalOutdoorCount] = await Promise.all([
+      WorkoutSessionModel.aggregate([
+        { $match: matchQueryWorkout },
+        { 
+          $group: { 
+            _id: null, 
+            totalKcal: { $sum: '$total_calories' },
+            totalDuration: { $sum: '$duration_minutes' }
+          } 
+        }
+      ]),
+      ActivityTrackingModel.aggregate([
+        { $match: matchQueryOutdoor },
+        { 
+          $group: { 
+            _id: null, 
+            totalKcal: { $sum: '$calories' },
+            totalDuration: { $sum: '$totalDuration' }, // seconds
+            totalDistance: { $sum: '$totalDistance' } // meters
+          } 
+        }
+      ]),
+      WorkoutSessionModel.countDocuments(matchQueryWorkout),
+      ActivityTrackingModel.countDocuments(matchQueryOutdoor)
+    ])
+
+    const workoutStats = workoutAgg[0] || { totalKcal: 0, totalDuration: 0 }
+    const outdoorStats = outdoorAgg[0] || { totalKcal: 0, totalDuration: 0, totalDistance: 0 }
+
+    const totalKcal = roundKcal(workoutStats.totalKcal + outdoorStats.totalKcal)
+    const totalDurationMin = Math.round(workoutStats.totalDuration + (outdoorStats.totalDuration / 60))
+    const totalDistanceKm = Number((outdoorStats.totalDistance / 1000).toFixed(2))
+    const totalSessions = totalWorkoutCount + totalOutdoorCount
+
+    return {
+      overview: {
+        totalKcal,
+        totalDurationMin,
+        totalDistanceKm,
+        totalSessions
+      },
+      breakdown: {
+        workout: {
+          count: totalWorkoutCount,
+          kcal: roundKcal(workoutStats.totalKcal),
+          durationMin: Math.round(workoutStats.totalDuration)
+        },
+        outdoor: {
+          count: totalOutdoorCount,
+          kcal: roundKcal(outdoorStats.totalKcal),
+          durationMin: Math.round(outdoorStats.totalDuration / 60),
+          distanceKm: totalDistanceKm
+        }
       }
     }
   }

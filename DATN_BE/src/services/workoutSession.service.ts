@@ -1,6 +1,7 @@
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import { Types } from 'mongoose'
 import { roundKcal } from '~/utils/math.utils'
+import { buildTrainingCreatedAtFilter } from '~/utils/trainingDateRange.utils'
 import trainingService from '~/services/userServices/training.services'
 
 class WorkoutSessionService {
@@ -92,16 +93,23 @@ class WorkoutSessionService {
         })
     }
 
-    async getHistory(userId: string, page: number = 1, limit: number = 10) {
+    async getHistory(
+        userId: string,
+        page: number = 1,
+        limit: number = 10,
+        range: string = 'all',
+        startDateStr?: string,
+        endDateStr?: string
+    ) {
         const skip = (page - 1) * limit
+        const baseQuery: Record<string, unknown> = { user_id: new Types.ObjectId(userId) }
+        Object.assign(baseQuery, buildTrainingCreatedAtFilter(range, startDateStr, endDateStr))
         const [sessions, total] = await Promise.all([
-            WorkoutSessionModel.find({ user_id: new Types.ObjectId(userId) })
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limit),
-            WorkoutSessionModel.countDocuments({ user_id: new Types.ObjectId(userId) })
+            WorkoutSessionModel.find(baseQuery).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            WorkoutSessionModel.countDocuments(baseQuery)
         ])
-        return { sessions, total, page, limit }
+        const totalPages = Math.ceil(total / limit)
+        return { sessions, total, page, limit, totalPages }
     }
 
     async getSessionById(sessionId: string, userId: string) {

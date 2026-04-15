@@ -1,6 +1,6 @@
 const CATEGORIES = [
   { key: 'posts', emoji: '👑', label: 'Bài viết', unit: 'bài', color: 'from-orange-400 to-red-500' },
-  { key: 'comments', emoji: '💬', label: 'Bình luận', unit: 'bình luận', color: 'from-blue-400 to-cyan-500' },
+  { key: 'challenges', emoji: '🏆', label: 'Thử thách', unit: 'thử thách', prefix: 'tham gia', color: 'from-blue-400 to-cyan-500' },
   { key: 'events', emoji: '🏅', label: 'Sự kiện', unit: 'sự kiện', prefix: 'tham gia', color: 'from-green-400 to-emerald-500' },
   { key: 'workouts', emoji: '💪', label: 'Tập luyện', unit: 'lần', color: 'from-purple-400 to-violet-500' }
 ]

@@ -98,7 +98,7 @@ export default function useActivityTracking() {
     // Start GPS tracking
     const startGps = useCallback(() => {
         if (!navigator.geolocation) {
-            setGpsError('Trình duyệt không hỗ trợ GPS')
+            setGpsError('Trình duyệt không hỗ trợ định vị vị trí')
             return
         }
 

@@ -18,7 +18,7 @@ goongjs.accessToken = import.meta.env.VITE_GOONG_MAPTILES_KEY
 // ── Type UI config ─────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
     nutrition: {
-        label: 'Dinh dưỡng',
+        label: 'Ăn uống',
         icon: <FaUtensils />,
         gradient: 'from-emerald-500 to-teal-600',
         bannerBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',
@@ -31,7 +31,7 @@ const TYPE_CONFIG = {
         accentBorder: 'border-emerald-200 dark:border-emerald-800'
     },
     outdoor_activity: {
-        label: 'Hoạt động ngoài trời',
+        label: 'Ngoài trời',
         icon: <FaRunning />,
         gradient: 'from-blue-500 to-cyan-600',
         bannerBg: 'bg-gradient-to-r from-blue-500 to-cyan-600',
@@ -578,7 +578,7 @@ function OutdoorActivityContent({ activity, challenge, config, challengeId, acti
                 <div>
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <FaRoute className="text-cyan-500" size={10} />
-                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Lộ trình GPS</span>
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Lộ trình đã ghi</span>
                     </div>
                     <div className="rounded-xl overflow-hidden border border-blue-200 dark:border-blue-900/30" style={{ height: '150px' }}>
                         {hasRoute ? (

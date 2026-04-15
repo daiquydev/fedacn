@@ -20,3 +20,13 @@ export const getCommunityAnalyticsController = async (req: Request, res: Respons
   )
   return res.json({ result, message: 'Lấy thống kê cộng đồng thành công' })
 }
+
+export const getChallengeAnalyticsController = async (req: Request, res: Response) => {
+  const { period, startDate, endDate } = req.query
+  const result = await analyticsService.getChallengeAnalytics(
+    period as string,
+    startDate as string,
+    endDate as string
+  )
+  return res.json({ result, message: 'Lấy thống kê thử thách thành công' })
+}

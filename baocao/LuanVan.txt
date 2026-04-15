@@ -1,0 +1,107 @@
+# TRƯỜNG ĐẠI HỌC BÁCH KHOA - ĐHQG-HCM
+# KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH
+---
+
+# CHƯƠNG 1: GIỚI THIỆU ĐỀ TÀI
+
+## 1.1 Đặt vấn đề và lý do chọn đề tài
+
+Trong kỷ nguyên chuyển đổi số và sự phát triển vũ bão của công nghệ thông tin, mạng xã hội đã không còn đơn thuần là công cụ kết nối con người mà đã trở thành một phần thiết yếu định hình thói quen và lối sống. Cùng với đó, nhận thức của con người về sức khỏe thể chất và tinh thần ngày càng được nâng cao, đặc biệt là giai đoạn hậu đại dịch COVID-19. Tuy nhiên, việc duy trì thói quen tập luyện thường xuyên luôn là một bài toán khó đối với nhiều cá nhân do thiếu động lực, thiếu không gian tương tác chuyên biệt, hoặc thiếu sự hướng dẫn mang tính cá nhân hóa.
+
+Hiện nay, khi người dùng muốn chia sẻ thành tích thể thao hoặc tìm kiếm động lực tập luyện trên các nền tảng mạng xã hội phổ biến (như Facebook, Instagram), họ thường phải đối mặt với "nhiễu loạn thông tin" từ các luồng tin tức giải trí, quảng cáo không liên quan. Điều này làm giảm đi sự tập trung và tính gắn kết của một cộng đồng yêu thể thao thực sự. 
+
+Thêm vào đó, dù trên thị trường đã xuất hiện những ứng dụng công nghệ hỗ trợ theo dõi sức khỏe và thể thao, nhưng phần lớn các ứng dụng đều tồn tại sự phân mảnh: 
+- Thiết lập tính liên kết và mục tiêu cộng đồng: Ứng dụng theo dõi GPS (như Strava) thu thập dữ liệu ngoài trời tốt nhưng thiếu đi các "Sự kiện đồng bộ" cho phép kết nối cả việc vận động ngoài trời và trong nhà, hoặc thiếu công cụ tổ chức các Sự kiện thể thao có tính thi đua nội bộ tự động.
+- Sự khan hiếm giải pháp về Thử thách cá nhân hóa: Phần lớn các ứng dụng hướng dẫn tập luyện tại nhà như Nike Training Club thiếu cơ chế Thử thách theo ngày (Daily Challenges) một cách đa dạng (thử thách ăn uống, thể dục, chạy bộ) để duy trì sự kỷ luật của cá nhân.
+- Khía cạnh ứng dụng công nghệ mới: Rất ít ứng dụng trên thị trường hiện nay có ứng dụng Trí tuệ nhân tạo (AI) toàn diện để vừa tự động xác thực hình ảnh bữa ăn trong các thử thách, vừa đóng vai trò trợ lý y tế tư vấn sức khoẻ cá nhân, vừa gợi ý lịch trình tập luyện.
+
+Xuất phát từ thực tiễn trên, với tư cách là một sinh viên chuyên ngành Công nghệ Phần mềm, Đại học Bách Khoa TP.HCM, tôi mang trong mình khát khao áp dụng những kiến thức đã học vào việc giải quyết một bài toán có ý nghĩa thực tiễn cao cho xã hội. Đó là lý do tôi quyết định chọn đề tài: **"Xây dựng mạng xã hội rèn luyện thể dục thể thao cộng đồng - FitConnect"**. 
+
+Đề tài không chỉ đơn thuần là việc xây dựng một nền tảng mạng xã hội, mà là việc xây dựng một "hệ sinh thái" khép kín. Nơi đây, người dùng không chỉ kết nối kết bạn với nhau mà còn: tham gia các **Sự kiện thể thao** chung sức vì mục tiêu tập thể (ngoài trời kết hợp GPS/Strava, trong nhà kết nối Video Call & AI); kiên trì với các **Thử thách cộng đồng** (thử thách ăn uống hỗ trợ check-in bằng thuật toán AI, luyện tập thể dục, vận động ngoài trời); đồng thời quản lý sức khoẻ thông minh qua các **Công cụ tính toán (BMI, TDEE), gợi ý bài tập và Lịch cá nhân**. Hệ thống giúp xây dựng một cộng đồng khỏe mạnh, tích cực và có sự tương tác cao.
+
+## 1.2 Hiện trạng các nền tảng thể thao - xã hội và nhu cầu thực tiễn
+
+Trên bình diện toàn cầu và trong nước, sự giao thoa giữa "Social" (Mạng xã hội) và "Fitness" (Thể hình/Sức khỏe) đang là xu hướng tất yếu. Các cá nhân tham gia vào hoạt động thể thao thường trải qua 3 giai đoạn quá trình tâm lý: **Khởi đầu (Cần hướng dẫn) -> Duy trì (Cần động lực) -> Tỏa sáng (Cần sự công nhận)**. 
+
+Khảo sát thực tiễn cho thấy các ứng dụng hiện hành đang bỏ ngỏ hoặc chưa tối ưu những khoảng trống sau:
+1. **Sự kết nối giữa Thể dục thể thao ngoài trời (Outdoor) và Thể dục thể thao trong nhà (Indoor) trong khâu tổ chức Sự kiện:** Rất hiếm nền tảng cho phép người dùng chạy bộ ngoài công viên và người dùng đang tập gym tại nhà có thể tham gia chung một "Sự kiện tiến độ cộng đồng" một cách đồng bộ.
+2. **Động lực bền bỉ từ Thử thách cộng đồng đa dạng:** Các ứng dụng thường chỉ đo lường một loại hình duy nhất. Nhu cầu cần một chuỗi thử thách mạnh mẽ, từ việc kỷ luật **Ăn uống** (có hệ thống AI nhận diện bữa ăn hợp lệ theo thời gian thực), thử thách **Ngoài trời** (đạp xe, chạy bộ) đến lộ trình **Thể dục cá nhân** do AI tư vấn.
+3. **Cảm giác "cùng nhau" từ xa:** Việc tập thể thao ở nhà một mình dễ gây nhàm chán. Nhu cầu kết nối trực tuyến qua luồng video (Video call) để tập cùng bạn bè, đồng thời có AI tính toán quy đổi thành điểm số của nhóm là một điểm chạm tương tác chưa được khai thác sâu.
+4. **Hệ sinh thái thông minh thống nhất:** Ít nền tảng mang lại luồng dữ liệu thông suốt, nơi công cụ tính toán sức khỏe (BMI, TDEE, BMR) chuyển hóa dữ liệu giúp AI chuyên môn gợi ý hệ thống Bài tập (Workouts) và tự động đồng bộ hóa lên lịch cá nhân (Calendar) của người dùng.
+
+Chính bối cảnh này mở ra định hướng thiết kế cốt lõi cho nền tảng FedACN: **Lấy tính Cộng đồng làm nền tảng, lấy Sự kiện & Thử thách làm động lực trung tâm, và lấy AI làm công cụ hỗ trợ thông minh.**
+
+## 1.3 Mục tiêu của đề tài
+
+Việc triển khai đề tài hướng tới thỏa mãn các mục tiêu toàn diện ở cả khía cạnh học thuật, công nghệ lẫn ứng dụng thực tiễn:
+
+1. **Mục tiêu sản phẩm:** Xây dựng thành công và đưa vào vận hành hệ thống mạng xã hội thể dục thể thao cộng đồng đa nền tảng (Web-based ứng dụng kiến trúc Responsive). Hệ thống phải đảm bảo hoạt động mượt mà, thân thiện với người dùng và xử lý tốt tính liên tục của luồng dữ liệu (news feed, real-time messaging, tracking).
+2. **Mục tiêu công nghệ & Kỹ thuật:**
+   - Xây dựng kiến trúc hệ thống hiện đại dựa trên mô hình Client-Server, áp dụng các tiêu chuẩn thiết kế kiến trúc vi dịch vụ hoặc Modular Monolithic để mở rộng tính năng dễ dàng.
+   - Ứng dụng trí tuệ nhân tạo (Generative AI & Computer Vision) một cách sâu rộng vào bài toán thực tiễn: từ việc kiểm tra tính hợp lệ của bài đăng cộng đồng, phân tích hình ảnh nhận diện tiến độ, đến gợi ý lịch trình tập luyện.
+   - Nghiên cứu và hiện thực thành công công nghệ xử lý dữ liệu thời gian thực (Real-time GPS tracking, WebSockets cho hệ thống thông báo đa kênh, xử lý đánh giá Video stream qua AI).
+3. **Mục tiêu giá trị xã hội:** Cung cấp một ứng dụng sạch, lành mạnh, tạo ra những cuộc thi/thử thách thể thao mang tính xây dựng, góp phần nâng cao tính kỷ luật, sức khỏe toàn diện cho thanh niên Việt Nam nói riêng và cộng đồng nói chung.
+
+## 1.4 Đối tượng và phạm vi nghiên cứu
+
+Để đảm bảo tính khả thi và mức độ hoàn thiện chuyên sâu trong khuôn khổ một đồ án tốt nghiệp, đề tài được giới hạn và phân rã rõ theo các phương diện sau:
+
+### 1.4.1 Đối tượng hướng đến
+Hệ thống phục vụ đa dạng các tệp người dùng, bao gồm:
+- **Người dùng cá nhân:** Những người có nhu cầu chơi thể thao, theo dõi sức khoẻ, mong muốn tìm kiếm một lịch trình phù hợp, kết bạn hoặc tham gia các lời mời thử thách.
+- **Người khởi xướng sự kiện (Event Creators/KOLs):** Các hội nhóm thể thao, huấn luyện viên, những nhà hoạt động cộng đồng muốn tổ chức các chiến dịch sức khoẻ, phong trào nội bộ hoặc các cuộc thi marathon trực tuyến.
+- **Quản trị viên (System Admin):** Đội ngũ vận hành hệ thống quản lý dữ liệu Master, theo dõi Analytics biểu đồ, thực thi kiểm duyệt nội dung và kiểm soát các chỉ số tăng trưởng của nền tảng.
+
+### 1.4.2 Phạm vi chức năng
+Đồ án tập trung phát triển một hệ thống toàn diện phân rã thành 9 nhóm tính năng dành cho người dùng và 1 phân hệ quản trị (Admin), cụ thể:
+
+**Các nhóm tính năng chính:**
+1. **Cộng đồng:** Xây dựng không gian giao lưu, tương tác mạng xã hội, chia sẻ bài viết, tìm hiểu sự kiện và thử thách. Tích hợp AI tự động kiểm duyệt và nhận diện hình ảnh/nội dung không hợp lệ.
+2. **Sự kiện thể thao:** Nơi người dùng tạo hoặc tham gia các sự kiện để hoàn thành mục tiêu tập thể. Bao gồm:
+   - *Sự kiện ngoài trời:* Hỗ trợ ghi nhận tiến độ bằng GPS hoặc kết nối đồng bộ trực tiếp với Strava. Người dùng có thể tham gia sự kiện hoàn thành mục tiêu chung của sự kiện cùng mọi người.
+   - *Sự kiện trong nhà:* Kết nối thành viên trực tuyến định dạng Video Call có trợ lực AI nhằm nhận diện và tính toán thời gian vận động thực tế để quy đổi thành tiến độ.
+3. **Thử thách:** Nền tảng tự rèn luyện cá nhân, nơi người dùng có thể tự tạo hoặc mời bạn bè cùng tham gia. Khác với chức năng sự kiện (tập trung vào mục tiêu tập thể), thử thách đề cao tiến độ bền bỉ mỗi ngày của từng cá nhân. Gồm 3 phân loại:
+   - *Ăn uống:* Check-in hình ảnh bữa ăn mỗi ngày, hệ thống sử dụng module AI Verification đối chiếu hình ảnh để xác thực tính hợp lệ so với yêu cầu đề ra.
+   - *Ngoài trời:* Ghi lại tiến độ chạy bộ, đạp xe... để tiến gần đến mục tiêu cá nhân hằng ngày.
+   - *Thể dục (Gym):* Báo cáo tiến độ hoàn thành các bài tập giúp rèn luyện sức khỏe bản thân.
+
+**Các tính năng bổ trợ quan trọng:**
+4. **Bạn bè:** Quản lý danh sách mạng lưới kết bạn, tăng tính gắn kết trong hệ sinh thái.
+5. **Tập luyện:** Hệ thống cho phép người dùng tự thiết lập bộ bài tập dựa trên cấu hình tùy chỉnh (thiết bị, nhóm cơ), hoặc nhờ AI cá nhân hóa và gợi ý lộ trình tập. Cung cấp khả năng lưu trữ thành bài tập theo lịch trình dài hạn hoặc các hoạt động ngoài trời độc lập.
+6. **Công cụ tính toán (Calculators):** Bộ công cụ tính các chỉ số sức khỏe sinh học (BMI, BMR, TDEE...), quản lý và hiển thị biểu đồ lịch sử biến động. Dựa vào ngân hàng dữ liệu này, AI Insight sẽ tư vấn sức khỏe dựa trên các số đo thực tế và tiến cử phân loại bài tập phù hợp.
+7. **Lịch cá nhân (Calendar):** Giao diện lịch biểu hợp nhất, giúp người dùng trực quan hóa lịch trình chéo giữa: Thử thách, Sự kiện thể thao tham gia và Thời khóa biểu các bài tập.
+8. **Quản lý thông tin cá nhân:** Module Authentication, quản lý hồ sơ và các cài đặt tùy biến định danh người dùng.
+9. **Thông báo:** Kênh Notification theo thời gian thực (Real-time).
+
+**Phân hệ Quản trị (Admin Panel):**
+10. **Quản trị hệ thống:** Giao diện dành cho đội ngũ vận hành.
+    - Cung cấp không gian Dashboard trực quan chuyên sâu với các biểu đồ thống kê đa chiều về tình trạng hệ thống.
+    - Công cụ quản lý, trích xuất dữ liệu, kiểm duyệt vi phạm (Báo cáo nội dung xấu), ban hành danh mục đối tượng (Người dùng, Sự kiện, Bài viết, Đề mục thể thao, Tập hợp trang thiết bị thiết yếu, Bài tập căn bản và Thử thách cộng đồng).
+
+### 1.4.3 Phạm vi kỹ thuật
+Kiến trúc hệ thống được xây dựng trên Tech-stack hiện đại, tuân thủ các quy tắc Design Pattern nghiêm ngặt do yêu cầu về tốc độ và chi phí tính toán:
+- **Ngôn ngữ và Frontend (Client-side):** Kiến trúc Single Page Application (SPA) phát triển trên nền tảng ReactJS (sử dụng Vite bundler), tối ưu giao diện Component bằng TailwindCSS. Cấu trúc chuyên biệt tách biệt Frontend của Người dùng và Frontend của Quản trị viên.
+- **Backend (API Server):** Môi trường Node.js kết hợp TypeScript đảm bảo nguyên tắc Type-Safe mạnh mẽ, triển khai qua Express Framework theo kiến trúc RESTful chuẩn mực kết hợp mô hình lớp Controller - Service - Repository.
+- **Cơ sở dữ liệu (Database):** Cấu trúc lõi NoSQL (MongoDB) giải quyết hoàn hảo bài toán lưu trữ luồng dữ liệu Schema-less dạng Feed và mạng lưới quan hệ lỏng lẻo của Social Network.
+- **Streaming & Công nghệ phụ trợ:** Giao thức WebSockets (Socket.IO) đảm nhận tín hiệu và thông báo thời gian thực; tích hợp API OpenAI cho module đánh giá ngôn ngữ và thị giác.
+
+## 1.5 Phương pháp nghiên cứu và thực hiện
+
+Quy trình thực hiện đồ án tuân thủ theo chuẩn phát triển phần mềm Agile thông qua các bước tiếp cận khoa học:
+1. **Nghiên cứu tài liệu và Lý thuyết (Research):** Thu thập các tài liệu học thuật về thiết kế hệ thống có tính tương tác mạng lưới cao (Network Effect), tìm hiểu và đánh giá các thuật toán nhận diện ảnh và luồng hình ảnh thời gian thực, kỹ thuật tinh chỉnh Prompt Engineering.
+2. **Khảo sát và Phân tích Yêu cầu (Requirement Analysis):** Mô hình hoá các đối tượng (User Personas) từ trải nghiệm thực tế. Rút ra các tập giá trị sử dụng và chuyển hoá chúng thành sơ đồ đặc tả Use-case cụ thể.
+3. **Phân tích và Khảo sát kiến trúc (System Design):** Sử dụng các ngôn ngữ mô hình hóa UML để vẽ sơ đồ cơ sở dữ liệu (ERD), sơ đồ đối tượng, hoạt động (Activity / Sequence diagrams) cho luồng đồng bộ GPS hay Video kết hợp AI. Phác thảo giao diện thân thiện, tuân thủ UI/UX guidelines cho mobile/web.
+4. **Cài đặt và Hiện thực hóa (Implementation):** Dựa trên chia nhỏ quy trình theo các Sprint. Phát triển và ánh xạ toàn bộ Logic nghiệp vụ phức tạp xuống các API độc lập tại lớp Backend.
+5. **Kiểm thử và Đánh giá (Testing & Evaluation):** Thực hiện kiểm định quy trình khép kín: từ Unit Test API, kiểm tra tích hợp các dịch vụ bên thứ ba (Strava, AI) kiểm thử UAT (User Acceptance Testing) đảm bảo độ ổn định và bảo mật (Rate Limiting, Helmet).
+
+## 1.6 Bố cục của báo cáo
+
+Nội dung cuốn đồ án được tổ chức một cách hệ thống và logic, bao gồm 8 chương cụ thể như sau:
+- **Chương 1: Giới thiệu đề tài.** Trình bày bối cảnh, lý do chọn đề tài, xác định mục tiêu, đối tượng, phạm vi nghiên cứu và phương pháp thực hiện.
+- **Chương 2: Khảo sát hệ thống liên quan.** Đánh giá và phân tích ưu khuyết điểm của các nền tảng mạng xã hội thể thao hiện có trên thị trường, từ đó so sánh và rút ra định hướng thiết kế cốt lõi cho hệ thống FedACN.
+- **Chương 3: Phân tích và đặc tả yêu cầu hệ thống.** Phân tích bài toán thực tế, xác định các tác nhân (Actors), lập danh sách các yêu cầu chức năng, phi chức năng và xây dựng biểu đồ Use-case bao quát hoạt động.
+- **Chương 4: Thiết kế kiến trúc hệ thống.** Cung cấp cái nhìn chuyên sâu về kiến trúc tổng thể, mô hình cơ sở dữ liệu (ERD), thiết kế giao diện (UI/UX) và luồng xử lý dữ liệu qua Activity/Sequence Diagram.
+- **Chương 5: Tìm hiểu công nghệ.** Trình bày cơ sở lý thuyết và kỹ thuật áp dụng (Vite/React, Node.js/Express, MongoDB, WebSockets, lý thuyết tích hợp AI và Computer Vision).
+- **Chương 6: Hiện thực hệ thống.** Cụ thể hóa quá trình lập trình thực tế, minh họa cách các phân hệ đi vào hoạt động, những khó khăn thiết kế và giao diện người dùng.
+- **Chương 7: Kiểm thử hệ thống.** Trình bày chiến lược kiểm thử, tích hợp các kịch bản test (Test cases) nhằm đảm bảo tính đúng đắn, an toàn và hiệu năng thực tế của nền tảng.
+- **Chương 8: Tổng kết.** Lập báo cáo kết quả đạt được đối chiếu với mục tiêu đặt ra, tổng kết những khuyết điểm còn tồn đọng và định hướng mở rộng hệ thống trong tương lai.

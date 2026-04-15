@@ -58,3 +58,15 @@ export const getNutritionTrendController = async (req: Request, res: Response) =
     result
   })
 }
+
+export const getTrainingSummaryController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+  const range = typeof req.query.range === 'string' ? req.query.range : 'all'
+  const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : undefined
+  const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : undefined
+  const result = await personalDashboardService.getTrainingSummary(user.user_id, range, startDate, endDate)
+  return res.json({
+    message: 'Get training summary successfully',
+    result
+  })
+}

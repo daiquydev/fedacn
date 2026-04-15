@@ -5,6 +5,17 @@ export const getReportPost = (params) => http.get('/inspectors/post-reports', { 
 export const getReportPostDetail = (id) => http.get(`/inspectors/post-reports/${id}`)
 export const acceptReportPost = (id) => http.put(`/inspectors/post-accept/${id}`)
 export const rejectReportPost = (id, body) => http.put(`/inspectors/post-reject/${id}`, body)
+
+export const getSportEventReports = (params) => http.get('/inspectors/sport-event-reports', { params })
+export const getDeletedSportEvents = (params) => http.get('/inspectors/deleted-sport-events', { params })
+export const acceptSportEventReport = (id) => http.put(`/inspectors/sport-event-accept/${id}`)
+export const rejectSportEventReport = (id, body) => http.put(`/inspectors/sport-event-reject/${id}`, body)
+export const restoreSportEvent = (id) => http.put(`/inspectors/restore-sport-event/${id}`)
+export const getChallengeReports = (params) => http.get('/inspectors/challenge-reports', { params })
+export const getDeletedChallenges = (params) => http.get('/inspectors/deleted-challenges', { params })
+export const acceptChallengeReport = (id) => http.put(`/inspectors/challenge-accept/${id}`)
+export const rejectChallengeReport = (id, body) => http.put(`/inspectors/challenge-reject/${id}`, body)
+export const restoreChallenge = (id) => http.put(`/inspectors/restore-challenge/${id}`)
 export const getDeletedPosts = (params) => http.get('/inspectors/deleted-posts', { params })
 export const restorePost = (id) => http.put(`/inspectors/restore-post/${id}`)
 

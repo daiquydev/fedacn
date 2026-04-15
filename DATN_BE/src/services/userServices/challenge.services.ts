@@ -7,10 +7,72 @@ import NotificationModel from '~/models/schemas/notification.schema'
 import FollowModel from '~/models/schemas/follow.schema'
 import PostModel from '~/models/schemas/post.schema'
 import { NotificationTypes } from '~/constants/enums'
+import { CHALLENGE_MESSAGE } from '~/constants/messages'
 import { ErrorWithStatus } from '~/utils/error'
 import HTTP_STATUS from '~/constants/httpStatus'
 
 class ChallengeService {
+    private async cleanupChallengePostMarkers(challengeId: string) {
+        const markerRegex = `\\[challenge:${challengeId}\\]|\\[challenge-activity:[a-f0-9]{24}:${challengeId}\\]|\\[challenge-progress:[a-f0-9]{24}:${challengeId}\\]`
+        try {
+            const postsWithMarker = await PostModel.find({ content: { $regex: markerRegex, $options: 'i' } })
+            for (const post of postsWithMarker) {
+                post.content = (post.content || '')
+                    .replace(new RegExp(`\\n?\\[challenge:${challengeId}\\]`, 'gi'), '')
+                    .replace(new RegExp(`\\n?\\[challenge-activity:[a-f0-9]{24}:${challengeId}\\]`, 'gi'), '')
+                    .replace(new RegExp(`\\n?\\[challenge-progress:[a-f0-9]{24}:${challengeId}\\]`, 'gi'), '')
+                    .trim()
+                await post.save()
+            }
+        } catch (err) {
+            console.error('Failed to clean post markers for challenge:', challengeId, err)
+        }
+    }
+
+    /**
+     * Tìm theo tiêu đề/mô tả: mỗi từ trong chuỗi đều phải xuất hiện (AND).
+     * Tránh MongoDB $text (mặc định OR giữa các từ) khiến một từ trùng vẫn trả về kết quả không liên quan.
+     */
+    private buildChallengeTitleDescriptionSearchCondition(search?: string): Record<string, unknown> | null {
+        const trimmed = typeof search === 'string' ? search.trim() : ''
+        if (!trimmed) return null
+        const words = trimmed.split(/\s+/).filter(Boolean)
+        const perWord = words.map((word) => {
+            const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            return {
+                $or: [{ title: { $regex: escaped, $options: 'i' } }, { description: { $regex: escaped, $options: 'i' } }]
+            }
+        })
+        if (perWord.length === 1) return perWord[0] as Record<string, unknown>
+        return { $and: perWord }
+    }
+
+    /** Đếm participant thực tế (bảng challenge_participants, không tính đã rời). */
+    private async getActiveParticipantCountsMap(challengeIds: Types.ObjectId[]): Promise<Map<string, number>> {
+        if (!challengeIds.length) return new Map()
+        const rows = await ChallengeParticipantModel.aggregate([
+            { $match: { challenge_id: { $in: challengeIds }, status: { $ne: 'quit' } } },
+            { $group: { _id: '$challenge_id', n: { $sum: 1 } } }
+        ])
+        return new Map(rows.map((r) => [r._id.toString(), r.n]))
+    }
+
+    /**
+     * Chuẩn hóa participants_count trên document challenges theo collection (sửa lệch dữ liệu cũ / seed).
+     * Trả về số đã đếm để gắn vào API response.
+     */
+    private async reconcileStoredParticipantsCount(challengeId: string): Promise<number> {
+        const actual = await ChallengeParticipantModel.countDocuments({
+            challenge_id: new Types.ObjectId(challengeId),
+            status: { $ne: 'quit' }
+        })
+        await ChallengeModel.updateOne(
+            { _id: new Types.ObjectId(challengeId), participants_count: { $ne: actual } },
+            { $set: { participants_count: actual } }
+        )
+        return actual
+    }
+
     // ==================== CRUD ====================
 
     async createChallenge({
@@ -122,8 +184,8 @@ class ChallengeService {
 
         await challenge.save()
 
-        // Auto-join the creator
-        await this.joinChallenge(challenge._id.toString(), creator_id)
+        // Auto-join người tạo (bỏ qua check hạn — tránh lệch timezone khi end_date là 00:00 UTC trong cùng ngày)
+        await this.addChallengeParticipantInternal(challenge._id.toString(), creator_id, { skipExpiryCheck: true })
 
         return challenge
     }
@@ -145,7 +207,10 @@ class ChallengeService {
     }) {
         const condition: any = { status: 'active', is_public: true, is_deleted: { $ne: true } }
 
-        if (search) condition.$text = { $search: search }
+        const searchCond = this.buildChallengeTitleDescriptionSearchCondition(search)
+        if (searchCond) {
+            condition.$and = [...(condition.$and || []), searchCond]
+        }
         if (challenge_type && challenge_type !== 'all') condition.challenge_type = challenge_type
         if (difficulty && difficulty !== 'all') condition.difficulty = difficulty
 
@@ -162,6 +227,16 @@ class ChallengeService {
 
         let resultChallenges = challenges.map((c) => c.toObject())
 
+        await Promise.all(
+            resultChallenges.map((c: any) => this.ensureCreatorIsParticipant(c._id.toString()))
+        )
+
+        const listCountMap = await this.getActiveParticipantCountsMap(challenges.map((c) => c._id as Types.ObjectId))
+        resultChallenges = resultChallenges.map((c: any) => ({
+            ...c,
+            participants_count: listCountMap.get(c._id.toString()) ?? 0
+        }))
+
         if (userId) {
             const participations = await ChallengeParticipantModel.find({
                 user_id: new Types.ObjectId(userId),
@@ -173,9 +248,10 @@ class ChallengeService {
                 joinedMap.set(p.challenge_id.toString(), p.toObject())
             })
 
+            const uid = String(userId)
             resultChallenges = resultChallenges.map((c: any) => ({
                 ...c,
-                isJoined: joinedMap.has(c._id.toString()),
+                isJoined: joinedMap.has(c._id.toString()) || this.feedChallengeCreatorId(c) === uid,
                 myProgress: joinedMap.get(c._id.toString()) || null
             }))
         }
@@ -184,11 +260,26 @@ class ChallengeService {
     }
 
     async getChallenge(challengeId: string, userId?: string) {
-        const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
-            .populate('creator_id', 'name avatar email')
-        if (!challenge) throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+        const challenge = await ChallengeModel.findById(challengeId).populate('creator_id', 'name avatar email')
+        if (!challenge) {
+            throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+        }
+        if (challenge.is_deleted) {
+            if (challenge.deleted_from_report_moderation) {
+                throw new ErrorWithStatus({
+                    message: 'Thử thách đã bị gỡ do vi phạm nội dung',
+                    status: HTTP_STATUS.GONE
+                })
+            }
+            throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+        }
+
+        await this.assertUserCanViewChallenge(challenge, userId)
+
+        await this.ensureCreatorIsParticipant(challengeId)
 
         const result: any = challenge.toObject()
+        result.participants_count = await this.reconcileStoredParticipantsCount(challengeId)
 
         // Calculate time remaining
         const now = new Date()
@@ -198,15 +289,21 @@ class ChallengeService {
         result.is_expired = now > endDate
 
         if (userId) {
+            const creatorIdStr = (() => {
+                const c = challenge.creator_id as unknown as { _id?: Types.ObjectId } | Types.ObjectId
+                if (c && typeof c === 'object' && '_id' in c && c._id) return c._id.toString()
+                return (c as Types.ObjectId).toString()
+            })()
+
             const participation = await ChallengeParticipantModel.findOne({
                 challenge_id: new Types.ObjectId(challengeId),
                 user_id: new Types.ObjectId(userId),
                 status: { $ne: 'quit' }
             })
-            result.isJoined = !!participation
+
+            result.isJoined = !!participation || userId === creatorIdStr
             result.participation = participation ? participation.toObject() : null
 
-            // Kiểm tra xem user đã từng tham gia rồi bỏ chưa
             if (!participation) {
                 const quitParticipation = await ChallengeParticipantModel.findOne({
                     challenge_id: new Types.ObjectId(challengeId),
@@ -260,46 +357,132 @@ class ChallengeService {
 
         challenge.status = 'cancelled'
         challenge.is_deleted = true
+        challenge.deleted_from_report_moderation = false
+        challenge.deleted_at = new Date()
         await challenge.save()
 
-        // Clean up all post markers referencing this challenge
-        // Markers: [challenge:ID], [challenge-activity:*:ID], [challenge-progress:*:ID]
-        const markerRegex = `\\[challenge:${challengeId}\\]|\\[challenge-activity:[a-f0-9]{24}:${challengeId}\\]|\\[challenge-progress:[a-f0-9]{24}:${challengeId}\\]`
-        try {
-            const postsWithMarker = await PostModel.find({ content: { $regex: markerRegex, $options: 'i' } })
-            for (const post of postsWithMarker) {
-                post.content = (post.content || '')
-                    .replace(new RegExp(`\\n?\\[challenge:${challengeId}\\]`, 'gi'), '')
-                    .replace(new RegExp(`\\n?\\[challenge-activity:[a-f0-9]{24}:${challengeId}\\]`, 'gi'), '')
-                    .replace(new RegExp(`\\n?\\[challenge-progress:[a-f0-9]{24}:${challengeId}\\]`, 'gi'), '')
-                    .trim()
-                await post.save()
-            }
-        } catch (err) {
-            // Non-critical: don't break delete if cleanup fails
-            console.error('Failed to clean post markers for challenge:', challengeId, err)
-        }
+        await this.cleanupChallengePostMarkers(challengeId)
 
         return challenge
     }
 
+    /** Gỡ thử thách khi kiểm duyệt từ chối báo cáo (không kiểm tra quyền người tạo) */
+    async softDeleteChallengeFromModeration(challengeId: string) {
+        const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+
+        challenge.status = 'cancelled'
+        challenge.is_deleted = true
+        challenge.deleted_from_report_moderation = true
+        challenge.deleted_at = new Date()
+        await challenge.save()
+
+        await this.cleanupChallengePostMarkers(challengeId)
+
+        return challenge
+    }
+
+    async createReportChallengeService({
+        challenge_id,
+        user_id,
+        reason
+    }: {
+        challenge_id: string
+        user_id: string
+        reason: string
+    }) {
+        const existingReport = await ChallengeModel.findOne({
+            _id: challenge_id,
+            'report_challenge.user_id': user_id
+        })
+        if (existingReport) {
+            throw new ErrorWithStatus({
+                message: CHALLENGE_MESSAGE.REPORTED_CHALLENGE,
+                status: HTTP_STATUS.BAD_REQUEST
+            })
+        }
+
+        const updated = await ChallengeModel.findOneAndUpdate(
+            { _id: challenge_id, is_deleted: { $ne: true } },
+            {
+                $push: {
+                    report_challenge: {
+                        user_id,
+                        reason: reason || ''
+                    }
+                }
+            },
+            { new: true }
+        ).populate('creator_id', 'name avatar')
+
+        if (!updated) {
+            throw new ErrorWithStatus({
+                message: CHALLENGE_MESSAGE.CHALLENGE_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+            })
+        }
+
+        const creatorId =
+            (updated.creator_id as any)?._id?.toString?.() || (updated as any).creator_id?.toString?.()
+        if (creatorId && creatorId !== user_id) {
+            await NotificationModel.create({
+                receiver_id: creatorId,
+                content: 'Thử thách của bạn đã bị báo cáo vi phạm',
+                name_notification: reason || 'Vi phạm',
+                link_id: challenge_id,
+                type: NotificationTypes.reportChallenge
+            })
+        }
+
+        return updated
+    }
+
     // ==================== PARTICIPATION ====================
 
-    async joinChallenge(challengeId: string, userId: string) {
+    /**
+     * Thêm participant; skipExpiryCheck dùng cho auto-join người tạo (giống sự kiện: creator luôn trong danh sách).
+     */
+    private async addChallengeParticipantInternal(
+        challengeId: string,
+        userId: string,
+        options: { skipExpiryCheck?: boolean } = {}
+    ) {
         const challenge = await ChallengeModel.findById(challengeId)
         if (!challenge) throw new Error('Thử thách không tồn tại')
         if (challenge.status !== 'active') throw new Error('Thử thách đã kết thúc')
 
-        if (new Date() > new Date(challenge.end_date)) {
+        if (!options.skipExpiryCheck && new Date() > new Date(challenge.end_date)) {
             throw new Error('Thử thách đã hết hạn')
         }
 
-        const existing = await ChallengeParticipantModel.findOne({
+        let existing = await ChallengeParticipantModel.findOne({
             challenge_id: new Types.ObjectId(challengeId),
-            user_id: new Types.ObjectId(userId),
-            status: { $ne: 'quit' }
+            user_id: new Types.ObjectId(userId)
         })
-        if (existing) throw new Error('Bạn đã tham gia thử thách này rồi')
+
+        if (existing) {
+            if (existing.status !== 'quit') {
+                return existing
+            }
+            // User had quit previously, let them rejoin
+            existing.status = 'in_progress'
+            existing.current_value = 0
+            existing.goal_value = challenge.goal_value
+            existing.is_completed = false
+            existing.completed_at = null
+            existing.last_activity_at = null
+            existing.active_days = []
+            existing.completed_days = []
+            existing.streak_count = 0
+            existing.joined_at = new Date()
+
+            await existing.save()
+
+            challenge.participants_count += 1
+            await challenge.save()
+
+            return existing
+        }
 
         const participant = new ChallengeParticipantModel({
             challenge_id: new Types.ObjectId(challengeId),
@@ -310,6 +493,7 @@ class ChallengeService {
             completed_at: null,
             last_activity_at: null,
             active_days: [],
+            completed_days: [],
             streak_count: 0,
             status: 'in_progress'
         })
@@ -321,7 +505,202 @@ class ChallengeService {
         return participant
     }
 
+    /** Hai user là bạn bè (theo dõi lẫn nhau) trong collection follows */
+    private async areUsersMutualFriends(userId: string, otherUserId: string): Promise<boolean> {
+        if (!userId || !otherUserId) return false
+        if (userId === otherUserId) return true
+        const [a, b] = await Promise.all([
+            FollowModel.findOne({
+                user_id: new Types.ObjectId(userId),
+                follow_id: new Types.ObjectId(otherUserId)
+            })
+                .select('_id')
+                .lean(),
+            FollowModel.findOne({
+                user_id: new Types.ObjectId(otherUserId),
+                follow_id: new Types.ObjectId(userId)
+            })
+                .select('_id')
+                .lean()
+        ])
+        return !!(a && b)
+    }
+
+    /**
+     * "Chỉ mình tôi": không cho người khác tham gia qua link (chỉ người tạo, đã auto-tham gia).
+     * "Bạn bè": chỉ mutual friends với người tạo mới được tham gia.
+     */
+    private async assertUserMayJoinChallenge(
+        challenge: { creator_id: Types.ObjectId; visibility?: string },
+        userId: string
+    ): Promise<void> {
+        const creatorId = challenge.creator_id.toString()
+        if (userId === creatorId) return
+
+        const visibility = challenge.visibility || 'public'
+        if (visibility === 'public') return
+
+        if (visibility === 'private') {
+            throw new ErrorWithStatus({
+                message:
+                    'Thử thách ở chế độ chỉ mình tôi — không mở tham gia qua liên kết công khai.',
+                status: HTTP_STATUS.FORBIDDEN
+            })
+        }
+
+        if (visibility === 'friends') {
+            const ok = await this.areUsersMutualFriends(userId, creatorId)
+            if (!ok) {
+                throw new ErrorWithStatus({
+                    message: 'Chỉ bạn bè của người tạo mới có thể tham gia thử thách này.',
+                    status: HTTP_STATUS.FORBIDDEN
+                })
+            }
+        }
+    }
+
+    private async assertUserCanViewChallenge(challenge: any, userId?: string): Promise<void> {
+        const visibility = challenge.visibility || 'public'
+        if (visibility === 'public') return
+
+        const creatorId = (() => {
+            const c = challenge.creator_id as unknown as { _id?: Types.ObjectId } | Types.ObjectId
+            if (c && typeof c === 'object' && '_id' in c && c._id) return c._id.toString()
+            return (c as Types.ObjectId).toString()
+        })()
+
+        if (userId && userId === creatorId) return
+
+        if (userId) {
+            const participation = await ChallengeParticipantModel.findOne({
+                challenge_id: challenge._id,
+                user_id: new Types.ObjectId(userId),
+                status: { $ne: 'quit' }
+            })
+                .select('_id')
+                .lean()
+            if (participation) return
+        }
+
+        if (visibility === 'private') {
+            throw new ErrorWithStatus({
+                message: 'Thử thách này ở chế độ chỉ mình tôi, không hiển thị cho người khác.',
+                status: HTTP_STATUS.FORBIDDEN
+            })
+        }
+
+        if (visibility === 'friends') {
+            if (!userId) {
+                throw new ErrorWithStatus({
+                    message: 'Bạn cần đăng nhập để xem thử thách dành cho bạn bè.',
+                    status: HTTP_STATUS.FORBIDDEN
+                })
+            }
+            const ok = await this.areUsersMutualFriends(userId, creatorId)
+            if (!ok) {
+                throw new ErrorWithStatus({
+                    message: 'Chỉ bạn bè của người tạo mới có thể xem thử thách này.',
+                    status: HTTP_STATUS.FORBIDDEN
+                })
+            }
+        }
+    }
+
+    async joinChallenge(challengeId: string, userId: string) {
+        const challenge = await ChallengeModel.findOne({
+            _id: new Types.ObjectId(challengeId),
+            is_deleted: { $ne: true }
+        })
+        if (!challenge) {
+            throw new ErrorWithStatus({
+                message: 'Thử thách không tồn tại',
+                status: HTTP_STATUS.NOT_FOUND
+            })
+        }
+        if (challenge.status !== 'active') {
+            throw new ErrorWithStatus({
+                message: 'Thử thách đã kết thúc',
+                status: HTTP_STATUS.BAD_REQUEST
+            })
+        }
+
+        await this.assertUserMayJoinChallenge(challenge, userId)
+
+        const existing = await ChallengeParticipantModel.findOne({
+            challenge_id: new Types.ObjectId(challengeId),
+            user_id: new Types.ObjectId(userId),
+            status: { $ne: 'quit' }
+        })
+        if (existing) throw new Error('Bạn đã tham gia thử thách này rồi')
+
+        return this.addChallengeParticipantInternal(challengeId, userId, { skipExpiryCheck: false })
+    }
+
+    /**
+     * Giống sự kiện (creator nằm trong participants_ids): người tạo luôn có bản ghi participant nếu chưa có.
+     */
+    private async ensureCreatorIsParticipant(challengeId: string): Promise<void> {
+        const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
+            .select('creator_id status')
+            .lean()
+        if (!challenge || challenge.status !== 'active') return
+
+        const creatorId = challenge.creator_id.toString()
+        const anyRow = await ChallengeParticipantModel.findOne({
+            challenge_id: new Types.ObjectId(challengeId),
+            user_id: new Types.ObjectId(creatorId)
+        })
+            .select('_id')
+            .lean()
+
+        if (anyRow) return
+
+        try {
+            await this.addChallengeParticipantInternal(challengeId, creatorId, { skipExpiryCheck: true })
+        } catch (e) {
+            console.warn('[challenge] ensureCreatorIsParticipant', challengeId, e)
+        }
+    }
+
+    /**
+     * Đồng bộ participant cho người tạo trước khi đếm (admin list, báo cáo).
+     * Khớp với getParticipants / getLeaderboard — tránh lệch 0 trên bảng nhưng có 1 dòng trong tab thành viên.
+     */
+    async syncCreatorParticipantsForChallenges(challengeIds: Array<Types.ObjectId | string>): Promise<void> {
+        if (!challengeIds.length) return
+        await Promise.all(
+            challengeIds.map((id) => this.ensureCreatorIsParticipant(typeof id === 'string' ? id : id.toString()))
+        )
+    }
+
+    /** creator_id sau feed có thể là ObjectId hoặc object user đã lookup/populate */
+    private feedChallengeCreatorId(c: any): string {
+        const cr = c?.creator_id
+        if (!cr) return ''
+        if (typeof cr === 'object' && cr._id) return cr._id.toString()
+        return cr.toString()
+    }
+
+    private mergeCreatorIntoParticipantsPreview(c: any, preview: any[]): any[] {
+        const cr = c?.creator_id
+        if (!cr || typeof cr !== 'object' || !cr._id) return preview
+        const idStr = cr._id.toString()
+        const exists = preview.some((u: any) => {
+            const uid = u?._id ?? u
+            return uid && uid.toString() === idStr
+        })
+        if (exists) return preview
+        return [{ _id: cr._id, name: cr.name, avatar: cr.avatar }, ...preview].slice(0, 5)
+    }
+
     async quitChallenge(challengeId: string, userId: string) {
+        const challenge = await ChallengeModel.findById(challengeId)
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+        
+        if (challenge.creator_id.toString() === userId) {
+            throw new Error('Người tạo không thể rời thử thách')
+        }
+
         const participant = await ChallengeParticipantModel.findOne({
             challenge_id: new Types.ObjectId(challengeId),
             user_id: new Types.ObjectId(userId),
@@ -332,7 +711,8 @@ class ChallengeService {
         participant.status = 'quit'
         await participant.save()
 
-        await ChallengeModel.findByIdAndUpdate(challengeId, { $inc: { participants_count: -1 } })
+        challenge.participants_count -= 1
+        await challenge.save()
 
         return participant
     }
@@ -691,6 +1071,8 @@ class ChallengeService {
         const challenge = await ChallengeModel.findById(challengeId)
         if (!challenge) throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
 
+        await this.ensureCreatorIsParticipant(challengeId)
+
         // Total required days for this challenge
         const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
         const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
@@ -738,11 +1120,13 @@ class ChallengeService {
         const challenge = await ChallengeModel.findById(challengeId)
         if (!challenge) throw new Error('Thử thách không tồn tại')
 
+        await this.ensureCreatorIsParticipant(challengeId)
+
         const participants = await ChallengeParticipantModel.find({
             challenge_id: new Types.ObjectId(challengeId),
             status: { $ne: 'quit' }
         })
-            .populate('user_id', 'name avatar')
+            .populate('user_id', 'name avatar email')
             .sort({ current_value: -1, joined_at: 1 })
 
         // Total required days for this challenge
@@ -976,7 +1360,8 @@ class ChallengeService {
         sortBy,
         status,
         dateFrom,
-        dateTo
+        dateTo,
+        visibility
     }: {
         scope?: 'public' | 'friends' | 'mine'
         userId?: string
@@ -989,6 +1374,7 @@ class ChallengeService {
         status?: string
         dateFrom?: string
         dateTo?: string
+        visibility?: string
     }) {
         const skip = (page - 1) * limit
         let challengeIds: Types.ObjectId[] | null = null
@@ -1062,13 +1448,26 @@ class ChallengeService {
         if (category && category !== 'all') condition.category = category
 
         if (scope === 'public') {
-            condition.is_public = true
+            // Công khai + bạn bè đều có is_public: true; riêng tư thì is_public: false.
+            // User đã đăng nhập vẫn cần thấy thử thách "chỉ mình tôi" do chính họ tạo (lọc FE theo visibility).
+            if (userId) {
+                condition.$or = [
+                    { is_public: true },
+                    { visibility: 'private', creator_id: new Types.ObjectId(userId as string) }
+                ]
+            } else {
+                condition.is_public = true
+            }
         } else if (challengeIds !== null) {
             condition._id = { $in: challengeIds }
         }
 
         if (challenge_type && challenge_type !== 'all') condition.challenge_type = challenge_type
-        if (search) condition.$text = { $search: search }
+        if (visibility && visibility !== 'all') condition.visibility = visibility
+        const searchCond = this.buildChallengeTitleDescriptionSearchCondition(search)
+        if (searchCond) {
+            condition.$and = [...(condition.$and || []), searchCond]
+        }
 
         const total = await ChallengeModel.countDocuments(condition)
         const totalPage = Math.ceil(total / limit) || 0
@@ -1098,7 +1497,9 @@ class ChallengeService {
                         }
                     }
                 },
-                { $sort: { statusOrder: 1, start_date: 1, _id: 1 } },
+                // Cùng logic “Phổ biến” như sự kiện: nhóm trạng thái (đang → sắp → hết),
+                // trong nhóm ưu tiên participants_count giảm dần rồi start_date tăng dần.
+                { $sort: { statusOrder: 1, participants_count: -1, start_date: 1, _id: 1 } },
                 { $skip: skip },
                 { $limit: limit },
                 {
@@ -1107,12 +1508,16 @@ class ChallengeService {
                         localField: 'creator_id',
                         foreignField: '_id',
                         as: '_creatorArr',
-                        pipeline: [{ $project: { name: 1, avatar: 1 } }]
+                        pipeline: [{ $project: { name: 1, avatar: 1, email: 1 } }]
                     }
                 },
                 { $addFields: { creator_id: { $arrayElemAt: ['$_creatorArr', 0] } } },
                 { $project: { _creatorArr: 0, statusOrder: 0 } }
             ])
+
+            await Promise.all(
+                rawChallenges.map((c: any) => this.ensureCreatorIsParticipant(c._id.toString()))
+            )
 
             let resultChallenges: any[] = rawChallenges
 
@@ -1131,9 +1536,10 @@ class ChallengeService {
                     joinedMap.set(p.challenge_id.toString(), p.toObject ? p.toObject() : p)
                 })
 
+                const uid = String(userId)
                 resultChallenges = resultChallenges.map((c: any) => ({
                     ...c,
-                    isJoined: joinedMap.has(c._id.toString()),
+                    isJoined: joinedMap.has(c._id.toString()) || this.feedChallengeCreatorId(c) === uid,
                     myProgress: joinedMap.get(c._id.toString()) || null
                 }))
             }
@@ -1157,10 +1563,20 @@ class ChallengeService {
                     if (arr.length < 5) arr.push(p.user_id)
                 })
 
-                resultChallenges = resultChallenges.map((c: any) => ({
-                    ...c,
-                    participants_preview: previewMap.get(c._id.toString()) || []
-                }))
+                const participantCountMap = new Map<string, number>()
+                allParticipants.forEach((p: any) => {
+                    const cid = p.challenge_id.toString()
+                    participantCountMap.set(cid, (participantCountMap.get(cid) || 0) + 1)
+                })
+
+                resultChallenges = resultChallenges.map((c: any) => {
+                    const base = previewMap.get(c._id.toString()) || []
+                    return {
+                        ...c,
+                        participants_count: participantCountMap.get(c._id.toString()) ?? c.participants_count ?? 0,
+                        participants_preview: this.mergeCreatorIntoParticipantsPreview(c, base)
+                    }
+                })
             }
 
             return { challenges: resultChallenges, totalPage, page, limit, total }
@@ -1177,12 +1593,16 @@ class ChallengeService {
         }
 
         const challenges = await ChallengeModel.find(condition)
-            .populate('creator_id', 'name avatar')
+            .populate('creator_id', 'name avatar email')
             .skip(skip)
             .limit(limit)
             .sort(sortOption)
 
         let resultChallenges = challenges.map(c => c.toObject())
+
+        await Promise.all(
+            resultChallenges.map((c: any) => this.ensureCreatorIsParticipant(c._id.toString()))
+        )
 
         // Inject isJoined + myProgress for logged-in user
         if (userId) {
@@ -1199,9 +1619,10 @@ class ChallengeService {
                 joinedMap.set(p.challenge_id.toString(), p.toObject ? p.toObject() : p)
             })
 
+            const uid = String(userId)
             resultChallenges = resultChallenges.map((c: any) => ({
                 ...c,
-                isJoined: joinedMap.has(c._id.toString()),
+                isJoined: joinedMap.has(c._id.toString()) || this.feedChallengeCreatorId(c) === uid,
                 myProgress: joinedMap.get(c._id.toString()) || null
             }))
         }
@@ -1225,10 +1646,20 @@ class ChallengeService {
                 if (arr.length < 5) arr.push(p.user_id)
             })
 
-            resultChallenges = resultChallenges.map((c: any) => ({
-                ...c,
-                participants_preview: previewMap.get(c._id.toString()) || []
-            }))
+            const participantCountMap = new Map<string, number>()
+            allParticipants.forEach((p: any) => {
+                const cid = p.challenge_id.toString()
+                participantCountMap.set(cid, (participantCountMap.get(cid) || 0) + 1)
+            })
+
+            resultChallenges = resultChallenges.map((c: any) => {
+                const base = previewMap.get(c._id.toString()) || []
+                return {
+                    ...c,
+                    participants_count: participantCountMap.get(c._id.toString()) ?? c.participants_count ?? 0,
+                    participants_preview: this.mergeCreatorIntoParticipantsPreview(c, base)
+                }
+            })
         }
 
         return { challenges: resultChallenges, totalPage, page, limit, total }

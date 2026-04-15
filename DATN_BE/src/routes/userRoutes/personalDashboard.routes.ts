@@ -5,7 +5,8 @@ import {
   getTodayMealsController,
   getMealPlanHistoryController,
   getPersonalPostsStatsController,
-  getNutritionTrendController
+  getNutritionTrendController,
+  getTrainingSummaryController
 } from '~/controllers/userControllers/personalDashboard.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -62,5 +63,14 @@ personalDashboardRouter.get('/posts-stats', accessTokenValidator, wrapRequestHan
  * Query: { days?: number } - default 7
  */
 personalDashboardRouter.get('/nutrition-trend', accessTokenValidator, wrapRequestHandler(getNutritionTrendController))
+
+/**
+ * Description: Get training summary overview
+ * Path: /personal-dashboard/training-summary
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Query: { range?: string } - 'all', 'week', 'month', 'year'
+ */
+personalDashboardRouter.get('/training-summary', accessTokenValidator, wrapRequestHandler(getTrainingSummaryController))
 
 export default personalDashboardRouter

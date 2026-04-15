@@ -58,7 +58,7 @@ const parseTime = (timeStr) => {
 
 // ==================== CONSTANTS ====================
 const CHALLENGE_TYPES = [
-    { key: 'outdoor_activity', label: 'Hoạt động ngoài trời', icon: <FaRunning />, gradient: 'from-blue-500 to-cyan-600', desc: 'Chạy bộ, đạp xe, leo núi...' },
+    { key: 'outdoor_activity', label: 'Ngoài trời', icon: <FaRunning />, gradient: 'from-blue-500 to-cyan-600', desc: 'Chạy bộ, đạp xe, leo núi...' },
     { key: 'nutrition', label: 'Ăn uống', icon: <FaUtensils />, gradient: 'from-emerald-500 to-teal-600', desc: 'Ăn sạch, giảm cân, detox...' },
     { key: 'fitness', label: 'Thể dục', icon: <FaDumbbell />, gradient: 'from-purple-500 to-pink-600', desc: 'Workout, tập gym...' }
 ]
@@ -395,9 +395,14 @@ export default function CreateChallengeModal({ open, onClose }) {
             toast.success('🎉 Tạo thử thách thành công!')
             queryClient.invalidateQueries({ queryKey: ['challenges'] })
             queryClient.invalidateQueries({ queryKey: ['my-challenges'] })
+            queryClient.invalidateQueries({ queryKey: ['challenges-feed'] })
+            queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
             const id = res?.data?.result?._id
             onClose()
-            if (id) navigate(`/challenge/${id}`)
+            if (id) {
+                queryClient.invalidateQueries({ queryKey: ['challenge', id] })
+                navigate(`/challenge/${id}`)
+            }
         },
         onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi tạo thử thách')
     })

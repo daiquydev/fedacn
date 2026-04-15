@@ -218,7 +218,7 @@ export default function ActivityDetailModal({
             <div className='adm-map-section'>
               <div className='adm-map-label'>
                 <span className='adm-map-label-dot' />
-                Lộ trình GPS
+                Lộ trình đã ghi
               </div>
               <div className='adm-map-container'>
                 {hasRoute ? (

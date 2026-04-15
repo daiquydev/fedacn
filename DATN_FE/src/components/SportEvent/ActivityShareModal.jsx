@@ -429,11 +429,11 @@ function ActivityPreviewCardInModal({ activity, event, eventId, challengeId, dis
                 ))}
             </div>
 
-            {/* GPS Route Map */}
+            {/* Bản đồ lộ trình đã ghi */}
             <div className="mx-3 mb-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
                     <FaRoute className="text-blue-500" size={10} />
-                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Lộ trình GPS</span>
+                    <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Lộ trình đã ghi</span>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: '160px' }}>
                     {hasRoute ? (

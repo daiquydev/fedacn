@@ -135,7 +135,7 @@ export default function SideBar() {
         </NavLink>
       </li>
       <li>
-        <NavLink to={'/training'} end className='link-custom' onClick={() => isMobile && setOpen(false)}>
+        <NavLink to={'/training'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
           <FaDumbbell size={22} className='min-w-max' />
           Tập luyện
         </NavLink>
@@ -178,7 +178,7 @@ export default function SideBar() {
     return (
       <>
         <aside className='fixed top-14 left-0 bottom-0 w-60 bg-white dark:bg-color-primary-dark dark:text-gray-300 
-          shadow-sm dark:shadow-green-900/30 z-40 flex flex-col overflow-hidden'>
+          shadow-sm dark:shadow-green-900/30 z-[45] flex flex-col overflow-hidden'>
           <Logo />
           {navItems}
         </aside>

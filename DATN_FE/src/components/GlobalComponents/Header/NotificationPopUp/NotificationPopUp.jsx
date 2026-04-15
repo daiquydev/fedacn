@@ -15,7 +15,7 @@ import {
 } from '../../../../apis/notificationApi'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { cutString } from '../../../../utils/helper'
-import moment from 'moment'
+import { formatRelativeTimeVi } from '../../../../utils/formatRelativeTimeVi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import logo from '../../../../assets/images/logo.png'
 import { queryClient } from '../../../../main'
@@ -653,7 +653,7 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
 
         {/* Timestamp */}
         <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500 }}>
-          {moment(notification.createdAt).fromNow()}
+          {formatRelativeTimeVi(notification.createdAt)}
         </span>
       </div>
 

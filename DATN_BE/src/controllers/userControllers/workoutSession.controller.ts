@@ -71,7 +71,10 @@ export const getWorkoutHistoryController = async (req: Request, res: Response) =
         }
         const page = parseInt(req.query.page as string) || 1
         const limit = parseInt(req.query.limit as string) || 10
-        const result = await workoutSessionService.getHistory(userId, page, limit)
+        const range = typeof req.query.range === 'string' ? req.query.range : 'all'
+        const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : undefined
+        const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : undefined
+        const result = await workoutSessionService.getHistory(userId, page, limit, range, startDate, endDate)
         return res.json({
             result,
             message: 'Get workout history successfully'

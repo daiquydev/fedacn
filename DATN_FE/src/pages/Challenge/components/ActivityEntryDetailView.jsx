@@ -70,7 +70,7 @@ export default function ActivityEntryDetailView({ entry, challenge, onClose }) {
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Loại hoạt động</p>
                             <p className="text-base font-bold text-gray-800 dark:text-white">
-                                {challenge?.category || 'Hoạt động ngoài trời'}
+                                {challenge?.category || 'Ngoài trời'}
                             </p>
                         </div>
                     </div>

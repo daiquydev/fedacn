@@ -3,7 +3,7 @@ import adminSportEventService from '~/services/adminServices/adminSportEvent.ser
 
 export const adminGetAllSportEventsController = async (req: Request, res: Response) => {
     try {
-        const { page, limit, search, category, eventType, status, sortBy } = req.query
+        const { page, limit, search, category, eventType, status, sortBy, dateFrom, dateTo } = req.query
         const result = await adminSportEventService.getAllEventsAdmin({
             page: Number(page) || 1,
             limit: Number(limit) || 10,
@@ -11,7 +11,9 @@ export const adminGetAllSportEventsController = async (req: Request, res: Respon
             category: category as string,
             eventType: eventType as string,
             status: status as string,
-            sortBy: sortBy as string
+            sortBy: sortBy as string,
+            dateFrom: dateFrom as string,
+            dateTo: dateTo as string
         })
         return res.json({ result, message: 'Lấy danh sách sự kiện thành công' })
     } catch (error) {
@@ -81,5 +83,20 @@ export const adminHardDeleteSportEventController = async (req: Request, res: Res
         return res.json({ message: 'Xóa vĩnh viễn sự kiện thành công' })
     } catch (error) {
         return res.status(400).json({ message: (error as Error).message })
+    }
+}
+
+export const adminGetSportEventParticipantsController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params
+        const { page, limit, search } = req.query
+        const result = await adminSportEventService.getEventParticipantsAdmin(id, {
+            page: Number(page) || 1,
+            limit: Math.min(Number(limit) || 100, 500),
+            search: (search as string) || ''
+        })
+        return res.json({ result, message: 'Lấy danh sách thành viên thành công' })
+    } catch (error) {
+        return res.status(500).json({ message: (error as Error).message })
     }
 }

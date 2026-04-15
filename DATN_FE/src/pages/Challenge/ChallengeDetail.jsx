@@ -11,8 +11,8 @@ import { toast } from 'react-hot-toast'
 import {
   FaTrophy, FaArrowLeft, FaUtensils, FaRunning, FaDumbbell,
   FaUsers, FaClock, FaFire, FaPlus, FaCalendarAlt, FaTimes,
-  FaMedal, FaShare, FaSearch, FaCheck, FaBell,
-  FaUserFriends as FaInvite
+  FaMedal, FaShare, FaSearch, FaCheck, FaBell, FaFlag,
+  FaUserFriends as FaInvite, FaGlobe, FaUserFriends, FaLock
 } from 'react-icons/fa'
 import {
   MdCheckCircle, MdErrorOutline
@@ -31,14 +31,20 @@ import OutdoorCheckinModal from './components/OutdoorCheckinModal'
 import ChallengeParticipants from './components/ChallengeParticipants'
 import ParticipantProgressModal from './components/ParticipantProgressModal'
 import ChallengeShareModal from '../../components/Challenge/ChallengeShareModal'
+import ModalReportChallenge from './components/ModalReportChallenge'
 import { format } from 'date-fns'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', color: 'bg-emerald-500', checkinLabel: 'Chụp ảnh bữa ăn' },
-  outdoor_activity: { icon: <FaRunning />, label: 'Hoạt động ngoài trời', gradient: 'from-blue-500 to-cyan-600', color: 'bg-blue-500', checkinLabel: 'Ghi nhận hoạt động' },
+  outdoor_activity: { icon: <FaRunning />, label: 'Ngoài trời', gradient: 'from-blue-500 to-cyan-600', color: 'bg-blue-500', checkinLabel: 'Ghi nhận hoạt động' },
   fitness: { icon: <FaDumbbell />, label: 'Thể dục', gradient: 'from-purple-500 to-pink-600', color: 'bg-pink-500', checkinLabel: 'Ghi nhận buổi tập' }
 }
 
+const VISIBILITY_CONFIG = {
+  public:  { icon: <FaGlobe />,       label: 'Công khai',    bg: 'bg-green-500/90', text: 'text-white' },
+  friends: { icon: <FaUserFriends />, label: 'Bạn bè',       bg: 'bg-blue-500/90',  text: 'text-white' },
+  private: { icon: <FaLock />,        label: 'Chỉ mình tôi', bg: 'bg-gray-600/90',  text: 'text-white' }
+}
 
 
 export default function ChallengeDetail() {
@@ -54,13 +60,14 @@ export default function ChallengeDetail() {
   const [selectedDay, setSelectedDay] = useState(null) // { dateStr, dayData }
   const [showSubModal, setShowSubModal] = useState(null) // 'tracking' | 'manual' | null
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [friendSearch, setFriendSearch] = useState('')
   const [invitedIds, setInvitedIds] = useState(new Set())
 
   // ==================== DATA FETCHING ====================
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['challenge', id],
     queryFn: () => getChallenge(id),
     staleTime: 1000
@@ -84,6 +91,31 @@ export default function ChallengeDetail() {
   const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
   const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
 
+  /** Khớp quy tắc backend: công khai = mọi người; bạn bè = mutual follow với người tạo; chỉ mình tôi = không tham gia qua link */
+  const mayJoinByVisibility = useMemo(() => {
+    if (!challenge) return false
+    const vis = challenge.visibility || 'public'
+    const creatorId = String(challenge.creator_id?._id || challenge.creator_id || '')
+    if (vis === 'public') return true
+    if (vis === 'private') return false
+    if (vis === 'friends') return friendIds.has(creatorId)
+    return true
+  }, [challenge, friendIds])
+
+  /** Công khai: mọi người đã tham gia đều mời được. Bạn bè: chỉ người tạo. Chỉ mình tôi: không hiện. */
+  const canShowInviteFriends = useMemo(() => {
+    if (!challenge?.isJoined) return false
+    const vis = challenge.visibility
+    if (vis === 'private') return false
+    if (vis === 'public') return true
+    if (vis === 'friends') {
+      const creatorId = String(challenge.creator_id?._id || challenge.creator_id || '')
+      const myId = String(me?._id || '')
+      return Boolean(creatorId && myId && creatorId === myId)
+    }
+    return false
+  }, [challenge?.isJoined, challenge?.visibility, challenge?.creator_id, me?._id])
+
   const filteredFriendsForInvite = useMemo(() => {
     const kw = friendSearch.toLowerCase().trim()
     return myFriends.filter(f => {
@@ -104,17 +136,31 @@ export default function ChallengeDetail() {
   // Group progress entries by date for DayChallengeModal
   const progressByDate = useMemo(() => {
     const map = {}
+    const challengeType = challenge?.challenge_type
     progressList.forEach(entry => {
       const dateStr = format(new Date(entry.date || entry.createdAt), 'yyyy-MM-dd')
-      if (!map[dateStr]) map[dateStr] = { total: 0, entries: [] }
+      if (!map[dateStr]) map[dateStr] = { total: 0, entries: [], completedIds: new Set() }
       const isValid = entry.validation_status !== 'invalid_time' && entry.ai_review_valid !== false
       if (isValid) {
-        map[dateStr].total += entry.value || 0
+        if (challengeType === 'fitness' && Array.isArray(entry.completed_exercises)) {
+          entry.completed_exercises.forEach(ce => {
+            if (ce.completed) {
+              const idStr =
+                typeof ce.exercise_id === 'string'
+                  ? ce.exercise_id
+                  : (ce.exercise_id?._id || ce.exercise_id?.toString())
+              if (idStr) map[dateStr].completedIds.add(idStr.toString())
+            }
+          })
+          map[dateStr].total = map[dateStr].completedIds.size
+        } else {
+          map[dateStr].total += entry.value || 0
+        }
       }
       map[dateStr].entries.push(entry)
     })
     return map
-  }, [progressList])
+  }, [progressList, challenge?.challenge_type])
 
   // Participants list
   const { data: participantsData, isLoading: participantsLoading } = useQuery({
@@ -217,6 +263,41 @@ export default function ChallengeDetail() {
     )
   }
 
+  if (isError) {
+    const status = error?.response?.status
+    const msg = error?.response?.data?.message || error?.message || 'Đã có lỗi xảy ra'
+    if (status === 403) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-gray-50 dark:bg-gray-900">
+          <FaLock className="text-6xl text-amber-500 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">Không thể xem thử thách</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">{msg}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/challenge')}
+            className="flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition"
+          >
+            <FaArrowLeft /> Quay lại danh sách
+          </button>
+        </div>
+      )
+    }
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        <MdErrorOutline className="text-6xl text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">Không tải được thử thách</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">{msg}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition"
+        >
+          Thử lại
+        </button>
+      </div>
+    )
+  }
+
   if (!challenge) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -232,6 +313,9 @@ export default function ChallengeDetail() {
       </div>
     )
   }
+
+  const isCreator =
+    String(challenge?.creator_id?._id || challenge?.creator_id || '') === String(me?._id || '')
 
   // Handle day click from calendar → open DayChallengeModal
   const handleDayClick = (dateStr, dayData) => {
@@ -286,6 +370,10 @@ export default function ChallengeDetail() {
         </div>
       )}
 
+      {showReportModal && id && (
+        <ModalReportChallenge challengeId={id} onClose={() => setShowReportModal(false)} />
+      )}
+
       {/* Hero Section — Matching SportEventDetail */}
       <div className="relative h-96 bg-gradient-to-b from-gray-900 to-gray-800">
         {challenge.image ? (
@@ -295,9 +383,10 @@ export default function ChallengeDetail() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        {/* Back button */}
-        <div className="absolute top-6 left-6 z-10">
+        {/* Back button — z-30 so it stays above the hero info overlay (also z-10, later in DOM) */}
+        <div className="absolute top-6 left-6 z-30">
           <button
+            type="button"
             onClick={() => navigate('/challenge')}
             className="flex items-center gap-2 text-white bg-black/30 hover:bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm transition"
           >
@@ -310,10 +399,19 @@ export default function ChallengeDetail() {
           <div className="container mx-auto max-w-6xl">
             {/* Badges row */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${config.color} flex items-center gap-1.5`}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${config.color} flex items-center gap-1.5 shadow-lg`}>
                   {config.icon} {challenge.category && challenge.challenge_type === 'outdoor_activity' ? challenge.category : config.label}
                 </span>
+                {(() => {
+                  const vis = VISIBILITY_CONFIG[challenge?.visibility]
+                  if (!vis) return null
+                  return (
+                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-lg ${vis.bg} ${vis.text}`}>
+                      {vis.icon} {vis.label}
+                    </span>
+                  )
+                })()}
               </div>
               {/* Creator */}
               {challenge.creator_id && (
@@ -423,6 +521,19 @@ export default function ChallengeDetail() {
                   <button className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default">
                     Thử thách đã kết thúc
                   </button>
+                ) : !mayJoinByVisibility ? (
+                  <div className="flex flex-col gap-1.5 max-w-md">
+                    <button
+                      type="button"
+                      disabled
+                      className="px-5 py-2.5 bg-white/10 text-white/50 border border-white/20 rounded-lg font-semibold text-sm cursor-not-allowed flex items-center gap-2"
+                    >
+                      <FaLock className="text-xs" />
+                      {(challenge.visibility || 'public') === 'friends'
+                        ? 'Chỉ bạn bè của người tạo mới tham gia được'
+                        : 'Thử thách riêng tư — không mở tham gia qua liên kết'}
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-1.5">
                     <button
@@ -445,13 +556,15 @@ export default function ChallengeDetail() {
                   <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
                     <MdCheckCircle className="text-base" /> Đã tham gia
                   </div>
-                  <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
-                  >
-                    <FaInvite className="text-sm" />
-                    Mời bạn bè
-                  </button>
+                  {canShowInviteFriends && (
+                    <button
+                      onClick={() => setShowInviteModal(true)}
+                      className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
+                    >
+                      <FaInvite className="text-sm" />
+                      Mời bạn bè
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowLeaveModal(true)}
                     disabled={quitMutation.isPending}
@@ -469,6 +582,16 @@ export default function ChallengeDetail() {
               >
                 <FaShare className="text-sm" /> Chia sẻ
               </button>
+              {me?._id && !isCreator && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(true)}
+                  className="px-5 py-2.5 bg-white/10 hover:bg-amber-500/20 text-white/80 hover:text-amber-200 border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
+                >
+                  <FaFlag className="text-sm" />
+                  Báo cáo
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -538,7 +661,7 @@ export default function ChallengeDetail() {
                 <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300 p-4 bg-pink-50 dark:bg-pink-900/10 border border-pink-200 dark:border-pink-800 rounded-lg">
                   <span className="text-3xl">💪</span>
                   <div>
-                    <p className="font-semibold text-pink-700 dark:text-pink-400 mb-1">Tập luyện & ghi nhận tiến độ</p>
+                    <p className="font-semibold text-pink-700 dark:text-pink-400 mb-1">Thể dục & ghi nhận tiến độ</p>
                     <p className="text-sm">Chuyển sang tab "Tiến độ", nhấn vào ngày hôm nay trên lịch. Nhấn "Bắt đầu tập" để thực hiện các bài đã chọn. Đánh dấu hoàn thành các bài tập để tự động ghi nhận vào tiến độ của ngày.</p>
                   </div>
                 </div>
@@ -664,10 +787,22 @@ export default function ChallengeDetail() {
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
               <FaCalendarAlt className="text-4xl text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">Tham gia thử thách để xem tiến độ</p>
-              <button onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending}
-                className="mt-4 px-6 py-2 rounded-xl bg-orange-500 text-white font-medium text-sm hover:bg-orange-600 transition">
-                Tham gia ngay
-              </button>
+              {mayJoinByVisibility ? (
+                <button
+                  type="button"
+                  onClick={() => joinMutation.mutate()}
+                  disabled={joinMutation.isPending}
+                  className="mt-4 px-6 py-2 rounded-xl bg-orange-500 text-white font-medium text-sm hover:bg-orange-600 transition disabled:opacity-50"
+                >
+                  {joinMutation.isPending ? 'Đang xử lý…' : 'Tham gia ngay'}
+                </button>
+              ) : (
+                <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                  {(challenge.visibility || 'public') === 'friends'
+                    ? 'Chỉ bạn bè của người tạo mới có thể tham gia.'
+                    : 'Thử thách riêng tư — không mở tham gia qua liên kết.'}
+                </p>
+              )}
             </div>
           )
         )}

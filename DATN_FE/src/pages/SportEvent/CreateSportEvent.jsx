@@ -623,8 +623,8 @@ JSON output (chỉ object, không gì khác):
                 {newEvent.eventType === 'Ngoài trời' && (
                   <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800">
                     <div className="flex-1">
-                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu đo GPS (Đồng bộ Strava)</h4>
-                      <p className="text-xs text-orange-700 dark:text-orange-400">Bắt buộc lấy tiến độ từ hoạt động Strava của người dùng</p>
+                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu ghi hoạt động (đồng bộ Strava)</h4>
+                      <p className="text-xs text-orange-700 dark:text-orange-400">Chỉ chấp nhận tiến độ từ hoạt động đã ghi trên Strava</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 

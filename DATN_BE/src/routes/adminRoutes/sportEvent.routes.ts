@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
     adminGetAllSportEventsController,
     adminGetEventStatsController,
+    adminGetSportEventParticipantsController,
     adminCreateSportEventController,
     adminUpdateSportEventController,
     adminDeleteSportEventController,
@@ -19,6 +20,7 @@ const adminSportEventRouter = Router()
 adminSportEventRouter.use(accessTokenValidator, wrapRequestHandler(checkRole([UserRoles.admin])))
 
 adminSportEventRouter.get('/stats', wrapRequestHandler(adminGetEventStatsController))
+adminSportEventRouter.get('/:id/participants', wrapRequestHandler(adminGetSportEventParticipantsController))
 adminSportEventRouter.get('/', wrapRequestHandler(adminGetAllSportEventsController))
 adminSportEventRouter.post('/', wrapRequestHandler(adminCreateSportEventController))
 adminSportEventRouter.put('/:id', wrapRequestHandler(adminUpdateSportEventController))

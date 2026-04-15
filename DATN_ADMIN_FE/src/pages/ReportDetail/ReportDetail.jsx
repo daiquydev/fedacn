@@ -6,6 +6,7 @@ import { IoMdHome } from 'react-icons/io'
 import useravatar from '../../assets/images/useravatar.jpg'
 import Loading from '../../components/GlobalComponents/Loading'
 import { getImageUrl } from '../../utils/imageUrl'
+import { formatPostContentForAdmin } from '../../utils/formatPostContentForAdmin'
 
 export default function ReportDetail() {
   const navigate = useNavigate()
@@ -33,7 +34,7 @@ export default function ReportDetail() {
               <div className='border-b-[3px] mb-2 w-[50%] border-red-300 '></div>
             </div>
             <button
-              onClick={() => navigate('/reports')}
+              onClick={() => navigate('/reports/posts')}
               className='block btn btn-sm md:inline-block md:w-auto  bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm md:ml-2 md:order-2'
             >
               <div className='flex gap-1 items-center justify-center'>
@@ -62,7 +63,9 @@ export default function ReportDetail() {
                 </div>
                 <div className='whitespace-pre-line'>
                   <span className='font-medium'>Nội dung bài viết: </span>
-                  {data?.data.result[0].content === '' ? 'Không có nội dung' : data?.data.result[0].content}
+                  {data?.data.result[0].content === ''
+                    ? 'Không có nội dung'
+                    : formatPostContentForAdmin(data?.data.result[0].content)}
                 </div>
                 <div>
                   <span className='font-medium'>Ảnh bài viết: </span>
@@ -83,7 +86,7 @@ export default function ReportDetail() {
                       <span className='font-medium'>Nội dung bài viết được chia sẻ: </span>
                       {data?.data.result[0]?.parent_post?.content === ''
                         ? 'Không có nội dung'
-                        : data?.data.result[0].parent_post?.content}
+                        : formatPostContentForAdmin(data?.data.result[0].parent_post?.content)}
                     </div>
                     <div>
                       <span className='font-medium'>Ảnh bài viết được chia sẻ: </span>

@@ -43,7 +43,7 @@ function formatSetsSummary(sets = []) {
  */
 export default function FitnessDetailView({ entry, challenge, dayTotal, onClose }) {
     const notesParts = (entry.notes || '').split(':')
-    const workoutType = notesParts[0]?.trim() || 'Tập luyện'
+    const workoutType = notesParts[0]?.trim() || 'Thể dục'
     const detailedNotes = notesParts.length > 1 ? notesParts.slice(1).join(':').trim() : ''
 
     const goalValue = challenge?.goal_value || 1

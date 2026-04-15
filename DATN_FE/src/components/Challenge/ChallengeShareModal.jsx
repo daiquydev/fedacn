@@ -40,7 +40,7 @@ const TYPE_CONFIG = {
     },
     outdoor_activity: {
         icon: <FaRunning />,
-        label: 'Hoạt động ngoài trời',
+        label: 'Ngoài trời',
         gradient: 'from-blue-500 to-cyan-600',
         headerBg: 'bg-gradient-to-r from-blue-500 to-cyan-600',
         borderColor: 'border-blue-200 dark:border-blue-900',

@@ -5,7 +5,7 @@ import { FaCheckCircle, FaUserFriends, FaRunning, FaStopwatch, FaFireAlt, FaRegE
 import { MdPublic } from 'react-icons/md'
 import { PiShareFatLight } from 'react-icons/pi'
 import { LiaComments } from 'react-icons/lia'
-import moment from 'moment'
+import { formatRelativeTimeVi } from '../../../utils/formatRelativeTimeVi'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import ModalUploadTrainingPost from './ModalUploadTrainingPost'
 import { getImageUrl } from '../../../utils/imageUrl'
@@ -58,7 +58,7 @@ export default function TrainingPosts({ TrainingId, userProgress, canPost }) {
                       )}
                     </div>
                     <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                      <span>{moment(post.createdAt).fromNow()}</span>
+                      <span>{formatRelativeTimeVi(post.createdAt)}</span>
                       <span className="mx-2">•</span>
                       {post.status === 0 && <MdPublic />}
                       {post.status === 1 && <FaUserFriends />}

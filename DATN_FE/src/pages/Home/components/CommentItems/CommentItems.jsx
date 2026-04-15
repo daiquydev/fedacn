@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
-import moment from 'moment'
+import { formatRelativeTimeVi } from '../../../../utils/formatRelativeTimeVi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { getImageUrl } from '../../../../utils/imageUrl'
 import { useContext, useState } from 'react'
@@ -149,7 +149,7 @@ export default function CommentItems({ comment, post }) {
                 <FaCheckCircle size={12} />
               </div>
             )}
-            <span className='text-slate-500 text-xs dark:text-slate-300'>{moment(comment.createdAt).fromNow()}</span>
+            <span className='text-slate-500 text-xs dark:text-slate-300'>{formatRelativeTimeVi(comment.createdAt)}</span>
           </div>
         </div>
         <ShowMoreContent className='text-sm' lines={2}>
@@ -257,11 +257,11 @@ function CommentChildItems({ comment, profile, navigate, post }) {
                   </div>
                 )}
                 <span className='text-slate-500 text-xs dark:text-slate-300'>
-                  {moment(comment.createdAt).fromNow()}
+                  {formatRelativeTimeVi(comment.createdAt)}
                 </span>
               </div>
               {/* <span className='text-slate-500 text-xs lg:text-sm dark:text-slate-300'>
-                {moment(comment.createdAt).fromNow()}
+                {formatRelativeTimeVi(comment.createdAt)}
               </span> */}
             </div>
             <ShowMoreContent className='text-sm' lines={2}>

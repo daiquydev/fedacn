@@ -12,7 +12,8 @@ import {
   inviteFriendToEventController,
   getPublicUserEventsController,
   removeParticipantController,
-  getEventStatsController
+  getEventStatsController,
+  reportSportEventController
 } from '~/controllers/userControllers/sportEvent.controller'
 import { verifyToken, verifyTokenOptional } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -53,7 +54,7 @@ sportEventRouter.post('/:id/join', verifyToken, wrapRequestHandler(joinSportEven
 sportEventRouter.post('/:id/leave', verifyToken, wrapRequestHandler(leaveSportEventController))
 sportEventRouter.post('/:id/invite', verifyToken, wrapRequestHandler(inviteFriendToEventController))
 sportEventRouter.post('/:id/remove-participant', verifyToken, wrapRequestHandler(removeParticipantController))
-
+sportEventRouter.post('/:id/report', verifyToken, wrapRequestHandler(reportSportEventController))
 
 // Post Comments Routes
 sportEventRouter.post('/posts/:postId/comments', verifyToken, wrapRequestHandler(createEventCommentController))

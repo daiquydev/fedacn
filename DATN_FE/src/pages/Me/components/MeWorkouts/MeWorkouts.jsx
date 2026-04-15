@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FaDumbbell, FaFireAlt, FaCalendarAlt, FaArrowRight } from 'react-icons/fa'
@@ -5,6 +6,8 @@ import { Link } from 'react-router-dom'
 import { getListWorkoutSchedules } from '../../../../apis/workoutScheduleApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
+
+const LIMIT = 6
 
 const fadeIn = {
   hidden: { opacity: 0, y: 15 },
@@ -71,20 +74,23 @@ function WorkoutCard({ schedule }) {
 }
 
 export default function MeWorkouts({ isOwner = true }) {
+  const [page, setPage] = useState(1)
+
   const { data, isLoading } = useQuery({
-    queryKey: ['workoutSchedules', { page: 1, limit: 20 }],
-    queryFn: () => getListWorkoutSchedules({ page: 1, limit: 20 }),
+    queryKey: ['workoutSchedules', { page, limit: LIMIT }],
+    queryFn: () => getListWorkoutSchedules({ page, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
   const raw = data?.data?.result
   const schedules = Array.isArray(raw) ? raw : Array.isArray(raw?.workoutSchedule) ? raw.workoutSchedule : []
+  const totalPage = raw?.totalPage || 1
 
   if (isLoading) {
     return <Loading className='flex justify-center py-20' />
   }
 
-  if (schedules.length === 0) {
+  if (schedules.length === 0 && page === 1) {
     return (
       <div className='text-center py-16'>
         <FaDumbbell className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
@@ -102,12 +108,55 @@ export default function MeWorkouts({ isOwner = true }) {
   }
 
   return (
-    <motion.div variants={stagger} initial='hidden' animate='visible'>
-      <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-        {schedules.map((schedule) => (
-          <WorkoutCard key={schedule._id} schedule={schedule} />
-        ))}
-      </div>
-    </motion.div>
+    <div>
+      <motion.div variants={stagger} initial='hidden' animate='visible'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+          {schedules.map((schedule) => (
+            <WorkoutCard key={schedule._id} schedule={schedule} />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Pagination — cùng style Challenge.jsx */}
+      {totalPage > 1 && (
+        <div className='flex items-center justify-center gap-2 mt-8'>
+          <button
+            disabled={page <= 1}
+            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+          >
+            ← Trước
+          </button>
+          {Array.from({ length: totalPage }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+            .reduce((acc, p, i, arr) => {
+              if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+              acc.push(p)
+              return acc
+            }, [])
+            .map(p =>
+              typeof p === 'number' ? (
+                <button
+                  key={p}
+                  onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={p} className='px-1 text-gray-400'>...</span>
+              )
+            )
+          }
+          <button
+            disabled={page >= totalPage}
+            onClick={() => { setPage(p => Math.min(totalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+          >
+            Sau →
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

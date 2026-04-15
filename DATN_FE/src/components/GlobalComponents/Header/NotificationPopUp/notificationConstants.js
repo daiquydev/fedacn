@@ -39,7 +39,13 @@ export const NotificationTypes = {
   reportPost: 14,
   trainingJoined: 15,
   trainingCompleted: 16,
-  trainingMilestone: 17
+  trainingMilestone: 17,
+  challengeJoined: 18,
+  challengeCompleted: 19,
+  challengeMilestone: 20,
+  challengeInvite: 21,
+  reportSportEvent: 22,
+  reportChallenge: 23
 }
 
 // ─── Categories for tab filtering ───
@@ -200,6 +206,54 @@ export const NOTIFICATION_CONFIG = {
     borderColor: '#8b5cf6',
     label: 'Cột mốc tập luyện',
     category: CATEGORIES.social
+  },
+  [NotificationTypes.challengeJoined]: {
+    icon: AiOutlineTrophy,
+    color: '#f97316',
+    bgColor: '#fff7ed',
+    borderColor: '#f97316',
+    label: 'Tham gia thử thách',
+    category: CATEGORIES.social
+  },
+  [NotificationTypes.challengeCompleted]: {
+    icon: AiOutlineTrophy,
+    color: '#22c55e',
+    bgColor: '#f0fdf4',
+    borderColor: '#22c55e',
+    label: 'Hoàn thành thử thách',
+    category: CATEGORIES.social
+  },
+  [NotificationTypes.challengeMilestone]: {
+    icon: AiOutlineThunderbolt,
+    color: '#a855f7',
+    bgColor: '#faf5ff',
+    borderColor: '#a855f7',
+    label: 'Cột mốc thử thách',
+    category: CATEGORIES.social
+  },
+  [NotificationTypes.challengeInvite]: {
+    icon: MdOutlinePersonAdd,
+    color: '#f97316',
+    bgColor: '#fff7ed',
+    borderColor: '#f97316',
+    label: 'Mời thử thách',
+    category: CATEGORIES.social
+  },
+  [NotificationTypes.reportSportEvent]: {
+    icon: AiOutlineFlag,
+    color: '#ef4444',
+    bgColor: '#fef2f2',
+    borderColor: '#ef4444',
+    label: 'Báo cáo sự kiện',
+    category: CATEGORIES.system
+  },
+  [NotificationTypes.reportChallenge]: {
+    icon: AiOutlineFlag,
+    color: '#ef4444',
+    bgColor: '#fef2f2',
+    borderColor: '#ef4444',
+    label: 'Báo cáo thử thách',
+    category: CATEGORIES.system
   }
 }
 
@@ -222,7 +276,13 @@ export const NOTIFICATION_ROUTES = {
   [NotificationTypes.reportPost]: (n) => `/post/${n.link_id}`,
   [NotificationTypes.trainingJoined]: (n) => `/training/${n.link_id}`,
   [NotificationTypes.trainingCompleted]: (n) => `/training/${n.link_id}`,
-  [NotificationTypes.trainingMilestone]: (n) => `/training/${n.link_id}`
+  [NotificationTypes.trainingMilestone]: (n) => `/training/${n.link_id}`,
+  [NotificationTypes.challengeJoined]: (n) => `/challenge/${n.link_id}`,
+  [NotificationTypes.challengeCompleted]: (n) => `/challenge/${n.link_id}`,
+  [NotificationTypes.challengeMilestone]: (n) => `/challenge/${n.link_id}`,
+  [NotificationTypes.challengeInvite]: (n) => `/challenge/${n.link_id}`,
+  [NotificationTypes.reportSportEvent]: (n) => `/sport-event/${n.link_id}`,
+  [NotificationTypes.reportChallenge]: (n) => `/challenge/${n.link_id}`
 }
 
 // ─── Helpers ───
@@ -247,6 +307,8 @@ export function getCategoryForType(type) {
 export function isSystemNotification(type) {
   return [
     NotificationTypes.system,
-    NotificationTypes.reportPost
+    NotificationTypes.reportPost,
+    NotificationTypes.reportSportEvent,
+    NotificationTypes.reportChallenge
   ].includes(type)
 }

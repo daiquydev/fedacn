@@ -78,8 +78,12 @@ export default function ChallengeParticipants({
     }
 
     if (searchTerm.trim()) {
-      const lc = searchTerm.toLowerCase()
-      list = list.filter(p => (p.user?.name || '').toLowerCase().includes(lc))
+      const lc = searchTerm.toLowerCase().trim()
+      list = list.filter(p => {
+        const name = (p.user?.name || '').toLowerCase()
+        const email = (p.user?.email || '').toLowerCase()
+        return name.includes(lc) || email.includes(lc)
+      })
     }
 
     return [...list].sort((a, b) => {

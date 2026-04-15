@@ -1,4 +1,5 @@
 import mongoose, { Types } from 'mongoose'
+import moment from 'moment'
 
 export interface IChallengeExerciseSet {
     set_number: number
@@ -39,6 +40,10 @@ export interface IChallenge {
     is_public: boolean
     status: string
     is_deleted: boolean
+    /** true chỉ khi thử thách bị gỡ do từ chối báo cáo (kiểm duyệt), không phải người tạo tự xóa */
+    deleted_from_report_moderation?: boolean
+    deleted_at?: Date | null
+    report_challenge?: { user_id: Types.ObjectId; reason: string; created_at: Date }[]
     participants_count: number
     badge_emoji: string
     difficulty: 'easy' | 'medium' | 'hard'
@@ -105,6 +110,15 @@ const ChallengeSchema = new mongoose.Schema<IChallenge>(
             default: 'active'
         },
         is_deleted: { type: Boolean, default: false },
+        deleted_from_report_moderation: { type: Boolean, default: false },
+        deleted_at: { type: Date, default: null },
+        report_challenge: [
+            {
+                user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'users', default: null },
+                reason: { type: String, default: '' },
+                created_at: { type: Date, default: () => moment().toDate() }
+            }
+        ],
         participants_count: { type: Number, default: 0 },
         badge_emoji: { type: String, default: '🏆' },
         difficulty: {

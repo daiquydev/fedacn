@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { BsPeopleFill } from 'react-icons/bs'
 import { useMediaQuery } from 'react-responsive'
 import { MdMenu } from 'react-icons/md'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, Link, useLocation } from 'react-router-dom'
 // import Submenu from './SubMenu'
 
 import Logo from '../Logo'
@@ -18,7 +18,7 @@ import { AppContext } from '../../../contexts/app.context'
 import { IoMdAlbums } from 'react-icons/io'
 import { FaShareAlt, FaRunning, FaDumbbell, FaCalendarAlt, FaTrophy } from 'react-icons/fa'
 import { GiBiceps } from 'react-icons/gi'
-import { MdReport } from 'react-icons/md'
+import { MdReport, MdEvent } from 'react-icons/md'
 import { GiMuscleUp } from 'react-icons/gi'
 
 export default function SideBar() {
@@ -26,6 +26,10 @@ export default function SideBar() {
   const [open, setOpen] = useState(isTabletMid ? false : true)
   const sidebarRef = useRef()
   const { pathname } = useLocation()
+  const isReportEventsActive = pathname.startsWith('/reports/events')
+  const isReportChallengesActive = pathname.startsWith('/reports/challenges')
+  const isReportPostsActive =
+    pathname.startsWith('/reports/posts') || /^\/reports\/[a-f\d]{24}$/i.test(pathname)
   const { profile } = useContext(AppContext)
 
   useEffect(() => {
@@ -130,21 +134,47 @@ export default function SideBar() {
                   </NavLink>
                 </li>
                 <li>
-                  <NavLink to={'/reports'} className='link-custom '>
+                  <Link
+                    to='/reports/posts'
+                    className={`link-custom ${isReportPostsActive ? 'active' : ''}`}
+                  >
                     <MdReport size={25} className='min-w-max' />
-                    Kiểm duyệt bài viết
-                  </NavLink>
+                    Bài viết bị báo cáo
+                  </Link>
                 </li>
               </>
             )}
 
             {profile?.role === 4 && (
-              <li>
-                <NavLink to={'/reports'} className='link-custom '>
-                  <MdReport size={25} className='min-w-max' />
-                  Bài viết bị báo cáo
-                </NavLink>
-              </li>
+              <>
+                <li>
+                  <Link
+                    to='/reports/posts'
+                    className={`link-custom ${isReportPostsActive ? 'active' : ''}`}
+                  >
+                    <MdReport size={25} className='min-w-max' />
+                    Bài viết bị báo cáo
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to='/reports/events'
+                    className={`link-custom ${isReportEventsActive ? 'active' : ''}`}
+                  >
+                    <MdEvent size={25} className='min-w-max' />
+                    Sự kiện bị báo cáo
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to='/reports/challenges'
+                    className={`link-custom ${isReportChallengesActive ? 'active' : ''}`}
+                  >
+                    <FaTrophy size={23} className='min-w-max' />
+                    Thử thách bị báo cáo
+                  </Link>
+                </li>
+              </>
             )}
 
             {profile?.role === 2 && (
@@ -162,6 +192,15 @@ export default function SideBar() {
                       <FaCalendarAlt size={25} className='min-w-max' />
                       Sự kiện Thể thao
                     </NavLink>
+                  </li>
+                  <li>
+                    <Link
+                      to='/reports/events'
+                      className={`link-custom ${isReportEventsActive ? 'active' : ''}`}
+                    >
+                      <MdEvent size={25} className='min-w-max' />
+                      Sự kiện bị báo cáo
+                    </Link>
                   </li>
                 </div>
                 <div className='border-t py-5 border-t-slate-300 '>
@@ -186,6 +225,15 @@ export default function SideBar() {
                       <FaTrophy size={23} className='min-w-max' />
                       Thử thách
                     </NavLink>
+                  </li>
+                  <li>
+                    <Link
+                      to='/reports/challenges'
+                      className={`link-custom ${isReportChallengesActive ? 'active' : ''}`}
+                    >
+                      <FaTrophy size={23} className='min-w-max' />
+                      Thử thách bị báo cáo
+                    </Link>
                   </li>
                 </div>
 

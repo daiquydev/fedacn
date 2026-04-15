@@ -21,6 +21,7 @@ const BlogDetail = lazy(() => import('./pages/BlogDetail'))
 const AlbumList = lazy(() => import('./pages/AlbumList'))
 const AlbumDetail = lazy(() => import('./pages/AlbumDetail'))
 const ReportList = lazy(() => import('./pages/ReportList'))
+const ReportsLegacyRedirect = lazy(() => import('./pages/ReportList/ReportsLegacyRedirect'))
 const ReportDetail = lazy(() => import('./pages/ReportDetail'))
 const IngredientList = lazy(() => import('./pages/IngredientList'))
 const RecipeWritterList = lazy(() => import('./pages/RecipeWritterList'))
@@ -152,6 +153,36 @@ export default function useRouteElement() {
         },
         {
           path: '/reports',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <ReportsLegacyRedirect />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/reports/posts',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <ReportList />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/reports/events',
+          element: (
+            <MainLayout>
+              <Suspense>
+                <ReportList />
+              </Suspense>
+            </MainLayout>
+          )
+        },
+        {
+          path: '/reports/challenges',
           element: (
             <MainLayout>
               <Suspense>

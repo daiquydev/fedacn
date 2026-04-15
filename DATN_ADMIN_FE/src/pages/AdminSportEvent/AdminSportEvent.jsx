@@ -1,16 +1,16 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-    FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaUndo, FaSearch,
+    FaCalendarAlt, FaTrash, FaUndo, FaSearch,
     FaFilter, FaUsers, FaMapMarkerAlt, FaRunning, FaHome,
-    FaTimes, FaChevronDown, FaSortAmountDown
+    FaTimes, FaChevronDown, FaSortAmountDown, FaEye, FaBullseye, FaClock, FaCheck
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import adminSportEventApi from '../../apis/sportEventApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
 import Loading from '../../components/GlobalComponents/Loading'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
-import EventFormModal from './EventFormModal'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (dateStr) => {
@@ -18,13 +18,251 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const EVENT_TYPE_OPTIONS = ['all', 'Ngoài trời', 'Trong nhà']
-const STATUS_OPTIONS = [
-    { value: 'active', label: 'Đang hoạt động' },
-    { value: 'deleted', label: 'Đã xóa' },
-    { value: 'all', label: 'Tất cả' }
-]
+const formatDateTime = (dateStr) => {
+    if (!dateStr) return '—'
+    return new Date(dateStr).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
 
+const fmtNum = (n) => {
+    if (n == null || Number.isNaN(n)) return '—'
+    const x = Number(n)
+    return x % 1 === 0 ? String(x) : x.toFixed(1)
+}
+
+const EVENT_TYPE_CONFIG = {
+    'Ngoài trời': { label: 'Ngoài trời', icon: FaRunning, badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+    'Trong nhà': { label: 'Trong nhà', icon: FaHome, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }
+}
+
+// ─── Chi tiết / Thành viên (theo mẫu Admin Thử thách) ─────────────────────────
+function EventDetailModal({ event, onClose }) {
+    const [activeTab, setActiveTab] = useState('overview')
+    const typeCfg = EVENT_TYPE_CONFIG[event?.eventType] || EVENT_TYPE_CONFIG['Ngoài trời']
+    const TypeIcon = typeCfg.icon || FaRunning
+    const participantsListFallback = Array.isArray(event?.participants_ids) ? event.participants_ids : []
+    const memberCountFallback = typeof event?.participants === 'number' ? event.participants : participantsListFallback.length
+    const creator = event?.createdBy
+
+    const { data: participantsRes, isLoading: participantsLoading } = useQuery({
+        queryKey: ['admin-sport-event-participants', event?._id],
+        queryFn: () => adminSportEventApi.getParticipants(event._id, { page: 1, limit: 200 }),
+        enabled: !!event?._id && activeTab === 'participants',
+        staleTime: 5000
+    })
+    const participantsRows = participantsRes?.data?.result?.participants || []
+    const totalFromApi = participantsRes?.data?.result?.total
+    const memberCount =
+        activeTab === 'participants' && typeof totalFromApi === 'number'
+            ? totalFromApi
+            : memberCountFallback
+
+    const maxP = Math.max(event?.maxParticipants || 1, 1)
+    const perPersonTarget = (event?.targetValue || 0) > 0 ? (event.targetValue / maxP) : 0
+    const targetUnit = event?.targetUnit || ''
+
+    const renderOverview = () => (
+        <div className='p-6 space-y-6'>
+            <div className='flex gap-4 items-start'>
+                {event.image ? (
+                    <img src={event.image} alt={event.name} className='w-20 h-20 rounded-xl object-cover shrink-0' />
+                ) : (
+                    <div className='w-20 h-20 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-white text-3xl shrink-0 shadow-lg'>
+                        <FaCalendarAlt />
+                    </div>
+                )}
+                <div>
+                    <h4 className='text-lg font-bold text-gray-800 dark:text-white'>{event.name}</h4>
+                    <p className='text-sm text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line'>
+                        {event.description || 'Chưa có mô tả'}
+                    </p>
+                </div>
+            </div>
+
+            <div className='grid grid-cols-2 gap-4'>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Danh mục & Loại</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>{event.category}</p>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-1 ${typeCfg.badge}`}>
+                        <TypeIcon size={9} /> {typeCfg.label}
+                    </span>
+                </div>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Thời gian</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
+                        <FaClock className='text-teal-500' />
+                        {formatDate(event.startDate)} — {formatDate(event.endDate)}
+                    </p>
+                </div>
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl col-span-2'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Địa điểm</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-start gap-1.5'>
+                        <FaMapMarkerAlt className='text-gray-400 shrink-0 mt-0.5' />
+                        <span>{event.location || '—'}</span>
+                    </p>
+                </div>
+                {(event.targetValue > 0 || event.targetUnit) && (
+                    <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                        <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Mục tiêu tập thể</p>
+                        <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
+                            <FaBullseye className='text-emerald-500' />
+                            {event.targetValue ?? '—'} {event.targetUnit || ''}
+                        </p>
+                    </div>
+                )}
+                <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
+                    <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Tham gia</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5'>
+                        <FaUsers className='text-indigo-500' />
+                        {memberCountFallback} / {event.maxParticipants ?? '—'}
+                    </p>
+                </div>
+                {creator && (
+                    <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl col-span-2'>
+                        <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Người tạo</p>
+                        <div className='flex items-center gap-2'>
+                            {creator.avatar ? (
+                                <img src={creator.avatar} className='w-8 h-8 rounded-full object-cover ring-1 ring-gray-200' alt='' />
+                            ) : (
+                                <div className='w-8 h-8 rounded-full bg-teal-200 dark:bg-teal-800 flex items-center justify-center text-xs font-bold text-teal-700 dark:text-teal-300'>
+                                    {(creator.name || creator.username || '?')[0]?.toUpperCase()}
+                                </div>
+                            )}
+                            <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>{creator.name || creator.username || '—'}</span>
+                        </div>
+                    </div>
+                )}
+                {event.eventType === 'Ngoài trời' && (
+                    <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl col-span-2'>
+                        <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Strava</p>
+                        <p className='text-sm text-gray-700 dark:text-gray-300'>
+                            {event.requireStrava ? 'Bắt buộc đồng bộ Strava' : 'Không bắt buộc Strava'}
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+
+    const renderParticipants = () => (
+        <div className='h-full'>
+            {participantsLoading ? (
+                <div className='space-y-3 p-6'>{[...Array(5)].map((_, i) => <div key={i} className='h-14 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse' />)}</div>
+            ) : participantsRows.length === 0 ? (
+                <div className='py-14 text-center text-gray-400'>
+                    <FaUsers size={32} className='mx-auto mb-3 opacity-30' />
+                    <p className='text-sm'>Chưa có thành viên đăng ký</p>
+                </div>
+            ) : (
+                <table className='w-full divide-y divide-gray-100 dark:divide-gray-700 relative'>
+                    <thead className='bg-gray-50 dark:bg-gray-900 sticky top-0 z-10'>
+                        <tr>
+                            {['Hạng', 'Người dùng', 'Giá trị / Mục tiêu (người)', 'Tiến độ', 'Trạng thái', 'Cập nhật'].map(h => (
+                                <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className='divide-y divide-gray-100 dark:divide-gray-700'>
+                        {participantsRows.map((p) => {
+                            const pct = p.progressPercentage ?? 0
+                            const done = pct >= 100
+                            return (
+                                <tr key={String(p.userId)} className='hover:bg-teal-50/20 dark:hover:bg-teal-900/5 transition-colors'>
+                                    <td className='px-4 py-3'>
+                                        <span className={`w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold ${
+                                            p.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                                            p.rank === 2 ? 'bg-gray-200 text-gray-600' :
+                                            p.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                                            'bg-gray-100 text-gray-500'
+                                        }`}>{p.rank}</span>
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        <div className='flex items-center gap-2'>
+                                            {p.avatar ? (
+                                                <img src={p.avatar} className='w-7 h-7 rounded-full object-cover ring-1 ring-gray-200' alt='' />
+                                            ) : (
+                                                <div className='w-7 h-7 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-xs font-bold text-teal-600 dark:text-teal-300'>
+                                                    {(p.name || '?')[0]?.toUpperCase()}
+                                                </div>
+                                            )}
+                                            <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>{p.name || '—'}</span>
+                                        </div>
+                                    </td>
+                                    <td className='px-4 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap'>
+                                        {perPersonTarget > 0 ? (
+                                            <span>{fmtNum(p.totalProgress)} / {fmtNum(perPersonTarget)} {targetUnit}</span>
+                                        ) : (
+                                            <span>{fmtNum(p.totalProgress)} {targetUnit}</span>
+                                        )}
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        <div className='flex items-center gap-2'>
+                                            <div className='w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5'>
+                                                <div
+                                                    className='bg-gradient-to-r from-teal-400 to-emerald-500 h-1.5 rounded-full'
+                                                    style={{ width: `${Math.min(pct, 100)}%` }}
+                                                />
+                                            </div>
+                                            <span className='text-xs text-gray-500 whitespace-nowrap'>{pct}%</span>
+                                        </div>
+                                    </td>
+                                    <td className='px-4 py-3'>
+                                        {done ? (
+                                            <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium'>
+                                                <FaCheck size={8} /> Đạt mục tiêu cá nhân
+                                            </span>
+                                        ) : (
+                                            <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium'>
+                                                <FaClock size={8} /> Đang tham gia
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className='px-4 py-3 text-xs text-gray-400 whitespace-nowrap'>{formatDateTime(p.lastUpdate)}</td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    )
+
+    return (
+        <div className='fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4' onClick={e => e.target === e.currentTarget && onClose()}>
+            <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col'>
+                <div className='bg-gradient-to-r from-teal-500 to-emerald-600 px-6 pt-4 rounded-t-2xl flex flex-col shrink-0'>
+                    <div className='flex items-center justify-between'>
+                        <h3 className='font-bold text-white flex items-center gap-2 text-base'>
+                            <FaEye size={15} /> Phân tích Sự kiện
+                        </h3>
+                        <button type='button' onClick={onClose} className='p-1.5 bg-black/10 hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center'>
+                            <FaTimes className='text-white' size={14} />
+                        </button>
+                    </div>
+                    <div className='flex gap-6 mt-4'>
+                        <button
+                            type='button'
+                            onClick={() => setActiveTab('overview')}
+                            className={`pb-3 font-semibold text-sm transition-all border-b-2 ${activeTab === 'overview' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
+                        >
+                            Tổng quan
+                        </button>
+                        <button
+                            type='button'
+                            onClick={() => setActiveTab('participants')}
+                            className={`pb-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-1.5 ${activeTab === 'participants' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
+                        >
+                            <FaUsers size={14} /> Thành viên ({memberCount})
+                        </button>
+                    </div>
+                </div>
+
+                <div className='overflow-y-auto flex-1 bg-white dark:bg-gray-800 rounded-b-2xl' style={{ maxHeight: 'calc(85vh - 100px)' }}>
+                    {activeTab === 'overview' ? renderOverview() : renderParticipants()}
+                </div>
+            </div>
+        </div>
+    )
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminSportEvent() {
@@ -39,8 +277,8 @@ export default function AdminSportEvent() {
     const [filterDateFrom, setFilterDateFrom] = useState('')
     const [filterDateTo, setFilterDateTo] = useState('')
     const [showAdvanced, setShowAdvanced] = useState(false)
-    const [modalEvent, setModalEvent] = useState(undefined) // undefined = closed, null = new, obj = edit
     const [confirmAction, setConfirmAction] = useState(null) // { type, event }
+    const [detailEvent, setDetailEvent] = useState(null)
     const LIMIT = 10
     const debounceRef = useRef(null)
 
@@ -57,7 +295,8 @@ export default function AdminSportEvent() {
     // Stats
     const { data: statsData } = useQuery({
         queryKey: ['adminSportEventStats'],
-        queryFn: () => adminSportEventApi.getStats()
+        queryFn: () => adminSportEventApi.getStats(),
+        staleTime: 10000
     })
     const stats = statsData?.data?.result || {}
 
@@ -78,19 +317,19 @@ export default function AdminSportEvent() {
 
     const events = data?.data?.result?.events || []
     const totalPage = data?.data?.result?.totalPage || 1
-    const total = data?.data?.result?.total || 0
 
     // Sport categories for the form dropdown — only active (non-deleted)
     const { data: catData } = useQuery({
         queryKey: ['adminSportCategories'],
-        queryFn: () => import('../../apis/sportCategoryApi').then(m => m.default.getAll())
+        queryFn: () => sportCategoryApi.getAll(),
+        staleTime: 60000
     })
     const categories = (catData?.data?.result || []).filter(c => !c.isDeleted)
 
-    const invalidate = () => {
+    const invalidate = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: ['adminSportEvents'] })
         queryClient.invalidateQueries({ queryKey: ['adminSportEventStats'] })
-    }
+    }, [queryClient])
 
     const softDeleteMutation = useSafeMutation({
         mutationFn: (id) => adminSportEventApi.softDelete(id),
@@ -127,10 +366,15 @@ export default function AdminSportEvent() {
         setConfirmAction(null)
     }
 
-    const handleFormSuccess = useCallback(() => {
-        setModalEvent(undefined)
-        invalidate()
-    }, [])
+    const getActiveTabKey = () => {
+        if (filterStatus === 'deleted') return 'deleted'
+        if (filterStatus === 'active' && filterEventType === 'Ngoài trời') return 'outdoor'
+        if (filterStatus === 'active' && filterEventType === 'Trong nhà') return 'indoor'
+        if (filterStatus === 'all' && filterEventType === 'all') return 'all'
+        if (filterStatus === 'active' && filterEventType === 'all') return 'active'
+        return null
+    }
+    const activeTabKey = getActiveTabKey()
 
     return (
         <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
@@ -139,12 +383,6 @@ export default function AdminSportEvent() {
             <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-500 via-green-500 to-emerald-600 px-6 py-4 mb-2 shadow-xl'>
                 <div className='relative z-10 flex items-center justify-between'>
                     <h1 className='text-2xl font-bold text-white'>Quản lý Sự kiện Thể thao</h1>
-                    <button
-                        onClick={() => setModalEvent(null)}
-                        className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0'
-                    >
-                        <FaPlus size={12} /> Tạo sự kiện
-                    </button>
                 </div>
 
                 {/* Filter stat tabs */}
@@ -153,38 +391,34 @@ export default function AdminSportEvent() {
                         {
                             key: 'all', label: 'Tất cả', icon: FaCalendarAlt,
                             count: stats.total,
-                            active: filterStatus === 'all' && filterEventType === 'all',
                             onClick: () => { setFilterStatus('all'); setFilterEventType('all'); setPage(1) }
                         },
                         {
                             key: 'active', label: 'Đang hoạt động', icon: FaCalendarAlt,
                             count: stats.active,
-                            active: filterStatus === 'active' && filterEventType === 'all',
                             onClick: () => { setFilterStatus('active'); setFilterEventType('all'); setPage(1) }
                         },
                         {
                             key: 'outdoor', label: 'Ngoài trời', icon: FaRunning,
                             count: stats.outdoor,
-                            active: filterEventType === 'Ngoài trời',
                             onClick: () => { setFilterStatus('active'); setFilterEventType('Ngoài trời'); setPage(1) }
                         },
                         {
                             key: 'indoor', label: 'Trong nhà', icon: FaHome,
                             count: stats.indoor,
-                            active: filterEventType === 'Trong nhà',
                             onClick: () => { setFilterStatus('active'); setFilterEventType('Trong nhà'); setPage(1) }
                         },
                         {
                             key: 'deleted', label: 'Đã xóa', icon: FaTrash,
                             count: stats.deleted,
-                            active: filterStatus === 'deleted',
                             onClick: () => { setFilterStatus('deleted'); setFilterEventType('all'); setPage(1) }
                         },
                     ].map(tab => (
                         <button
                             key={tab.key}
+                            type='button'
                             onClick={tab.onClick}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${tab.active ? 'bg-white text-emerald-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${activeTabKey === tab.key ? 'bg-white text-emerald-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                                 }`}
                         >
                             <tab.icon size={13} />
@@ -235,7 +469,7 @@ export default function AdminSportEvent() {
                                 { label: 'Tổng SK', value: activeEvents.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
                                 { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
                                 { label: 'TB thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                                { label: 'Ngoài/Trong nhà', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                { label: 'Ngoài trời / Trong nhà', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
@@ -348,7 +582,19 @@ export default function AdminSportEvent() {
                 {/* Collapsible advanced filters */}
                 {showAdvanced && (
                     <div className='px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700'>
-                        <div className='grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3'>
+                        <div className='grid grid-cols-2 lg:grid-cols-5 gap-3 pt-3'>
+                            <div>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Trạng thái</label>
+                                <select
+                                    value={filterStatus}
+                                    onChange={e => { setFilterStatus(e.target.value); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all'
+                                >
+                                    <option value='all'>Tất cả</option>
+                                    <option value='active'>Đang hoạt động</option>
+                                    <option value='deleted'>Đã xóa</option>
+                                </select>
+                            </div>
                             {/* Category filter */}
                             <div>
                                 <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Danh mục</label>
@@ -444,7 +690,7 @@ export default function AdminSportEvent() {
                             <table className='w-full divide-y divide-gray-200 dark:divide-slate-700'>
                                 <thead className='bg-gray-50 dark:bg-gray-900'>
                                     <tr>
-                                        {['STT', 'Sự kiện', 'Danh mục / Loại', 'Thời gian', 'Địa điểm', 'Người tham gia', 'Tiến độ', 'Trạng thái', 'Hành động'].map(h => (
+                                        {['STT', 'Sự kiện', 'Danh mục / Loại', 'Thời gian', 'Địa điểm', 'Người tham gia', 'Tiến độ', 'Người tạo', 'Trạng thái', 'Hành động'].map(h => (
                                             <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
                                         ))}
                                     </tr>
@@ -452,13 +698,16 @@ export default function AdminSportEvent() {
                                 <tbody className='divide-y divide-gray-100 dark:divide-slate-700'>
                                     {events.length === 0 ? (
                                         <tr>
-                                            <td colSpan={9} className='text-center py-14'>
+                                            <td colSpan={10} className='text-center py-14'>
                                                 <FaCalendarAlt className='mx-auto text-4xl text-gray-300 mb-3' />
                                                 <p className='text-gray-400 text-sm'>Không có sự kiện nào</p>
-                                                <button onClick={() => setModalEvent(null)} className='mt-2 text-sm text-blue-600 hover:underline'>+ Tạo sự kiện đầu tiên</button>
                                             </td>
                                         </tr>
-                                    ) : events.map((ev, idx) => (
+                                    ) : events.map((ev, idx) => {
+                                        const typeCfg = EVENT_TYPE_CONFIG[ev.eventType] || EVENT_TYPE_CONFIG['Ngoài trời']
+                                        const TypeIcon = typeCfg.icon || FaRunning
+                                        const creator = ev.createdBy
+                                        return (
                                         <tr key={ev._id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${ev.isDeleted ? 'opacity-60' : ''}`}>
                                             {/* STT */}
                                             <td className='px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap'>
@@ -484,8 +733,8 @@ export default function AdminSportEvent() {
                                             <td className='px-4 py-3 whitespace-nowrap'>
                                                 <div>
                                                     <p className='text-sm font-medium text-gray-700 dark:text-gray-200'>{ev.category}</p>
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-0.5 ${ev.eventType === 'Ngoài trời' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'}`}>
-                                                        {ev.eventType === 'Ngoài trời' ? '🌿' : '🏠'} {ev.eventType}
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-0.5 ${typeCfg.badge}`}>
+                                                        <TypeIcon size={9} /> {typeCfg.label}
                                                     </span>
                                                 </div>
                                             </td>
@@ -560,6 +809,19 @@ export default function AdminSportEvent() {
                                                     )
                                                 })()}
                                             </td>
+                                            {/* Creator */}
+                                            <td className='px-4 py-3 whitespace-nowrap'>
+                                                <div className='flex items-center gap-1.5'>
+                                                    {creator?.avatar ? (
+                                                        <img src={creator.avatar} className='w-6 h-6 rounded-full object-cover ring-1 ring-gray-200' alt='' />
+                                                    ) : (
+                                                        <div className='w-6 h-6 rounded-full bg-teal-200 dark:bg-teal-800 flex items-center justify-center text-xs font-bold text-teal-700 dark:text-teal-300'>
+                                                            {(creator?.name || creator?.username || '?')[0]?.toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <span className='text-xs text-gray-500 dark:text-gray-400 max-w-[88px] truncate'>{creator?.name || creator?.username || '—'}</span>
+                                                </div>
+                                            </td>
                                             {/* Status */}
                                             <td className='px-4 py-3 whitespace-nowrap'>
                                                 {ev.isDeleted ? (
@@ -570,18 +832,20 @@ export default function AdminSportEvent() {
                                             </td>
                                             {/* Actions */}
                                             <td className='px-4 py-3 whitespace-nowrap'>
-                                                <div className='flex items-center gap-2'>
+                                                <div className='flex items-center gap-1.5'>
                                                     {!ev.isDeleted && (
                                                         <button
-                                                            onClick={() => setModalEvent(ev)}
-                                                            title='Chỉnh sửa'
-                                                            className='p-1.5 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors'
+                                                            type='button'
+                                                            onClick={() => setDetailEvent(ev)}
+                                                            title='Xem chi tiết'
+                                                            className='p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
                                                         >
-                                                            <FaEdit size={14} />
+                                                            <FaEye size={14} />
                                                         </button>
                                                     )}
                                                     {ev.isDeleted ? (
                                                         <button
+                                                            type='button'
                                                             onClick={() => setConfirmAction({ type: 'restore', event: ev })}
                                                             title='Khôi phục'
                                                             className='p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors flex items-center gap-1.5'
@@ -591,6 +855,7 @@ export default function AdminSportEvent() {
                                                         </button>
                                                     ) : (
                                                         <button
+                                                            type='button'
                                                             onClick={() => setConfirmAction({ type: 'delete', event: ev })}
                                                             title='Xóa'
                                                             className='p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors'
@@ -601,7 +866,8 @@ export default function AdminSportEvent() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        )
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -650,13 +916,10 @@ export default function AdminSportEvent() {
                 </>
             )}
 
-            {/* Create/Edit Modal */}
-            {modalEvent !== undefined && (
-                <EventFormModal
-                    event={modalEvent}
-                    categories={categories}
-                    onClose={() => setModalEvent(undefined)}
-                    onSuccess={handleFormSuccess}
+            {detailEvent && (
+                <EventDetailModal
+                    event={detailEvent}
+                    onClose={() => setDetailEvent(null)}
                 />
             )}
 

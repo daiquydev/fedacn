@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AiFillHeart } from 'react-icons/ai'
 import { CiHeart } from 'react-icons/ci'
@@ -104,7 +104,7 @@ export default function TrainingDetail() {
       queryClient.invalidateQueries({ queryKey: ['Training', id] })
       toast.success('Đã tham gia thử thách!')
       setTimeout(() => {
-        navigate('/training/my-Trainings')
+        navigate('/training/my-trainings')
       }, 1000)
     },
     onError: (error) => {

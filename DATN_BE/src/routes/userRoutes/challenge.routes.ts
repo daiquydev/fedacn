@@ -20,7 +20,8 @@ import {
     deleteProgressController,
     getPublicUserChallengesController,
     getFeedController,
-    inviteFriendToChallengeController
+    inviteFriendToChallengeController,
+    reportChallengeController
 } from '~/controllers/userControllers/challenge.controller'
 import {
     createChallengeDayCommentController,
@@ -49,6 +50,9 @@ challengeRouter.get('/:id', verifyTokenOptional, wrapRequestHandler(getChallenge
 challengeRouter.post('/', verifyToken, wrapRequestHandler(createChallengeController))
 challengeRouter.put('/:id', verifyToken, wrapRequestHandler(updateChallengeController))
 challengeRouter.delete('/:id', verifyToken, wrapRequestHandler(deleteChallengeController))
+
+// Report (moderation) — before other /:id POST handlers
+challengeRouter.post('/:id/report', verifyToken, wrapRequestHandler(reportChallengeController))
 
 // Participation
 challengeRouter.post('/:id/join', verifyToken, wrapRequestHandler(joinChallengeController))
