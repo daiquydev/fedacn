@@ -3,7 +3,8 @@ import { AiOutlineClockCircle, AiFillHeart, AiOutlineHeart } from 'react-icons/a
 import { BsFillLightningChargeFill, BsFillBookmarkFill, BsBookmark } from 'react-icons/bs'
 import { FaEye, FaShare, FaUsers } from 'react-icons/fa'
 import { MdPerson } from 'react-icons/md'
-import { getImageUrl } from '../../utils/imageUrl'
+import useravatar from '../../assets/images/useravatar.jpg'
+import { getAvatarSrc, getImageUrl } from '../../utils/imageUrl'
 import { Gallery, Item } from 'react-photoswipe-gallery'
 
 const ModernRecipeImageCard = ({ 
@@ -143,9 +144,13 @@ const ModernRecipeImageCard = ({
           {/* Right: Author Info */}
           <div className="flex items-center gap-2">
             <img
-              src={recipe.user?.avatar || '/default-avatar.jpg'}
+              src={getAvatarSrc(recipe.user?.avatar, useravatar)}
               alt={recipe.user?.username}
               className="w-8 h-8 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = useravatar
+              }}
             />
             <div className="text-sm">
               <div className="font-medium text-gray-900 dark:text-white">

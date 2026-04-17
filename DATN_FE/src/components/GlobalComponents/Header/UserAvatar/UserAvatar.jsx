@@ -7,6 +7,7 @@ import useravatar from '../../../../assets/images/useravatar.jpg'
 import { } from '@tanstack/react-query'
 import { logoutAccount } from '../../../../apis/authApi'
 import { getRefreshTokenFromLS } from '../../../../utils/auth'
+import { getAvatarSrc } from '../../../../utils/imageUrl'
 import { AppContext } from '../../../../contexts/app.context'
 import toast from 'react-hot-toast'
 export default function UserAvatar() {
@@ -25,8 +26,7 @@ export default function UserAvatar() {
   }, [])
   const { setIsAuthenticated, setProfile, profile } = useContext(AppContext)
 
-  // Dùng fallback an toàn khi chưa có profile hoặc avatar rỗng
-  const avatarSrc = profile?.avatar ? profile.avatar : useravatar
+  const avatarSrc = getAvatarSrc(profile?.avatar, useravatar)
   const logoutAccountMutation = useSafeMutation({
     mutationFn: (body) => logoutAccount(body)
   })
@@ -60,6 +60,10 @@ export default function UserAvatar() {
             className='w-8 h-8 md:w-10 object-cover md:h-10 rounded-full'
             src={avatarSrc}
             alt='user photo'
+            onError={(e) => {
+              e.currentTarget.onerror = null
+              e.currentTarget.src = useravatar
+            }}
           />
         </div>
       </button>

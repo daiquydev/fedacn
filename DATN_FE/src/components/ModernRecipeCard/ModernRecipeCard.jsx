@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import useravatar from '../../assets/images/useravatar.jpg'
 import { AiOutlineClockCircle, AiFillHeart, AiOutlineHeart } from 'react-icons/ai'
 import { BsFillLightningChargeFill, BsFillBookmarkFill, BsBookmark } from 'react-icons/bs'
 import { FaEye, FaUsers, FaStar } from 'react-icons/fa'
 import { MdPerson } from 'react-icons/md'
-import { getImageUrl } from '../../utils/imageUrl'
+import { getAvatarSrc, getImageUrl } from '../../utils/imageUrl'
 
 const ModernRecipeCard = ({ 
   recipe, 
@@ -205,9 +206,13 @@ const ModernRecipeCard = ({
         {showAuthor && recipe.user && (
           <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
             <img
-              src={recipe.user.avatar || '/default-avatar.jpg'}
+              src={getAvatarSrc(recipe.user.avatar, useravatar)}
               alt={recipe.user.username}
               className="w-6 h-6 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = useravatar
+              }}
             />
             <div className="flex-1 min-w-0">
               <Link

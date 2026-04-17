@@ -1,0 +1,315 @@
+<mxfile host="app.diagrams.net" agent="manual">
+  <diagram id="conceptual-erd-new-system" name="ERD khái niệm — Hệ thống mới">
+    <mxGraphModel dx="976" dy="2132" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;fontSize=14;" value="&lt;b&gt;Mô hình ER khái niệm — Ứng dụng thể thao &amp; cộng đồng&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Tham chiếu cấu trúc hệ cũ (User — Nội dung — Kế hoạch — Xã hội), chuyển sang miền thể thao.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="56" width="720" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Ký hiệu&lt;/b&gt;&lt;br&gt;Hình chữ nhật = thực thể&lt;br&gt;Hình thoi = quan hệ&lt;br&gt;Mũi tên ERone / ERmany = bản số (1:N, N:M qua thực thể nối)&lt;br&gt;Phân loại sự kiện / thử thách ghi trong thực thể (thuộc tính loại hoặc lớp con logic)" vertex="1">
+          <mxGeometry height="120" width="320" x="40" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Post" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Bài viết cộng đồng&lt;/b&gt; (Post)&#xa;──────────────&#xa;• post_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• tiêu đề / nội dung&#xa;• trạng thái, thời gian&#xa;• …" vertex="1">
+          <mxGeometry height="110" width="220" x="360" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Comment" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Bình luận&lt;/b&gt; (Comment)&#xa;──────────────&#xa;• comment_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• nội dung&#xa;• cha–con (thread)&#xa;• …" vertex="1">
+          <mxGeometry height="100" width="200" x="360" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Event" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Sự kiện thể thao&lt;/b&gt; (SportEvent)&#xa;──────────────&#xa;• event_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• tên, mô tả, thời gian&#xa;• &lt;b&gt;loại địa điểm:&lt;/b&gt;&#xa;  — &lt;i&gt;ngoài trời&lt;/i&gt; (Outdoor)&#xa;  — &lt;i&gt;trong nhà&lt;/i&gt; (Indoor)&#xa;• …" vertex="1">
+          <mxGeometry height="150" width="240" x="620" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Challenge" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Thử thách cộng đồng&lt;/b&gt; (Challenge)&#xa;──────────────&#xa;• challenge_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• tên, mục tiêu, thời hạn&#xa;• &lt;b&gt;loại thử thách:&lt;/b&gt;&#xa;  — &lt;i&gt;ăn uống&lt;/i&gt; (Eating)&#xa;  — &lt;i&gt;thể thao&lt;/i&gt; (Sports)&#xa;  — &lt;i&gt;thể dục ngoài trời&lt;/i&gt;&#xa;• …" vertex="1">
+          <mxGeometry height="170" width="260" x="1180" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Workout" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Tập luyện&lt;/b&gt; (Workout / buổi tập)&#xa;──────────────&#xa;• workout_session_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• lịch / mẫu bài tập&#xa;• calo, thời lượng&#xa;• …" vertex="1">
+          <mxGeometry height="120" width="230" x="1520" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Calendar" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Lịch cá nhân&lt;/b&gt; (Personal calendar)&#xa;──────────────&#xa;• calendar_id &lt;i&gt;(PK)&lt;/i&gt; hoặc gắn user&#xa;• tổng hợp &lt;i&gt;mục lịch&lt;/i&gt;: tập,&#xa;  sự kiện, nhắc thử thách&#xa;• …" vertex="1">
+          <mxGeometry height="120" width="230" x="1520" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="E_CalItem" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Mục trên lịch&lt;/b&gt; (Calendar entry)&#xa;──────────────&#xa;• entry_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• ngày/giờ, loại mục&#xa;• tham chiếu tập / sự kiện / thử thách&#xa;• …" vertex="1">
+          <mxGeometry height="110" width="230" x="1520" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Notif" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff9cc;strokeColor=#d6b656;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Thông báo&lt;/b&gt; (Notification)&#xa;──────────────&#xa;• notification_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• nội dung / loại&#xa;• đã đọc&#xa;• …" vertex="1">
+          <mxGeometry height="100" width="200" x="1240" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Report" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Báo cáo / gắn cờ&lt;/b&gt; (Report)&#xa;──────────────&#xa;• report_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• lý do, trạng thái xử lý&#xa;• &lt;b&gt;đối tượng:&lt;/b&gt; bài viết,&#xa;  thử thách, sự kiện (chọn một)&#xa;• …" vertex="1">
+          <mxGeometry height="120" width="240" x="610" y="-70" as="geometry" />
+        </mxCell>
+        <mxCell id="E_Follow" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="&lt;b&gt;Theo dõi&lt;/b&gt; (bảng nối Follow)&#xa;follower ↔ followee" vertex="1">
+          <mxGeometry height="56" width="200" x="920" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="R_CreatePost" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Đăng" vertex="1">
+          <mxGeometry height="70" width="100" x="700" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="R_HasComment" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Có BL" vertex="1">
+          <mxGeometry height="70" width="90" x="600" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="R_WriteComment" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Viết BL" vertex="1">
+          <mxGeometry height="70" width="90" x="720" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="R_Notify" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Nhận TB" vertex="1">
+          <mxGeometry height="70" width="100" x="1080" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="R_Report" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Gửi BC" vertex="1">
+          <mxGeometry height="70" width="100" x="780" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="R_OrgEvent" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Tổ chức" vertex="1">
+          <mxGeometry height="70" width="100" x="820" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="R_OrgChallenge" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Tạo TT" vertex="1">
+          <mxGeometry height="70" width="100" x="980" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="R_JoinChallenge" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Tham gia" vertex="1">
+          <mxGeometry height="70" width="100" x="1080" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="R_LogWorkout" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Ghi tập" vertex="1">
+          <mxGeometry height="70" width="100" x="1280" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="R_OwnCalendar" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Sở hữu" vertex="1">
+          <mxGeometry height="70" width="100" x="1280" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="R_ScheduleItem" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#b46504;fontSize=11;" value="Lên lịch" vertex="1">
+          <mxGeometry height="70" width="100" x="1380" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="e_f1" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;startFill=0;endFill=0;exitX=0.5;exitY=0;entryX=0.25;entryY=1;" target="E_Follow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_f1l" connectable="0" parent="e_f1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;" value="1:N (follower)" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_f2" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;startFill=0;endFill=0;exitX=0.5;exitY=0;entryX=0.75;entryY=1;" target="E_Follow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_f2l" connectable="0" parent="e_f2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;" value="1:N (followee)" vertex="1">
+          <mxGeometry relative="1" x="0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_CreatePost">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1b" edge="1" parent="1" source="R_CreatePost" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Post">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1l" connectable="0" parent="e1b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2a" edge="1" parent="1" source="E_Post" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_HasComment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2b" edge="1" parent="1" source="R_HasComment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Comment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2l" connectable="0" parent="e2b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_WriteComment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3b" edge="1" parent="1" source="R_WriteComment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Comment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3l" connectable="0" parent="e3b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_Notify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4b" edge="1" parent="1" source="R_Notify" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Notif">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4l" connectable="0" parent="e4b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;" value="N : M (khái niệm)&#xa;thực tế 1:N recipient" vertex="1">
+          <mxGeometry relative="1" x="0.2" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5b" edge="1" parent="1" source="R_Report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5l" connectable="0" parent="e5b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="E_Report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;" target="E_Post" value="N : 1 (đối tượng)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="E_Report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;exitX=0;exitY=0.75;entryX=0.5;entryY=0;" target="E_Event" value="tùy chọn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;exitX=1;exitY=0.75;entryX=0;entryY=0.35;" target="E_Challenge" value="tùy chọn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_OrgEvent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9b" edge="1" parent="1" source="R_OrgEvent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Event">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9l" connectable="0" parent="e9b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_OrgChallenge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10b" edge="1" parent="1" source="R_OrgChallenge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Challenge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10l" connectable="0" parent="e10b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;exitX=0.75;exitY=1;" target="R_JoinChallenge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11b" edge="1" parent="1" source="R_JoinChallenge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Challenge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11l" connectable="0" parent="e11b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;" value="N : M (qua bảng nối)" vertex="1">
+          <mxGeometry relative="1" x="0.2" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_LogWorkout">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12b" edge="1" parent="1" source="R_LogWorkout" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_Workout">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12l" connectable="0" parent="e12b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13a" edge="1" parent="1" source="E_User" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_OwnCalendar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13b" edge="1" parent="1" source="R_OwnCalendar" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERone;startFill=0;endFill=0;" target="E_Calendar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13l" connectable="0" parent="e13b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : 1" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14a" edge="1" parent="1" source="E_Calendar" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERnone;startFill=0;endFill=0;" target="R_ScheduleItem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14b" edge="1" parent="1" source="R_ScheduleItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERnone;endArrow=ERmany;startFill=0;endFill=0;" target="E_CalItem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14l" connectable="0" parent="e14b" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" value="1 : N" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="E_CalItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;" target="E_Workout" value="tham chiếu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="E_CalItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;" target="E_Event" value="tham chiếu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="E_CalItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;" target="E_Challenge" value="tham chiếu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="User" vertex="1">
+          <mxGeometry height="60" width="110" x="880" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-2" edge="1" parent="1" source="E_Report" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmany;endArrow=ERone;startFill=0;endFill=0;dashed=1;exitX=1;exitY=0.75;entryX=0;entryY=0.35;" target="E_User" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="850" y="20" as="sourcePoint" />
+            <mxPoint x="1180" y="760" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="E_User" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;Người dùng&lt;/b&gt; (User)&#xa;──────────────&#xa;• user_id &lt;i&gt;(PK)&lt;/i&gt;&#xa;• email&#xa;• username / tên hiển thị&#xa;• vai trò, trạng thái&#xa;• …" vertex="1">
+          <mxGeometry height="130" width="220" x="940" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="user_id" vertex="1">
+          <mxGeometry height="40" width="80" x="760" y="1090" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="username" vertex="1">
+          <mxGeometry height="40" width="80" x="1060" y="1090" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-6" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Follow" vertex="1">
+          <mxGeometry height="60" width="110" x="880" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-7" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-1" style="endArrow=none;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-3" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="970" y="1150" as="sourcePoint" />
+            <mxPoint x="1020" y="1100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-8" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-1" style="endArrow=none;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-4" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1010" y="1170" as="sourcePoint" />
+            <mxPoint x="1000" y="1140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-9" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-1" style="endArrow=none;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-6" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="960" y="1310" as="sourcePoint" />
+            <mxPoint x="1010" y="1260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-10" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-1" style="endArrow=none;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-6" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1110" y="1210" as="sourcePoint" />
+            <mxPoint x="1180" y="1170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 11px; text-align: left;&quot;&gt;Challenge&lt;/span&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="1240" y="1210" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-12" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Create" vertex="1">
+          <mxGeometry height="60" width="110" x="1050" y="1210" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-13" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-12" style="endArrow=none;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-1" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="930" y="1320" as="sourcePoint" />
+            <mxPoint x="1000" y="1200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-14" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-11" style="endArrow=none;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-12" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1110" y="1280" as="sourcePoint" />
+            <mxPoint x="1050" y="1230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-15" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 11px; text-align: left;&quot;&gt;challenge&lt;/span&gt;_id" vertex="1">
+          <mxGeometry height="40" width="80" x="1180" y="1140" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-16" edge="1" parent="1" source="58ufp-IKgYbkJ98kxBZe-11" style="endArrow=none;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0;exitDx=0;exitDy=0;" target="58ufp-IKgYbkJ98kxBZe-15" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1310" y="1230" as="sourcePoint" />
+            <mxPoint x="1230" y="1230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-17" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 11px; text-align: left;&quot;&gt;challenge_&lt;/span&gt;name" vertex="1">
+          <mxGeometry height="40" width="90" x="1255" y="1100" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-18" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 11px; text-align: left;&quot;&gt;challenge_&lt;/span&gt;goal" vertex="1">
+          <mxGeometry height="40" width="90" x="1385" y="1140" as="geometry" />
+        </mxCell>
+        <mxCell id="58ufp-IKgYbkJ98kxBZe-19" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 11px; text-align: left;&quot;&gt;challenge_&lt;/span&gt;goal" vertex="1">
+          <mxGeometry height="40" width="90" x="1380" y="1220" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

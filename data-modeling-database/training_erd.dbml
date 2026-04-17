@@ -1,0 +1,232 @@
+// Workout / training domain — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [catalog] Exercises + default sets — top center
+//   [planning] WorkoutSchedules + WorkoutItems — left of user
+//   [session_execution] WorkoutSessions + session exercises + sets — right of catalog
+//   [templates] SavedWorkoutTemplates + template exercises + sets — below schedules
+//   [group_training] Trainings + TrainingParticipants — bottom center
+//   [gamification] UserTrainingProfiles — near Users
+//   [Users] left edge
+// MongoDB embeds sets/exercises/metrics; normalized here. equipment/muscle ObjectIds stored as JSON text where not expanded.
+
+Table Users {
+  user_id bigserial [pk]
+}
+
+Table Exercises {
+  exercise_id bigserial [pk]
+  name varchar(255) [not null]
+  name_vi varchar(255) [not null]
+  description text [not null]
+  instructions_json text
+  tips text [not null]
+  equipment_json text
+  equipment_ids_json text
+  primary_muscles_json text
+  muscle_group_ids_json text
+  secondary_muscles_json text
+  secondary_muscle_ids_json text
+  image_url varchar(2048) [not null]
+  video_url varchar(2048) [not null]
+  category varchar(32) [not null]
+  difficulty varchar(32) [not null]
+  is_active boolean [not null, default: true]
+  is_deleted boolean [not null, default: false]
+  deleted_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table ExerciseDefaultSets {
+  default_set_id bigserial [pk]
+  exercise_id bigint [not null, ref: > Exercises.exercise_id]
+  set_number int [not null]
+  reps int [not null, default: 10]
+  weight double [not null, default: 0]
+  calories_per_unit double [not null, default: 10]
+}
+
+Table WorkoutSchedules {
+  workout_schedule_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  name varchar(255) [not null]
+  weight double [not null]
+  target_calories int [not null]
+  total_calories_burned int [not null, default: 0]
+  start_date date [not null]
+  end_date date [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table WorkoutItems {
+  workout_item_id bigserial [pk]
+  workout_schedule_id bigint [not null, ref: > WorkoutSchedules.workout_schedule_id]
+  activity_name varchar(512) [not null]
+  duration_minutes int [not null]
+  workout_date date [not null]
+  calories_burned int [not null, default: 0]
+  is_completed boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table WorkoutSessions {
+  workout_session_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  started_at timestamptz [not null]
+  finished_at timestamptz
+  equipment_used_json text
+  muscles_targeted_json text
+  total_volume double [not null, default: 0]
+  total_sets int [not null, default: 0]
+  total_reps int [not null, default: 0]
+  total_calories int [not null, default: 0]
+  total_skipped_sets int [not null, default: 0]
+  duration_minutes int [not null, default: 0]
+  status varchar(24) [not null]
+  is_smart_mode boolean [not null, default: false]
+  target_kcal int
+  smart_metrics_json text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table WorkoutSessionExercises {
+  workout_session_exercise_id bigserial [pk]
+  workout_session_id bigint [not null, ref: > WorkoutSessions.workout_session_id]
+  exercise_id bigint [not null, ref: > Exercises.exercise_id]
+  exercise_name varchar(255) [not null]
+  display_order int [not null, default: 0]
+}
+
+Table WorkoutSessionSets {
+  workout_session_set_id bigserial [pk]
+  workout_session_exercise_id bigint [not null, ref: > WorkoutSessionExercises.workout_session_exercise_id]
+  set_number int [not null]
+  reps int [not null, default: 0]
+  weight double [not null, default: 0]
+  calories_per_unit double [not null, default: 10]
+  completed boolean [not null, default: false]
+  skipped boolean [not null, default: false]
+}
+
+Table SavedWorkoutTemplates {
+  saved_workout_template_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  name varchar(255) [not null]
+  saved_at timestamptz [not null]
+  schedule_days_of_week_json text
+  schedule_time_of_day varchar(8)
+  schedule_start_date date
+  schedule_end_date date
+  schedule_reminder boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SavedWorkoutTemplateExercises {
+  saved_template_exercise_id bigserial [pk]
+  saved_workout_template_id bigint [not null, ref: > SavedWorkoutTemplates.saved_workout_template_id]
+  exercise_id bigint [not null, ref: > Exercises.exercise_id]
+  exercise_name varchar(255) [not null]
+  exercise_name_vi varchar(255)
+  display_order int [not null, default: 0]
+}
+
+Table SavedWorkoutTemplateSets {
+  saved_template_set_id bigserial [pk]
+  saved_template_exercise_id bigint [not null, ref: > SavedWorkoutTemplateExercises.saved_template_exercise_id]
+  set_number int [not null]
+  reps int [not null, default: 10]
+  weight double [not null, default: 0]
+  calories_per_unit double [not null, default: 10]
+}
+
+Table Trainings {
+  training_id bigserial [pk]
+  creator_user_id bigint [not null, ref: > Users.user_id]
+  title varchar(512) [not null]
+  description text [not null]
+  cover_image_url varchar(2048) [not null]
+  goal_type varchar(32) [not null]
+  goal_value double [not null]
+  start_date date [not null]
+  end_date date [not null]
+  is_public boolean [not null, default: true]
+  difficulty varchar(16) [not null]
+  status varchar(24) [not null]
+  participants_count int [not null, default: 0]
+  badge_emoji varchar(16) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table TrainingParticipants {
+  training_participant_id bigserial [pk]
+  training_id bigint [not null, ref: > Trainings.training_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  current_value double [not null, default: 0]
+  goal_value double [not null]
+  is_completed boolean [not null, default: false]
+  completed_at timestamptz
+  joined_at timestamptz [not null]
+  last_activity_at timestamptz
+  status varchar(24) [not null]
+  active_days_json text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table UserTrainingProfiles {
+  user_training_profile_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  total_xp int [not null, default: 0]
+  level int [not null, default: 1]
+  title varchar(128) [not null]
+  trainings_joined int [not null, default: 0]
+  trainings_completed int [not null, default: 0]
+  total_checkins int [not null, default: 0]
+  longest_streak_ever int [not null, default: 0]
+  perfect_trainings int [not null, default: 0]
+  team_wins int [not null, default: 0]
+  streak_freeze_tokens int [not null, default: 2]
+  last_freeze_replenish_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+TableGroup core_ref {
+  Users
+}
+
+TableGroup catalog {
+  Exercises
+  ExerciseDefaultSets
+}
+
+TableGroup planning {
+  WorkoutSchedules
+  WorkoutItems
+}
+
+TableGroup session_execution {
+  WorkoutSessions
+  WorkoutSessionExercises
+  WorkoutSessionSets
+}
+
+TableGroup templates {
+  SavedWorkoutTemplates
+  SavedWorkoutTemplateExercises
+  SavedWorkoutTemplateSets
+}
+
+TableGroup group_training {
+  Trainings
+  TrainingParticipants
+}
+
+TableGroup gamification {
+  UserTrainingProfiles
+}

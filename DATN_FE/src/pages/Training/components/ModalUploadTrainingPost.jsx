@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useravatar from '../../../assets/images/useravatar.jpg'
-import { getImageUrl } from '../../../utils/imageUrl'
+import { getAvatarSrc, getImageUrl } from '../../../utils/imageUrl'
 import { BsFillImageFill, BsEmojiSmile, BsTrophy } from 'react-icons/bs'
 import { MdEmojiEmotions, MdSportsGymnastics, MdPublic, MdLock, MdPeople } from 'react-icons/md'
 import { FaRunning, FaBiking, FaSwimmer, FaWalking, FaChartLine, FaFlag } from 'react-icons/fa'
@@ -235,7 +235,12 @@ export default function ModalUploadTrainingPost({ closeModalPost, profile, Train
               <a className='inline-block' href='#'>
                 <img
                   className='rounded-full max-w-none w-10 h-10 md:w-10 md:h-10'
-                  src={profile.avatar === '' ? useravatar : getImageUrl(profile.avatar)}
+                  src={getAvatarSrc(profile?.avatar, useravatar)}
+                  alt=''
+                  onError={(e) => {
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = useravatar
+                  }}
                 />
               </a>
               <div className='flex flex-col justify-center ml-1 items-start'>

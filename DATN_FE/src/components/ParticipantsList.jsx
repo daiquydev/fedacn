@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUserFriends, FaChevronDown, FaChevronUp, FaCheck, FaCrown } from 'react-icons/fa';
 import useravatar from '../assets/images/useravatar.jpg';
+import { getAvatarSrc } from '../utils/imageUrl';
 
 /**
  * Participant avatar list with social ring indicators + optional expand
@@ -114,7 +115,7 @@ const ParticipantsList = ({
                   onClick={() => p.id && navigate(`/user/${p.id}`)}
                 >
                   <img
-                    src={p.avatar || useravatar}
+                    src={getAvatarSrc(p.avatar, useravatar)}
                     alt={p.name}
                     className={`${sizes.img} rounded-full object-cover`}
                     style={ringStyle}

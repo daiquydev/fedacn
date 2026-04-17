@@ -1,0 +1,69 @@
+// Health calculator tools — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [reference] ActivityLevelFactors — top-left (lookup for TDEE)
+//   [core] Users — left
+//   [profiles] UserHealthProfiles — center (current snapshot used by calculators)
+//   [history] UserWeightHistory + HealthMetricReadings — right / below profile
+// Current API: BMI/BMR/TDEE/body fat/IBW/LBM have /save → persisted on user + history arrays.
+// Calorie burned + water intake are calculate-only (no /save route) — not modeled as history tables.
+
+Table Users {
+  user_id bigserial [pk]
+}
+
+Table ActivityLevelFactors {
+  activity_level int [pk]
+  multiplier double [not null]
+  label varchar(128) [not null]
+}
+
+Table UserHealthProfiles {
+  user_id bigint [pk, ref: > Users.user_id]
+  weight_kg double
+  height_cm double
+  age int
+  gender varchar(16)
+  neck_cm double
+  waist_cm double
+  hip_cm double
+  activity_level int [ref: > ActivityLevelFactors.activity_level]
+  bmi double
+  bmr double
+  tdee double
+  body_fat_percent double
+  ibw_kg double
+  lbm_kg double
+  updated_at timestamptz [not null]
+}
+
+Table UserWeightHistory {
+  weight_history_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  weight_kg double [not null]
+  recorded_at timestamptz [not null]
+}
+
+Table HealthMetricReadings {
+  reading_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  metric_type varchar(24) [not null]
+  value double [not null]
+  recorded_at timestamptz [not null]
+}
+
+TableGroup reference_data {
+  ActivityLevelFactors
+}
+
+TableGroup core {
+  Users
+}
+
+TableGroup profiles {
+  UserHealthProfiles
+}
+
+TableGroup history {
+  UserWeightHistory
+  HealthMetricReadings
+}

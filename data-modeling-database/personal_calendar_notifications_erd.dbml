@@ -1,0 +1,133 @@
+// Personal calendar & notifications — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [Users] left
+//   [nutrition_calendar] UserMealSchedules + reminders + UserMealItems — top center
+//   [training_calendar] WorkoutSchedules + WorkoutItems + SavedWorkoutTemplates — bottom center
+//   [comms] Notifications — right column
+// Calendar views aggregate: meal items by date, workout_items by date, virtual slots from saved_workout_templates (see getWorkoutEventsForCalendar).
+// meal_plan_id / meal_plan_meal_id / recipe_id kept as bigint FK stubs (full meal ERD elsewhere).
+
+Table Users {
+  user_id bigserial [pk]
+}
+
+Table UserMealSchedules {
+  user_meal_schedule_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  meal_plan_id bigint [not null]
+  title varchar(255) [not null]
+  start_date date [not null]
+  end_date date [not null]
+  status tinyint [not null]
+  progress_percent smallint [not null]
+  current_day int [not null]
+  total_completed_meals int [not null]
+  total_meals int [not null]
+  target_weight_kg double
+  current_weight_kg double
+  notes text
+  customizations_json text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table UserMealScheduleReminders {
+  meal_reminder_id bigserial [pk]
+  user_meal_schedule_id bigint [not null, ref: > UserMealSchedules.user_meal_schedule_id]
+  reminder_time varchar(8) [not null]
+  enabled boolean [not null, default: true]
+  meal_type int
+}
+
+Table UserMealItems {
+  user_meal_item_id bigserial [pk]
+  user_meal_schedule_id bigint [not null, ref: > UserMealSchedules.user_meal_schedule_id]
+  meal_plan_meal_id bigint [not null]
+  recipe_id bigint
+  scheduled_date date [not null]
+  scheduled_time varchar(8)
+  meal_type tinyint [not null]
+  meal_name varchar(255) [not null]
+  calories int [not null, default: 0]
+  protein_g double [not null, default: 0]
+  carbs_g double [not null, default: 0]
+  fat_g double [not null, default: 0]
+  status tinyint [not null]
+  completed_at timestamptz
+  notes text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table WorkoutSchedules {
+  workout_schedule_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  name varchar(255) [not null]
+  weight double [not null]
+  target_calories int [not null]
+  total_calories_burned int [not null, default: 0]
+  start_date date [not null]
+  end_date date [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table WorkoutItems {
+  workout_item_id bigserial [pk]
+  workout_schedule_id bigint [not null, ref: > WorkoutSchedules.workout_schedule_id]
+  activity_name varchar(512) [not null]
+  duration_minutes int [not null]
+  workout_date date [not null]
+  calories_burned int [not null, default: 0]
+  is_completed boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SavedWorkoutTemplates {
+  saved_workout_template_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  name varchar(255) [not null]
+  saved_at timestamptz [not null]
+  schedule_days_of_week_json text
+  schedule_time_of_day varchar(8)
+  schedule_start_date date
+  schedule_end_date date
+  schedule_reminder boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table Notifications {
+  notification_id bigserial [pk]
+  sender_user_id bigint [ref: > Users.user_id]
+  recipient_user_id bigint [not null, ref: > Users.user_id]
+  content text [not null]
+  name_notification varchar(255)
+  link_id varchar(128)
+  notification_type int [not null]
+  metadata_json text
+  is_read boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+TableGroup core_ref {
+  Users
+}
+
+TableGroup nutrition_calendar {
+  UserMealSchedules
+  UserMealScheduleReminders
+  UserMealItems
+}
+
+TableGroup training_calendar {
+  WorkoutSchedules
+  WorkoutItems
+  SavedWorkoutTemplates
+}
+
+TableGroup comms {
+  Notifications
+}

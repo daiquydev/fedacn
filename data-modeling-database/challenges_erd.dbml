@@ -1,0 +1,157 @@
+// Community challenges — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [Users] left
+//   [challenge_definition] Challenges + ChallengeReports + ChallengeExercises + sets (center-top)
+//   [participation] ChallengeParticipants + ChallengeProgress + exercise completions (center-bottom)
+//   [social] ChallengeDayComments (right, under challenge)
+// MongoDB embeds reports / exercises / completed_exercises; here normalized for clarity.
+// External IDs (meal_plan, workout_session, activity_tracking, catalog exercise) as bigint without FK to keep this file focused.
+
+Table Users {
+  user_id bigserial [pk]
+}
+
+Table Challenges {
+  challenge_id bigserial [pk]
+  creator_user_id bigint [not null, ref: > Users.user_id]
+  title varchar(512) [not null]
+  description text [not null]
+  cover_image_url varchar(2048)
+  challenge_type varchar(32) [not null]
+  category varchar(128) [not null]
+  kcal_per_unit double [not null, default: 0]
+  goal_type varchar(64) [not null]
+  goal_value double [not null]
+  goal_unit varchar(32) [not null]
+  start_date date [not null]
+  end_date date [not null]
+  visibility varchar(16) [not null]
+  is_public boolean [not null, default: true]
+  status varchar(24) [not null]
+  is_deleted boolean [not null, default: false]
+  deleted_at timestamptz
+  deleted_from_report_moderation boolean [not null, default: false]
+  participants_count int [not null, default: 0]
+  badge_emoji varchar(16) [not null]
+  difficulty varchar(16) [not null]
+  nutrition_sub_type varchar(24)
+  time_window_start varchar(8)
+  time_window_end varchar(8)
+  linked_meal_plan_id bigint
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table ChallengeReports {
+  report_id bigserial [pk]
+  challenge_id bigint [not null, ref: > Challenges.challenge_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+}
+
+Table ChallengeExercises {
+  challenge_exercise_id bigserial [pk]
+  challenge_id bigint [not null, ref: > Challenges.challenge_id]
+  catalog_exercise_id bigint [not null]
+  exercise_name varchar(255) [not null]
+  display_order int [not null, default: 0]
+  created_at timestamptz [not null]
+}
+
+Table ChallengeExerciseSets {
+  set_id bigserial [pk]
+  challenge_exercise_id bigint [not null, ref: > ChallengeExercises.challenge_exercise_id]
+  set_number int [not null]
+  reps int [not null, default: 10]
+  weight double [not null, default: 0]
+  calories_per_unit double [not null, default: 10]
+}
+
+Table ChallengeParticipants {
+  participant_id bigserial [pk]
+  challenge_id bigint [not null, ref: > Challenges.challenge_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  current_value double [not null, default: 0]
+  goal_value double [not null]
+  is_completed boolean [not null, default: false]
+  completed_at timestamptz
+  joined_at timestamptz [not null]
+  last_activity_at timestamptz
+  streak_count int [not null, default: 0]
+  status varchar(24) [not null]
+  active_days_json text
+  completed_days_json text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table ChallengeProgress {
+  progress_id bigserial [pk]
+  challenge_id bigint [not null, ref: > Challenges.challenge_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  progress_date date [not null]
+  challenge_type varchar(32) [not null]
+  value double [not null]
+  unit varchar(32) [not null]
+  notes text
+  proof_image_url varchar(2048)
+  food_name varchar(255)
+  ai_review_valid boolean
+  ai_review_reason varchar(512)
+  distance_km double
+  duration_minutes int
+  avg_speed double
+  calories int
+  workout_session_id bigint
+  exercises_count int
+  source varchar(32) [not null]
+  activity_tracking_id bigint
+  validation_status varchar(32) [not null]
+  is_deleted boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table ChallengeProgressExerciseCompletions {
+  completion_id bigserial [pk]
+  progress_id bigint [not null, ref: > ChallengeProgress.progress_id]
+  catalog_exercise_id bigint [not null]
+  exercise_name varchar(255) [not null]
+  completed boolean [not null, default: true]
+}
+
+Table ChallengeDayComments {
+  comment_id bigserial [pk]
+  challenge_id bigint [not null, ref: > Challenges.challenge_id]
+  target_user_id bigint [not null, ref: > Users.user_id]
+  author_user_id bigint [not null, ref: > Users.user_id]
+  challenge_day varchar(10) [not null]
+  content text [not null]
+  parent_comment_id bigint [ref: > ChallengeDayComments.comment_id]
+  reply_count int [not null, default: 0]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+TableGroup core_ref {
+  Users
+}
+
+TableGroup challenge_definition {
+  Challenges
+  ChallengeReports
+  ChallengeExercises
+  ChallengeExerciseSets
+}
+
+TableGroup participation {
+  ChallengeParticipants
+  ChallengeProgress
+  ChallengeProgressExerciseCompletions
+}
+
+TableGroup social {
+  ChallengeDayComments
+}

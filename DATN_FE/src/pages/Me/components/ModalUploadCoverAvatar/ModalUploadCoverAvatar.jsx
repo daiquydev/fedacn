@@ -6,9 +6,18 @@ import { updateCoverAvatar } from '../../../../apis/userApi'
 import { } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { AppContext } from '../../../../contexts/app.context'
-import { setProfileToLS } from '../../../../utils/auth'
+import { getProfileFromLS, setProfileToLS } from '../../../../utils/auth'
 import { FaImage, FaCloudUploadAlt } from 'react-icons/fa'
 import Loading from '../../../../components/GlobalComponents/Loading'
+
+function extractUserFromMutationResponse(res) {
+  const body = res?.data ?? res
+  const r = body?.result
+  if (r == null) return null
+  if (Array.isArray(r)) return r[0] ?? null
+  if (r.user) return r.user
+  return r
+}
 
 export default function ModalUploadCoverAvatar({ closeModalCoverAvatar }) {
   const { setProfile } = useContext(AppContext)
@@ -35,8 +44,11 @@ export default function ModalUploadCoverAvatar({ closeModalCoverAvatar }) {
       onSuccess: (data) => {
         toast.success('Cập nhật ảnh bìa thành công')
         queryClient.invalidateQueries({ queryKey: ['me'] })
-        setProfile(data?.data.result)
-        setProfileToLS(data?.data.result)
+        const updated = extractUserFromMutationResponse(data)
+        if (updated) {
+          setProfile((prev) => ({ ...(prev || {}), ...updated }))
+          setProfileToLS({ ...(getProfileFromLS() || {}), ...updated })
+        }
         closeModalCoverAvatar()
       },
       onError: () => {

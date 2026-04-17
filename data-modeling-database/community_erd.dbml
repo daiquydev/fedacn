@@ -1,0 +1,165 @@
+// Community domain — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — import this file. Suggested canvas layout:
+//   [Users] left  |  [feed_community] center  |  [event_community] right
+//   [Follows][Notifications] under Users
+// Icons (key / link) come from [pk] and [ref: > ...] automatically.
+
+Table Users {
+  user_id bigserial [pk]
+  email varchar(255) [not null]
+  display_name varchar(160) [not null]
+  avatar_url varchar(512)
+  role varchar(32) [not null]
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table Follows {
+  follow_id bigserial [pk]
+  follower_user_id bigint [not null, ref: > Users.user_id]
+  followee_user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+Table Posts {
+  post_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  parent_post_id bigint [ref: > Posts.post_id]
+  content text [not null]
+  status varchar(32) [not null]
+  is_banned boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table PostMedia {
+  media_id bigserial [pk]
+  post_id bigint [not null, ref: > Posts.post_id]
+  media_url varchar(2048) [not null]
+  sort_order int [not null, default: 0]
+  created_at timestamptz [not null]
+}
+
+Table PostComments {
+  comment_id bigserial [pk]
+  post_id bigint [not null, ref: > Posts.post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  parent_comment_id bigint [ref: > PostComments.comment_id]
+  content text [not null]
+  is_banned boolean [not null, default: false]
+  created_at timestamptz [not null]
+}
+
+Table PostLikes {
+  like_id bigserial [pk]
+  post_id bigint [not null, ref: > Posts.post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+Table PostReports {
+  report_id bigserial [pk]
+  post_id bigint [not null, ref: > Posts.post_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+}
+
+Table CommentReports {
+  report_id bigserial [pk]
+  comment_id bigint [not null, ref: > PostComments.comment_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+}
+
+Table SportEvents {
+  event_id bigserial [pk]
+  organizer_user_id bigint [not null, ref: > Users.user_id]
+  title varchar(512) [not null]
+  start_at timestamptz [not null]
+  end_at timestamptz [not null]
+  created_at timestamptz [not null]
+}
+
+Table EventPosts {
+  event_post_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  content text [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table EventPostComments {
+  comment_id bigserial [pk]
+  event_post_id bigint [not null, ref: > EventPosts.event_post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  parent_comment_id bigint [ref: > EventPostComments.comment_id]
+  content text [not null]
+  created_at timestamptz [not null]
+}
+
+Table EventPostLikes {
+  like_id bigserial [pk]
+  event_post_id bigint [not null, ref: > EventPosts.event_post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+Table EventPostShares {
+  share_id bigserial [pk]
+  event_post_id bigint [not null, ref: > EventPosts.event_post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+Table EventPostReports {
+  report_id bigserial [pk]
+  event_post_id bigint [not null, ref: > EventPosts.event_post_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+}
+
+Table Notifications {
+  notification_id bigserial [pk]
+  recipient_user_id bigint [not null, ref: > Users.user_id]
+  actor_user_id bigint [ref: > Users.user_id]
+  notification_type varchar(64) [not null]
+  reference_id bigint
+  message text [not null]
+  is_read boolean [not null, default: false]
+  created_at timestamptz [not null]
+}
+
+TableGroup core {
+  Users
+}
+
+TableGroup feed_community {
+  Posts
+  PostMedia
+  PostComments
+  PostLikes
+  PostReports
+  CommentReports
+}
+
+TableGroup event_community {
+  SportEvents
+  EventPosts
+  EventPostComments
+  EventPostLikes
+  EventPostShares
+  EventPostReports
+}
+
+TableGroup social {
+  Follows
+  Notifications
+}

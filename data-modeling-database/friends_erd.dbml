@@ -1,0 +1,25 @@
+// Friends / social graph (follow) — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout: Users (left) → Follows (right), edges fan out.
+// Implementation: Mongo collection `follows` with fields user_id (follower) and follow_id (followee).
+// "Friends" in product = mutual follow: exists (A→B) AND (B→A); not stored as a separate table.
+// Follow / friend-request messaging uses `notifications` (type follow, upsert). See user_management_erd.dbml Notifications.
+
+Table Users {
+  user_id bigserial [pk]
+}
+
+Table Follows {
+  follow_edge_id bigserial [pk]
+  follower_user_id bigint [not null, ref: > Users.user_id]
+  followee_user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+TableGroup core_ref {
+  Users
+}
+
+TableGroup social_graph {
+  Follows
+}

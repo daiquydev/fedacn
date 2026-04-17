@@ -30,7 +30,7 @@ import { AppContext } from '../../contexts/app.context'
 import { createPost } from '../../apis/postApi'
 import { getActivity } from '../../apis/sportEventApi'
 import { getChallengeActivity } from '../../apis/challengeApi'
-import { getImageUrl } from '../../utils/imageUrl'
+import { getAvatarSrc, getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import postSound from '../../assets/sounds/post.mp3'
 
@@ -170,7 +170,7 @@ export default function ActivityShareModal({ activity, event, eventId, challenge
                     {/* ── Author row ── */}
                     <div className="flex items-center gap-3 px-5 pt-4 pb-2">
                         <img
-                            src={profile?.avatar ? getImageUrl(profile.avatar) : useravatar}
+                            src={getAvatarSrc(profile?.avatar, useravatar)}
                             alt={profile?.name}
                             className="w-10 h-10 rounded-full object-cover ring-2 ring-orange-400"
                         />

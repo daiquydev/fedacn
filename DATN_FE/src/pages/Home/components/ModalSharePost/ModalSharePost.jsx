@@ -1,6 +1,6 @@
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { getImageUrl } from '../../../../utils/imageUrl'
+import { getAvatarSrc, getImageUrl } from '../../../../utils/imageUrl'
 import { MdEmojiEmotions } from 'react-icons/md'
 import { useContext, useEffect, useRef, useState } from 'react'
 import data from '@emoji-mart/data'
@@ -122,9 +122,13 @@ export default function ModalSharePost({ handleCloseSharePost, post }) {
           {/* ── Author row ── */}
           <div className="flex items-center gap-3 px-5 pt-4 pb-2">
             <img
-              src={profile?.avatar === '' ? useravatar : getImageUrl(profile?.avatar)}
+              src={getAvatarSrc(profile?.avatar, useravatar)}
               alt={profile?.name}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-red-400"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = useravatar
+              }}
             />
             <div className="flex flex-col">
               <span className="font-semibold text-sm text-gray-900 dark:text-white">

@@ -1,0 +1,83 @@
+// User management — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [identity] Users — center
+//   [sessions] RefreshTokens — below Users
+//   [requests] UserUpgradeRequests — right of Users (role / inspector flows)
+//   [comms] Notifications — left or below RefreshTokens
+// Mongo stores one embedded upgrade_request per user; modeled as a table with optional workflow columns.
+// Detailed health metrics (BMI, pre_*, etc.) live on the user document in code — omitted here; see calculator_erd.dbml.
+
+Table Users {
+  user_id bigserial [pk]
+  email varchar(160) [not null]
+  password_hash varchar(160) [not null]
+  user_name varchar(160) [not null]
+  display_name varchar(160) [not null]
+  avatar_url varchar(512)
+  cover_avatar_url varchar(512)
+  birthday date
+  address varchar(512)
+  gender varchar(32)
+  role tinyint [not null]
+  status tinyint [not null]
+  banned_count int [not null, default: 0]
+  otp_code varchar(32)
+  is_deleted boolean [not null, default: false]
+  strava_provider_id varchar(128)
+  strava_access_token varchar(512)
+  strava_refresh_token varchar(512)
+  strava_token_expires_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table RefreshTokens {
+  refresh_token_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  token varchar(512) [not null]
+  issued_at timestamptz
+  expires_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table UserUpgradeRequests {
+  upgrade_request_id bigserial [pk]
+  user_id bigint [not null, ref: > Users.user_id]
+  reason text
+  proof_url varchar(2048)
+  request_type tinyint [not null]
+  request_status varchar(24) [not null]
+  submitted_at timestamptz [not null]
+  processed_at timestamptz
+}
+
+Table Notifications {
+  notification_id bigserial [pk]
+  sender_user_id bigint [ref: > Users.user_id]
+  recipient_user_id bigint [not null, ref: > Users.user_id]
+  content text [not null]
+  name_notification varchar(255)
+  link_id varchar(128)
+  notification_type int [not null]
+  metadata_json text
+  is_read boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+TableGroup identity {
+  Users
+}
+
+TableGroup sessions {
+  RefreshTokens
+}
+
+TableGroup access_requests {
+  UserUpgradeRequests
+}
+
+TableGroup comms {
+  Notifications
+}

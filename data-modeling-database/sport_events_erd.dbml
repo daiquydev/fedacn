@@ -1,0 +1,226 @@
+// Sport events domain — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [Users] left
+//   [catalog] SportCategories
+//   [event_core] SportEvents + SportEventParticipants + SportEventReports (around event)
+//   [schedule] SportEventSessions → SportEventAttendance → AttendanceCheckInRecords
+//   [tracking] SportEventProgress + SportEventVideoSessions (below or right of sessions)
+//   [event_social] SportEventPosts + comments + likes + shares (stack under event or right column)
+// Implementation notes: MongoDB uses embedded arrays for likes/shares/reports; here normalized for ERD.
+// Unique keys: (event_id,user_id) participants; (session_id,user_id) attendance; (event_id,session_number) sessions.
+
+Table Users {
+  user_id bigserial [pk]
+}
+
+Table SportCategories {
+  sport_category_id bigserial [pk]
+  name varchar(255) [not null]
+  icon varchar(64) [not null]
+  venue_type varchar(32) [not null]
+  kcal_per_unit double [not null, default: 0]
+  is_deleted boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEvents {
+  event_id bigserial [pk]
+  created_by_user_id bigint [not null, ref: > Users.user_id]
+  sport_category_id bigint [ref: > SportCategories.sport_category_id]
+  name varchar(512) [not null]
+  description text [not null]
+  category_label varchar(128) [not null]
+  start_at timestamptz [not null]
+  end_at timestamptz [not null]
+  location varchar(512) [not null]
+  address varchar(512)
+  max_participants int [not null]
+  participant_count int [not null, default: 0]
+  cover_image_url varchar(2048) [not null]
+  venue_type varchar(32) [not null]
+  require_strava boolean [not null, default: false]
+  target_value double
+  target_unit varchar(32)
+  difficulty varchar(64)
+  is_deleted boolean [not null, default: false]
+  deleted_at timestamptz
+  deleted_from_report_moderation boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventParticipants {
+  participant_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  joined_at timestamptz [not null]
+}
+
+Table SportEventReports {
+  report_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+}
+
+Table SportEventSessions {
+  session_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  session_number int [not null]
+  title varchar(512) [not null]
+  description text
+  session_at timestamptz [not null]
+  duration_hours double [not null]
+  video_call_url varchar(2048)
+  is_completed boolean [not null, default: false]
+  max_participants int
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventAttendance {
+  attendance_id bigserial [pk]
+  session_id bigint [not null, ref: > SportEventSessions.session_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  check_in_time timestamptz
+  check_out_time timestamptz
+  total_duration_minutes int [not null, default: 0]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table AttendanceCheckInRecords {
+  record_id bigserial [pk]
+  attendance_id bigint [not null, ref: > SportEventAttendance.attendance_id]
+  check_in_time timestamptz [not null]
+  check_out_time timestamptz
+}
+
+Table SportEventProgress {
+  progress_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  session_id bigint [ref: > SportEventSessions.session_id]
+  progress_date date [not null]
+  value double [not null]
+  unit varchar(32) [not null]
+  distance_km double
+  duration_text varchar(32)
+  calories int
+  proof_image_url varchar(2048)
+  notes text
+  source varchar(24) [not null]
+  active_seconds int
+  strava_activity_id varchar(64)
+  is_deleted boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventVideoSessions {
+  video_session_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  session_id bigint [ref: > SportEventSessions.session_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  progress_id bigint [ref: > SportEventProgress.progress_id]
+  joined_at timestamptz [not null]
+  ended_at timestamptz
+  active_seconds int [not null, default: 0]
+  total_seconds int [not null, default: 0]
+  calories_burned int [not null, default: 0]
+  status varchar(16) [not null]
+  screenshot_urls_json text
+  is_deleted boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventPosts {
+  event_post_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  content text [not null]
+  like_count int [not null, default: 0]
+  comment_count int [not null, default: 0]
+  share_count int [not null, default: 0]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventPostMedia {
+  media_id bigserial [pk]
+  event_post_id bigint [not null, ref: > SportEventPosts.event_post_id]
+  media_url varchar(2048) [not null]
+  sort_order int [not null, default: 0]
+  created_at timestamptz [not null]
+}
+
+Table SportEventPostLikes {
+  like_id bigserial [pk]
+  event_post_id bigint [not null, ref: > SportEventPosts.event_post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+Table SportEventPostShares {
+  share_id bigserial [pk]
+  event_post_id bigint [not null, ref: > SportEventPosts.event_post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+Table SportEventComments {
+  comment_id bigserial [pk]
+  event_post_id bigint [not null, ref: > SportEventPosts.event_post_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  parent_comment_id bigint [ref: > SportEventComments.comment_id]
+  content text [not null]
+  like_count int [not null, default: 0]
+  reply_count int [not null, default: 0]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventCommentLikes {
+  like_id bigserial [pk]
+  comment_id bigint [not null, ref: > SportEventComments.comment_id]
+  user_id bigint [not null, ref: > Users.user_id]
+  created_at timestamptz [not null]
+}
+
+TableGroup core_ref {
+  Users
+}
+
+TableGroup catalog {
+  SportCategories
+}
+
+TableGroup event_core {
+  SportEvents
+  SportEventParticipants
+  SportEventReports
+}
+
+TableGroup schedule {
+  SportEventSessions
+  SportEventAttendance
+  AttendanceCheckInRecords
+}
+
+TableGroup tracking {
+  SportEventProgress
+  SportEventVideoSessions
+}
+
+TableGroup event_social {
+  SportEventPosts
+  SportEventPostMedia
+  SportEventPostLikes
+  SportEventPostShares
+  SportEventComments
+  SportEventCommentLikes
+}

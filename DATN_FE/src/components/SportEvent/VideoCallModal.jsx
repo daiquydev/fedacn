@@ -16,6 +16,8 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { joinVideoSession, endVideoSession } from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getAccessTokenFromLS, getProfileFromLS } from '../../utils/auth'
+import { getAvatarSrc } from '../../utils/imageUrl'
+import useravatar from '../../assets/images/useravatar.jpg'
 import { useQuery } from '@tanstack/react-query'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -1043,7 +1045,17 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                                 <div className="w-28 h-28 rounded-full border-2 border-indigo-500/30 flex items-center justify-center"
                                     style={{ background: 'rgba(99,102,241,0.08)' }}>
                                     {creatorInfo?.avatar
-                                        ? <img src={creatorInfo.avatar} alt="" className="w-full h-full rounded-full object-cover opacity-40" />
+                                        ? (
+                                            <img
+                                                src={getAvatarSrc(creatorInfo.avatar, useravatar)}
+                                                alt=""
+                                                className="w-full h-full rounded-full object-cover opacity-40"
+                                                onError={(e) => {
+                                                    e.currentTarget.onerror = null
+                                                    e.currentTarget.src = useravatar
+                                                }}
+                                            />
+                                        )
                                         : <FaCrown className="text-indigo-400/40 text-5xl" />
                                     }
                                 </div>

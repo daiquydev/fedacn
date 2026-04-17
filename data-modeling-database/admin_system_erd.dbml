@@ -1,0 +1,228 @@
+// Admin system management — conceptual ERD (PostgreSQL-style types)
+// Open in https://dbdiagram.io — suggested layout:
+//   [identity_access] Users — left
+//   [content_moderation] Posts/Events/Challenges/MealPlans + *Reports — center (inspector queue)
+//   [user_safety] UserReports — below moderation
+//   [fitness_catalog] MuscleGroups, Equipment, Exercises + EquipmentReports, ExerciseReports — right
+//   [observability] AIUsageLogs — under Users
+//   [sport_catalog] SportCategories — top-right
+// Mongo today embeds reports on posts / sport_events / challenges / meal_plans; this file normalizes rows + FKs for admin ERD.
+// UserReports + EquipmentReports + ExerciseReports: logical admin pattern (not all wired in current API); catalog edits exist via admin routes.
+// Admin auth: JWT + refresh_tokens (user_management_erd.dbml).
+
+Table Users {
+  user_id bigserial [pk]
+  email varchar(160) [not null]
+  user_name varchar(160) [not null]
+  display_name varchar(160) [not null]
+  role tinyint [not null]
+  status tinyint [not null]
+  is_deleted boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table AIUsageLogs {
+  ai_usage_log_id bigserial [pk]
+  user_id bigint [ref: > Users.user_id]
+  feature varchar(48) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table MuscleGroups {
+  muscle_group_id bigserial [pk]
+  name varchar(255) [not null]
+  name_en varchar(255) [not null]
+  body_part_ids_json text [not null]
+  image_url varchar(2048)
+  description text [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table Equipment {
+  equipment_id bigserial [pk]
+  name varchar(255) [not null]
+  name_en varchar(255) [not null]
+  image_url varchar(2048)
+  description text [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table Exercises {
+  exercise_id bigserial [pk]
+  name varchar(255) [not null]
+  name_vi varchar(255) [not null]
+  category varchar(32) [not null]
+  difficulty varchar(32) [not null]
+  is_active boolean [not null, default: true]
+  is_deleted boolean [not null, default: false]
+  deleted_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportCategories {
+  sport_category_id bigserial [pk]
+  name varchar(255) [not null]
+  icon varchar(64) [not null]
+  venue_type varchar(32) [not null]
+  kcal_per_unit double [not null, default: 0]
+  strava_types_json text
+  is_deleted boolean [not null, default: false]
+  deleted_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table Posts {
+  post_id bigserial [pk]
+  author_user_id bigint [not null, ref: > Users.user_id]
+  is_banned boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table PostReports {
+  post_report_id bigserial [pk]
+  post_id bigint [not null, ref: > Posts.post_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table Challenges {
+  challenge_id bigserial [pk]
+  creator_user_id bigint [not null, ref: > Users.user_id]
+  title varchar(512) [not null]
+  is_deleted boolean [not null, default: false]
+  deleted_from_report_moderation boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table ChallengeReports {
+  challenge_report_id bigserial [pk]
+  challenge_id bigint [not null, ref: > Challenges.challenge_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table SportEvents {
+  event_id bigserial [pk]
+  organizer_user_id bigint [not null, ref: > Users.user_id]
+  title varchar(512) [not null]
+  is_deleted boolean [not null, default: false]
+  deleted_from_report_moderation boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table SportEventReports {
+  sport_event_report_id bigserial [pk]
+  event_id bigint [not null, ref: > SportEvents.event_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table MealPlans {
+  meal_plan_id bigserial [pk]
+  author_user_id bigint [not null, ref: > Users.user_id]
+  title varchar(255) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table MealPlanReports {
+  meal_plan_report_id bigserial [pk]
+  meal_plan_id bigint [not null, ref: > MealPlans.meal_plan_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table UserReports {
+  user_report_id bigserial [pk]
+  reported_user_id bigint [not null, ref: > Users.user_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table EquipmentReports {
+  equipment_report_id bigserial [pk]
+  equipment_id bigint [not null, ref: > Equipment.equipment_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table ExerciseReports {
+  exercise_report_id bigserial [pk]
+  exercise_id bigint [not null, ref: > Exercises.exercise_id]
+  reporter_user_id bigint [not null, ref: > Users.user_id]
+  reason text [not null]
+  status varchar(32) [not null]
+  reviewed_by_user_id bigint [ref: > Users.user_id]
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+TableGroup identity_access {
+  Users
+}
+
+TableGroup observability {
+  AIUsageLogs
+}
+
+TableGroup content_moderation {
+  Posts
+  PostReports
+  Challenges
+  ChallengeReports
+  SportEvents
+  SportEventReports
+  MealPlans
+  MealPlanReports
+}
+
+TableGroup user_safety {
+  UserReports
+}
+
+TableGroup fitness_catalog {
+  MuscleGroups
+  Equipment
+  EquipmentReports
+  Exercises
+  ExerciseReports
+}
+
+TableGroup sport_catalog {
+  SportCategories
+}

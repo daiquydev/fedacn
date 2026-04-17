@@ -3,6 +3,8 @@ import { FaRegComment, FaReply, FaUser, FaHeart, FaRegHeart } from 'react-icons/
 import { MdSend } from 'react-icons/md'
 import { toast } from 'react-toastify'
 import mealPlanApi from '../../../../../apis/mealPlanApi'
+import useravatar from '../../../../../assets/images/useravatar.jpg'
+import { getAvatarSrc } from '../../../../../utils/imageUrl'
 
 export default function Comments({ mealPlanId }) {
   const [comments, setComments] = useState([])
@@ -134,9 +136,13 @@ export default function Comments({ mealPlanId }) {
             <div className="flex space-x-3">
               <div className="flex-shrink-0">
                 <img
-                  src={comment.user_id?.avatar || '/default-avatar.png'}
+                  src={getAvatarSrc(comment.user_id?.avatar, useravatar)}
                   alt={comment.user_id?.name}
                   className="w-10 h-10 rounded-full"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = useravatar
+                  }}
                 />
               </div>
               <div className="flex-1">
@@ -193,9 +199,13 @@ export default function Comments({ mealPlanId }) {
                     {comment.replies.map((reply) => (
                       <div key={reply._id} className="flex space-x-2">
                         <img
-                          src={reply.user_id?.avatar || '/default-avatar.png'}
+                          src={getAvatarSrc(reply.user_id?.avatar, useravatar)}
                           alt={reply.user_id?.name}
                           className="w-8 h-8 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null
+                            e.currentTarget.src = useravatar
+                          }}
                         />
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">

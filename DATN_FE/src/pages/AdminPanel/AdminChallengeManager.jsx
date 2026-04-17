@@ -13,6 +13,8 @@ import {
   getChallengeParticipants
 } from '../../apis/challengeApi'
 import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
+import useravatar from '../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../utils/imageUrl'
 
 // ──────────────────────────────────────────────
 //  Helper: badge màu theo challenge_type
@@ -196,8 +198,16 @@ function ChallengeListTab() {
                     </td>
                     <td className='py-3 px-4'>
                       <div className='flex items-center gap-1.5'>
-                        {creator?.avatar ? (
-                          <img src={creator.avatar} className='w-6 h-6 rounded-full ring-1 ring-slate-200' alt='' />
+                        {getImageUrl(creator?.avatar) ? (
+                          <img
+                            src={getImageUrl(creator.avatar)}
+                            className='w-6 h-6 rounded-full ring-1 ring-slate-200 object-cover'
+                            alt=''
+                            onError={(e) => {
+                              e.currentTarget.onerror = null
+                              e.currentTarget.src = useravatar
+                            }}
+                          />
                         ) : (
                           <div className='w-6 h-6 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-300'>
                             {(creator?.name || '?')[0]}
@@ -399,8 +409,16 @@ function ParticipantsTab() {
                           </td>
                           <td className='py-3 px-4'>
                             <div className='flex items-center gap-2'>
-                              {user.avatar ? (
-                                <img src={user.avatar} className='w-7 h-7 rounded-full ring-1 ring-slate-200 object-cover' alt='' />
+                              {getImageUrl(user?.avatar) ? (
+                                <img
+                                  src={getImageUrl(user.avatar)}
+                                  className='w-7 h-7 rounded-full ring-1 ring-slate-200 object-cover'
+                                  alt=''
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null
+                                    e.currentTarget.src = useravatar
+                                  }}
+                                />
                               ) : (
                                 <div className='w-7 h-7 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-200'>
                                   {(user.name || '?')[0].toUpperCase()}

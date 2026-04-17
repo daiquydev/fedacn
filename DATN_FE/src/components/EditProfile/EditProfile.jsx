@@ -7,6 +7,9 @@ import toast from 'react-hot-toast'
 import { updateProfile, updateAvatar, updateCoverAvatar, changePassword } from '../../apis/userApi'
 import { AppContext } from '../../contexts/app.context'
 import Input from '../../components/InputComponents/Input'
+import useravatar from '../../assets/images/useravatar.jpg'
+import avatarbg from '../../assets/images/avatarbg.jpg'
+import { getAvatarSrc, getImageUrl } from '../../utils/imageUrl'
 
 const GENDER_OPTIONS = [
   { value: '', label: 'Chọn giới tính' },
@@ -330,9 +333,13 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
             <h4 className='text-md font-medium text-gray-900 dark:text-white'>Ảnh đại diện</h4>
             <div className='flex items-center gap-4'>
               <img
-                src={user?.avatar || '/default-avatar.png'}
+                src={getAvatarSrc(user?.avatar, useravatar)}
                 alt='Avatar'
                 className='w-20 h-20 rounded-full object-cover border-2 border-gray-300'
+                onError={(e) => {
+                  e.currentTarget.onerror = null
+                  e.currentTarget.src = useravatar
+                }}
               />
               <div>
                 <label className='inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer'>
@@ -350,9 +357,13 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
             <h4 className='text-md font-medium text-gray-900 dark:text-white'>Ảnh bìa</h4>
             <div className='space-y-3'>
               <img
-                src={user?.cover_avatar || '/default-cover.jpg'}
+                src={getImageUrl(user?.cover_avatar) || avatarbg}
                 alt='Cover'
                 className='w-full h-32 object-cover rounded-lg border-2 border-gray-300'
+                onError={(e) => {
+                  e.currentTarget.onerror = null
+                  e.currentTarget.src = avatarbg
+                }}
               />
               <div>
                 <label className='inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer'>

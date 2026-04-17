@@ -10,6 +10,7 @@ import { Link, createSearchParams, useNavigate } from 'react-router-dom'
 import { cutString } from '../../../../utils/helper'
 import { AppContext } from '../../../../contexts/app.context'
 import useravatar from '../../../../assets/images/useravatar.jpg'
+import { getAvatarSrc, getImageUrl } from '../../../../utils/imageUrl'
 
 // const words = ['adb', 'app', 'asdf']
 export default function SearchInput() {
@@ -118,9 +119,13 @@ export default function SearchInput() {
                 >
                   <div className='overflow-hidden object-cover'>
                     <img
-                      src={s.avatar ? s.avatar : useravatar}
+                      src={getAvatarSrc(s.avatar, useravatar)}
                       alt={s.name}
                       className='w-8 h-8 object-cover rounded-full'
+                      onError={(e) => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = useravatar
+                      }}
                     />
                   </div>
                   <div className=''>{cutString(s.name, 40)}</div>
@@ -139,9 +144,13 @@ export default function SearchInput() {
                 >
                   <div className='overflow-hidden object-cover'>
                     <img
-                      src={s.avatar ? s.avatar : useravatar}
+                      src={getAvatarSrc(s.avatar, useravatar)}
                       alt={s.name}
                       className='w-8 h-8 object-cover rounded-full'
+                      onError={(e) => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = useravatar
+                      }}
                     />
                   </div>
                   <div className=''>{cutString(s.name, 40)}</div>
@@ -156,7 +165,15 @@ export default function SearchInput() {
                   key={index}
                 >
                   <div className='overflow-hidden object-cover'>
-                    <img src={s.avatar} alt={s.name} className='w-10 h-8 object-cover rounded-lg' />
+                    <img
+                      src={getImageUrl(s.avatar) || useravatar}
+                      alt={s.name}
+                      className='w-10 h-8 object-cover rounded-lg'
+                      onError={(e) => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = useravatar
+                      }}
+                    />
                   </div>
                   <div className=''>{cutString(s.name, 40)}</div>
                 </Link>

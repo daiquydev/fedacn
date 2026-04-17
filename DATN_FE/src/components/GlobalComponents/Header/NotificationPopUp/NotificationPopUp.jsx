@@ -17,6 +17,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { cutString } from '../../../../utils/helper'
 import { formatRelativeTimeVi } from '../../../../utils/formatRelativeTimeVi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
+import { getAvatarSrc } from '../../../../utils/imageUrl'
 import logo from '../../../../assets/images/logo.png'
 import { queryClient } from '../../../../main'
 import toast from 'react-hot-toast'
@@ -593,7 +594,7 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
 
   const hasNoSender = isSystem || !notification.sender_id || !notification.sender
   const senderName = hasNoSender ? 'FitConnect' : (notification.sender?.name || 'Người dùng')
-  const avatarSrc = hasNoSender ? logo : (notification.sender?.avatar || useravatar)
+  const avatarSrc = hasNoSender ? logo : getAvatarSrc(notification.sender?.avatar, useravatar)
 
   return (
     <motion.div
@@ -620,7 +621,10 @@ const NotificationItem = ({ notification, onOpenInvite }) => {
           <img
             src={avatarSrc}
             alt=''
-            onError={(e) => { e.target.src = useravatar }}
+            onError={(e) => {
+              e.currentTarget.onerror = null
+              e.currentTarget.src = useravatar
+            }}
             style={{ width: '1.25rem', height: '1.25rem', borderRadius: '50%', objectFit: 'cover' }}
           />
           <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b' }} className='dark:text-white'>

@@ -45,3 +45,13 @@ export const getImageUrls = (imagePaths) => {
   if (!Array.isArray(imagePaths)) return []
   return imagePaths.map(path => getImageUrl(path))
 }
+
+/**
+ * URL anh dai dien nguoi dung: luon qua getImageUrl (path tuong doi / S3 / Cloudinary).
+ * @param {string|object|undefined|null} avatar
+ * @param {string} fallback - vi du import useravatar.jpg
+ */
+export const getAvatarSrc = (avatar, fallback) => {
+  const url = getImageUrl(avatar)
+  return url ? url : fallback
+}

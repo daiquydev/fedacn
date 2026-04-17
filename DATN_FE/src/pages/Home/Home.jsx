@@ -1,7 +1,7 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { BsFillImageFill, BsFillSunFill } from 'react-icons/bs'
 import useravatar from '../../assets/images/useravatar.jpg'
-import { getImageUrl } from '../../utils/imageUrl'
+import { getAvatarSrc, getImageUrl } from '../../utils/imageUrl'
 import { MdNightlight, MdCheckCircle } from 'react-icons/md'
 import { FaCheckCircle, FaCloudSun, FaUsers, FaHeartbeat, FaUtensils, FaRunning, FaUserPlus, FaArrowRight, FaTrophy, FaDumbbell, FaFire, FaPlus } from 'react-icons/fa'
 import { PiClockAfternoonFill } from 'react-icons/pi'
@@ -116,9 +116,12 @@ export default function Home() {
               <div className='w-10 h-10 md:w-12 flex-shrink-0 overflow-hidden md:h-12 rounded-full cursor-pointer ring-2 ring-green-200 dark:ring-green-800'>
                 <img
                   className='w-10 h-10 md:w-12 object-cover md:h-12 rounded-full'
-                  src={profile?.avatar && profile.avatar !== '' ? getImageUrl(profile.avatar) : useravatar}
+                  src={getAvatarSrc(profile?.avatar, useravatar)}
                   alt='user photo'
-                  onError={(e) => { e.target.src = useravatar }}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = useravatar
+                  }}
                 />
               </div>
               <div
@@ -275,8 +278,12 @@ const ItemUser = ({ user }) => {
         <div className="rounded-full w-11 h-11 overflow-hidden ring-2 ring-offset-1 ring-gray-200 dark:ring-gray-700">
           <img
             className="object-cover w-full h-full"
-            src={user.avatar === '' ? useravatar : getImageUrl(user.avatar)}
+            src={getAvatarSrc(user?.avatar, useravatar)}
             alt={`Avatar của ${user.name}`}
+            onError={(e) => {
+              e.currentTarget.onerror = null
+              e.currentTarget.src = useravatar
+            }}
           />
         </div>
       </div>

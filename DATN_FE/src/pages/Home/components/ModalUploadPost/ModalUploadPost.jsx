@@ -2,7 +2,7 @@ import { useSafeMutation } from '../../../../hooks/useSafeMutation'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useravatar from '../../../../assets/images/useravatar.jpg'
-import { getImageUrl } from '../../../../utils/imageUrl'
+import { getAvatarSrc, getImageUrl } from '../../../../utils/imageUrl'
 import { BsFillImageFill, BsLockFill, BsPeopleFill } from 'react-icons/bs'
 import { MdEmojiEmotions } from 'react-icons/md'
 import { FaTimes, FaGlobeAsia, FaPen, FaUserFriends } from 'react-icons/fa'
@@ -186,9 +186,13 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
           {/* ── Author row ── */}
           <div className="flex items-center gap-3 px-5 pt-4 pb-2">
             <img
-              src={profile?.avatar === '' ? useravatar : getImageUrl(profile?.avatar)}
+              src={getAvatarSrc(profile?.avatar, useravatar)}
               alt={profile?.name}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-red-400"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = useravatar
+              }}
             />
             <div className="flex flex-col">
               <span className="font-semibold text-sm text-gray-900 dark:text-white">
