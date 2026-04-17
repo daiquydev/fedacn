@@ -6,6 +6,7 @@ import { CiHeart } from 'react-icons/ci'
 import { PiShareFatLight } from 'react-icons/pi'
 import { LiaComments } from 'react-icons/lia'
 import { FaCheckCircle, FaUserFriends } from 'react-icons/fa'
+import { BsPeopleFill } from 'react-icons/bs'
 import { formatRelativeTimeVi } from '../../../utils/formatRelativeTimeVi'
 import { deletePostForEachUser, likePost, unlikePost } from '../../../apis/postApi'
 import { queryClient } from '../../../main'
@@ -213,6 +214,40 @@ export default function PostCard({ data }) {
   )
 }
 
+/** Khớp PostStatus BE: 0 công khai, 1 người theo dõi, 2 chỉ mình tôi, 3 bạn bè */
+function PostPrivacyIcon({ status }) {
+  const s = Number(status)
+  if (s === 0) {
+    return (
+      <div>
+        <MdPublic />
+      </div>
+    )
+  }
+  if (s === 1) {
+    return (
+      <div>
+        <BsPeopleFill />
+      </div>
+    )
+  }
+  if (s === 2) {
+    return (
+      <div>
+        <RiGitRepositoryPrivateFill />
+      </div>
+    )
+  }
+  if (s === 3) {
+    return (
+      <div>
+        <FaUserFriends />
+      </div>
+    )
+  }
+  return null
+}
+
 function CheckTypeOfPost({
   data,
   navigate,
@@ -246,21 +281,7 @@ function CheckTypeOfPost({
                 </div>
                 <div className='flex gap-2 items-center'>
                   <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
-                  {data.status === 0 && (
-                    <div>
-                      <MdPublic />
-                    </div>
-                  )}
-                  {data.status === 1 && (
-                    <div>
-                      <FaUserFriends />
-                    </div>
-                  )}
-                  {data.status === 2 && (
-                    <div>
-                      <RiGitRepositoryPrivateFill />
-                    </div>
-                  )}
+                  <PostPrivacyIcon status={data.status} />
                 </div>
               </div>
             </div>
@@ -342,21 +363,7 @@ function CheckTypeOfPost({
                 </div>
                 <div className='flex gap-2 items-center'>
                   <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
-                  {data.status === 0 && (
-                    <div>
-                      <MdPublic />
-                    </div>
-                  )}
-                  {data.status === 1 && (
-                    <div>
-                      <FaUserFriends />
-                    </div>
-                  )}
-                  {data.status === 2 && (
-                    <div>
-                      <RiGitRepositoryPrivateFill />
-                    </div>
-                  )}
+                  <PostPrivacyIcon status={data.status} />
                 </div>
               </div>
             </div>
@@ -405,21 +412,7 @@ function CheckTypeOfPost({
               </div>
               <div className='flex gap-2 items-center'>
                 <div className='text-slate-500 dark:text-slate-300'>{formatRelativeTimeVi(data.createdAt)}</div>
-                {data.status === 0 && (
-                  <div>
-                    <MdPublic />
-                  </div>
-                )}
-                {data.status === 1 && (
-                  <div>
-                    <FaUserFriends />
-                  </div>
-                )}
-                {data.status === 2 && (
-                  <div>
-                    <RiGitRepositoryPrivateFill />
-                  </div>
-                )}
+                <PostPrivacyIcon status={data.status} />
               </div>
             </div>
           </div>
@@ -494,21 +487,7 @@ function CheckTypeOfPost({
                     <div className='text-slate-500 dark:text-slate-300'>
                       {data.parent_post.createdAt ? formatRelativeTimeVi(data.parent_post.createdAt) : ''}
                     </div>
-                    {data.parent_post.status === 0 && (
-                      <div>
-                        <MdPublic />
-                      </div>
-                    )}
-                    {data.parent_post.status === 1 && (
-                      <div>
-                        <FaUserFriends />
-                      </div>
-                    )}
-                    {data.parent_post.status === 2 && (
-                      <div>
-                        <RiGitRepositoryPrivateFill />
-                      </div>
-                    )}
+                    <PostPrivacyIcon status={data.parent_post.status} />
                   </div>
                 </div>
               </div>
