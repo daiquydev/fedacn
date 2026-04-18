@@ -33,6 +33,8 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return <MdSportsSoccer size={28} className="text-blue-500 dark:text-blue-400" />
+      case 'challenge':
+        return <FaTrophy size={28} className="text-amber-500 dark:text-amber-400" />
       case 'training':
         return <FaTrophy size={28} className="text-green-500 dark:text-green-400" />
       case 'mealPlan':
@@ -48,6 +50,8 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return 'bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700'
+      case 'challenge':
+        return 'bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-700'
       case 'training':
         return 'bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700'
       case 'mealPlan':
@@ -63,6 +67,8 @@ export default function EventDetails({ event, onClose }) {
     switch (event.type) {
       case 'event':
         return 'bg-blue-50 dark:bg-gray-800'
+      case 'challenge':
+        return 'bg-amber-50 dark:bg-gray-800'
       case 'training':
         return 'bg-green-50 dark:bg-gray-800'
       case 'mealPlan':
@@ -75,9 +81,19 @@ export default function EventDetails({ event, onClose }) {
   }
 
   const getEventTypeTitle = () => {
+    const challengeTypeLabel = (t) => {
+      if (t === 'nutrition') return 'Ăn uống'
+      if (t === 'outdoor_activity') return 'Ngoài trời'
+      if (t === 'fitness') return 'Thể dục'
+      return ''
+    }
     switch (event.type) {
       case 'event':
         return event.category ? `Sự kiện thể thao · ${event.category}` : 'Sự kiện thể thao'
+      case 'challenge': {
+        const sub = challengeTypeLabel(event.challenge_type)
+        return sub ? `Thử thách · ${sub}` : 'Thử thách'
+      }
       case 'training':
         return 'Thử thách'
       case 'mealPlan':
@@ -92,6 +108,7 @@ export default function EventDetails({ event, onClose }) {
   const getEventLink = () => {
     if (event.type === 'mealPlan') return '/meal-plan/active'
     if (event.type === 'training') return `/training/${event.id}`
+    if (event.type === 'challenge' && event.challenge_id) return `/challenge/${event.challenge_id}`
     if (event.type === 'event') return `/sport-event/${event.id}`
     if (event.type === 'workout') return '/training'
     return '#'
@@ -120,6 +137,24 @@ export default function EventDetails({ event, onClose }) {
 
         {/* Banner */}
         <div className={`${getBannerColor()} text-white`}>
+          {/* Challenge: image banner if available */}
+          {event.type === 'challenge' && event.image && (
+            <div className="relative h-40 overflow-hidden">
+              <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-70" />
+              <div className="absolute inset-0 bg-gradient-to-t from-amber-900/80 to-transparent" />
+              <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors" aria-label="Đóng">
+                <MdClose size={20} className="text-white" />
+              </button>
+              <div className="absolute bottom-3 left-4 right-14 flex items-center gap-3">
+                {getEventIcon()}
+                <div>
+                  <div className="text-xs font-medium text-white/90">{getEventTypeTitle()}</div>
+                  <h2 className="text-xl font-bold leading-tight">{event.title}</h2>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Sport event: show image banner if available */}
           {event.type === 'event' && event.image && (
             <div className="relative h-40 overflow-hidden">
@@ -139,7 +174,7 @@ export default function EventDetails({ event, onClose }) {
           )}
 
           {/* Default banner for non-image events */}
-          {!(event.type === 'event' && event.image) && (
+          {!(event.type === 'event' && event.image) && !(event.type === 'challenge' && event.image) && (
             <div className="flex justify-between items-start p-6">
               <div className="flex items-center gap-3">
                 {getEventIcon()}
@@ -374,8 +409,17 @@ export default function EventDetails({ event, onClose }) {
               </div>
             )}
 
+            {event.type === 'challenge' && event.description && (
+              <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-4 bg-white dark:bg-gray-900 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">Mô tả</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{event.description}</p>
+                </div>
+              </div>
+            )}
+
             {/* Description for non-sport, non-workout */}
-            {event.description && event.type !== 'workout' && event.type !== 'mealPlan' && event.type !== 'event' && (
+            {event.description && event.type !== 'workout' && event.type !== 'mealPlan' && event.type !== 'event' && event.type !== 'challenge' && (
               <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">Mô tả</p>
                 <p className="text-gray-600 dark:text-gray-400">{event.description}</p>
@@ -401,7 +445,7 @@ export default function EventDetails({ event, onClose }) {
                 className="px-4 py-2 font-medium rounded-lg transition-colors bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md hover:shadow-lg hover:from-blue-600 hover:to-indigo-600 flex items-center gap-2"
               >
                 <FaArrowRight size={14} />
-                {event.type === 'event' ? 'Xem sự kiện' : 'Xem chi tiết'}
+                {event.type === 'event' ? 'Xem sự kiện' : event.type === 'challenge' ? 'Xem thử thách' : 'Xem chi tiết'}
               </Link>
             )}
           </div>

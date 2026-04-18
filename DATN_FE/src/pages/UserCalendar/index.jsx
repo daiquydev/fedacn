@@ -7,6 +7,7 @@ import { filterEvents } from './utils/calendarUtils'
 import { HiOutlineCalendar } from 'react-icons/hi'
 import { getWorkoutCalendarEvents } from '../../apis/savedWorkoutApi'
 import { getJoinedEventsForCalendar } from '../../apis/sportEventApi'
+import { getMyChallenges } from '../../apis/challengeApi'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 
 const getDateKey = (value) => {
@@ -87,6 +88,40 @@ const mapSportEventsToCalendar = (events = []) => {
   })
 }
 
+/**
+ * Map joined challenges (participations) → CalendarGrid items (cả ngày, theo khoảng start–end)
+ */
+const mapChallengesToCalendar = (participations = []) => {
+  const now = new Date()
+  return participations
+    .filter((p) => p.challenge_id && p.challenge_id.status !== 'cancelled')
+    .map((p) => {
+      const ch = p.challenge_id
+      const start = new Date(ch.start_date)
+      const end = new Date(ch.end_date)
+      const startDateKey = getDateKey(start)
+      const endDateKey = getDateKey(end)
+
+      let status = 'upcoming'
+      if (end < now) status = 'completed'
+      else if (start <= now) status = 'ongoing'
+
+      const emoji = ch.badge_emoji || '🏆'
+      return {
+        id: `challenge-${ch._id}`,
+        type: 'challenge',
+        title: `${emoji} ${ch.title}`,
+        description: ch.description || '',
+        startDate: `${startDateKey}T00:00:00`,
+        endDate: `${endDateKey}T23:59:59`,
+        status,
+        challenge_id: ch._id,
+        challenge_type: ch.challenge_type || '',
+        image: ch.image || ''
+      }
+    })
+}
+
 export default function UserCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentView, setCurrentView] = useState('month')
@@ -94,14 +129,17 @@ export default function UserCalendar() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [workoutEvents, setWorkoutEvents] = useState([])
   const [sportEvents, setSportEvents] = useState([])
+  const [challengeEvents, setChallengeEvents] = useState([])
   const [filters, setFilters] = useState({
     events: true,
-    workouts: true
+    workouts: true,
+    challenges: true
   })
 
   const [calendarItems, setCalendarItems] = useState([])
   const [loadingWorkouts, setLoadingWorkouts] = useState(false)
   const [loadingSportEvents, setLoadingSportEvents] = useState(false)
+  const [loadingChallenges, setLoadingChallenges] = useState(false)
 
   // ---- Workout events ----
   const fetchWorkoutEvents = async (refDate) => {
@@ -133,9 +171,23 @@ export default function UserCalendar() {
     }
   }
 
+  const fetchMyChallengesForCalendar = async () => {
+    try {
+      setLoadingChallenges(true)
+      const res = await getMyChallenges({ page: 1, limit: 100 })
+      const participations = res?.data?.result?.participations || []
+      setChallengeEvents(mapChallengesToCalendar(participations))
+    } catch (error) {
+      console.error('Không thể tải thử thách đã tham gia:', error)
+    } finally {
+      setLoadingChallenges(false)
+    }
+  }
+
   useEffect(() => {
     fetchWorkoutEvents(new Date())
     fetchJoinedSportEvents()
+    fetchMyChallengesForCalendar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -149,15 +201,17 @@ export default function UserCalendar() {
   useEffect(() => {
     const combinedItems = [
       ...(workoutEvents || []),
-      ...(sportEvents || [])
+      ...(sportEvents || []),
+      ...(challengeEvents || [])
     ].filter(item => {
       if (item.type === 'event' && !filters.events) return false
       if (item.type === 'workout' && !filters.workouts) return false
+      if (item.type === 'challenge' && !filters.challenges) return false
       return true
     })
 
     setCalendarItems(combinedItems)
-  }, [filters, workoutEvents, sportEvents])
+  }, [filters, workoutEvents, sportEvents, challengeEvents])
 
   const handlePrevious = () => {
     const newDate = new Date(currentDate)
@@ -230,16 +284,17 @@ export default function UserCalendar() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Lịch Cá Nhân</h1>
-            <p className="text-white/75 text-xs mt-0.5">Theo dõi lịch tập luyện, sự kiện và hoạt động của bạn</p>
+            <p className="text-white/75 text-xs mt-0.5">Theo dõi lịch tập luyện, sự kiện, thử thách và hoạt động của bạn</p>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-4">
-        {(loadingWorkouts || loadingSportEvents) && (
+        {(loadingWorkouts || loadingSportEvents || loadingChallenges) && (
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
             {loadingWorkouts && 'Đang tải lịch tập luyện... '}
-            {loadingSportEvents && 'Đang tải sự kiện...'}
+            {loadingSportEvents && 'Đang tải sự kiện... '}
+            {loadingChallenges && 'Đang tải thử thách...'}
           </div>
         )}
         {/* Calendar Controls */}

@@ -23,6 +23,8 @@ export default function AgendaView({ currentDate, calendarItems, onEventClick })
     switch (type) {
       case 'event':
         return <MdSportsSoccer size={20} className="text-blue-500" />
+      case 'challenge':
+        return <FaTrophy size={20} className="text-amber-500" />
       case 'training':
         return <FaTrophy size={20} className="text-green-500" />
       case 'mealPlan':

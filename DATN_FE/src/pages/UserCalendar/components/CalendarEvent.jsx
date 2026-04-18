@@ -8,6 +8,8 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
     switch (event.type) {
       case 'event':
         return 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-200'
+      case 'challenge':
+        return 'bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 dark:border-amber-400 text-amber-900 dark:text-amber-100'
       case 'training':
         return 'bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 dark:border-green-400 text-green-700 dark:text-green-200'
       case 'mealPlan':
@@ -22,6 +24,8 @@ export default function CalendarEvent({ event, onClick, isCompact = false }) {
     switch (event.type) {
       case 'event':
         return <MdSportsSoccer size={isCompact ? 12 : 16} className="min-w-[12px]" />
+      case 'challenge':
+        return <FaTrophy size={isCompact ? 12 : 16} className="min-w-[12px]" />
       case 'training':
         return <FaTrophy size={isCompact ? 12 : 16} className="min-w-[12px]" />
       case 'mealPlan':

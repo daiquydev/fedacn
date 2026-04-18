@@ -1,7 +1,7 @@
 import React from 'react'
 import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaList, FaDumbbell } from 'react-icons/fa'
 import { BsFillCalendarWeekFill, BsFillCalendarDayFill } from 'react-icons/bs'
-import { FaUtensils, FaTrophy } from 'react-icons/fa'
+import { FaTrophy } from 'react-icons/fa'
 import { MdSportsSoccer } from 'react-icons/md'
 
 const formatDate = (date, view) => {
@@ -84,6 +84,17 @@ export default function CalendarHeader({
         >
           <FaDumbbell size={14} />
           <span>Tập luyện</span>
+        </button>
+
+        <button
+          onClick={() => onFilterChange('challenges')}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-sm ${filters.challenges
+            ? 'bg-amber-100 text-amber-800 dark:bg-amber-700 dark:text-amber-100'
+            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+            }`}
+        >
+          <FaTrophy size={14} />
+          <span>Thử thách</span>
         </button>
       </div>
 
