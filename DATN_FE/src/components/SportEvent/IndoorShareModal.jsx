@@ -88,7 +88,12 @@ export default function IndoorShareModal({ session, event, eventId, progressStat
     })
 
     const handleShare = () => {
-        const marker = `[indoor-session:${session._id}:${eventId}]`
+        const sessionId = session?._id ?? session?.id
+        if (!sessionId || !eventId) {
+            toast.error('Thiếu mã buổi học hoặc sự kiện, không thể chia sẻ.')
+            return
+        }
+        const marker = `[indoor-session:${sessionId}:${eventId}]`
         const fullContent = content.trim()
             ? `${content.trim()}\n${marker}`
             : marker

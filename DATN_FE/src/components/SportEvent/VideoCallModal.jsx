@@ -726,8 +726,17 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
                 totalSeconds: totalRef.current,
                 screenshots: screenshotsRef.current
             })
-            const summary = res?.data?.result?.summary
-            if (summary) onCallEnded(summary)
+            const result = res?.data?.result
+            const summary = result?.summary
+            if (summary) {
+                const vsId = vsIdRef.current
+                const joinedAt = result?.videoSession?.joinedAt
+                onCallEnded({
+                    ...summary,
+                    _id: summary._id ?? vsId,
+                    ...(joinedAt ? { joinedAt } : {})
+                })
+            }
             else { toast.error('Không lưu được kết quả'); onClose() }
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Lỗi khi lưu kết quả')

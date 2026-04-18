@@ -377,7 +377,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
         setTimeout(() => {
             setSelectedSession({
                 ...summary,
-                joinedAt: new Date().toISOString(),
+                joinedAt: summary.joinedAt || new Date().toISOString(),
                 screenshots: summary.screenshots || []
             })
         }, 300)

@@ -150,10 +150,10 @@ export default function ChallengePreviewCard({ challengeId }) {
         retry: false
     })
 
-    // Leaderboard for overall progress bar
+    // Leaderboard: backend trả current_value = số ngày đạt mục tiêu / người (không có totalProgress)
     const { data: leaderboardData } = useQuery({
         queryKey: ['challenge-leaderboard-preview', challengeId],
-        queryFn: () => getChallengeLeaderboard(challengeId),
+        queryFn: () => getChallengeLeaderboard(challengeId, { limit: 500, page: 1 }),
         enabled: Boolean(challengeId),
         staleTime: 60_000,
         retry: false
@@ -219,6 +219,9 @@ export default function ChallengePreviewCard({ challengeId }) {
     const challenge = data?.data?.result
     if (!challenge) return null
 
+    const participantsList = challenge.participants_ids || []
+    const totalParticipants = challenge.participants_count || participantsList.length || 0
+
     const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
     const startDate = moment(challenge.start_date)
     const endDate = moment(challenge.end_date)
@@ -234,25 +237,31 @@ export default function ChallengePreviewCard({ challengeId }) {
             ? { text: 'Sắp diễn ra', color: 'bg-amber-500' }
             : { text: 'Đang diễn ra', color: 'bg-emerald-500' }
 
-    // Compute overall progress from leaderboard
-    const leaderboard = leaderboardData?.data?.result?.leaderboard || []
-    const totalProgress = leaderboard.reduce((sum, e) => sum + (e.totalProgress || 0), 0)
+    // Tiến độ cộng đồng = tổng (ngày hoàn thành của từng người) / (số ngày thử thách × số người tham gia)
+    const leaderboardResult = leaderboardData?.data?.result
+    const leaderboard = leaderboardResult?.leaderboard || []
+    const participantTotalFromLb = leaderboardResult?.total
+    const totalCompletedDays = leaderboard.reduce((sum, e) => sum + (Number(e.current_value) || 0), 0)
     const safeStart = new Date(challenge.start_date || new Date())
     const safeEnd = new Date(challenge.end_date || new Date())
     safeStart.setHours(0, 0, 0, 0)
     safeEnd.setHours(0, 0, 0, 0)
     const totalRequiredDays = Math.max(1, Math.ceil((safeEnd - safeStart) / (1000 * 60 * 60 * 24)) + 1)
-    const totalGoal = totalRequiredDays * (challenge.goal_value || 1) * (challenge.participants_count || 1)
-    const overallPct = totalGoal > 0 ? Math.min(Math.round((totalProgress / totalGoal) * 100), 100) : 0
+    const participantTotal =
+        typeof participantTotalFromLb === 'number' && participantTotalFromLb > 0
+            ? participantTotalFromLb
+            : (challenge.participants_count || participantsList.length || leaderboard.length || 1)
+    const totalCommunitySlots = totalRequiredDays * participantTotal
+    const overallPct =
+        totalCommunitySlots > 0
+            ? Math.min(Math.round((totalCompletedDays / totalCommunitySlots) * 100), 100)
+            : 0
 
     const timeInfo = isEnded
         ? `Đã kết thúc ${formatRelativeTimeVi(endDate)}`
         : isNotStarted
             ? `Bắt đầu ${formatRelativeTimeVi(startDate)}`
             : `Kết thúc ${formatRelativeTimeVi(endDate)}`
-
-    const participantsList = challenge.participants_ids || []
-    const totalParticipants = challenge.participants_count || participantsList.length || 0
 
     return (
         <div
@@ -358,9 +367,9 @@ export default function ChallengePreviewCard({ challengeId }) {
                                 style={{ width: `${overallPct}%` }}
                             />
                         </div>
-                        {leaderboard.length > 0 && (
-                            <p className="text-[10px] text-gray-400 mt-0.5">{leaderboard.length} thành viên đang tham gia</p>
-                        )}
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                            {participantTotal} thành viên đang tham gia
+                        </p>
                     </div>
                 )}
 

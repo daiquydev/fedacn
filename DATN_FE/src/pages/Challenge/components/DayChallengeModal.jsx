@@ -230,8 +230,18 @@ export default function DayChallengeModal({
 
   const CategoryIcon = ACTIVITY_ICONS[challenge?.category] || config.icon
 
+  // Modal con (chi tiết hoạt động, chia sẻ, xóa…) đã có overlay riêng — giữ nền cha sẽ chồng 2 lớp mờ → gần như đen.
+  const childStackModalOpen = Boolean(
+    selectedActivityId || selectedEntryDetail || shareActivity || deleteEntry
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+        childStackModalOpen ? 'bg-transparent' : 'bg-black/60 backdrop-blur-sm'
+      }`}
+      onClick={onClose}
+    >
       <div
         className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden"
         style={{ maxHeight: '90vh' }}

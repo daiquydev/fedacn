@@ -14,6 +14,7 @@ import {
   FaBookmark, FaCalendarAlt
 } from 'react-icons/fa'
 import { GiMuscleUp, GiWeightLiftingUp, GiJumpingRope, GiBiceps } from 'react-icons/gi'
+import { MdFitnessCenter } from 'react-icons/md'
 import { toast } from 'react-hot-toast'
 import { filterExercises, suggestExercisesByKcal, getAllExercises } from '../../apis/exerciseApi'
 import { createWorkoutSession, completeWorkoutSession } from '../../apis/workoutSessionApi'
@@ -995,6 +996,30 @@ const StepIndicator = ({ currentStep, steps }) => (
   </div>
 )
 
+/** Ảnh thiết bị từ API (vd. plate.png) có thể thiếu trên CDN — fallback icon cho máy/đĩa tạ */
+function TrainingEquipmentIcon({ image_url, name, name_en }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  const usePlateFallback = name_en === 'plate' && (imgFailed || !String(image_url || '').trim())
+  if (usePlateFallback) {
+    return (
+      <MdFitnessCenter
+        className="w-12 h-12 mb-2 text-slate-600 dark:text-slate-300 shrink-0"
+        aria-hidden
+      />
+    )
+  }
+  return (
+    <img
+      src={image_url}
+      alt={name}
+      className="w-12 h-12 object-contain mb-2"
+      onError={() => {
+        if (name_en === 'plate') setImgFailed(true)
+      }}
+    />
+  )
+}
+
 // Step 1: Equipment Selection
 const EquipmentStep = ({ selectedEquipment, onToggle, equipmentList = [] }) => {
   if (equipmentList.length === 0) {
@@ -1026,7 +1051,7 @@ const EquipmentStep = ({ selectedEquipment, onToggle, equipmentList = [] }) => {
                   <FaCheck className="text-white text-xs" />
                 </div>
               )}
-              <img src={eq.image_url} alt={eq.name} className="w-12 h-12 object-contain mb-2" />
+              <TrainingEquipmentIcon image_url={eq.image_url} name={eq.name} name_en={eq.name_en} />
               <span className="font-semibold text-sm">{eq.name}</span>
               <span className="text-xs text-gray-400 mt-1">{eq.description}</span>
             </button>

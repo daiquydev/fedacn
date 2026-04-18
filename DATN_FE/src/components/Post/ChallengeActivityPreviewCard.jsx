@@ -330,7 +330,7 @@ export default function ChallengeActivityPreviewCard({ activityId, challengeId }
                     <span className="text-white/60 text-[10px]">• Hoạt động thử thách</span>
                 </div>
                 <span className="text-white/80 text-xs">
-                    {moment(activity.date || activity.createdAt).format('HH:mm - DD/MM/YYYY')}
+                    {moment(activity.date || activity.startTime || activity.createdAt).format('HH:mm - DD/MM/YYYY')}
                 </span>
             </div>
 
@@ -339,7 +339,7 @@ export default function ChallengeActivityPreviewCard({ activityId, challengeId }
                 <NutritionActivityContent activity={activity} challenge={challenge} config={config} />
             )}
             {challengeType === 'outdoor_activity' && (
-                <OutdoorActivityContent activity={activity} challenge={challenge} config={config} challengeId={challengeId} activityId={activityId} />
+                <OutdoorActivityContent activity={activity} challenge={challenge} config={config} />
             )}
             {challengeType === 'fitness' && (
                 <FitnessActivityContent activity={activity} challenge={challenge} config={config} />
@@ -469,21 +469,45 @@ function NutritionActivityContent({ activity, challenge, config }) {
     )
 }
 
+/** Chuẩn hóa outdoor: API /challenges/.../activity/:id trả ActivityTracking (totalDistance m, totalDuration s, avgSpeed m/s); tiến độ thử thách dùng distance (km), duration_minutes, avg_speed (km/h). */
+function getOutdoorDisplayStats(activity) {
+    let distanceKm = '0'
+    if (activity.totalDistance != null && Number(activity.totalDistance) > 0) {
+        distanceKm = (Number(activity.totalDistance) / 1000).toFixed(2)
+    } else if (activity.distance != null && Number(activity.distance) > 0) {
+        const d = Number(activity.distance)
+        distanceKm = d > 200 ? (d / 1000).toFixed(2) : d.toFixed(2)
+    } else if (activity.value != null && Number(activity.value) > 0) {
+        distanceKm = Number(activity.value).toFixed(2)
+    }
+
+    let durationLabel = '0 phút'
+    if (activity.totalDuration != null && Number(activity.totalDuration) > 0) {
+        durationLabel = formatDuration(Math.round(Number(activity.totalDuration) / 60))
+    } else if (activity.duration_minutes != null && Number(activity.duration_minutes) > 0) {
+        durationLabel = formatDuration(Number(activity.duration_minutes))
+    }
+
+    let speedKmh = null
+    if (activity.avgSpeed != null && Number(activity.avgSpeed) > 0) {
+        speedKmh = (Number(activity.avgSpeed) * 3.6).toFixed(1)
+    } else if (activity.avg_speed != null && Number(activity.avg_speed) > 0) {
+        speedKmh = Number(activity.avg_speed).toFixed(1)
+    } else if (Number(activity.totalDistance) > 0 && Number(activity.totalDuration) > 0) {
+        const km = Number(activity.totalDistance) / 1000
+        const h = Number(activity.totalDuration) / 3600
+        speedKmh = (km / h).toFixed(2)
+    }
+
+    return { distanceKm, durationLabel, speedKmh }
+}
+
 // ── Outdoor Activity content ────────────────────────────────────────────────
-function OutdoorActivityContent({ activity, challenge, config, challengeId, activityId }) {
+function OutdoorActivityContent({ activity, challenge, config }) {
     const mapContainerRef = useRef(null)
     const mapRef = useRef(null)
 
-    // Fetch GPS route if activity_id exists
-    const { data: gpsData } = useQuery({
-        queryKey: ['challengeActivityGps', challengeId, activityId],
-        queryFn: () => getChallengeActivity(challengeId, activityId),
-        enabled: Boolean(activity?.activity_id) && Boolean(challengeId),
-        staleTime: 60_000,
-        retry: false
-    })
-
-    const gpsRoute = gpsData?.data?.result?.gpsRoute || []
+    const gpsRoute = Array.isArray(activity?.gpsRoute) ? activity.gpsRoute : []
     const hasRoute = gpsRoute.length > 1
 
     useEffect(() => {
@@ -544,18 +568,18 @@ function OutdoorActivityContent({ activity, challenge, config, challengeId, acti
         }
     }, [hasRoute, gpsRoute])
 
-    const distanceKm = activity.distance ? (activity.distance / 1000).toFixed(2) : activity.value?.toFixed(2) || '0'
+    const { distanceKm, durationLabel, speedKmh } = getOutdoorDisplayStats(activity)
 
     const stats = [
         { icon: <FaRoad className="text-blue-500" />, label: 'Quãng đường', value: `${distanceKm} km` },
-        { icon: <FaClock className="text-cyan-500" />, label: 'Thời gian', value: formatDuration(activity.duration_minutes) },
+        { icon: <FaClock className="text-cyan-500" />, label: 'Thời gian', value: durationLabel },
     ]
 
     if (activity.calories) {
         stats.push({ icon: <FaFire className="text-orange-500" />, label: 'Calo', value: `${roundKcal(activity.calories)} kcal` })
     }
-    if (activity.avg_speed) {
-        stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ TB', value: `${activity.avg_speed.toFixed(1)} km/h` })
+    if (speedKmh) {
+        stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ TB', value: `${speedKmh} km/h` })
     }
 
     return (
@@ -573,8 +597,8 @@ function OutdoorActivityContent({ activity, challenge, config, challengeId, acti
                 ))}
             </div>
 
-            {/* GPS Route Map */}
-            {activity.activity_id && (
+            {/* GPS Route Map — dữ liệu từ ActivityTracking.gpsRoute */}
+            {hasRoute && (
                 <div>
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <FaRoute className="text-cyan-500" size={10} />

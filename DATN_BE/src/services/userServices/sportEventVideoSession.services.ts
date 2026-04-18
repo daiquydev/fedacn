@@ -172,6 +172,9 @@ class SportEventVideoSessionService {
             videoSession: updatedVS,
             progress,
             summary: {
+                // FE (chia sẻ cộng đồng) cần _id + joinedAt giống document từ getVideoSessions
+                _id: updatedVS!._id,
+                joinedAt: updatedVS!.joinedAt,
                 activeSeconds: safeActiveSeconds,
                 totalSeconds: safeTotalSeconds,
                 caloriesBurned,
