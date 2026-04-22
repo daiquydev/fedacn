@@ -78,8 +78,7 @@ const EditSportEvent = () => {
     detailedDescription: '',
     eventType: 'Ngoài trời',
     requirements: '',
-    benefits: '',
-    requireStrava: false
+    benefits: ''
   })
 
   const [errors, setErrors] = useState({})
@@ -119,8 +118,7 @@ const EditSportEvent = () => {
         detailedDescription: event.detailedDescription || '',
         eventType: event.eventType || 'Ngoài trời',
         requirements: event.requirements || '',
-        benefits: event.benefits || '',
-        requireStrava: event.requireStrava || false
+        benefits: event.benefits || ''
       })
     }
   }, [eventData])
@@ -302,8 +300,7 @@ const EditSportEvent = () => {
       detailedDescription: newEvent.detailedDescription,
       eventType: newEvent.eventType,
       requirements: newEvent.requirements,
-      benefits: newEvent.benefits,
-      requireStrava: newEvent.eventType === 'Ngoài trời' ? newEvent.requireStrava : false
+      benefits: newEvent.benefits
     }
 
     updateMutation.mutate(finalData)
@@ -418,25 +415,6 @@ const EditSportEvent = () => {
                   </div>
                 </div>
 
-                {/* Yêu cầu Strava Sync */}
-                {newEvent.eventType === 'Ngoài trời' && (
-                  <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu ghi hoạt động (đồng bộ Strava)</h4>
-                      <p className="text-xs text-orange-700 dark:text-orange-400">Chỉ chấp nhận tiến độ từ hoạt động đã ghi trên Strava</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        name="requireStrava"
-                        className="sr-only peer" 
-                        checked={newEvent.requireStrava}
-                        onChange={(e) => setNewEvent(p => ({ ...p, requireStrava: e.target.checked }))}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
-                    </label>
-                  </div>
-                )}
               </div>
             </section>
 
@@ -692,7 +670,7 @@ const EditSportEvent = () => {
 
               {/* Preview Card */}
               <div className="rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-2xl mb-8">
-                <div className="relative h-44 bg-gray-100 dark:bg-gray-700">
+                <div className="relative h-48 bg-gray-100 dark:bg-gray-700">
                   {newEvent.image && <img src={newEvent.image} alt="Preview" className="w-full h-full object-cover" />}
                   <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-xl text-[10px] font-black shadow-sm">
                     {newEvent.eventType === 'Ngoài trời'

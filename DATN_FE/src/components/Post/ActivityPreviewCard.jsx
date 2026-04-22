@@ -205,7 +205,7 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
 
     if (activity.totalDistance && activity.totalDuration) {
         const speedKmh = ((activity.totalDistance / 1000) / (activity.totalDuration / 3600)).toFixed(2)
-        stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ TB', value: `${speedKmh} km/h` })
+        stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ trung bình', value: `${speedKmh} km/h` })
     }
 
     return (

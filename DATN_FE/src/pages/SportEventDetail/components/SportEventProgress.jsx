@@ -26,12 +26,10 @@ import {
   FaTrash
 } from 'react-icons/fa'
 import { MdOutlineHistoryEdu } from 'react-icons/md'
-import { SiStrava } from 'react-icons/si'
 import moment from 'moment'
 import toast from 'react-hot-toast'
 import { getUserActivities, softDeleteActivity } from '../../../apis/sportEventApi'
 import sportCategoryApi from '../../../apis/sportCategoryApi'
-import StravaSyncModal from './StravaSyncModal'
 import { getSportIcon } from '../../../utils/sportIcons'
 import ActivityShareModal from '../../../components/SportEvent/ActivityShareModal'
 import ActivityDetailModal from '../../../components/SportEvent/ActivityDetailModal'
@@ -115,7 +113,6 @@ export default function SportEventProgress({
   const { id } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
-  const [isOpenStravaModal, setIsOpenStravaModal] = useState(false)
   const activityListRef = useRef(null)
   const activityItemRefs = useRef({})
 
@@ -579,17 +576,6 @@ export default function SportEventProgress({
         />
       )}
 
-      {/* Strava Sync Modal */}
-      <StravaSyncModal
-        isOpen={isOpenStravaModal}
-        onClose={() => setIsOpenStravaModal(false)}
-        eventId={id}
-        onImportSuccess={() => {
-          queryClient.invalidateQueries(['userActivities', id])
-          queryClient.invalidateQueries(['sportEvent', id])
-        }}
-      />
-
       {/* Activity Tracking Button - only for outdoor events */}
       {isOutdoor && (
         <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 shadow-lg text-white">
@@ -611,23 +597,13 @@ export default function SportEventProgress({
                     {isEnded ? 'Sự kiện đã kết thúc' : 'Sự kiện chưa bắt đầu'}
                   </div>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => navigate(`/sport-event/${id}/tracking`)}
-                      className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
-                    >
-                      <FaMapMarkerAlt />
-                      Bắt đầu ghi
-                    </button>
-                    <button
-                      onClick={() => setIsOpenStravaModal(true)}
-                      className="flex-1 sm:flex-none bg-[#fc4c02] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-[#e34402] transition shadow-lg flex items-center justify-center gap-2 border border-white/20"
-                      title="Đồng bộ dữ liệu từ Strava"
-                    >
-                      <svg className="w-5 h-5 fill-current text-white shrink-0" viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"></path></svg>
-                      Đồng bộ Strava
-                    </button>
-                  </>
+                  <button
+                    onClick={() => navigate(`/sport-event/${id}/tracking`)}
+                    className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <FaMapMarkerAlt />
+                    Bắt đầu ghi
+                  </button>
                 )}
               </div>
             </div>
@@ -1014,16 +990,13 @@ export default function SportEventProgress({
                           }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${activity.source === 'strava'
-                            ? 'bg-orange-50 dark:bg-orange-900/20 text-[#fc4c02]'
-                            : 'bg-blue-50 dark:bg-blue-900/20 text-blue-500'
-                            }`}>
-                            {activity.source === 'strava' ? <SiStrava /> : <CategoryIcon />}
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 text-blue-500">
+                            <CategoryIcon />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate flex items-center gap-1.5">
-                                {activity.source === 'strava' ? 'Strava' : (event?.category || activity.activityType)}
+                                {event?.category || activity.activityType}
                               </h4>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <span className="text-xs text-gray-400">

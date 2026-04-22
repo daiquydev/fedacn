@@ -11,7 +11,6 @@ import { getSportEvent, joinSportEvent, leaveSportEvent, getUserProgress, getLea
 import { getImageUrl } from '../../../utils/imageUrl'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
-import { syncStravaEvent } from '../../../apis/userApi'
 import { getProfileFromLS } from '../../../utils/auth'
 
 export default function EventDetail() {
@@ -27,7 +26,6 @@ export default function EventDetail() {
   const [myProgress, setMyProgress] = useState(null)
   const [leaderboardData, setLeaderboardData] = useState([])
   const [progressLoading, setProgressLoading] = useState(false)
-  const [isSyncingStrava, setIsSyncingStrava] = useState(false)
 
   useEffect(() => {
     fetchEventDetail()
@@ -133,28 +131,6 @@ export default function EventDetail() {
       toast.error(error.response?.data?.message || 'Lỗi khi rời khỏi sự kiện')
     } finally {
       setIsJoining(false)
-    }
-  }
-
-  const handleSyncStrava = async () => {
-    try {
-      setIsSyncingStrava(true)
-      const res = await syncStravaEvent(id)
-      const { syncedCount, totalDistanceAdded, newActivities } = res.data?.result || {}
-      
-      if (syncedCount > 0) {
-        toast.success(`Đã đồng bộ ${syncedCount} hoạt động (${totalDistanceAdded.toFixed(2)}km) từ Strava!`)
-        // Refresh
-        fetchMyProgress()
-        fetchLeaderboard()
-      } else {
-        toast.success('Không có hoạt động mới nào từ Strava trong khung giờ của sự kiện.')
-      }
-    } catch (error) {
-      console.error('Lỗi khi đồng bộ Strava:', error)
-      toast.error(error.response?.data?.message || 'Không thể đồng bộ từ Strava. Vui lòng kết nối tài khoản lại.')
-    } finally {
-      setIsSyncingStrava(false)
     }
   }
 
@@ -569,33 +545,6 @@ export default function EventDetail() {
                           </p>
                         )}
 
-                        {/* Strava Sync Button */}
-                        {event.eventType === 'Ngoài trời' && (
-                          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                            <button
-                              onClick={handleSyncStrava}
-                              disabled={isSyncingStrava || isEventInPast}
-                              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#fc4c02] hover:bg-[#e34402] disabled:opacity-50 disabled:cursor-not-allowed outline-none text-white font-bold rounded-lg transition-colors text-sm"
-                            >
-                              {isSyncingStrava ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
-                                  <span>Đang tải...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"></path></svg>
-                                  <span>Tải dữ liệu từ Strava</span>
-                                </>
-                              )}
-                            </button>
-                            {event.requireStrava && (
-                              <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-2.5">
-                                Sự kiện này chỉ chấp nhận hoạt động đã ghi từ Strava.
-                              </p>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   ) : (

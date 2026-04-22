@@ -400,7 +400,6 @@ async function main() {
       image: plan.image,
       createdBy: new mongoose.Types.ObjectId(CREATOR_ID),
       eventType: 'Trong nhà',
-      requireStrava: false,
       participants_ids: participants.map(u => new mongoose.Types.ObjectId(u)),
       requirements: plan.requirements,
       benefits: plan.benefits,

@@ -8,6 +8,7 @@ import sportCategoryApi from '../../../apis/sportCategoryApi'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
+import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
 import toast from 'react-hot-toast'
 import moment from 'moment'
 import DatePicker from 'react-datepicker'
@@ -16,7 +17,7 @@ import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
     FaMagic, FaBullseye, FaCalendarAlt, FaUsers, FaImage,
     FaGlobe, FaUserFriends, FaLock, FaFire, FaClipboardList, FaClock,
-    FaChevronRight, FaChevronLeft
+    FaChevronRight, FaChevronLeft, FaArrowLeft
 } from 'react-icons/fa'
 import { MdAutoAwesome } from 'react-icons/md'
 import { BsClockHistory } from 'react-icons/bs'
@@ -54,6 +55,58 @@ const parseTime = (timeStr) => {
     d.setSeconds(0)
     d.setMilliseconds(0)
     return d
+}
+
+/** Chuẩn hoá tiếng Việt không dấu, chữ thường — để bắt từ khoá ổn định */
+const stripVnTones = (s) => {
+    if (!s) return ''
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+/**
+ * Bắt số bữa/ngày nếu người dùng nói rõ ("3 bữa", "ba bữa"...).
+ * @returns {number|null}
+ */
+const inferExplicitMealsPerDay = (desc) => {
+    const raw = (desc || '').toLowerCase()
+    const p = stripVnTones(desc)
+    if (/(^|\s)(4|bon|tu)(\s+bua|\s+bua\/)/.test(p) || /(bốn|tư|4)\s*bữa/.test(raw)) return 4
+    if (/(^|\s)(3|ba)(\s+bua|\s+bua\/)/.test(p) || /(ba|3)\s*bữa/.test(raw) || /\bđủ\s*3\s*bữa\b/.test(raw)) return 3
+    if (/(^|\s)(2|hai)(\s+bua|\s+bua\/)/.test(p) || /(hai|2)\s*bữa/.test(raw)) return 2
+    if (/mot\s*bua|(^|\s)1(\s+bua|\s+bua\/)/.test(p) || /một\s*bữa|(^|\s)1\s*bữa/.test(raw)) return 1
+    return null
+}
+
+/**
+ * Nếu mô tả có buổi/bữa trong ngày → gợi ý khung giờ check-in hợp lý (bổ sung / sửa lỗi AI).
+ * @returns {{ start: string, end: string } | null}
+ */
+const inferMealTimeWindowFromDescription = (desc) => {
+    const raw = (desc || '').toLowerCase()
+    const p = stripVnTones(desc)
+    const mentionsEvening =
+        p.includes('buoi toi') || p.includes('bua toi') || p.includes('an toi') ||
+        raw.includes('buổi tối') || raw.includes('bữa tối') || raw.includes('ăn tối') ||
+        (raw.includes('tối') && (raw.includes('bữa') || raw.includes('buổi') || raw.includes('ăn')))
+    const mentionsMidday =
+        p.includes('buoi trua') || p.includes('bua trua') || p.includes('an trua') ||
+        raw.includes('buổi trưa') || raw.includes('bữa trưa') || raw.includes('ăn trưa') ||
+        raw.includes('trưa')
+    const mentionsAfternoon =
+        p.includes('buoi chieu') || raw.includes('buổi chiều') || raw.includes('giờ xế') || raw.includes('xế chiều')
+    const mentionsMorning =
+        p.includes('buoi sang') || p.includes('bua sang') || p.includes('an sang') ||
+        raw.includes('buổi sáng') || raw.includes('bữa sáng') || raw.includes('ăn sáng') ||
+        (raw.includes('sáng') && (raw.includes('bữa') || raw.includes('buổi') || raw.includes('ăn')))
+    const mentionsNight =
+        p.includes('an dem') || p.includes('khuya') || raw.includes('ăn đêm') || raw.includes('khuya')
+
+    if (mentionsNight) return { start: '21:00', end: '23:30' }
+    if (mentionsEvening) return { start: '17:30', end: '21:00' }
+    if (mentionsAfternoon) return { start: '14:00', end: '17:30' }
+    if (mentionsMidday) return { start: '11:00', end: '14:30' }
+    if (mentionsMorning) return { start: '06:00', end: '10:30' }
+    return null
 }
 
 // ==================== CONSTANTS ====================
@@ -106,7 +159,7 @@ function PreviewCard({ form, selectedCat, outdoorCategories }) {
     return (
         <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Card image/gradient header */}
-            <div className={`relative h-44 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+            <div className={`relative h-48 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                 {form.image ? (
                     <img src={getImageUrl(form.image)} alt="preview" className="w-full h-full object-cover" />
                 ) : (
@@ -170,10 +223,11 @@ function PreviewCard({ form, selectedCat, outdoorCategories }) {
     )
 }
 
-// ==================== MAIN MODAL ====================
-export default function CreateChallengeModal({ open, onClose }) {
+// ==================== MAIN MODAL (layout="modal" | "page") ====================
+export default function CreateChallengeModal({ open, onClose, layout = 'modal' }) {
     const navigate = useNavigate()
     const queryClient = useQueryClient()
+    const isPage = layout === 'page'
 
     const [form, setForm] = useState({
         title: '',
@@ -398,10 +452,13 @@ export default function CreateChallengeModal({ open, onClose }) {
             queryClient.invalidateQueries({ queryKey: ['challenges-feed'] })
             queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
             const id = res?.data?.result?._id
-            onClose()
             if (id) {
                 queryClient.invalidateQueries({ queryKey: ['challenge', id] })
                 navigate(`/challenge/${id}`)
+            }
+            // Trang full: đã điều hướng tới chi tiết — không gọi onClose (tránh navigate về danh sách rồi mới tới chi tiết).
+            if (!id || !isPage) {
+                onClose()
             }
         },
         onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi tạo thử thách')
@@ -416,7 +473,7 @@ export default function CreateChallengeModal({ open, onClose }) {
     // Contextual placeholders per type (Step 2 hint)
     const AI_PLACEHOLDERS = {
         outdoor_activity: 'Nhập độ dài, mục tiêu và thời gian (ví dụ: chạy bộ 5km mỗi ngày trong 30 ngày)',
-        nutrition: 'Nhập chế độ ăn, số bữa và thời gian (ví dụ: ăn chay 1 bữa/ngày trong 3 tuần)',
+        nutrition: 'Mô tả chế độ ăn và thời gian thử thách (ví dụ: ăn lành mạnh 2 tuần; hoặc "một bữa trưa healthy" — AI sẽ gợi ý khung giờ trưa nếu bạn nhắc buổi/bữa)',
         fitness: 'Nhập chi tiết bài tập (ví dụ: tập gym 4 buổi/tuần, mỗi buổi 45 phút)'
     }
 
@@ -448,18 +505,34 @@ Quy tắc:
         }
 
         if (type === 'nutrition') {
-            return `Hôm nay là ${today}. Người dùng muốn tạo một thử thách ĂN UỐNG / CHẾ ĐỘ DINH DƯỠNG (ăn kiêng, detox, ăn sạch, giảm cân...). Mô tả:
+            return `Hôm nay là ${today}. Người dùng muốn tạo một thử thách ĂN UỐNG / CHẾ ĐỘ DINH DƯỠNG. Mô tả người dùng (nguyên văn, có thể có lỗi đánh máy):
 "${desc}"
 
-Quy tắc:
+Quy tắc QUAN TRỌNG (đọc kỹ):
+
+A) Số bữa check-in mỗi ngày — goal_value
+- CHỈ dùng số > 1 khi mô tả NÓI RÕ nhiều bữa trong ngày (ví dụ "ba bữa", "3 bữa", "hai bữa chính"...).
+- Nếu mô tả chỉ nhắc MỘT buổi/bữa trong ngày (ví dụ "bữa trưa", "ăn sáng", "buổi tối", "một bữa healthy") → goal_value = 1.
+- Nếu KHÔNG đề cập số bữa hay buổi cụ thể (chỉ nói chung "ăn sạch", "giảm cân", "detox"...) → goal_value = 1 (mặc định an toàn).
+
+B) Giới hạn giờ check-in — nutrition_sub_type và khung giờ
+- nutrition_sub_type = "time_window" CHỈ khi mô tả đề cập THỜI ĐIỂM/BỮA trong ngày hoặc KHUNG GIỜ cụ thể, ví dụ: buổi sáng/trưa/chiều/tối, bữa sáng/trưa/tối, "lúc 12h", "từ 11h đến 14h", "trong giờ nghỉ trưa"...
+- Nếu KHÔNG đề cập thời điểm hay bữa nào trong ngày → nutrition_sub_type = "free", time_window_start và time_window_end = null.
+
+C) Gợi ý khung giờ khi nutrition_sub_type = "time_window" (24h, HH:mm)
+- Bữa sáng / buổi sáng: 06:00–10:30
+- Buổi trưa / bữa trưa / "trưa": 11:00–14:30
+- Buổi chiều / xế: 14:00–17:30
+- Buổi tối / bữa tối / ăn tối: 17:30–21:00
+- Ăn khuya / đêm: 21:00–23:30
+- Nếu mô tả có giờ cụ thể (vd "11h-13h") → dùng đúng giờ đó (làm tròn 5 phút).
+
+D) Khác
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
-2. goal_value: số bữa ăn cần check-in mỗi ngày (thường là 1-3 bữa).
-3. nutrition_sub_type: nếu mô tả đề cập đến khung giờ cụ thể (ví dụ "7-10h", "buổi sáng từ 8 đến 11") thì trả về "time_window", ngược lại trả về "free".
-4. time_window_start, time_window_end: nếu nutrition_sub_type là "time_window", suy ra khung giờ từ mô tả, định dạng "HH:mm" (24h). Nếu không có thì bỏ qua.
-5. visibility: "public" | "friends" | "private".
-6. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ ĂN UỐNG/DINH DƯỠNG.
-7. description: tối đa 150 ký tự, tiếng Việt, nói về chế độ ăn uống.
-8. Chỉ trả về JSON object, không markdown.
+2. visibility: "public" | "friends" | "private".
+3. title: ngắn gọn, tiếng Việt, hấp dẫn, chủ đề ăn uống.
+4. description: tối đa 150 ký tự, tiếng Việt.
+5. Chỉ trả về JSON object, không markdown.
 
 {
   "title": string,
@@ -538,20 +611,50 @@ Quy tắc:
                     updated.kcal_per_unit = cat?.kcal_per_unit || 0
                 }
 
-                // Nutrition: sync time-window fields from AI
+                // Nutrition: khung giờ + số bữa (AI + suy luận từ mô tả tiếng Việt)
                 if (aiType === 'nutrition') {
-                    if (parsed.nutrition_sub_type === 'time_window') {
-                        updated.nutrition_sub_type = 'time_window'
-                        if (parsed.time_window_start) updated.time_window_start = parsed.time_window_start
-                        if (parsed.time_window_end) updated.time_window_end = parsed.time_window_end
-                    } else {
-                        updated.nutrition_sub_type = 'free'
+                    const userLine = aiDesc.trim()
+                    const fromTextWindow = inferMealTimeWindowFromDescription(userLine)
+                    const explicitMeals = inferExplicitMealsPerDay(userLine)
+
+                    let sub = parsed.nutrition_sub_type === 'time_window' ? 'time_window' : 'free'
+                    let tws = parsed.time_window_start || null
+                    let twe = parsed.time_window_end || null
+
+                    if (fromTextWindow) {
+                        sub = 'time_window'
+                        tws = fromTextWindow.start
+                        twe = fromTextWindow.end
+                    } else if (sub === 'time_window' && (!tws || !twe)) {
+                        tws = tws || '11:00'
+                        twe = twe || '14:30'
                     }
+
+                    updated.nutrition_sub_type = sub
+                    if (sub === 'time_window') {
+                        if (tws) updated.time_window_start = tws
+                        if (twe) updated.time_window_end = twe
+                    }
+
+                    let meals = Number(parsed.goal_value)
+                    if (explicitMeals != null) {
+                        meals = explicitMeals
+                    } else if (fromTextWindow) {
+                        meals = 1
+                    } else if (!Number.isFinite(meals) || meals < 1) {
+                        meals = 1
+                    } else if (explicitMeals == null && !fromTextWindow) {
+                        // Không nêu rõ số bữa / buổi → mặc định 1 bữa check-in/ngày (tránh AI trả 3 vô lý)
+                        meals = 1
+                    }
+                    updated.goal_value = String(Math.min(12, Math.max(1, Math.round(meals))))
                 }
 
                 if (parsed.startDate) updated.startDate = parsed.startDate
                 if (parsed.endDate) updated.endDate = parsed.endDate
-                if (parsed.goal_value && Number(parsed.goal_value) > 0) updated.goal_value = String(parsed.goal_value)
+                if (aiType !== 'nutrition' && parsed.goal_value && Number(parsed.goal_value) > 0) {
+                    updated.goal_value = String(parsed.goal_value)
+                }
                 if (['public', 'friends', 'private'].includes(parsed.visibility)) updated.visibility = parsed.visibility
                 if (parsed.description) updated.description = parsed.description.slice(0, 150)
                 return updated
@@ -588,8 +691,15 @@ Quy tắc:
                 } else if (newExercises.length < parsed.suggested_exercises.length) {
                      toast.success(`✨ AI đã điền xong! Tìm thấy ${newExercises.length}/${parsed.suggested_exercises.length} bài tập.`)
                 } else {
-                     toast.success('✨ AI đã thêm đầy đủ các bài tập!')
+                    toast.success('✨ AI đã thêm đầy đủ các bài tập!')
                 }
+            } else if (aiType === 'nutrition') {
+                const twHint = inferMealTimeWindowFromDescription(aiDesc.trim())
+                toast.success(
+                    twHint
+                        ? `✨ AI đã điền xong! Đã gợi ý khung giờ check-in ${twHint.start}–${twHint.end} theo mô tả của bạn.`
+                        : '✨ AI đã điền xong!'
+                )
             } else {
                 toast.success('✨ AI đã điền xong!')
             }
@@ -605,44 +715,62 @@ Quy tắc:
         }
     }
 
-    if (!open) return null
+    if (!isPage && !open) return null
 
     const nonOutdoorGoals = NON_OUTDOOR_GOALS[form.challenge_type] || []
 
-    return (
-        <>
-            {/* BACKDROP */}
-            <div
-                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-                onClick={onClose}
-            >
-                {/* MODAL */}
-                <div
-                    className="relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-                    onClick={e => e.stopPropagation()}
+    const pageHero = isPage && (
+        <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-8 mb-6">
+            <div className="container mx-auto px-4">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex items-center text-amber-50 hover:text-white mb-5 transition text-sm"
                 >
-                    {/* HEADER */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-amber-500 to-orange-600">
-                        <div className="flex items-center gap-3">
-                            <FaTrophy className="text-white text-xl" />
-                            <h2 className="text-xl font-black text-white">Tạo thử thách mới</h2>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {/* AI Button */}
-                            <button
-                                onClick={openAIModal}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-bold transition"
-                            >
-                                <MdAutoAwesome className="text-yellow-300" /> AI điền
-                            </button>
-                            <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 text-white transition">
-                                <FaTimes />
-                            </button>
-                        </div>
+                    <FaArrowLeft className="mr-2" /> Quay lại
+                </button>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-extrabold">Tạo thử thách mới</h1>
+                        <p className="opacity-90 mt-1 text-sm">Điền đầy đủ thông tin; xem trước hiển thị bên phải trên màn hình lớn.</p>
                     </div>
+                    <button
+                        type="button"
+                        onClick={openAIModal}
+                        className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 hover:shadow-xl bg-white/20 hover:bg-white/30 text-white border border-white/25"
+                    >
+                        <MdAutoAwesome className="text-yellow-200 text-lg shrink-0" />
+                        <span className="hidden sm:inline">AI điền tự động</span>
+                        <span className="sm:hidden">AI</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
 
-                    {/* BODY: 2 cols */}
-                    <div className="flex flex-1 overflow-hidden">
+    const modalHeader = !isPage && (
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-amber-500 to-orange-600">
+            <div className="flex items-center gap-3">
+                <FaTrophy className="text-white text-xl" />
+                <h2 className="text-xl font-black text-white">Tạo thử thách mới</h2>
+            </div>
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={openAIModal}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-bold transition"
+                >
+                    <MdAutoAwesome className="text-yellow-300" /> AI điền
+                </button>
+                <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-white/20 text-white transition">
+                    <FaTimes />
+                </button>
+            </div>
+        </div>
+    )
+
+    const formScrollArea = (
+                    <div className="flex flex-1 overflow-hidden min-h-0">
                         {/* LEFT: Form (scrollable) */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0">
 
@@ -714,113 +842,98 @@ Quy tắc:
 
                             {/* Non-outdoor: goal type is fixed, no selector needed */}
 
-                            {/* Nutrition: loại hình thử thách (time-window) */}
+                            {/* Nutrition: giới hạn giờ check-in (tuỳ chọn; mặc định không giới hạn) */}
                             {form.challenge_type === 'nutrition' && (
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        <FaClock className="inline mr-1 text-emerald-500" /> Loại hình thử thách ăn uống *
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                        <FaClock className="inline mr-1 text-emerald-500" /> Giờ check-in bữa ăn
                                     </label>
-                                    <div className="space-y-2">
-                                        {/* Free option */}
-                                        <button
-                                            type="button"
-                                            onClick={() => setField('nutrition_sub_type', 'free')}
-                                            className={`w-full p-3 rounded-xl border-2 flex items-start gap-3 text-left transition-all ${form.nutrition_sub_type === 'free'
-                                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'}`}
-                                        >
-                                            <span className={`w-8 h-8 flex items-center justify-center rounded-full text-base shrink-0 mt-0.5 ${form.nutrition_sub_type === 'free'
-                                                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
-                                                🕊️
-                                            </span>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Tự do</p>
-                                                <p className="text-[11px] text-gray-400">Check-in bất kỳ lúc nào trong ngày</p>
-                                            </div>
-                                            {form.nutrition_sub_type === 'free' && <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2" />}
-                                        </button>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                                        Mặc định bạn có thể check-in bất kỳ lúc nào trong ngày. Bật tuỳ chọn bên dưới nếu chỉ muốn chấp nhận ảnh bữa ăn trong một khung giờ (ví dụ chỉ bữa trưa tại công ty). Dùng <span className="font-semibold text-emerald-600 dark:text-emerald-400">AI điền</span> sẽ gợi ý khung giờ phù hợp khi bạn nhắc buổi hoặc bữa trong ngày.
+                                    </p>
+                                    <label className="flex items-start gap-3 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-emerald-300 transition-all">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                            checked={form.nutrition_sub_type === 'time_window'}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setForm(prev => ({
+                                                        ...prev,
+                                                        nutrition_sub_type: 'time_window',
+                                                        time_window_start: prev.time_window_start || '11:00',
+                                                        time_window_end: prev.time_window_end || '14:30'
+                                                    }))
+                                                    setErrors(p => ({ ...p, time_window: null }))
+                                                } else {
+                                                    setField('nutrition_sub_type', 'free')
+                                                }
+                                            }}
+                                        />
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Giới hạn check-in trong khung giờ</p>
+                                            <p className="text-[11px] text-gray-400 mt-0.5">Khi bật, ảnh check-in ngoài khoảng giờ này sẽ không hợp lệ.</p>
+                                        </div>
+                                    </label>
 
-                                        {/* Time-window option */}
-                                        <button
-                                            type="button"
-                                            onClick={() => setField('nutrition_sub_type', 'time_window')}
-                                            className={`w-full p-3 rounded-xl border-2 flex items-start gap-3 text-left transition-all ${form.nutrition_sub_type === 'time_window'
-                                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'}`}
-                                        >
-                                            <span className={`w-8 h-8 flex items-center justify-center rounded-full text-base shrink-0 mt-0.5 ${form.nutrition_sub_type === 'time_window'
-                                                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
-                                                ⏰
-                                            </span>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Khung giờ ăn</p>
-                                                <p className="text-[11px] text-gray-400">Chỉ check-in trong khoảng giờ quy định</p>
-                                            </div>
-                                            {form.nutrition_sub_type === 'time_window' && <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2" />}
-                                        </button>
-
-                                        {/* Time range inputs */}
-                                        {form.nutrition_sub_type === 'time_window' && (
-                                            <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                                                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
-                                                    <FaClock className="text-[10px]" /> Khung giờ được check-in
-                                                </p>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex-1">
-                                                        <label className="block text-[10px] text-gray-500 mb-1">Từ giờ</label>
-                                                        <DatePicker
-                                                            selected={parseTime(form.time_window_start)}
-                                                            onChange={date => {
-                                                                if (date) {
-                                                                    const h = String(date.getHours()).padStart(2, '0')
-                                                                    const m = String(date.getMinutes()).padStart(2, '0')
-                                                                    setField('time_window_start', `${h}:${m}`)
-                                                                    setErrors(p => ({ ...p, time_window: null }))
-                                                                }
-                                                            }}
-                                                            showTimeSelect
-                                                            showTimeSelectOnly
-                                                            timeIntervals={15}
-                                                            timeCaption="Giờ"
-                                                            dateFormat="HH:mm"
-                                                            timeFormat="HH:mm"
-                                                            className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
-                                                            wrapperClassName="w-full"
-                                                        />
-                                                    </div>
-                                                    <span className="text-gray-400 font-bold mt-4">→</span>
-                                                    <div className="flex-1">
-                                                        <label className="block text-[10px] text-gray-500 mb-1">Đến giờ</label>
-                                                        <DatePicker
-                                                            selected={parseTime(form.time_window_end)}
-                                                            onChange={date => {
-                                                                if (date) {
-                                                                    const h = String(date.getHours()).padStart(2, '0')
-                                                                    const m = String(date.getMinutes()).padStart(2, '0')
-                                                                    setField('time_window_end', `${h}:${m}`)
-                                                                    setErrors(p => ({ ...p, time_window: null }))
-                                                                }
-                                                            }}
-                                                            showTimeSelect
-                                                            showTimeSelectOnly
-                                                            timeIntervals={15}
-                                                            timeCaption="Giờ"
-                                                            dateFormat="HH:mm"
-                                                            timeFormat="HH:mm"
-                                                            className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
-                                                            wrapperClassName="w-full"
-                                                        />
-                                                    </div>
+                                    {form.nutrition_sub_type === 'time_window' && (
+                                        <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                                                <FaClock className="text-[10px]" /> Khung giờ được check-in
+                                            </p>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] text-gray-500 mb-1">Từ giờ</label>
+                                                    <DatePicker
+                                                        selected={parseTime(form.time_window_start)}
+                                                        onChange={date => {
+                                                            if (date) {
+                                                                const h = String(date.getHours()).padStart(2, '0')
+                                                                const m = String(date.getMinutes()).padStart(2, '0')
+                                                                setField('time_window_start', `${h}:${m}`)
+                                                                setErrors(p => ({ ...p, time_window: null }))
+                                                            }
+                                                        }}
+                                                        showTimeSelect
+                                                        showTimeSelectOnly
+                                                        timeIntervals={15}
+                                                        timeCaption="Giờ"
+                                                        dateFormat="HH:mm"
+                                                        timeFormat="HH:mm"
+                                                        className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
+                                                        wrapperClassName="w-full"
+                                                    />
                                                 </div>
-                                                {errors.time_window && <p className="text-xs text-red-500 mt-2">{errors.time_window}</p>}
-                                                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">
-                                                    💡 Check-in ngoài khung giờ này sẽ bị từ chối
-                                                </p>
+                                                <span className="text-gray-400 font-bold mt-4">→</span>
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] text-gray-500 mb-1">Đến giờ</label>
+                                                    <DatePicker
+                                                        selected={parseTime(form.time_window_end)}
+                                                        onChange={date => {
+                                                            if (date) {
+                                                                const h = String(date.getHours()).padStart(2, '0')
+                                                                const m = String(date.getMinutes()).padStart(2, '0')
+                                                                setField('time_window_end', `${h}:${m}`)
+                                                                setErrors(p => ({ ...p, time_window: null }))
+                                                            }
+                                                        }}
+                                                        showTimeSelect
+                                                        showTimeSelectOnly
+                                                        timeIntervals={15}
+                                                        timeCaption="Giờ"
+                                                        dateFormat="HH:mm"
+                                                        timeFormat="HH:mm"
+                                                        className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
+                                                        wrapperClassName="w-full"
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
+                                            {errors.time_window && <p className="text-xs text-red-500 mt-2">{errors.time_window}</p>}
+                                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">
+                                                Gợi ý: bữa trưa thường 11:00–14:30 · bữa sáng 06:00–10:30 · bữa tối 17:30–21:00
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -853,7 +966,7 @@ Quy tắc:
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</p>
-                                                            <p className="text-[10px] text-gray-400 truncate">{ex.name_vi} • {ex.category} • {ex.difficulty === 'beginner' ? 'Dễ' : ex.difficulty === 'intermediate' ? 'TB' : 'Khó'}</p>
+                                                            <p className="text-[10px] text-gray-400 truncate">{ex.name_vi} • {formatExerciseCategoryVi(ex.category)} • {formatExerciseDifficultyVi(ex.difficulty)}</p>
                                                         </div>
                                                     </button>
                                                 ))}
@@ -1025,13 +1138,15 @@ Quy tắc:
                             </div>
                         </div>
                     </div>
+    )
 
-                    {/* FOOTER */}
+    const formFooter = (
                     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 shrink-0">
-                        <button onClick={onClose} className="px-5 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                             Hủy
                         </button>
                         <button
+                            type="button"
                             onClick={handleSubmit}
                             disabled={mutation.isPending}
                             className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
@@ -1042,8 +1157,39 @@ Quy tắc:
                             }
                         </button>
                     </div>
+    )
+
+    const cardShellClass = isPage
+        ? 'relative w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[calc(100vh-12rem)] min-h-[280px]'
+        : 'relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+
+    return (
+        <>
+            {isPage ? (
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                    {pageHero}
+                    <div className="container mx-auto px-4 pb-10">
+                        <div className={cardShellClass}>
+                            {formScrollArea}
+                            {formFooter}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={onClose}
+                >
+                    <div
+                        className={cardShellClass}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {modalHeader}
+                        {formScrollArea}
+                        {formFooter}
+                    </div>
+                </div>
+            )}
 
             {/* AI MODAL – 2-step wizard */}
             {showAIModal && (

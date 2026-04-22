@@ -325,58 +325,56 @@ function NutritionPreview({ entry, challenge, config }) {
   const isInvalid = entry.ai_review_valid === false
 
   return (
-    <div className="p-3">
-      <div className="flex gap-3">
-        {entry.proof_image ? (
-          <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 shadow-sm">
-            <img
-              src={getImageUrl(entry.proof_image)}
-              alt="Ảnh bữa ăn"
-              className="w-full h-full object-cover"
-              onError={(e) => { e.target.style.display = 'none' }}
-            />
+    <div>
+      {entry.proof_image ? (
+        <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-emerald-50 dark:bg-emerald-900/20">
+          <img
+            src={getImageUrl(entry.proof_image)}
+            alt="Ảnh bữa ăn"
+            className="w-full h-full object-cover"
+            onError={(e) => { e.target.style.display = 'none' }}
+          />
+        </div>
+      ) : (
+        <div className="h-28 w-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+          <FaLeaf className="text-emerald-400 text-4xl opacity-50" />
+        </div>
+      )}
+
+      <div className="p-3">
+        {entry.food_name && (
+          <p className="text-sm font-bold text-gray-800 dark:text-white mb-1.5 line-clamp-2">
+            {entry.food_name}
+          </p>
+        )}
+
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`${config.pillBg} rounded-full px-3 py-1`}>
+            <span className={`${config.pillText} font-bold text-sm`}>
+              {entry.value} {entry.unit || goalUnit}
+            </span>
           </div>
-        ) : (
-          <div className="w-24 h-24 rounded-lg shrink-0 bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-            <FaLeaf className="text-emerald-400 text-3xl opacity-50" />
+        </div>
+
+        {!isPending && (
+          <div className={`flex items-center gap-1.5 text-xs rounded-full px-2 py-0.5 w-fit
+            ${isValid
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}
+          >
+            {isValid
+              ? <><FaCheckCircle size={9} /> AI xác nhận hợp lệ</>
+              : <><FaTimesCircle size={9} /> AI đánh giá không hợp lệ</>
+            }
           </div>
         )}
 
-        <div className="flex-1 min-w-0">
-          {entry.food_name && (
-            <p className="text-sm font-bold text-gray-800 dark:text-white mb-1.5 line-clamp-2">
-              {entry.food_name}
-            </p>
-          )}
-
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`${config.pillBg} rounded-full px-3 py-1`}>
-              <span className={`${config.pillText} font-bold text-sm`}>
-                {entry.value} {entry.unit || goalUnit}
-              </span>
-            </div>
-          </div>
-
-          {!isPending && (
-            <div className={`flex items-center gap-1.5 text-xs rounded-full px-2 py-0.5 w-fit
-              ${isValid
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}
-            >
-              {isValid
-                ? <><FaCheckCircle size={9} /> AI xác nhận hợp lệ</>
-                : <><FaTimesCircle size={9} /> AI đánh giá không hợp lệ</>
-              }
-            </div>
-          )}
-        </div>
+        {entry.notes && (
+          <p className="mt-2.5 text-xs text-gray-500 dark:text-gray-400 italic line-clamp-2">
+            "{entry.notes}"
+          </p>
+        )}
       </div>
-
-      {entry.notes && (
-        <p className="mt-2.5 text-xs text-gray-500 dark:text-gray-400 italic line-clamp-2">
-          "{entry.notes}"
-        </p>
-      )}
     </div>
   )
 }

@@ -6,7 +6,6 @@ export interface SportCategory {
     icon: string
     type: 'Ngoài trời' | 'Trong nhà'
     kcal_per_unit: number // kcal/km (Ngoài trời) hoặc kcal/phút (Trong nhà)
-    stravaTypes?: string[] // Strava activity types: ['Run', 'Walk', 'TrailRun', ...]
     isDeleted?: boolean
     deletedAt?: Date
     createdAt?: Date
@@ -19,7 +18,6 @@ const SportCategorySchema = new mongoose.Schema<SportCategory>(
         icon: { type: String, default: 'sport' },
         type: { type: String, enum: ['Ngoài trời', 'Trong nhà'], required: true },
         kcal_per_unit: { type: Number, default: 0, min: 0 },
-        stravaTypes: [{ type: String }],
         isDeleted: { type: Boolean, default: false },
         deletedAt: { type: Date, default: null }
     },

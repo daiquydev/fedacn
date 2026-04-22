@@ -19,6 +19,8 @@
     "seed:nutrition-progress": "ts-node -r tsconfig-paths/register ./scripts/seedNutritionChallengeProgress.ts",
     "seed:fitness-progress": "ts-node -r tsconfig-paths/register ./scripts/seedFitnessChallengeProgress.ts",
     "seed:outdoor-progress": "ts-node -r tsconfig-paths/register ./scripts/seedOutdoorChallengeProgress.ts",
+    "seed:outdoor-event-activities": "node ./scripts/seed_all_outdoor_events.js",
+    "seed:outdoor-event-activities:selftest": "node ./scripts/seed_all_outdoor_events.js --selftest",
     "migrate:user-remove-account-ban": "ts-node -r tsconfig-paths/register ./src/scripts/migrateRemoveUserAccountBan.ts",
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "audit:recipe-instructions": "ts-node -r tsconfig-paths/register ./src/scripts/auditRecipeInstructions.ts",

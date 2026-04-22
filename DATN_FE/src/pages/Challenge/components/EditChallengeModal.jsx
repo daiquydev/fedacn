@@ -14,7 +14,7 @@ import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
     FaBullseye, FaCalendarAlt, FaUsers, FaImage,
     FaGlobe, FaUserFriends, FaLock, FaFire, FaClipboardList,
-    FaSave, FaClock
+    FaSave, FaClock, FaArrowLeft
 } from 'react-icons/fa'
 import { BsClockHistory } from 'react-icons/bs'
 
@@ -106,7 +106,7 @@ function PreviewCard({ form, selectedCat, outdoorCategories }) {
 
     return (
         <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className={`relative h-44 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+            <div className={`relative h-48 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                 {form.image ? (
                     <img src={getImageUrl(form.image)} alt="preview" className="w-full h-full object-cover" />
                 ) : (
@@ -155,9 +155,10 @@ function PreviewCard({ form, selectedCat, outdoorCategories }) {
     )
 }
 
-// ==================== MAIN MODAL ====================
-export default function EditChallengeModal({ open, onClose, challenge }) {
+// ==================== MAIN MODAL (layout="modal" | "page") ====================
+export default function EditChallengeModal({ open, onClose, challenge, layout = 'modal' }) {
     const queryClient = useQueryClient()
+    const isPage = layout === 'page'
 
     const [form, setForm] = useState({
         title: '',
@@ -192,7 +193,7 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
 
     // Populate form from challenge data
     useEffect(() => {
-        if (challenge && open) {
+        if (challenge && (isPage || open)) {
             setForm({
                 title: challenge.title || '',
                 description: challenge.description || '',
@@ -213,7 +214,7 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
             })
             setErrors({})
         }
-    }, [challenge, open])
+    }, [challenge, open, isPage])
 
     const setField = (key, value) => {
         setForm(prev => ({ ...prev, [key]: value }))
@@ -290,6 +291,7 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
             queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
             queryClient.invalidateQueries({ queryKey: ['challenges'] })
             queryClient.invalidateQueries({ queryKey: ['my-challenges'] })
+            queryClient.invalidateQueries({ queryKey: ['challenge', challenge._id] })
             onClose()
         },
         onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi cập nhật thử thách')
@@ -300,32 +302,42 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
         mutation.mutate()
     }
 
-    if (!open || !challenge) return null
+    if (!challenge || (!isPage && !open)) return null
 
     const nonOutdoorGoals = NON_OUTDOOR_GOALS[form.challenge_type] || []
 
-    return (
-        <div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={onClose}
-        >
-            <div
-                className="relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* HEADER */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-amber-500 to-orange-600">
-                    <div className="flex items-center gap-3">
-                        <FaTrophy className="text-white text-xl" />
-                        <h2 className="text-xl font-black text-white">Chỉnh sửa thử thách</h2>
-                    </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 text-white transition">
-                        <FaTimes />
-                    </button>
+    const pageHero = isPage && (
+        <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-8 mb-6">
+            <div className="container mx-auto px-4">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex items-center text-amber-50 hover:text-white mb-5 transition text-sm"
+                >
+                    <FaArrowLeft className="mr-2" /> Quay lại
+                </button>
+                <div>
+                    <h1 className="text-3xl font-extrabold">Chỉnh sửa thử thách</h1>
+                    <p className="opacity-90 mt-1 text-sm">Cập nhật thông tin và xem trước bên phải (màn hình lớn).</p>
                 </div>
+            </div>
+        </div>
+    )
 
-                {/* BODY: 2 cols */}
-                <div className="flex flex-1 overflow-hidden">
+    const modalHeader = !isPage && (
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-amber-500 to-orange-600">
+            <div className="flex items-center gap-3">
+                <FaTrophy className="text-white text-xl" />
+                <h2 className="text-xl font-black text-white">Chỉnh sửa thử thách</h2>
+            </div>
+            <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-white/20 text-white transition">
+                <FaTimes />
+            </button>
+        </div>
+    )
+
+    const formScrollArea = (
+                <div className="flex flex-1 overflow-hidden min-h-0">
                     {/* LEFT: Form (scrollable) */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0">
 
@@ -414,95 +426,93 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                             </div>
                         )}
 
-                        {/* Nutrition: loại hình thử thách (time-window) */}
+                        {/* Nutrition: giới hạn giờ check-in (tuỳ chọn) */}
                         {form.challenge_type === 'nutrition' && (
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <FaClock className="inline mr-1 text-emerald-500" /> Loại hình thử thách ăn uống *
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    <FaClock className="inline mr-1 text-emerald-500" /> Giờ check-in bữa ăn
                                 </label>
-                                <div className="space-y-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setField('nutrition_sub_type', 'free')}
-                                        className={`w-full p-3 rounded-xl border-2 flex items-start gap-3 text-left transition-all ${form.nutrition_sub_type === 'free'
-                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'}`}
-                                    >
-                                        <span className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 mt-0.5 ${form.nutrition_sub_type === 'free' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>🕊️</span>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Tự do</p>
-                                            <p className="text-[11px] text-gray-400">Check-in bất kỳ lúc nào trong ngày</p>
-                                        </div>
-                                        {form.nutrition_sub_type === 'free' && <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2" />}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setField('nutrition_sub_type', 'time_window')}
-                                        className={`w-full p-3 rounded-xl border-2 flex items-start gap-3 text-left transition-all ${form.nutrition_sub_type === 'time_window'
-                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'}`}
-                                    >
-                                        <span className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 mt-0.5 ${form.nutrition_sub_type === 'time_window' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>⏰</span>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Khung giờ ăn</p>
-                                            <p className="text-[11px] text-gray-400">Chỉ check-in trong khoảng giờ quy định</p>
-                                        </div>
-                                        {form.nutrition_sub_type === 'time_window' && <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-2" />}
-                                    </button>
-                                    {form.nutrition_sub_type === 'time_window' && (
-                                        <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
-                                                <FaClock className="text-[10px]" /> Khung giờ được check-in
-                                            </p>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 mb-1">Từ giờ</label>
-                                                    <DatePicker
-                                                        selected={parseTime(form.time_window_start)}
-                                                        onChange={date => {
-                                                            if (date) {
-                                                                const h = String(date.getHours()).padStart(2, '0')
-                                                                const m = String(date.getMinutes()).padStart(2, '0')
-                                                                setField('time_window_start', `${h}:${m}`)
-                                                            }
-                                                        }}
-                                                        showTimeSelect
-                                                        showTimeSelectOnly
-                                                        timeIntervals={15}
-                                                        timeCaption="Giờ"
-                                                        dateFormat="HH:mm"
-                                                        timeFormat="HH:mm"
-                                                        className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
-                                                        wrapperClassName="w-full"
-                                                    />
-                                                </div>
-                                                <span className="text-gray-400 font-bold mt-4">→</span>
-                                                <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 mb-1">Đến giờ</label>
-                                                    <DatePicker
-                                                        selected={parseTime(form.time_window_end)}
-                                                        onChange={date => {
-                                                            if (date) {
-                                                                const h = String(date.getHours()).padStart(2, '0')
-                                                                const m = String(date.getMinutes()).padStart(2, '0')
-                                                                setField('time_window_end', `${h}:${m}`)
-                                                            }
-                                                        }}
-                                                        showTimeSelect
-                                                        showTimeSelectOnly
-                                                        timeIntervals={15}
-                                                        timeCaption="Giờ"
-                                                        dateFormat="HH:mm"
-                                                        timeFormat="HH:mm"
-                                                        className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
-                                                        wrapperClassName="w-full"
-                                                    />
-                                                </div>
+                                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                                    Mặc định thành viên có thể check-in cả ngày. Bật nếu thử thách yêu cầu ảnh bữa ăn chỉ trong một khung giờ nhất định.
+                                </p>
+                                <label className="flex items-start gap-3 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-emerald-300 transition-all">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                        checked={form.nutrition_sub_type === 'time_window'}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setForm(prev => ({
+                                                    ...prev,
+                                                    nutrition_sub_type: 'time_window',
+                                                    time_window_start: prev.time_window_start || '11:00',
+                                                    time_window_end: prev.time_window_end || '14:30'
+                                                }))
+                                            } else {
+                                                setField('nutrition_sub_type', 'free')
+                                            }
+                                        }}
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Giới hạn check-in trong khung giờ</p>
+                                        <p className="text-[11px] text-gray-400 mt-0.5">Check-in ngoài khoảng giờ sẽ không hợp lệ.</p>
+                                    </div>
+                                </label>
+                                {form.nutrition_sub_type === 'time_window' && (
+                                    <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                                        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                                            <FaClock className="text-[10px]" /> Khung giờ được check-in
+                                        </p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1">
+                                                <label className="block text-[10px] text-gray-500 mb-1">Từ giờ</label>
+                                                <DatePicker
+                                                    selected={parseTime(form.time_window_start)}
+                                                    onChange={date => {
+                                                        if (date) {
+                                                            const h = String(date.getHours()).padStart(2, '0')
+                                                            const m = String(date.getMinutes()).padStart(2, '0')
+                                                            setField('time_window_start', `${h}:${m}`)
+                                                        }
+                                                    }}
+                                                    showTimeSelect
+                                                    showTimeSelectOnly
+                                                    timeIntervals={15}
+                                                    timeCaption="Giờ"
+                                                    dateFormat="HH:mm"
+                                                    timeFormat="HH:mm"
+                                                    className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
+                                                    wrapperClassName="w-full"
+                                                />
                                             </div>
-                                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">💡 Check-in ngoài khung giờ này sẽ bị từ chối</p>
+                                            <span className="text-gray-400 font-bold mt-4">→</span>
+                                            <div className="flex-1">
+                                                <label className="block text-[10px] text-gray-500 mb-1">Đến giờ</label>
+                                                <DatePicker
+                                                    selected={parseTime(form.time_window_end)}
+                                                    onChange={date => {
+                                                        if (date) {
+                                                            const h = String(date.getHours()).padStart(2, '0')
+                                                            const m = String(date.getMinutes()).padStart(2, '0')
+                                                            setField('time_window_end', `${h}:${m}`)
+                                                        }
+                                                    }}
+                                                    showTimeSelect
+                                                    showTimeSelectOnly
+                                                    timeIntervals={15}
+                                                    timeCaption="Giờ"
+                                                    dateFormat="HH:mm"
+                                                    timeFormat="HH:mm"
+                                                    className="w-full px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500 text-sm"
+                                                    wrapperClassName="w-full"
+                                                />
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
+                                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">
+                                            Gợi ý: trưa 11:00–14:30 · sáng 06:00–10:30 · tối 17:30–21:00
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -634,13 +644,15 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                         </div>
                     </div>
                 </div>
+    )
 
-                {/* FOOTER */}
+    const formFooter = (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 shrink-0">
-                    <button onClick={onClose} className="px-5 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                         Hủy
                     </button>
                     <button
+                        type="button"
                         onClick={handleSubmit}
                         disabled={mutation.isPending}
                         className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
@@ -651,7 +663,39 @@ export default function EditChallengeModal({ open, onClose, challenge }) {
                         }
                     </button>
                 </div>
-            </div>
-        </div>
+    )
+
+    const cardShellClass = isPage
+        ? 'relative w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[calc(100vh-12rem)] min-h-[280px]'
+        : 'relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+
+    return (
+        <>
+            {isPage ? (
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                    {pageHero}
+                    <div className="container mx-auto px-4 pb-10">
+                        <div className={cardShellClass}>
+                            {formScrollArea}
+                            {formFooter}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={onClose}
+                >
+                    <div
+                        className={cardShellClass}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {modalHeader}
+                        {formScrollArea}
+                        {formFooter}
+                    </div>
+                </div>
+            )}
+        </>
     )
 }

@@ -132,7 +132,7 @@ export default function ActivityResult() {
                         <span className='result-popup-stat-icon'>⚡</span>
                         <div>
                             <p className='result-popup-stat-val'>{formatPace(activity.avgPace)}</p>
-                            <p className='result-popup-stat-lbl'>Tốc độ TB</p>
+                            <p className='result-popup-stat-lbl'>Tốc độ trung bình</p>
                         </div>
                     </div>
                     <div className='result-popup-stat'>

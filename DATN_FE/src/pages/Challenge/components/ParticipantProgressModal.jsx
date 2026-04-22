@@ -1,8 +1,9 @@
 import { roundKcal } from '../../../utils/mathUtils'
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   FaTimes, FaCalendarCheck, FaChevronRight,
-  FaChevronLeft
+  FaChevronLeft, FaExpand, FaArrowLeft
 } from 'react-icons/fa'
 import { useQuery } from '@tanstack/react-query'
 import { getUserChallengeProgress } from '../../../apis/challengeApi'
@@ -281,7 +282,14 @@ function Legend() {
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function ParticipantProgressModal({ participant, challenge, onClose }) {
+export default function ParticipantProgressModal({
+  participant,
+  challenge,
+  onClose,
+  layout = 'modal' // 'modal' | 'page'
+}) {
+  const navigate = useNavigate()
+  const isPage = layout === 'page'
   const challengeType = challenge?.challenge_type || 'fitness'
   const gradient = GRADIENT_MAP[challengeType] || GRADIENT_MAP.fitness
   const user = participant?.user || {}
@@ -403,36 +411,86 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
     { id: 'year', label: 'Năm' }
   ]
 
+  const openFullPage = (e) => {
+    e.stopPropagation()
+    if (challenge?._id && userId) {
+      navigate(`/challenge/${challenge._id}/participants/${userId}`)
+    }
+  }
+
+  const shellClass = isPage ? '' : 'max-h-[88vh]'
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div
+      className={
+        isPage
+          ? 'w-full'
+          : 'fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4'
+      }
+      onClick={isPage ? undefined : onClose}
+    >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden max-h-[88vh] flex flex-col"
+        className={
+          isPage
+            ? `bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl mx-auto shadow-xl overflow-hidden flex flex-col ${shellClass}`
+            : `bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col ${shellClass}`
+        }
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
-        <div className={`bg-gradient-to-r ${gradient} px-5 py-4 flex items-center justify-between flex-shrink-0`}>
-          <div className="flex items-center gap-3">
+        <div className={`bg-gradient-to-r ${gradient} px-4 sm:px-5 py-4 flex items-center justify-between flex-shrink-0 gap-2`}>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            {isPage && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-white/20 text-white transition shrink-0"
+                title="Quay lại"
+              >
+                <FaArrowLeft />
+              </button>
+            )}
             <img
               src={user.avatar ? getImageUrl(user.avatar) : useravatar}
               alt={user.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-white/50"
+              className="w-10 h-10 rounded-full object-cover border-2 border-white/50 shrink-0"
               onError={e => { e.target.onerror = null; e.target.src = useravatar }}
             />
-            <div>
-              <h3 className="font-bold text-white text-sm">{user.name || 'Ẩn danh'}</h3>
-              <p className="text-white/80 text-[11px] mt-0.5">
+            <div className="min-w-0">
+              <h3 className="font-bold text-white text-sm truncate">{user.name || 'Ẩn danh'}</h3>
+              <p className="text-white/80 text-[11px] mt-0.5 truncate">
                 {completedDays}/{totalDays} ngày hoàn thành
-                {streakCount > 0 && <span className="ml-2">🔥 {streakCount} streak</span>}
+                {streakCount > 0 && <span className="ml-2 whitespace-nowrap">🔥 {streakCount} streak</span>}
               </p>
+              {isPage && challenge?.title && (
+                <p className="text-white/70 text-[10px] mt-1 truncate" title={challenge.title}>
+                  {challenge.title}
+                </p>
+              )}
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/20 text-white transition">
-            <FaTimes />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {!isPage && (
+              <button
+                type="button"
+                onClick={openFullPage}
+                disabled={!challenge?._id || !userId}
+                className="p-1.5 rounded-full hover:bg-white/20 text-white transition disabled:opacity-40"
+                title="Xem toàn màn hình"
+              >
+                <FaExpand />
+              </button>
+            )}
+            {!isPage && (
+              <button type="button" onClick={onClose} className="p-1.5 rounded-full hover:bg-white/20 text-white transition" title="Đóng">
+                <FaTimes />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Content ── */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className={`flex-1 p-4 sm:p-6 space-y-4 ${isPage ? 'overflow-visible' : 'overflow-y-auto'}`}>
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
@@ -440,7 +498,7 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
           ) : (
             <>
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className={`grid grid-cols-3 gap-2 ${isPage ? 'sm:gap-4' : ''}`}>
                 {[
                   { value: `${pct}%`, label: 'Hoàn thành', color: pct >= 100 ? 'text-green-500' : 'text-gray-800 dark:text-white' },
                   { value: streakCount, label: '🔥 Streak', color: 'text-orange-500' },
@@ -456,7 +514,7 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
               {/* Progress bar */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] font-semibold text-gray-500">Tiến độ tổng thể</span>
+                  <span className="text-[10px] font-semibold text-gray-500">Tiến độ cá nhân</span>
                   <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{completedDays}/{totalDays} ngày</span>
                 </div>
                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -468,7 +526,7 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
               </div>
 
               {/* ── Calendar Section ── */}
-              <div className="bg-gray-50 dark:bg-gray-700/40 rounded-xl p-3 space-y-3">
+              <div className={`bg-gray-50 dark:bg-gray-700/40 rounded-xl space-y-3 ${isPage ? 'p-4 sm:p-5' : 'p-3'}`}>
 
                 {/* Tab switcher */}
                 <div className="flex items-center gap-2">
@@ -633,12 +691,13 @@ export default function ParticipantProgressModal({ participant, challenge, onClo
         </div>
 
         {/* ── Footer ── */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="p-4 sm:px-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
+            type="button"
             onClick={onClose}
             className="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 font-medium text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition"
           >
-            Đóng
+            {isPage ? 'Quay lại thử thách' : 'Đóng'}
           </button>
         </div>
       </div>

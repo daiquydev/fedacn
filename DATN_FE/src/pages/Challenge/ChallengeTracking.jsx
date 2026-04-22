@@ -1,5 +1,6 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useEffect, useRef } from 'react'
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
@@ -18,6 +19,7 @@ export default function ChallengeTracking() {
     const queryClient = useQueryClient()
     const [showConfirmDiscard, setShowConfirmDiscard] = useState(false)
     const [showConfirmComplete, setShowConfirmComplete] = useState(false)
+    const [mapCollapsed, setMapCollapsed] = useState(false)
     const startedRef = useRef(false)
 
     // Goong Map refs
@@ -99,6 +101,27 @@ export default function ChallengeTracking() {
             }
         }
     }, [])
+
+    useEffect(() => {
+        const map = mapRef.current
+        if (!map) return
+        const onResize = () => {
+            try {
+                map.resize()
+            } catch { /* ignore */ }
+        }
+        window.addEventListener('resize', onResize)
+        return () => window.removeEventListener('resize', onResize)
+    }, [])
+
+    useEffect(() => {
+        const t = window.setTimeout(() => {
+            try {
+                mapRef.current?.resize()
+            } catch { /* ignore */ }
+        }, 200)
+        return () => window.clearTimeout(t)
+    }, [mapCollapsed])
 
     // Start tracking when challenge data is ready
     useEffect(() => {
@@ -207,7 +230,7 @@ export default function ChallengeTracking() {
     const progressPercent = goalValue > 0 ? Math.min(Math.round((parseFloat(distanceKm) / goalValue) * 100), 100) : 0
 
     return (
-        <div className='tracking-hud'>
+        <div className={`tracking-hud${mapCollapsed ? ' tracking-hud--map-collapsed' : ''}`}>
             {/* MAP FILLS ABOVE THE BOTTOM SHEET */}
             <div className='tracking-map-area'>
                 <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
@@ -241,6 +264,22 @@ export default function ChallengeTracking() {
 
             {/* GLASS OVERLAY — stats + progress + controls */}
             <div className='hud-glass-panel'>
+                <button
+                    type='button'
+                    className='hud-map-toggle'
+                    onClick={() => setMapCollapsed((c) => !c)}
+                    aria-expanded={!mapCollapsed}
+                >
+                    {mapCollapsed ? (
+                        <>
+                            <FaChevronUp aria-hidden /> Mở rộng bản đồ
+                        </>
+                    ) : (
+                        <>
+                            <FaChevronDown aria-hidden /> Thu gọn bản đồ
+                        </>
+                    )}
+                </button>
                 {/* Hero distance */}
                 <div className='hud-hero-distance'>
                     <span className='hud-hero-val'>{distanceKm}</span>

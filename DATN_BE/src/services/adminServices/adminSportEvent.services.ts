@@ -2,6 +2,7 @@ import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import sportEventProgressService from '~/services/userServices/sportEventProgress.services'
+import { sportEventHasStartedForDelete } from '~/utils/sportEventDeleteGuard.utils'
 import { Types } from 'mongoose'
 
 class AdminSportEventService {
@@ -132,7 +133,7 @@ class AdminSportEventService {
     ) {
         const { name, description, detailedDescription, category, startDate, endDate, location, address, distance,
             maxParticipants, image, eventType, requirements, benefits, organizer, targetValue, targetUnit,
-            difficulty, requireStrava } = data
+            difficulty } = data
 
         if (!name || !name.trim()) {
             throw new Error('Tên sự kiện không được để trống')
@@ -164,7 +165,6 @@ class AdminSportEventService {
             image: image || '',
             createdBy: new Types.ObjectId(adminId),
             eventType,
-            requireStrava: eventType === 'Ngoài trời' ? Boolean(requireStrava) : false,
             participants: 0,
             participants_ids: [],
             requirements: requirements || '',
@@ -237,6 +237,11 @@ class AdminSportEventService {
 
     // Admin soft delete
     async deleteEventAdmin(eventId: string) {
+        const existing = await SportEventModel.findById(eventId)
+        if (!existing) throw new Error('Không tìm thấy sự kiện')
+        if (sportEventHasStartedForDelete(existing)) {
+            throw new Error('Sự kiện đã bắt đầu, không thể xóa')
+        }
         const event = await SportEventModel.findByIdAndUpdate(
             eventId,
             { isDeleted: true, deletedAt: new Date(), deletedFromReportModeration: false },
@@ -259,11 +264,14 @@ class AdminSportEventService {
 
     // Admin hard delete (permanent)
     async hardDeleteEventAdmin(eventId: string) {
-        const event = await SportEventModel.findByIdAndDelete(eventId)
-        if (!event) throw new Error('Không tìm thấy sự kiện')
-        // Also delete related sessions
-        await SportEventSessionModel.deleteMany({ eventId: new Types.ObjectId(eventId) })
-        return event
+        const existing = await SportEventModel.findById(eventId)
+        if (!existing) throw new Error('Không tìm thấy sự kiện')
+        if (sportEventHasStartedForDelete(existing)) {
+            throw new Error('Sự kiện đã bắt đầu, không thể xóa')
+        }
+        await SportEventModel.deleteOne({ _id: existing._id })
+        await SportEventSessionModel.deleteMany({ eventId: existing._id })
+        return existing
     }
 
     /** Danh sách người tham gia + tiến độ (cùng logic với API user /progress/participants) */

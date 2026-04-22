@@ -16,10 +16,10 @@ import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { getImageUrl } from '../../utils/imageUrl'
+import { getChallengePersonalProgressPercent } from '../../utils/challengeProgress'
 import { getSportIcon } from '../../utils/sportIcons'
 import useravatar from '../../assets/images/useravatar.jpg'
 import ParticipantsList from '../../components/ParticipantsList'
-import CreateChallengeModal from './components/CreateChallengeModal'
 import moment from 'moment'
 
 const TYPE_CONFIG = {
@@ -119,15 +119,7 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
   const isNotStarted = challenge.start_date && moment().startOf('day').isBefore(startM.startOf('day'))
   const daysLeft = Math.max(0, Math.ceil((endM.endOf('day').valueOf() - moment().valueOf()) / 86400000))
 
-  const safeStartDate = new Date(challenge.start_date || new Date())
-  const safeEndDate = new Date(challenge.end_date || new Date())
-  safeStartDate.setHours(0, 0, 0, 0)
-  safeEndDate.setHours(0, 0, 0, 0)
-  const totalRequiredDays = Math.max(1, Math.ceil((safeEndDate.getTime() - safeStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-
-  const progress = challenge.myProgress
-    ? Math.min(Math.round((challenge.myProgress.current_value / totalRequiredDays) * 100), 100)
-    : 0
+  const progress = challenge.isJoined ? getChallengePersonalProgressPercent(challenge) : 0
 
   return (
     <div
@@ -253,7 +245,7 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
           */}
           <div className={`mb-3 ${!challenge.isJoined && !isEnded ? 'opacity-90' : ''}`}>
             <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-medium text-gray-500">Tiến độ</span>
+              <span className="text-[10px] font-medium text-gray-500">Tiến độ cá nhân</span>
               {isEnded && !challenge.isJoined ? (
                 <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">—</span>
               ) : challenge.isJoined ? (
@@ -329,7 +321,6 @@ export default function Challenge() {
   const [filterDateTo, setFilterDateTo] = useState('')
   const [filterJoined, setFilterJoined] = useState(false)
   const [filterVisibility, setFilterVisibility] = useState('all') // 'all' | 'public' | 'friends' | 'private'
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [showVisDropdown, setShowVisDropdown] = useState(false)
   const [page, setPage] = useState(1)
   const ITEMS_PER_PAGE = 9
@@ -478,7 +469,7 @@ export default function Challenge() {
               <FaStar /> Thử thách của tôi
             </Link>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => navigate('/challenge/create', { state: { from: '/challenge' } })}
               className="bg-white hover:bg-gray-50 text-orange-600 px-4 py-2 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
             >
               <FaPlus /> Tạo thử thách
@@ -879,12 +870,6 @@ export default function Challenge() {
           </div>
         )}
       </div>
-
-      <CreateChallengeModal
-        open={showCreateModal}
-        onClose={() => { setShowCreateModal(false); queryClient.invalidateQueries({ queryKey: ['challenges-feed'] }) }}
-      />
-
 
     </div>
   )

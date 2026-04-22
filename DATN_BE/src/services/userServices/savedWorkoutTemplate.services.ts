@@ -23,6 +23,8 @@ class SavedWorkoutTemplateService {
                 exercise_id: new ObjectId(ex.exercise_id),
                 exercise_name: ex.exercise_name,
                 exercise_name_vi: ex.exercise_name_vi || '',
+                ...(ex.duration_default != null ? { duration_default: ex.duration_default } : {}),
+                ...(ex.rest_time_default != null ? { rest_time_default: ex.rest_time_default } : {}),
                 sets: ex.sets.map((s) => ({
                     set_number: s.set_number,
                     reps: s.reps,

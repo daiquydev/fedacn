@@ -9,6 +9,7 @@ import { Types } from 'mongoose'
 import { ErrorWithStatus } from '~/utils/error'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { SPORT_EVENT_MESSAGE } from '~/constants/messages'
+import { sportEventHasStartedForDelete } from '~/utils/sportEventDeleteGuard.utils'
 
 // Mirror of sportEventProgress.services.ts isKcalUnit (avoids circular import)
 function isKcalUnit(targetUnit: string): boolean {
@@ -523,6 +524,14 @@ class SportEventService {
     options?: { deletedFromReportModeration?: boolean }
   ) {
     const deletedFromReportModeration = options?.deletedFromReportModeration === true
+    const existing = await SportEventModel.findById(eventId)
+    if (!existing) {
+      throw new Error('Sport event not found')
+    }
+    if (!deletedFromReportModeration && sportEventHasStartedForDelete(existing)) {
+      throw new Error('Sự kiện đã bắt đầu, không thể xóa')
+    }
+
     const event = await SportEventModel.findByIdAndUpdate(
       eventId,
       { isDeleted: true, deletedAt: new Date(), deletedFromReportModeration },

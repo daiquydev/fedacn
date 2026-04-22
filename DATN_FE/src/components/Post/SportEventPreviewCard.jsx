@@ -245,8 +245,8 @@ export default function SportEventPreviewCard({ eventId }) {
         bg-white dark:bg-gray-800 group"
             title="Nhấn để xem chi tiết sự kiện"
         >
-            {/* Banner image */}
-            <div className="relative h-28 overflow-hidden">
+            {/* Banner image — cùng tỷ lệ với thẻ sự kiện / trang tạo (h-48) */}
+            <div className="relative h-48 overflow-hidden">
                 <img
                     src={getImageUrl(event.image)}
                     alt={event.name}

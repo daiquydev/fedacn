@@ -188,7 +188,7 @@ export default function SportEventCommentItems({ comment, post }) {
             )}
             <span className='text-slate-500 text-xs dark:text-slate-400'>{formatRelativeTimeVi(comment.createdAt)}</span>
           </div>
-        <ShowMoreContent className='text-sm dark:text-gray-300' lines={2}>
+        <ShowMoreContent className='text-sm dark:text-gray-300 whitespace-pre-line' lines={2}>
           <p className=''>{comment.content}</p>
         </ShowMoreContent>
 
@@ -294,7 +294,7 @@ function CommentChildItems({ comment, profile, navigate, post }) {
                 </span>
               </div>
             </div>
-            <ShowMoreContent className='text-sm dark:text-gray-300' lines={2}>
+            <ShowMoreContent className='text-sm dark:text-gray-300 whitespace-pre-line' lines={2}>
               <p className='text-sm'>{comment.content}</p>
             </ShowMoreContent>
           </div>

@@ -107,15 +107,15 @@ export default function SideBar() {
         animate={open ? 'open' : 'closed'}
         className=' bg-white dark:bg-color-primary-dark dark:text-gray-300 text-gray shadow-md dark:shadow-yellow-800 max-w-[16rem] w-[16rem] overflow-hidden z-[999] h-screen relative'
       >
-        <Logo />
+        <Logo className='flex items-center gap-2.5 font-medium pb-2.5 pt-2.5 mx-3' />
 
         <div className='flex flex-col h-full'>
-          <ul className='whitespace-pre px-2.5 pt-6 flex flex-col font-medium overflow-x-hidden overflow-y-auto scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 flex-1'>
+          <ul className='whitespace-pre px-2.5 pt-4 flex flex-col font-medium overflow-x-hidden overflow-y-auto scrollbar-thin scrollbar-track-white dark:scrollbar-track-[#010410] dark:scrollbar-thumb-[#171c3d] scrollbar-thumb-slate-100 flex-1'>
             {profile?.role === 2 && (
               <>
                 <li>
                   <NavLink to={'/'} className='link-custom '>
-                    <MdDashboardCustomize size={25} className='min-w-max' />
+                    <MdDashboardCustomize size={22} className='min-w-max' />
                     Dashboard
                   </NavLink>
                 </li>
@@ -129,7 +129,7 @@ export default function SideBar() {
                 {/*  */}
                 <li>
                   <NavLink to={'/user'} className='link-custom '>
-                    <BsPeopleFill size={25} className='min-w-max' />
+                    <BsPeopleFill size={22} className='min-w-max' />
                     Quản lý Người dùng
                   </NavLink>
                 </li>
@@ -138,7 +138,7 @@ export default function SideBar() {
                     to='/reports/posts'
                     className={`link-custom ${isReportPostsActive ? 'active' : ''}`}
                   >
-                    <MdReport size={25} className='min-w-max' />
+                    <MdReport size={22} className='min-w-max' />
                     Bài viết bị báo cáo
                   </Link>
                 </li>
@@ -152,7 +152,7 @@ export default function SideBar() {
                     to='/reports/posts'
                     className={`link-custom ${isReportPostsActive ? 'active' : ''}`}
                   >
-                    <MdReport size={25} className='min-w-max' />
+                    <MdReport size={22} className='min-w-max' />
                     Bài viết bị báo cáo
                   </Link>
                 </li>
@@ -161,7 +161,7 @@ export default function SideBar() {
                     to='/reports/events'
                     className={`link-custom ${isReportEventsActive ? 'active' : ''}`}
                   >
-                    <MdEvent size={25} className='min-w-max' />
+                    <MdEvent size={22} className='min-w-max' />
                     Sự kiện bị báo cáo
                   </Link>
                 </li>
@@ -170,7 +170,7 @@ export default function SideBar() {
                     to='/reports/challenges'
                     className={`link-custom ${isReportChallengesActive ? 'active' : ''}`}
                   >
-                    <FaTrophy size={23} className='min-w-max' />
+                    <FaTrophy size={22} className='min-w-max' />
                     Thử thách bị báo cáo
                   </Link>
                 </li>
@@ -179,17 +179,17 @@ export default function SideBar() {
 
             {profile?.role === 2 && (
               <>
-                <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí sự kiện</small>
+                <div className='border-t py-4 border-t-slate-300 '>
+                  <small className='pl-3 text-slate-500 inline-block mb-1.5'>Quản lý sự kiện</small>
                   <li>
                     <NavLink to={'/sport-categories'} className='link-custom '>
-                      <FaRunning size={25} className='min-w-max' />
+                      <FaRunning size={22} className='min-w-max' />
                       Danh mục Thể thao
                     </NavLink>
                   </li>
                   <li>
                     <NavLink to={'/sport-events'} className='link-custom '>
-                      <FaCalendarAlt size={25} className='min-w-max' />
+                      <FaCalendarAlt size={22} className='min-w-max' />
                       Sự kiện Thể thao
                     </NavLink>
                   </li>
@@ -198,31 +198,31 @@ export default function SideBar() {
                       to='/reports/events'
                       className={`link-custom ${isReportEventsActive ? 'active' : ''}`}
                     >
-                      <MdEvent size={25} className='min-w-max' />
+                      <MdEvent size={22} className='min-w-max' />
                       Sự kiện bị báo cáo
                     </Link>
                   </li>
                 </div>
-                <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lý Tập luyện</small>
+                <div className='border-t py-4 border-t-slate-300 '>
+                  <small className='pl-3 text-slate-500 inline-block mb-1.5'>Quản lý Tập luyện</small>
                   <li>
                     <NavLink to={'/equipment-management'} className='link-custom '>
-                      <FaDumbbell size={25} className='min-w-max' />
+                      <FaDumbbell size={22} className='min-w-max' />
                       Quản lý Thiết bị
                     </NavLink>
                   </li>
                   <li>
                     <NavLink to={'/exercise-management'} className='link-custom '>
-                      <GiBiceps size={25} className='min-w-max' />
+                      <GiBiceps size={22} className='min-w-max' />
                       Quản lý Bài tập
                     </NavLink>
                   </li>
                 </div>
-                <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lý Thử thách</small>
+                <div className='border-t py-4 border-t-slate-300 '>
+                  <small className='pl-3 text-slate-500 inline-block mb-1.5'>Quản lý Thử thách</small>
                   <li>
                     <NavLink to={'/challenges'} className='link-custom '>
-                      <FaTrophy size={23} className='min-w-max' />
+                      <FaTrophy size={22} className='min-w-max' />
                       Thử thách
                     </NavLink>
                   </li>
@@ -231,7 +231,7 @@ export default function SideBar() {
                       to='/reports/challenges'
                       className={`link-custom ${isReportChallengesActive ? 'active' : ''}`}
                     >
-                      <FaTrophy size={23} className='min-w-max' />
+                      <FaTrophy size={22} className='min-w-max' />
                       Thử thách bị báo cáo
                     </Link>
                   </li>
@@ -241,11 +241,11 @@ export default function SideBar() {
             )}
             {profile?.role === 4 && (
               <>
-                <div className='border-t py-5 border-t-slate-300 '>
-                  <small className='pl-3 text-slate-500 inline-block mb-2'>Quản lí nội dung</small>
+                <div className='border-t py-4 border-t-slate-300 '>
+                  <small className='pl-3 text-slate-500 inline-block mb-1.5'>Quản lý nội dung</small>
                   <li>
                     <NavLink to={'/blogs'} className='link-custom '>
-                      <FaShareAlt size={25} className='min-w-max' />
+                      <FaShareAlt size={22} className='min-w-max' />
                       Quản lý blog
                     </NavLink>
                   </li>
@@ -254,11 +254,11 @@ export default function SideBar() {
             )}
 
             {profile?.role === 3 && (
-              <div className='border-t py-5 border-t-slate-300 '>
-                <small className='pl-3 text-slate-500 inline-block mb-2'>Bài viết nấu ăn</small>
+              <div className='border-t py-4 border-t-slate-300 '>
+                <small className='pl-3 text-slate-500 inline-block mb-1.5'>Bài viết nấu ăn</small>
                 <li>
                   <NavLink to={'/recipes-writter'} className='link-custom '>
-                    <FaPenToSquare size={25} className='min-w-max' />
+                    <FaPenToSquare size={22} className='min-w-max' />
                     Tạo bài viết nấu ăn
                   </NavLink>
                 </li>
@@ -301,7 +301,7 @@ export default function SideBar() {
         className='my-3 cursor-pointer hover:text-red-600 transition-all ml-4 mr-3 md:hidden absolute top-2 z-50'
         onClick={() => setOpen(true)}
       >
-        <MdMenu size={25} />
+        <MdMenu size={22} />
       </div>
     </div>
   )

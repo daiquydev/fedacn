@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
@@ -19,6 +20,7 @@ export default function OutdoorTrackingStep({ name, category, targetKm, onDiscar
     const [activityId, setActivityId] = useState(null)
     const [showConfirmDiscard, setShowConfirmDiscard] = useState(false)
     const [showConfirmComplete, setShowConfirmComplete] = useState(false)
+    const [mapCollapsed, setMapCollapsed] = useState(false)
     const autoSaveTimerRef = useRef(null)
     const startedRef = useRef(false)
     const activityIdRef = useRef(null)
@@ -133,6 +135,27 @@ export default function OutdoorTrackingStep({ name, category, targetKm, onDiscar
             }
         }
     }, [])
+
+    useEffect(() => {
+        const map = mapRef.current
+        if (!map) return
+        const onResize = () => {
+            try {
+                map.resize()
+            } catch { /* ignore */ }
+        }
+        window.addEventListener('resize', onResize)
+        return () => window.removeEventListener('resize', onResize)
+    }, [])
+
+    useEffect(() => {
+        const t = window.setTimeout(() => {
+            try {
+                mapRef.current?.resize()
+            } catch { /* ignore */ }
+        }, 200)
+        return () => window.clearTimeout(t)
+    }, [mapCollapsed])
 
     // Initialize - start tracking
     useEffect(() => {
@@ -262,7 +285,7 @@ export default function OutdoorTrackingStep({ name, category, targetKm, onDiscar
             {/* Backdrop overlay to mimic a centered modal/widget interface */}
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} />
             
-            <div className='tracking-hud' style={{ zIndex: 99999 }}>
+            <div className={`tracking-hud${mapCollapsed ? ' tracking-hud--map-collapsed' : ''}`} style={{ zIndex: 99999 }}>
             {/* ═══ MAP FILLS ABOVE THE BOTTOM SHEET ═══ */}
             <div className='tracking-map-area'>
                 <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
@@ -294,6 +317,22 @@ export default function OutdoorTrackingStep({ name, category, targetKm, onDiscar
 
             {/* ═══ GLASS OVERLAY ═══ */}
             <div className='hud-glass-panel'>
+                <button
+                    type='button'
+                    className='hud-map-toggle'
+                    onClick={() => setMapCollapsed((c) => !c)}
+                    aria-expanded={!mapCollapsed}
+                >
+                    {mapCollapsed ? (
+                        <>
+                            <FaChevronUp aria-hidden /> Mở rộng bản đồ
+                        </>
+                    ) : (
+                        <>
+                            <FaChevronDown aria-hidden /> Thu gọn bản đồ
+                        </>
+                    )}
+                </button>
                 <div className='hud-hero-distance'>
                     <span className='hud-hero-val'>{distanceKm}</span>
                     <span className='hud-hero-unit'>km</span>

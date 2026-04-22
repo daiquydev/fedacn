@@ -24,6 +24,10 @@ export interface Exercise {
     category: string
     difficulty: string
     default_sets: DefaultSet[]
+    /** Thời gian thực hiện ước tính cho mỗi lần lặp (rep), tính bằng giây */
+    duration_default: number
+    /** Thời gian nghỉ mặc định giữa các set (giây) */
+    rest_time_default: number
     is_active: boolean
     isDeleted: boolean
     deletedAt?: Date
@@ -65,6 +69,8 @@ const ExerciseSchema = new Schema<Exercise>(
             default: 'intermediate'
         },
         default_sets: { type: [DefaultSetSchema], default: [] },
+        duration_default: { type: Number, default: 3 },
+        rest_time_default: { type: Number, default: 0 },
         is_active: { type: Boolean, default: true },
         isDeleted: { type: Boolean, default: false },
         deletedAt: { type: Date, default: null }

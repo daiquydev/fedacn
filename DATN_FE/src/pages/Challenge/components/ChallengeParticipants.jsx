@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa'
 import useravatar from '../../../assets/images/useravatar.jpg'
 import { getImageUrl } from '../../../utils/imageUrl'
+import { getChallengePersonalProgressPercent } from '../../../utils/challengeProgress'
 
 const PAGE_SIZE = 10
 
@@ -44,6 +45,7 @@ function SortIcon({ colKey, sortConfig }) {
 export default function ChallengeParticipants({
   participants = [],
   isLoading,
+  challenge = null,
   challengeType = 'fitness',
   goalUnit = 'ngày',
   onViewProgress,
@@ -97,7 +99,9 @@ export default function ChallengeParticipants({
           return sortConfig.direction === 'asc' ? na.localeCompare(nb) : nb.localeCompare(na)
         }
         case 'progress':
-          valA = a.progress_percent ?? 0; valB = b.progress_percent ?? 0; break
+          valA = challenge ? getChallengePersonalProgressPercent(challenge, a) : (a.progress_percent ?? 0)
+          valB = challenge ? getChallengePersonalProgressPercent(challenge, b) : (b.progress_percent ?? 0)
+          break
         case 'streak':
           valA = a.streak_count ?? 0; valB = b.streak_count ?? 0; break
         case 'today':
@@ -107,7 +111,7 @@ export default function ChallengeParticipants({
       }
       return sortConfig.direction === 'asc' ? valA - valB : valB - valA
     })
-  }, [participants, filterMode, searchTerm, sortConfig, friendIds, currentUserId])
+  }, [participants, filterMode, searchTerm, sortConfig, friendIds, currentUserId, challenge])
 
   const totalPages = Math.max(1, Math.ceil(processed.length / PAGE_SIZE))
   const paged = processed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -196,7 +200,7 @@ export default function ChallengeParticipants({
               </th>
               <th className="px-5 py-3 text-left">
                 <button onClick={() => handleSort('progress')} className="group flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-                  Tiến độ <SortIcon colKey="progress" sortConfig={sortConfig} />
+                  Tiến độ cá nhân <SortIcon colKey="progress" sortConfig={sortConfig} />
                 </button>
               </th>
               <th className="px-5 py-3 text-left">
@@ -211,7 +215,7 @@ export default function ChallengeParticipants({
             {paged.map((participant, idx) => {
               const user = participant.user || {}
               const uid = String(user._id || '')
-              const pct = participant.progress_percent || 0
+              const pct = challenge ? getChallengePersonalProgressPercent(challenge, participant) : (participant.progress_percent || 0)
               const isCompleted = participant.is_completed
               const isMe = uid && uid === String(currentUserId)
 

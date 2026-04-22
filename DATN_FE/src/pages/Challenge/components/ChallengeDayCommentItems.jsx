@@ -171,7 +171,7 @@ export default function ChallengeDayCommentItems({ comment, challengeId, targetU
           )}
           <span className='text-slate-500 text-[10px] dark:text-slate-400 whitespace-nowrap'>{formatRelativeTimeVi(comment.createdAt)}</span>
         </div>
-        <ShowMoreContent className='text-sm dark:text-gray-300' lines={3}>
+        <ShowMoreContent className='text-sm dark:text-gray-300 whitespace-pre-line' lines={3}>
           <p>{comment.content}</p>
         </ShowMoreContent>
 
@@ -277,7 +277,7 @@ function CommentChildItem({ comment, challengeId, targetUserId, date, parentComm
                 </span>
               </div>
             </div>
-            <ShowMoreContent className='text-xs dark:text-gray-300' lines={2}>
+            <ShowMoreContent className='text-xs dark:text-gray-300 whitespace-pre-line' lines={2}>
               <p className='text-xs'>{comment.content}</p>
             </ShowMoreContent>
           </div>

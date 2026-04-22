@@ -9,7 +9,6 @@ import connectDB from './services/database.services'
 import usersRouter from './routes/userRoutes/user.routes'
 import blogsRouter from './routes/userRoutes/blog.routes'
 import authUserRouter from './routes/userRoutes/authUser.routes'
-import stravaRouter from './routes/userRoutes/strava.routes'
 import { defaultErrorHandler } from './middlewares/error.middleware'
 import postsRouter from './routes/userRoutes/post.routes'
 import authAdminRouter from './routes/adminRoutes/authAdmin.routes'
@@ -112,7 +111,6 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/api/auth/users', authUserRouter)
 app.use('/api/users', usersRouter)
-app.use('/api/strava', stravaRouter)
 app.use('/api/blogs', blogsRouter)
 app.use('/api/posts/public', publicLimiter) // Apply higher limit to public posts
 app.use('/api/posts', postsRouter)

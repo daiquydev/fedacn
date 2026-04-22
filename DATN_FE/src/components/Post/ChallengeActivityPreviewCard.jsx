@@ -384,7 +384,7 @@ function NutritionActivityContent({ activity, challenge, config }) {
                     <img
                         src={imageUrl}
                         alt="Ảnh bữa ăn"
-                        className={`w-full h-44 object-cover ${isLate ? 'grayscale opacity-80' : ''}`}
+                        className={`w-full h-48 object-cover ${isLate ? 'grayscale opacity-80' : ''}`}
                         onError={(e) => { e.target.parentElement.style.display = 'none' }}
                     />
                     {/* Gradient overlay */}
@@ -579,7 +579,7 @@ function OutdoorActivityContent({ activity, challenge, config }) {
         stats.push({ icon: <FaFire className="text-orange-500" />, label: 'Calo', value: `${roundKcal(activity.calories)} kcal` })
     }
     if (speedKmh) {
-        stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ TB', value: `${speedKmh} km/h` })
+        stats.push({ icon: <FaBolt className="text-yellow-500" />, label: 'Tốc độ trung bình', value: `${speedKmh} km/h` })
     }
 
     return (

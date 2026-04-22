@@ -65,7 +65,7 @@ export const allSportEvents = [
       { name: "Câu lạc bộ Cộng đồng Thể dục", contact: "fitness@community.com" }
     ],
     faqs: [
-      { question: "Tôi nên sử dụng ứng dụng theo dõi nào?", answer: "Bạn có thể sử dụng bất kỳ ứng dụng theo dõi nào như Strava, Nike Run Club hoặc Garmin. Chỉ cần đảm bảo nó hiển thị khoảng cách và thời gian của bạn." },
+      { question: "Tôi nên sử dụng ứng dụng theo dõi nào?", answer: "Bạn có thể sử dụng bất kỳ ứng dụng theo dõi nào như Nike Run Club hoặc Garmin. Chỉ cần đảm bảo nó hiển thị khoảng cách và thời gian của bạn." },
       { question: "Tôi có thể tham gia sau khi sự kiện đã bắt đầu không?", answer: "Có, bạn có thể tham gia bất cứ lúc nào, nhưng mục tiêu sẽ vẫn giữ nguyên." }
     ]
   },

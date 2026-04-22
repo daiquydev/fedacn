@@ -106,8 +106,7 @@ const CreateSportEvent = () => {
     detailedDescription: '',
     eventType: 'Ngoài trời',
     requirements: '',
-    benefits: '',
-    requireStrava: false
+    benefits: ''
   })
 
   const [errors, setErrors] = useState({})
@@ -250,7 +249,6 @@ JSON output (chỉ object, không gì khác):
         if (parsed.detailedDescription) updated.detailedDescription = parsed.detailedDescription
         if (parsed.requirements) updated.requirements = parsed.requirements
         if (parsed.benefits) updated.benefits = parsed.benefits
-        // We can let AI toggle requireStrava, or default it to false by doing nothing.
         return updated
       })
 
@@ -413,8 +411,7 @@ JSON output (chỉ object, không gì khác):
       detailedDescription: newEvent.detailedDescription,
       eventType: newEvent.eventType,
       requirements: newEvent.requirements,
-      benefits: newEvent.benefits,
-      requireStrava: newEvent.eventType === 'Ngoài trời' ? newEvent.requireStrava : false
+      benefits: newEvent.benefits
     }
 
     createMutation.mutate(finalData)
@@ -619,25 +616,6 @@ JSON output (chỉ object, không gì khác):
                   </div>
                 </div>
 
-                {/* Yêu cầu Strava Sync */}
-                {newEvent.eventType === 'Ngoài trời' && (
-                  <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-sm text-orange-900 dark:text-orange-300">Yêu cầu ghi hoạt động (đồng bộ Strava)</h4>
-                      <p className="text-xs text-orange-700 dark:text-orange-400">Chỉ chấp nhận tiến độ từ hoạt động đã ghi trên Strava</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        name="requireStrava"
-                        className="sr-only peer" 
-                        checked={newEvent.requireStrava}
-                        onChange={(e) => setNewEvent(p => ({ ...p, requireStrava: e.target.checked }))}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
-                    </label>
-                  </div>
-                )}
               </div>
             </section>
 

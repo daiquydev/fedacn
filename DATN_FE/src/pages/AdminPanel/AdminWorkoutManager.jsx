@@ -10,6 +10,27 @@ import {
     adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise
 } from '../../apis/adminWorkoutApi'
 import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
+import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../utils/exerciseLabels'
+
+const SEC_PER_REP_MIN = 1
+const SEC_PER_REP_MAX = 120
+const REST_SEC_MAX = 600
+
+function parseSecPerRepInput(raw) {
+    if (raw === '' || raw === null || raw === undefined) return null
+    const n = Math.round(Number(typeof raw === 'number' ? raw : String(raw).trim()))
+    if (!Number.isFinite(n)) return null
+    if (n < SEC_PER_REP_MIN || n > SEC_PER_REP_MAX) return null
+    return n
+}
+
+function parseRestSecInput(raw) {
+    if (raw === '' || raw === null || raw === undefined) return null
+    const n = Math.round(Number(typeof raw === 'number' ? raw : String(raw).trim()))
+    if (!Number.isFinite(n)) return null
+    if (n < 0 || n > REST_SEC_MAX) return null
+    return n
+}
 
 // ===================== EQUIPMENT MANAGEMENT =====================
 function EquipmentManager() {
@@ -295,7 +316,7 @@ function ExerciseManager() {
     const initForm = {
         name: '', name_vi: '', description: '', instructions: '', tips: '', video_url: '', image_url: '',
         category: 'strength', difficulty: 'intermediate',
-        duration_default: 45, rest_time_default: 60, equipment_ids: [], muscle_group_ids: [], secondary_muscle_ids: []
+        duration_default: 3, rest_time_default: 0, equipment_ids: [], muscle_group_ids: [], secondary_muscle_ids: []
     }
     const [form, setForm] = useState(initForm)
 
@@ -336,7 +357,7 @@ function ExerciseManager() {
             instructions: (ex.instructions || []).join('\n'), tips: ex.tips || '',
             video_url: ex.video_url || '', image_url: ex.image_url || '',
             category: ex.category || 'strength', difficulty: ex.difficulty || 'intermediate',
-            duration_default: ex.duration_default || 45, rest_time_default: ex.rest_time_default || 60,
+            duration_default: ex.duration_default ?? 3, rest_time_default: ex.rest_time_default ?? 0,
             equipment_ids: (ex.equipment_ids || []).map(e => typeof e === 'object' ? e._id : e),
             muscle_group_ids: (ex.muscle_group_ids || []).map(m => typeof m === 'object' ? m._id : m),
             secondary_muscle_ids: (ex.secondary_muscle_ids || []).map(m => typeof m === 'object' ? m._id : m)
@@ -345,11 +366,19 @@ function ExerciseManager() {
     }
     const handleSubmit = () => {
         if (!form.name) return toast.error('Tên bài tập không được để trống')
+        const repSec = parseSecPerRepInput(form.duration_default)
+        if (repSec === null) {
+            return toast.error(`Thời gian mỗi rep: số nguyên ${SEC_PER_REP_MIN}–${SEC_PER_REP_MAX}`)
+        }
+        const restSec = parseRestSecInput(form.rest_time_default)
+        if (restSec === null) {
+            return toast.error(`Nghỉ mặc định: số nguyên 0–${REST_SEC_MAX}`)
+        }
         const payload = {
             ...form,
             instructions: form.instructions.split('\n').filter(Boolean),
-            duration_default: Number(form.duration_default),
-            rest_time_default: Number(form.rest_time_default)
+            duration_default: repSec,
+            rest_time_default: restSec
         }
         editingId ? updateMut.mutate({ id: editingId, d: payload }) : createMut.mutate(payload)
     }
@@ -453,29 +482,46 @@ function ExerciseManager() {
                             <label className='text-xs font-medium text-slate-500'>Loại</label>
                             <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
                                 className='w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm'>
-                                <option value='strength'>Strength</option>
-                                <option value='cardio'>Cardio</option>
-                                <option value='stretching'>Stretching</option>
-                                <option value='plyometrics'>Plyometrics</option>
+                                <option value='strength'>Sức mạnh</option>
+                                <option value='cardio'>Tim mạch</option>
+                                <option value='stretching'>Giãn cơ</option>
+                                <option value='plyometrics'>Bật nhảy</option>
                             </select>
                         </div>
                         <div>
                             <label className='text-xs font-medium text-slate-500'>Độ khó</label>
                             <select value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}
                                 className='w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm'>
-                                <option value='beginner'>Beginner</option>
-                                <option value='intermediate'>Intermediate</option>
-                                <option value='expert'>Expert</option>
+                                <option value='beginner'>Dễ</option>
+                                <option value='intermediate'>Trung bình</option>
+                                <option value='expert'>Khó</option>
                             </select>
                         </div>
                         <div>
-                            <label className='text-xs font-medium text-slate-500'>Thời gian mặc định (giây)</label>
-                            <input type='number' value={form.duration_default} onChange={e => setForm({ ...form, duration_default: e.target.value })}
+                            <label className='text-xs font-medium text-slate-500'>Thời gian mỗi rep (giây)</label>
+                            <input type='number' min={SEC_PER_REP_MIN} max={SEC_PER_REP_MAX} step={1}
+                                value={form.duration_default}
+                                onChange={e => setForm({ ...form, duration_default: e.target.value })}
+                                onBlur={() => setForm(f => ({
+                                    ...f,
+                                    duration_default: parseSecPerRepInput(f.duration_default) ?? SEC_PER_REP_MIN
+                                }))}
                                 className='w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm' />
                         </div>
                         <div>
                             <label className='text-xs font-medium text-slate-500'>Nghỉ mặc định (giây)</label>
-                            <input type='number' value={form.rest_time_default} onChange={e => setForm({ ...form, rest_time_default: e.target.value })}
+                            <input type='number' min={0} max={REST_SEC_MAX} step={1}
+                                value={form.rest_time_default}
+                                onChange={e => setForm({ ...form, rest_time_default: e.target.value })}
+                                onBlur={() => setForm(f => {
+                                    const ok = parseRestSecInput(f.rest_time_default)
+                                    if (ok !== null) return { ...f, rest_time_default: ok }
+                                    const n = parseInt(String(f.rest_time_default).trim(), 10)
+                                    return {
+                                        ...f,
+                                        rest_time_default: Number.isFinite(n) ? Math.max(0, Math.min(REST_SEC_MAX, n)) : 0
+                                    }
+                                })}
                                 className='w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm' />
                         </div>
                         <div>
@@ -532,14 +578,13 @@ function ExerciseManager() {
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${ex.category === 'strength' ? 'bg-blue-100 text-blue-700' :
                                             ex.category === 'cardio' ? 'bg-red-100 text-red-700' :
                                                 ex.category === 'stretching' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                            }`}>{ex.category}</span>
+                                            }`}>{formatExerciseCategoryVi(ex.category)}</span>
                                     </td>
                                     <td className='py-2 pr-3'>
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${ex.difficulty === 'beginner' ? 'bg-emerald-100 text-emerald-700' :
                                             ex.difficulty === 'intermediate' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                                            }`}>{ex.difficulty}</span>
+                                            }`}>{formatExerciseDifficultyVi(ex.difficulty)}</span>
                                     </td>
-                                    <td className='py-2 pr-3 text-xs'>{ex.difficulty}</td>
                                     <td className='py-2 pr-3 text-xs max-w-[100px] truncate'>
                                         {(ex.equipment_ids || []).map(e => typeof e === 'object' ? e.name : e).join(', ')}
                                     </td>

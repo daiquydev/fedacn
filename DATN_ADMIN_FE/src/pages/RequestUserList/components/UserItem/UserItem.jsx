@@ -96,7 +96,7 @@ export default function UserItem({ user }) {
             </span>
           ) : (
             <span className='px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:text-black dark:bg-sky-400'>
-              Đang hoạt động
+              Hoạt động
             </span>
           )}
         </td>

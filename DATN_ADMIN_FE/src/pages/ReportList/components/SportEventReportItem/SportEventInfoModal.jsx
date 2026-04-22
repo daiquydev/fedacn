@@ -213,10 +213,6 @@ export default function SportEventInfoModal({ event, onClose, reportCount, repor
                   <span className='text-gray-800 dark:text-white font-medium break-words'>{event.address}</span>
                 </div>
               ) : null}
-              <div>
-                <span className='text-gray-400 text-xs block mb-0.5'>Yêu cầu Strava</span>
-                <span className='text-gray-800 dark:text-white font-medium'>{event.requireStrava ? 'Có' : 'Không'}</span>
-              </div>
             </div>
 
             {creator ? (

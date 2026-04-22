@@ -1,5 +1,6 @@
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useState, useEffect, useRef } from 'react'
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
@@ -19,6 +20,7 @@ export default function ActivityTracking() {
     const [activityId, setActivityId] = useState(null)
     const [showConfirmDiscard, setShowConfirmDiscard] = useState(false)
     const [showConfirmComplete, setShowConfirmComplete] = useState(false)
+    const [mapCollapsed, setMapCollapsed] = useState(false)
     const autoSaveTimerRef = useRef(null)
     const startedRef = useRef(false)
     const activityIdRef = useRef(null)
@@ -143,6 +145,27 @@ export default function ActivityTracking() {
             }
         }
     }, [])
+
+    useEffect(() => {
+        const map = mapRef.current
+        if (!map) return
+        const onResize = () => {
+            try {
+                map.resize()
+            } catch { /* ignore */ }
+        }
+        window.addEventListener('resize', onResize)
+        return () => window.removeEventListener('resize', onResize)
+    }, [])
+
+    useEffect(() => {
+        const t = window.setTimeout(() => {
+            try {
+                mapRef.current?.resize()
+            } catch { /* ignore */ }
+        }, 200)
+        return () => window.clearTimeout(t)
+    }, [mapCollapsed])
 
     // Initialize - start tracking when event data is ready
     useEffect(() => {
@@ -290,7 +313,7 @@ export default function ActivityTracking() {
     const progressPercent = perPersonTarget > 0 ? Math.min(Math.round((parseFloat(distanceKm) / perPersonTarget) * 100), 100) : 0
 
     return (
-        <div className='tracking-hud'>
+        <div className={`tracking-hud${mapCollapsed ? ' tracking-hud--map-collapsed' : ''}`}>
             {/* ═══ MAP FILLS ABOVE THE BOTTOM SHEET ═══ */}
             <div className='tracking-map-area'>
                 <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
@@ -325,6 +348,22 @@ export default function ActivityTracking() {
 
             {/* ═══ GLASS OVERLAY — stats + progress + controls ═══ */}
             <div className='hud-glass-panel'>
+                <button
+                    type='button'
+                    className='hud-map-toggle'
+                    onClick={() => setMapCollapsed((c) => !c)}
+                    aria-expanded={!mapCollapsed}
+                >
+                    {mapCollapsed ? (
+                        <>
+                            <FaChevronUp aria-hidden /> Mở rộng bản đồ
+                        </>
+                    ) : (
+                        <>
+                            <FaChevronDown aria-hidden /> Thu gọn bản đồ
+                        </>
+                    )}
+                </button>
                 {/* Hero distance */}
                 <div className='hud-hero-distance'>
                     <span className='hud-hero-val'>{distanceKm}</span>

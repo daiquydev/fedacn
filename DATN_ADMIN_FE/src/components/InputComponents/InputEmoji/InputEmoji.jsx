@@ -11,20 +11,26 @@ export default function InputEmoji({ content, setContent, handleCreateComment })
     const sym = e.unified.split('-')
     const codeArray = []
     sym.forEach((el) => codeArray.push('0x' + el))
-    let emoji = String.fromCodePoint(...codeArray)
-    setContent(content + emoji)
+    const emoji = String.fromCodePoint(...codeArray)
+    setContent((prev) => prev + emoji)
   }
 
   return (
-    <form onSubmit={(e) => handleCreateComment(e)} className='relative'>
-      <input
-        className='pt-2 pb-2 pl-3 w-full h-11 bg-slate-100 dark:bg-slate-600 rounded-lg placeholder:text-slate-600 dark:placeholder:text-slate-300 font-medium pr-20'
-        type='text'
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        handleCreateComment(e)
+      }}
+      className='relative'
+    >
+      <textarea
+        rows={2}
+        className='pt-2 pb-2 pl-3 pr-14 w-full min-h-[2.75rem] max-h-40 resize-y bg-slate-100 dark:bg-slate-600 rounded-lg placeholder:text-slate-600 dark:placeholder:text-slate-300 font-medium leading-snug'
         placeholder='Viết bình luận'
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
-      <span className='flex cursor-pointer hover:text-red-600 absolute right-3 top-2/4 -mt-3 items-center'>
+      <span className='flex cursor-pointer hover:text-red-600 absolute right-3 top-2 items-center gap-0'>
         <svg
           onClick={() => setShowEmoji(!showEmoji)}
           className='mr-2'

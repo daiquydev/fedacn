@@ -253,9 +253,6 @@ function SportEventPreviewCardInModal({ event, isOnline }) {
 
     const startDate = moment(event.startDate)
     const endDate = moment(event.endDate)
-    const progressPercent = event.targetValue && event.participants > 0
-        ? Math.min(Math.round((event.participants / (event.maxParticipants || 1)) * 100), 100)
-        : 0
 
     return (
         <div className="rounded-xl overflow-hidden border-2 border-dashed border-red-200 dark:border-red-900 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
@@ -265,54 +262,50 @@ function SportEventPreviewCardInModal({ event, isOnline }) {
                 <span className="text-white text-xs font-semibold tracking-wide uppercase">Sự kiện thể thao được chia sẻ</span>
             </div>
 
-            {/* Event image + info */}
-            <div className="flex gap-3 p-3">
-                {/* Thumbnail */}
-                <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 shadow-md">
-                    <img
-                        src={getImageUrl(event.image)}
-                        alt={event.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/80x80?text=Event' }}
-                    />
+            {/* Ảnh bìa full width — cùng tỷ lệ với bài đăng / thẻ sự kiện */}
+            <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <img
+                    src={getImageUrl(event.image)}
+                    alt={event.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = 'https://via.placeholder.com/80x80?text=Event' }}
+                />
+            </div>
+
+            <div className="p-3">
+                {/* Badges */}
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isOnline
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                        : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                        }`}>
+                        {isOnline ? '🏠 Trong nhà' : '🌿 Ngoài trời'}
+                    </span>
+                    {event.category && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium">
+                            {event.category}
+                        </span>
+                    )}
                 </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-1 mb-1.5">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isOnline
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                            : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                            }`}>
-                            {isOnline ? '🏠 Trong nhà' : '🌿 Ngoài trời'}
-                        </span>
-                        {event.category && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium">
-                                {event.category}
-                            </span>
-                        )}
+                {/* Name */}
+                <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1.5">
+                    {event.name}
+                </h4>
+
+                {/* Details */}
+                <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <FaCalendarAlt size={10} className="text-red-400 shrink-0" />
+                        <span>{startDate.format('DD/MM/YYYY')} – {endDate.format('DD/MM/YYYY')}</span>
                     </div>
-
-                    {/* Name */}
-                    <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1.5">
-                        {event.name}
-                    </h4>
-
-                    {/* Details */}
-                    <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                            <FaCalendarAlt size={10} className="text-red-400 shrink-0" />
-                            <span>{startDate.format('DD/MM/YYYY')} – {endDate.format('DD/MM/YYYY')}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                            {isOnline ? <MdVideocam size={11} className="text-blue-400 shrink-0" /> : <FaMapMarkerAlt size={10} className="text-green-400 shrink-0" />}
-                            <span className="truncate">{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                            <FaUsers size={10} className="text-purple-400 shrink-0" />
-                            <span>{event.participants}/{event.maxParticipants} người tham gia</span>
-                        </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        {isOnline ? <MdVideocam size={11} className="text-blue-400 shrink-0" /> : <FaMapMarkerAlt size={10} className="text-green-400 shrink-0" />}
+                        <span className="truncate">{event.location}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <FaUsers size={10} className="text-purple-400 shrink-0" />
+                        <span>{event.participants}/{event.maxParticipants} người tham gia</span>
                     </div>
                 </div>
             </div>

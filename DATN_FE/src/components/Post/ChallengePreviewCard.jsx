@@ -7,7 +7,8 @@ import {
     FaUsers, FaTrophy, FaArrowRight,
     FaClock, FaFire, FaCheck, FaCalendarAlt
 } from 'react-icons/fa'
-import { getChallenge, getChallengeLeaderboard } from '../../apis/challengeApi'
+import { getChallenge } from '../../apis/challengeApi'
+import { getChallengePersonalProgressPercent } from '../../utils/challengeProgress'
 import { currentAccount } from '../../apis/userApi'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
@@ -150,15 +151,6 @@ export default function ChallengePreviewCard({ challengeId }) {
         retry: false
     })
 
-    // Leaderboard: backend trả current_value = số ngày đạt mục tiêu / người (không có totalProgress)
-    const { data: leaderboardData } = useQuery({
-        queryKey: ['challenge-leaderboard-preview', challengeId],
-        queryFn: () => getChallengeLeaderboard(challengeId, { limit: 500, page: 1 }),
-        enabled: Boolean(challengeId),
-        staleTime: 60_000,
-        retry: false
-    })
-
     // Current user social graph for participant ring colors
     const { data: meData } = useQuery({
         queryKey: ['me'],
@@ -237,25 +229,7 @@ export default function ChallengePreviewCard({ challengeId }) {
             ? { text: 'Sắp diễn ra', color: 'bg-amber-500' }
             : { text: 'Đang diễn ra', color: 'bg-emerald-500' }
 
-    // Tiến độ cộng đồng = tổng (ngày hoàn thành của từng người) / (số ngày thử thách × số người tham gia)
-    const leaderboardResult = leaderboardData?.data?.result
-    const leaderboard = leaderboardResult?.leaderboard || []
-    const participantTotalFromLb = leaderboardResult?.total
-    const totalCompletedDays = leaderboard.reduce((sum, e) => sum + (Number(e.current_value) || 0), 0)
-    const safeStart = new Date(challenge.start_date || new Date())
-    const safeEnd = new Date(challenge.end_date || new Date())
-    safeStart.setHours(0, 0, 0, 0)
-    safeEnd.setHours(0, 0, 0, 0)
-    const totalRequiredDays = Math.max(1, Math.ceil((safeEnd - safeStart) / (1000 * 60 * 60 * 24)) + 1)
-    const participantTotal =
-        typeof participantTotalFromLb === 'number' && participantTotalFromLb > 0
-            ? participantTotalFromLb
-            : (challenge.participants_count || participantsList.length || leaderboard.length || 1)
-    const totalCommunitySlots = totalRequiredDays * participantTotal
-    const overallPct =
-        totalCommunitySlots > 0
-            ? Math.min(Math.round((totalCompletedDays / totalCommunitySlots) * 100), 100)
-            : 0
+    const personalPct = challenge.isJoined ? getChallengePersonalProgressPercent(challenge, challenge.participation) : 0
 
     const timeInfo = isEnded
         ? `Đã kết thúc ${formatRelativeTimeVi(endDate)}`
@@ -272,8 +246,8 @@ export default function ChallengePreviewCard({ challengeId }) {
         bg-white dark:bg-gray-800 group"
             title="Nhấn để xem chi tiết thử thách"
         >
-            {/* Banner image */}
-            <div className="relative h-28 overflow-hidden">
+            {/* Banner image — cùng tỷ lệ với thẻ thử thách / trang tạo (h-48) */}
+            <div className="relative h-48 overflow-hidden">
                 {challenge.image ? (
                     <img
                         src={getImageUrl(challenge.image)}
@@ -352,24 +326,26 @@ export default function ChallengePreviewCard({ challengeId }) {
                     </div>
                 </div>
 
-                {/* Overall progress bar */}
-                {isOngoing && leaderboard.length > 0 && (
+                {(isOngoing || isEnded) && (
                     <div className="mb-3">
                         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                            <span>Tiến độ cộng đồng</span>
-                            <span className={`font-semibold ${overallPct >= 100 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {overallPct}%
-                            </span>
+                            <span>Tiến độ cá nhân</span>
+                            {isEnded && !challenge.isJoined ? (
+                                <span className="font-medium text-gray-400">—</span>
+                            ) : challenge.isJoined ? (
+                                <span className={`font-semibold ${personalPct >= 100 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                    {personalPct}%
+                                </span>
+                            ) : (
+                                <span className="font-medium text-gray-400 text-[10px]">Tham gia để theo dõi</span>
+                            )}
                         </div>
                         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
                                 className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${config.progressFrom} ${config.progressTo}`}
-                                style={{ width: `${overallPct}%` }}
+                                style={{ width: `${challenge.isJoined ? personalPct : 0}%` }}
                             />
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                            {participantTotal} thành viên đang tham gia
-                        </p>
                     </div>
                 )}
 

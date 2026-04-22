@@ -57,7 +57,7 @@ export default function IndoorDetailModal({ session, event, isCompletion = false
   const getAiLabel = (pct) => {
     if (pct >= 90) return 'Xuất sắc'
     if (pct >= 70) return 'Tốt'
-    if (pct >= 50) return 'TB'
+    if (pct >= 50) return 'Trung bình'
     return 'Thấp'
   }
 

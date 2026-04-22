@@ -1,12 +1,11 @@
 import { roundKcal } from '../../utils/mathUtils'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
 import { getActivity } from '../../apis/sportEventApi'
 import { getChallengeActivity } from '../../apis/challengeApi'
 import { formatDuration, formatPace } from '../../hooks/useActivityTracking'
-import { FaShareAlt, FaRoute } from 'react-icons/fa'
-import { SiStrava } from 'react-icons/si'
+import { FaShareAlt, FaRoute, FaExpand, FaCompress } from 'react-icons/fa'
 import moment from 'moment'
 import '@goongmaps/goong-js/dist/goong-js.css'
 import './ActivityDetailModal.css'
@@ -24,6 +23,7 @@ export default function ActivityDetailModal({
 }) {
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
+  const [mapExpanded, setMapExpanded] = useState(false)
 
   // Determine which API to use
   const sourceId = eventId || challengeId
@@ -79,7 +79,7 @@ export default function ActivityDetailModal({
           source: 'route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
-            'line-color': isCompletion ? '#22c55e' : activity.source === 'strava' ? '#fc4c02' : '#3b82f6',
+            'line-color': isCompletion ? '#22c55e' : '#3b82f6',
             'line-width': 5,
             'line-opacity': 0.85
           }
@@ -118,18 +118,62 @@ export default function ActivityDetailModal({
     }
   }, [activity, isCompletion])
 
-  // Close on Escape
+  useEffect(() => {
+    if (!mapRef.current || !mapExpanded || !activity) return
+    const map = mapRef.current
+    const routePositions = (activity.gpsRoute || []).map((p) => [p.lng, p.lat])
+    const t = window.setTimeout(() => {
+      try {
+        map.resize()
+        if (routePositions.length > 1) {
+          const bounds = routePositions.reduce(
+            (b, c) => b.extend(c),
+            new goongjs.LngLatBounds(routePositions[0], routePositions[0])
+          )
+          map.fitBounds(bounds, { padding: 48, maxZoom: 17 })
+        }
+      } catch { /* ignore */ }
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [mapExpanded, activity])
+
+  useEffect(() => {
+    if (!mapExpanded) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [mapExpanded])
+
+  useEffect(() => {
+    if (mapExpanded || !mapRef.current) return
+    const t = window.setTimeout(() => {
+      try {
+        mapRef.current?.resize()
+      } catch { /* ignore */ }
+    }, 150)
+    return () => window.clearTimeout(t)
+  }, [mapExpanded])
+
+  // Close on Escape (thu map trước, rồi mới đóng modal)
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      if (mapExpanded) {
+        e.preventDefault()
+        setMapExpanded(false)
+        return
+      }
+      onClose()
     }
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
-  }, [onClose])
+  }, [onClose, mapExpanded])
 
   // Computed values
   const distanceKm = activity ? (activity.totalDistance / 1000).toFixed(2) : '0.00'
-  const activityTypeLabel = activity?.source === 'strava' ? 'Bài tập từ Strava' : (event?.category || activity?.activityType || 'Hoạt động')
+  const activityTypeLabel = event?.category || activity?.activityType || 'Hoạt động'
   const dateStr = activity
     ? moment(activity.startTime).format('dddd, DD [tháng] MM, YYYY • HH:mm')
     : ''
@@ -155,13 +199,13 @@ export default function ActivityDetailModal({
         ) : (
           <>
             {/* Header */}
-            <div className={`adm-header ${headerMode}`} style={activity.source === 'strava' ? { background: 'linear-gradient(135deg, #fc4c02 0%, #e84300 100%)' } : {}}>
+            <div className={`adm-header ${headerMode}`}>
               <div className='adm-header-pattern' />
               <button className='adm-close-btn' onClick={onClose}>
                 ✕
               </button>
               <div className='adm-check-icon'>
-                {isCompletion ? '✓' : activity.source === 'strava' ? <SiStrava /> : '📊'}
+                {isCompletion ? '✓' : '📊'}
               </div>
               <h2>{isCompletion ? 'Hoàn thành! 🎉' : 'Chi tiết hoạt động'}</h2>
               <p className='adm-subtitle'>
@@ -220,15 +264,28 @@ export default function ActivityDetailModal({
                 <span className='adm-map-label-dot' />
                 Lộ trình đã ghi
               </div>
-              <div className='adm-map-container'>
-                {hasRoute ? (
-                  <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-                ) : (
-                  <div className='adm-no-route'>
-                    <FaRoute className='adm-no-route-icon' />
-                    <p>Không có dữ liệu lộ trình</p>
-                  </div>
+              <div className={`adm-map-outer${mapExpanded ? ' adm-map-outer--fullscreen' : ''}`}>
+                {hasRoute && (
+                  <button
+                    type='button'
+                    className='adm-map-fs-toggle'
+                    onClick={() => setMapExpanded((v) => !v)}
+                    aria-label={mapExpanded ? 'Thu nhỏ bản đồ' : 'Phóng to bản đồ'}
+                    title={mapExpanded ? 'Thu nhỏ bản đồ' : 'Phóng to bản đồ'}
+                  >
+                    {mapExpanded ? <FaCompress size={18} /> : <FaExpand size={16} />}
+                  </button>
                 )}
+                <div className='adm-map-container'>
+                  {hasRoute ? (
+                    <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+                  ) : (
+                    <div className='adm-no-route'>
+                      <FaRoute className='adm-no-route-icon' />
+                      <p>Không có dữ liệu lộ trình</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

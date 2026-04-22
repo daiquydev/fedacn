@@ -437,6 +437,9 @@ async function seedAll() {
             category: ex.category,
             difficulty: ex.difficulty,
             default_sets: generateDefaultSets(ex.name, ex.difficulty, ex.category),
+            // Giá trị seed cũ (30–40) là scale khác — quy về giây/rep hợp lý cho phiên tập
+            duration_default: Math.max(1, Math.min(15, Math.round(ex.duration_default / 10))),
+            rest_time_default: 0,
             is_active: true
         }))
         const insertedExercises = await ExerciseModel.insertMany(exerciseDocs)

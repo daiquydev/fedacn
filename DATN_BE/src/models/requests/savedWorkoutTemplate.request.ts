@@ -5,6 +5,8 @@
         exercise_id: string
         exercise_name: string
         exercise_name_vi?: string
+        duration_default?: number
+        rest_time_default?: number
         sets: Array<{
             set_number: number
             reps: number

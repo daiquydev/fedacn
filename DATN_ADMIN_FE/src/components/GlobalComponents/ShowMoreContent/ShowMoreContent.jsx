@@ -1,21 +1,34 @@
-import { useState } from 'react'
+import { useState, isValidElement } from 'react'
 import ShowMoreText from 'react-show-more-text'
+
+function childrenToPlainString(node) {
+  if (node == null || node === false) return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(childrenToPlainString).join('')
+  if (isValidElement(node)) {
+    if (node.props?.children != null) return childrenToPlainString(node.props.children)
+    return ''
+  }
+  return ''
+}
 
 export default function ShowMoreContent({
   children,
   lines = 3,
   className = '',
   anchorClass = 'text-blue-500 cursor-pointer hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-500',
-  more = 'Show more',
-  less = 'Show less'
+  more = 'Xem thêm',
+  less = 'Thu gọn'
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const plain = childrenToPlainString(children)
+
   const executeOnClick = (currentIsExpanded) => {
     setIsExpanded(!currentIsExpanded)
   }
+
   return (
     <ShowMoreText
-      /* Default options */
       lines={lines}
       more={more}
       less={less}
@@ -24,8 +37,9 @@ export default function ShowMoreContent({
       onClick={executeOnClick}
       expanded={isExpanded}
       truncatedEndingComponent={'... '}
+      keepNewLines
     >
-      {children}
+      {plain}
     </ShowMoreText>
   )
 }

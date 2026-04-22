@@ -187,11 +187,12 @@ export default function ReportList() {
   const renderPagination = (currentPage, totalPage, setPage) => {
     if (totalPage <= 1) return null
     return (
-      <div className='flex items-center justify-center gap-2 mt-5'>
+      <div className='mt-5 flex flex-wrap items-center justify-center gap-2'>
         <button
+          type='button'
           disabled={currentPage <= 1}
           onClick={() => setPage(p => Math.max(1, p - 1))}
-          className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+          className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
         >
           ← Trước
         </button>
@@ -205,9 +206,10 @@ export default function ReportList() {
           .map(p =>
             typeof p === 'number' ? (
               <button
+                type='button'
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === currentPage ? 'bg-rose-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${p === currentPage ? 'bg-rose-600 text-white shadow-sm' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'}`}
               >
                 {p}
               </button>
@@ -217,9 +219,10 @@ export default function ReportList() {
           )
         }
         <button
+          type='button'
           disabled={currentPage >= totalPage}
           onClick={() => setPage(p => Math.min(totalPage, p + 1))}
-          className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+          className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
         >
           Sau →
         </button>
@@ -257,7 +260,7 @@ export default function ReportList() {
                 <button
                   type='button'
                   onClick={goPostsReported}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                  className={`admin-hero-tab shrink-0 ${
                     postTab === 'reported' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
@@ -267,7 +270,7 @@ export default function ReportList() {
                 <button
                   type='button'
                   onClick={goPostsDeleted}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                  className={`admin-hero-tab shrink-0 ${
                     postTab === 'deleted' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
@@ -280,7 +283,7 @@ export default function ReportList() {
                 <button
                   type='button'
                   onClick={goEventsReported}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                  className={`admin-hero-tab shrink-0 ${
                     eventTab === 'reported' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
@@ -290,7 +293,7 @@ export default function ReportList() {
                 <button
                   type='button'
                   onClick={goEventsDeleted}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                  className={`admin-hero-tab shrink-0 ${
                     eventTab === 'deleted' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
@@ -303,7 +306,7 @@ export default function ReportList() {
                 <button
                   type='button'
                   onClick={goChallengesReported}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                  className={`admin-hero-tab shrink-0 ${
                     challengeTab === 'reported' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
@@ -313,7 +316,7 @@ export default function ReportList() {
                 <button
                   type='button'
                   onClick={goChallengesDeleted}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                  className={`admin-hero-tab shrink-0 ${
                     challengeTab === 'deleted' ? 'bg-white text-red-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
@@ -378,7 +381,7 @@ export default function ReportList() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder='Tìm bài viết bị báo cáo...'
-                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
               />
             </div>
           </div>
@@ -446,7 +449,7 @@ export default function ReportList() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder='Tìm sự kiện bị báo cáo...'
-                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
               />
             </div>
           </div>
@@ -513,7 +516,7 @@ export default function ReportList() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder='Tìm sự kiện đã gỡ...'
-                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
               />
             </div>
           </div>
@@ -568,7 +571,7 @@ export default function ReportList() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder='Tìm thử thách bị báo cáo...'
-                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
               />
             </div>
           </div>
@@ -635,7 +638,7 @@ export default function ReportList() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder='Tìm thử thách đã gỡ...'
-                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
               />
             </div>
           </div>
@@ -691,7 +694,7 @@ export default function ReportList() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder='Tìm bài viết đã xóa...'
-                className='w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all'
+                className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
               />
             </div>
           </div>

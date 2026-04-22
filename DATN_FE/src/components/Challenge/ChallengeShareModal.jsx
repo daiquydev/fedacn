@@ -299,79 +299,75 @@ function ChallengePreviewCardInModal({ challenge, config, startDate, endDate }) 
                 <span className="text-white text-xs font-semibold tracking-wide uppercase">Thử thách được chia sẻ</span>
             </div>
 
-            {/* Content */}
-            <div className="flex gap-3 p-3">
-                {/* Thumbnail or gradient */}
-                <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 shadow-md">
-                    {challenge.image ? (
-                        <img
-                            src={getImageUrl(challenge.image)}
-                            alt={challenge.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { e.target.style.display = 'none' }}
-                        />
-                    ) : (
-                        <div className={`w-full h-full bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
-                            <span className="text-3xl opacity-60">{challenge.badge_emoji || '🏆'}</span>
-                        </div>
+            {/* Ảnh bìa full width — cùng tỷ lệ với bài đăng / thẻ thử thách */}
+            <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                {challenge.image ? (
+                    <img
+                        src={getImageUrl(challenge.image)}
+                        alt={challenge.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none' }}
+                    />
+                ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
+                        <span className="text-6xl opacity-60">{challenge.badge_emoji || '🏆'}</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="p-3">
+                {/* Type badge */}
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 font-medium flex items-center gap-1">
+                        {config.icon} {challenge.category && challenge.challenge_type === 'outdoor_activity' ? challenge.category : config.label}
+                    </span>
+                    {isExpired && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 font-medium">
+                            Đã kết thúc
+                        </span>
+                    )}
+                    {isNotStarted && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 font-medium">
+                            Sắp bắt đầu
+                        </span>
+                    )}
+                    {!isExpired && !isNotStarted && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Đang diễn ra
+                        </span>
                     )}
                 </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                    {/* Type badge */}
-                    <div className="flex flex-wrap gap-1 mb-1.5">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 font-medium flex items-center gap-1">
-                            {config.icon} {challenge.category && challenge.challenge_type === 'outdoor_activity' ? challenge.category : config.label}
-                        </span>
-                        {isExpired && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 font-medium">
-                                Đã kết thúc
-                            </span>
-                        )}
-                        {isNotStarted && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 font-medium">
-                                Sắp bắt đầu
-                            </span>
-                        )}
-                        {!isExpired && !isNotStarted && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 font-medium flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Đang diễn ra
-                            </span>
-                        )}
-                    </div>
+                {/* Title */}
+                <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1.5">
+                    {challenge.title}
+                </h4>
 
-                    {/* Title */}
-                    <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1.5">
-                        {challenge.title}
-                    </h4>
-
-                    {/* Details */}
-                    <div className="space-y-0.5">
-                        {startDate && endDate && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                <FaCalendarAlt size={10} className="text-orange-400 shrink-0" />
-                                <span>{startDate.format('DD/MM/YYYY')} – {endDate.format('DD/MM/YYYY')}</span>
-                            </div>
-                        )}
-                        {challenge.goal_value && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                <FaFire size={10} className="text-amber-400 shrink-0" />
-                                <span>Mỗi ngày: {challenge.goal_value} {challenge.goal_unit}</span>
-                            </div>
-                        )}
+                {/* Details */}
+                <div className="space-y-0.5">
+                    {startDate && endDate && (
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                            <FaUsers size={10} className="text-blue-400 shrink-0" />
-                            <span>{challenge.participants_count || 0} người tham gia</span>
+                            <FaCalendarAlt size={10} className="text-orange-400 shrink-0" />
+                            <span>{startDate.format('DD/MM/YYYY')} – {endDate.format('DD/MM/YYYY')}</span>
                         </div>
-                        {!isExpired && daysLeft > 0 && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                <FaClock size={10} className="text-gray-400 shrink-0" />
-                                <span>Còn {daysLeft} ngày</span>
-                            </div>
-                        )}
+                    )}
+                    {challenge.goal_value && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            <FaFire size={10} className="text-amber-400 shrink-0" />
+                            <span>Mỗi ngày: {challenge.goal_value} {challenge.goal_unit}</span>
+                        </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <FaUsers size={10} className="text-blue-400 shrink-0" />
+                        <span>{challenge.participants_count || 0} người tham gia</span>
                     </div>
+                    {!isExpired && daysLeft > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            <FaClock size={10} className="text-gray-400 shrink-0" />
+                            <span>Còn {daysLeft} ngày</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

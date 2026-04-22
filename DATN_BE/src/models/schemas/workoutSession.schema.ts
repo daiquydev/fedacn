@@ -13,6 +13,8 @@ export interface WorkoutExercise {
     exercise_id: Types.ObjectId
     exercise_name: string
     sets: WorkoutSet[]
+    duration_default?: number
+    rest_time_default?: number
 }
 
 export interface MetricsInput {
@@ -66,7 +68,9 @@ const WorkoutExerciseSchema = new mongoose.Schema<WorkoutExercise>(
             required: true
         },
         exercise_name: { type: String, required: true },
-        sets: { type: [WorkoutSetSchema], default: [] }
+        sets: { type: [WorkoutSetSchema], default: [] },
+        duration_default: { type: Number, required: false },
+        rest_time_default: { type: Number, required: false }
     },
     { _id: false }
 )

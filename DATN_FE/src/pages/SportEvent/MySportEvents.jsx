@@ -33,6 +33,21 @@ import useravatar from '../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
 import moment from 'moment'
 
+function rawDateToMs(raw) {
+  if (raw == null || raw === '') return null
+  const t = new Date(raw).getTime()
+  return Number.isFinite(t) ? t : null
+}
+
+/** Đồng bộ với BE `sportEventHasStartedForDelete` (kể cả snake_case / sự kiện đã kết thúc) */
+function isSportEventStartedForDelete(event) {
+  const startMs = rawDateToMs(event?.startDate ?? event?.start_date)
+  if (startMs != null) return startMs <= Date.now()
+  const endMs = rawDateToMs(event?.endDate ?? event?.end_date)
+  if (endMs != null) return endMs < Date.now()
+  return false
+}
+
 const MySportEvents = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -222,8 +237,12 @@ const MySportEvents = () => {
     setMobileShowDetail(true)
   }
 
-  const handleDeleteClick = (eventId, eventName) => {
-    setSelectedEventInfo({ id: eventId, name: eventName })
+  const handleDeleteClick = (event) => {
+    if (isSportEventStartedForDelete(event)) {
+      toast.error('Sự kiện đã bắt đầu, không thể xóa')
+      return
+    }
+    setSelectedEventInfo({ id: event._id, name: event.name })
     setOpenDeleteBox(true)
   }
 
@@ -957,17 +976,20 @@ function SettingsSubTab({ event, onDeleteClick, navigate }) {
         </button>
       </div>
 
-      {/* Danger zone */}
-      <div className="border border-red-200 dark:border-red-900/50 rounded-xl p-5 bg-red-50/50 dark:bg-red-900/10">
-        <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">Vùng nguy hiểm</h4>
-        <p className="text-xs text-red-600/70 dark:text-red-400/70 mb-4">Xóa sự kiện sẽ không thể hoàn tác. Tất cả dữ liệu liên quan sẽ bị ẩn.</p>
-        <button
-          onClick={() => onDeleteClick(event._id, event.name)}
-          className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-medium transition text-sm"
-        >
-          <FaTrash className="text-xs" /> Xóa sự kiện
-        </button>
-      </div>
+      {/* Chỉ hiện khi sự kiện chưa bắt đầu — đã/đang diễn ra thì không còn nút xóa */}
+      {!isSportEventStartedForDelete(event) && (
+        <div className="border border-red-200 dark:border-red-900/50 rounded-xl p-5 bg-red-50/50 dark:bg-red-900/10">
+          <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">Vùng nguy hiểm</h4>
+          <p className="text-xs text-red-600/70 dark:text-red-400/70 mb-4">Xóa sự kiện sẽ không thể hoàn tác. Tất cả dữ liệu liên quan sẽ bị ẩn.</p>
+          <button
+            type="button"
+            onClick={() => onDeleteClick(event)}
+            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-medium transition text-sm"
+          >
+            <FaTrash className="text-xs" /> Xóa sự kiện
+          </button>
+        </div>
+      )}
     </div>
   )
 }

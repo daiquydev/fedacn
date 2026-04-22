@@ -21,8 +21,7 @@ import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
 import moment from 'moment'
-import EditChallengeModal from './components/EditChallengeModal'
-import CreateChallengeModal from './components/CreateChallengeModal'
+import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../utils/challengeProgress'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -43,8 +42,6 @@ export default function MyChallenge() {
   // Modals
   const [openDeleteBox, setOpenDeleteBox] = useState(false)
   const [selectedInfo, setSelectedInfo] = useState({ id: null, name: '' })
-  const [editChallenge, setEditChallenge] = useState(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   // Sidebar search
   const [sidebarSearch, setSidebarSearch] = useState('')
   // Pagination
@@ -223,7 +220,7 @@ export default function MyChallenge() {
                 <FaArrowLeft className="text-xs" /> Danh sách thử thách
               </button>
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => navigate('/challenge/create', { state: { from: '/challenge/my-challenges' } })}
                 className="bg-white hover:bg-gray-50 text-indigo-600 px-5 py-2.5 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
               >
                 <FaPlus className="text-xs" /> Tạo thử thách mới
@@ -320,7 +317,7 @@ export default function MyChallenge() {
               isLoadingParticipants={isLoadingParticipants}
               leaderboard={leaderboard}
               onDeleteClick={handleDeleteClick}
-              onEditClick={setEditChallenge}
+              onEditClick={(c) => navigate(`/challenge/edit/${c._id}`, { state: { from: '/challenge/my-challenges' } })}
               navigate={navigate}
               mobileShowDetail={mobileShowDetail}
               onMobileBack={() => setMobileShowDetail(false)}
@@ -356,18 +353,6 @@ export default function MyChallenge() {
         />
       )}
 
-      {/* Create Modal */}
-      <CreateChallengeModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-      />
-
-      {/* Edit Modal */}
-      <EditChallengeModal
-        open={!!editChallenge}
-        onClose={() => setEditChallenge(null)}
-        challenge={editChallenge}
-      />
     </div>
   )
 }
@@ -750,7 +735,9 @@ function ParticipantsSubTab({ challenge, participants, participantsTotal, isLoad
         </div>
       ) : participants.length > 0 ? (
         <div className="space-y-2">
-          {participants.map((p) => (
+          {participants.map((p) => {
+            const rowPct = getChallengePersonalProgressPercent(challenge, p)
+            return (
             <div key={p.user?._id || p.rank} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 {/* Rank */}
@@ -772,22 +759,22 @@ function ParticipantsSubTab({ challenge, participants, participantsTotal, isLoad
                   </div>
                 </div>
               </div>
-              {/* Progress */}
               <div className="flex items-center gap-3 flex-shrink-0">
                 <div className="hidden sm:block w-24">
                   <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                     <div
-                      className={`h-1.5 rounded-full transition-all ${p.progress_percent >= 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
-                      style={{ width: `${Math.min(p.progress_percent || 0, 100)}%` }}
+                      className={`h-1.5 rounded-full transition-all ${rowPct >= 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
+                      style={{ width: `${rowPct}%` }}
                     />
                   </div>
                 </div>
                 <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 min-w-[36px] text-right">
-                  {p.progress_percent || 0}%
+                  {rowPct}%
                 </span>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="text-center py-12">
@@ -947,11 +934,8 @@ function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joi
           const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
           const status = getStatusBadge(challenge)
 
-          // Progress calc
-          const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
-          const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
-          const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-          const progress = totalRequiredDays > 0 ? Math.min(Math.round((participation.current_value / totalRequiredDays) * 100), 100) : 0
+          const totalRequiredDays = getChallengeTotalRequiredDays(challenge)
+          const progress = getChallengePersonalProgressPercent(challenge, participation)
 
           return (
             <div
@@ -985,11 +969,14 @@ function JoinedTabContent({ isLoading, participations, navigate, joinedPage, joi
                   <span className="flex items-center gap-1"><FaBullseye />{challenge.goal_value} {challenge.goal_unit}/ngày</span>
                   <span className="flex items-center gap-1"><FaUsers />{challenge.participants_count || 0}</span>
                 </div>
-                {/* Progress */}
                 <div className="mb-2">
-                  <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                    <span>{participation.current_value}/{totalRequiredDays} ngày</span>
-                    <span className={`font-bold ${progress >= 100 ? 'text-green-600' : ''}`}>{progress}%</span>
+                  <div className="flex justify-between text-[10px] text-gray-400 mb-1 gap-2">
+                    <span>
+                      <span className="font-medium text-gray-500 dark:text-gray-400">Tiến độ cá nhân</span>
+                      <span className="mx-1">·</span>
+                      <span>{participation.current_value}/{totalRequiredDays} ngày</span>
+                    </span>
+                    <span className={`font-bold flex-shrink-0 ${progress >= 100 ? 'text-green-600' : ''}`}>{progress}%</span>
                   </div>
                   <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full bg-gradient-to-r ${config.gradient} transition-all duration-500`} style={{ width: `${progress}%` }} />

@@ -334,13 +334,79 @@
 .hud-modal-btn.danger  { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
 .hud-modal-btn.success { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
 
-/* ── RESPONSIVE ──────────────────────────────────── */
+/* ── Thu gọn bản đồ (chỉ mobile) ─────────────────── */
+.hud-map-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  margin: -4px -16px 8px;
+  border: none;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.35);
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  border-radius: 12px 12px 0 0;
+  transition: background 0.2s;
+}
+
+.hud-map-toggle:active {
+  background: rgba(255,255,255,0.55);
+}
+
+@media (max-width: 767px) {
+  .hud-map-toggle {
+    display: flex;
+  }
+
+  .tracking-hud--map-collapsed {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tracking-hud--map-collapsed .tracking-map-area {
+    position: relative;
+    flex: 0 0 clamp(120px, 32vh, 200px);
+    height: clamp(120px, 32vh, 200px);
+    min-height: 120px;
+  }
+
+  .tracking-hud--map-collapsed .hud-glass-panel {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    border-radius: 16px 16px 0 0;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Laptop / tablet ngang: bản đồ full màn hình ───
+   Panel thống kê tách khỏi mép phải để map rộng tối đa */
 @media (min-width: 768px) {
   .tracking-hud {
-    max-width: 480px;
-    margin: 0 auto;
-    border-left: 1px solid rgba(0,0,0,0.06);
-    border-right: 1px solid rgba(0,0,0,0.06);
+    max-width: none;
+    margin: 0;
+    border: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hud-glass-panel {
+    left: auto;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    top: auto;
+    width: min(380px, 36vw);
+    max-height: calc(100vh - 32px - env(safe-area-inset-top));
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
+    overflow-y: auto;
   }
 }
 

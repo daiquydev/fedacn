@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus, FaLink } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus } from 'react-icons/fa';
 import { MdVideocam, MdCheckCircle, MdSportsScore } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs';
@@ -63,11 +63,6 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
               <><FaMapMarkerAlt className="mr-1" /><span>Ngoài trời</span></>
             )}
           </div>
-          {!isOnline && (
-            <div className="bg-[#fc4c02] text-white font-medium px-2.5 py-0.5 rounded-full text-[10px] flex items-center shadow-sm w-max">
-              <FaLink className="mr-1" /> Đồng bộ Strava
-            </div>
-          )}
         </div>
 
         {/* Count Badge */}

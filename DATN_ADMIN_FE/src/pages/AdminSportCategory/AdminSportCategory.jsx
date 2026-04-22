@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-    FaPlus, FaEdit, FaTrash, FaDumbbell, FaRunning, FaHome, FaTimes, FaUndo,
+    FaPlus, FaEdit, FaTrash, FaDumbbell, FaRunning, FaHome, FaTimes, FaUndo, FaExclamationTriangle,
     FaBiking, FaSwimmer, FaBasketballBall, FaVolleyballBall, FaTableTennis, FaMountain, FaSkating,
     FaChevronDown, FaWalking, FaHorse, FaFistRaised, FaBowlingBall, FaFootballBall, FaGolfBall,
     FaSkiing, FaSnowboarding, FaWater, FaBaseballBall, FaSearch
@@ -76,23 +76,6 @@ const SPORT_ICONS = {
     esports: { icon: MdSportsEsports },
     sport: { icon: MdSportsScore }
 }
-
-// Danh sách Strava activity types có sẵn để chọn (Tiếng Việt ưu tiên)
-const STRAVA_TYPES = [
-    { value: 'Run', label: 'Chạy bộ (Run)' },
-    { value: 'Walk', label: 'Đi bộ (Walk)' },
-    { value: 'TrailRun', label: 'Chạy trail (TrailRun)' },
-    { value: 'VirtualRun', label: 'Chạy ảo (VirtualRun)' },
-    { value: 'Ride', label: 'Đạp xe đường dài (Ride)' },
-    { value: 'MountainBikeRide', label: 'Đạp xe địa hình (MountainBikeRide)' },
-    { value: 'GravelRide', label: 'Đạp xe sỏi (GravelRide)' },
-    { value: 'VirtualRide', label: 'Đạp xe ảo (VirtualRide)' },
-    { value: 'EBikeRide', label: 'Đạp xe điện (EBikeRide)' },
-    { value: 'Hike', label: 'Leo núi (Hike)' },
-    { value: 'Swim', label: 'Bơi lội (Swim)' },
-    { value: 'AlpineSki', label: 'Trượt tuyết (AlpineSki)' },
-    { value: 'RockClimbing', label: 'Leo vách đá (RockClimbing)' },
-]
 
 /** Helper: lấy component icon từ key, fallback về MdSportsScore */
 export function getSportIcon(key) {
@@ -238,8 +221,8 @@ export default function AdminSportCategory() {
     const openModalConfig = (category = null) => {
         setEditingCategory(category)
         reset(category
-            ? { name: category.name, type: category.type, kcal_per_unit: category.kcal_per_unit || '', icon: category.icon || 'sport', stravaTypes: category.stravaTypes || [] }
-            : { name: '', type: 'Ngoài trời', kcal_per_unit: '', icon: 'sport', stravaTypes: [] }
+            ? { name: category.name, type: category.type, kcal_per_unit: category.kcal_per_unit || '', icon: category.icon || 'sport' }
+            : { name: '', type: 'Ngoài trời', kcal_per_unit: '', icon: 'sport' }
         )
         setModalOpen(true)
     }
@@ -277,7 +260,7 @@ export default function AdminSportCategory() {
         return (
             <div className='min-h-screen bg-gray-50 dark:bg-gray-900 flex items-start justify-center pt-20 px-4'>
                 <div className='text-center'>
-                    <div className='text-red-500 text-5xl mb-4'>⚠️</div>
+                    <div className='text-red-500 mb-4 flex justify-center'><FaExclamationTriangle className='text-5xl' aria-hidden /></div>
                     <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>Lỗi khi tải danh mục</h2>
                     <p className='text-gray-500 dark:text-gray-400 text-sm'>{error?.response?.data?.message || 'Không thể kết nối đến máy chủ'}</p>
                     <button
@@ -299,10 +282,11 @@ export default function AdminSportCategory() {
                 <div className='relative z-10 flex items-center justify-between'>
                     <h1 className='text-2xl font-bold text-white'>Danh mục Thể thao</h1>
                     <button
+                        type='button'
                         onClick={() => openModalConfig()}
-                        className='flex items-center gap-2 bg-white text-emerald-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shrink-0'
+                        className='inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-lg transition-all hover:bg-emerald-50 shrink-0'
                     >
-                        <FaPlus size={12} /> Thêm danh mục
+                        <FaPlus size={14} className='shrink-0' aria-hidden /> Thêm danh mục
                     </button>
                 </div>
 
@@ -310,7 +294,7 @@ export default function AdminSportCategory() {
                 <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
                     {[
                         {
-                            key: 'active', label: 'Đang hoạt động', icon: FaDumbbell,
+                            key: 'active', label: 'Hoạt động', icon: FaDumbbell,
                             count: activeCategories.length,
                             active: !showDeleted && filterType === '',
                             onClick: () => { setShowDeleted(false); setFilterType(''); setPage(1) }
@@ -335,15 +319,16 @@ export default function AdminSportCategory() {
                         },
                     ].map(tab => (
                         <button
+                            type='button'
                             key={tab.key}
                             onClick={tab.onClick}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                            className={`admin-hero-tab shrink-0 ${
                                 tab.active ? 'bg-white text-emerald-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                             }`}
                         >
-                            <tab.icon size={13} />
+                            <tab.icon size={14} className='shrink-0 opacity-95' aria-hidden />
                             {tab.label}
-                            <span className='font-black'>({tab.count})</span>
+                            <span className='font-black tabular-nums'>({tab.count})</span>
                         </button>
                     ))}
                 </div>
@@ -360,7 +345,7 @@ export default function AdminSportCategory() {
                         value={searchInput}
                         onChange={e => setSearchInput(e.target.value)}
                         placeholder='Tìm kiếm theo tên danh mục...'
-                        className='pl-9 pr-4 py-2 text-sm w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 outline-none transition-all'
+                        className='min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
                     />
                 </div>
 
@@ -368,15 +353,15 @@ export default function AdminSportCategory() {
                 <select
                     value={filterType}
                     onChange={e => { setFilterType(e.target.value); setPage(1) }}
-                    className={`px-3 py-2 text-sm font-semibold rounded-lg border transition-all outline-none cursor-pointer shrink-0 ${
+                    className={`min-h-10 shrink-0 cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold outline-none transition-all ${
                         filterType
                             ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
                             : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
                     }`}
                 >
-                    <option value=''>📋 Tất cả</option>
-                    <option value='Ngoài trời'>🌿 Ngoài trời</option>
-                    <option value='Trong nhà'>🏠 Trong nhà</option>
+                    <option value=''>Tất cả</option>
+                    <option value='Ngoài trời'>Ngoài trời</option>
+                    <option value='Trong nhà'>Trong nhà</option>
                 </select>
             </div>
 
@@ -389,7 +374,7 @@ export default function AdminSportCategory() {
                         <table className='w-full divide-y divide-gray-100 dark:divide-gray-700'>
                             <thead className='bg-gray-50 dark:bg-gray-900'>
                                 <tr>
-                                    {['STT', 'Tên danh mục', 'Loại hình', 'kcal/đơn vị', 'Trạng thái', 'Hành động'].map(h => (
+                                    {['STT', 'Tên danh mục', 'Loại hình', 'Kcal/đơn vị', 'Hoạt động / đã xóa', 'Hành động'].map(h => (
                                         <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                                             {h}
                                         </th>
@@ -436,11 +421,11 @@ export default function AdminSportCategory() {
                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                     {category.type === 'Ngoài trời' ? (
                                                         <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'>
-                                                            🌿 Ngoài trời
+                                                            <FaRunning size={11} className='shrink-0 opacity-90' aria-hidden /> Ngoài trời
                                                         </span>
                                                     ) : (
                                                         <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'>
-                                                            🏠 Trong nhà
+                                                            <FaHome size={11} className='shrink-0 opacity-90' aria-hidden /> Trong nhà
                                                         </span>
                                                     )}
                                                 </td>
@@ -453,28 +438,15 @@ export default function AdminSportCategory() {
                                                             {category.type === 'Ngoài trời' ? 'kcal/km' : 'kcal/phút'}
                                                         </span>
                                                     )}
-                                                    {/* Strava Types badges */}
-                                                    {category.type === 'Ngoài trời' && category.stravaTypes?.length > 0 && (
-                                                        <div className='flex flex-wrap gap-1 mt-1.5'>
-                                                            {category.stravaTypes.map(st => {
-                                                                const item = STRAVA_TYPES.find(s => s.value === st)
-                                                                return (
-                                                                    <span key={st} className='px-1.5 py-0.5 text-[10px] font-semibold rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'>
-                                                                        {item?.label || st}
-                                                                    </span>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    )}
                                                 </td>
                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                     {category.isDeleted ? (
-                                                        <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'>
-                                                            🗑️ Đã xóa
+                                                        <span className='inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400'>
+                                                            <FaTrash size={10} className='shrink-0 opacity-90' aria-hidden /> Đã xóa
                                                         </span>
                                                     ) : (
-                                                        <span className='px-2.5 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'>
-                                                            ✅ Hoạt động
+                                                        <span className='inline-flex min-h-8 items-center justify-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'>
+                                                            Hoạt động
                                                         </span>
                                                     )}
                                                 </td>
@@ -482,30 +454,33 @@ export default function AdminSportCategory() {
                                                     <div className='flex items-center gap-2'>
                                                         {category.isDeleted ? (
                                                             <button
+                                                                type='button'
                                                                 onClick={() => handleRestore(category)}
                                                                 disabled={restoreMutation.isPending}
                                                                 title='Khôi phục danh mục'
-                                                                className='p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5'
+                                                                className='inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-green-600 transition-colors hover:bg-green-50 hover:text-green-800 disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-900/30'
                                                             >
-                                                                <FaUndo size={14} />
+                                                                <FaUndo size={15} />
                                                                 <span className='text-xs font-semibold'>Khôi phục</span>
                                                             </button>
                                                         ) : (
                                                             <>
                                                                 <button
+                                                                    type='button'
                                                                     onClick={() => openModalConfig(category)}
                                                                     title='Chỉnh sửa'
-                                                                    className='p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30 rounded-lg transition-colors'
+                                                                    className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
                                                                 >
-                                                                    <FaEdit size={14} />
+                                                                    <FaEdit size={15} />
                                                                 </button>
                                                                 <button
+                                                                    type='button'
                                                                     onClick={() => handleDelete(category)}
                                                                     disabled={deleteMutation.isPending}
                                                                     title='Xóa (có thể khôi phục)'
-                                                                    className='p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50'
+                                                                    className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30'
                                                                 >
-                                                                    <FaTrash size={14} />
+                                                                    <FaTrash size={15} />
                                                                 </button>
                                                             </>
                                                         )}
@@ -525,9 +500,10 @@ export default function AdminSportCategory() {
             {totalPage > 1 && (
                 <div className='flex items-center justify-center gap-2 mt-5'>
                     <button
+                        type='button'
                         disabled={page <= 1}
                         onClick={() => setPage(p => Math.max(1, p - 1))}
-                        className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                        className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                     >
                         ← Trước
                     </button>
@@ -541,9 +517,10 @@ export default function AdminSportCategory() {
                         .map(p =>
                             typeof p === 'number' ? (
                                 <button
+                                    type='button'
                                     key={p}
                                     onClick={() => setPage(p)}
-                                    className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                    className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-sm' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'}`}
                                 >
                                     {p}
                                 </button>
@@ -553,9 +530,10 @@ export default function AdminSportCategory() {
                         )
                     }
                     <button
+                        type='button'
                         disabled={page >= totalPage}
                         onClick={() => setPage(p => Math.min(totalPage, p + 1))}
-                        className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                        className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                     >
                         Sau →
                     </button>
@@ -621,8 +599,8 @@ export default function AdminSportCategory() {
                                     className='mt-1 w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all'
                                     {...register('type', { required: 'Vui lòng chọn loại hình' })}
                                 >
-                                    <option value='Ngoài trời'>🌿 Ngoài trời</option>
-                                    <option value='Trong nhà'>🏠 Trong nhà</option>
+                                    <option value='Ngoài trời'>Ngoài trời</option>
+                                    <option value='Trong nhà'>Trong nhà</option>
                                 </select>
                                 {errors.type && <p className='text-red-500 text-xs mt-1'>{errors.type.message}</p>}
                             </div>
@@ -649,92 +627,6 @@ export default function AdminSportCategory() {
                                 </p>
                                 {errors.kcal_per_unit && <p className='text-red-500 text-xs mt-1'>{errors.kcal_per_unit.message}</p>}
                             </div>
-
-                            {/* Strava Types — chỉ hiện cho Ngoài trời */}
-                            {watchedType === 'Ngoài trời' && (
-                                <div>
-                                    <label className='block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5 uppercase tracking-wide'>
-                                        Loại hoạt động Strava
-                                    </label>
-                                    <p className='text-gray-400 text-[11px] mb-2'>
-                                        🔗 Chọn các loại hoạt động Strava tương ứng. Khi sync Strava, chỉ các hoạt động thuộc loại đã chọn mới được hiển thị.
-                                    </p>
-                                    <Controller
-                                        name='stravaTypes'
-                                        control={control}
-                                        defaultValue={[]}
-                                        render={({ field }) => {
-                                            const [stravaSearch, setStravaSearch] = useState('')
-                                            const [dropdownOpen, setDropdownOpen] = useState(false)
-                                            const selected = field.value || []
-                                            const filtered = STRAVA_TYPES.filter(st =>
-                                                !selected.includes(st.value) &&
-                                                st.label.toLowerCase().includes(stravaSearch.toLowerCase())
-                                            )
-                                            return (
-                                                <div className='relative'>
-                                                    {/* Selected tags */}
-                                                    {selected.length > 0 && (
-                                                        <div className='flex flex-wrap gap-1.5 mb-2'>
-                                                            {selected.map(val => {
-                                                                const item = STRAVA_TYPES.find(s => s.value === val)
-                                                                return (
-                                                                    <span key={val} className='inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300'>
-                                                                        {item?.label || val}
-                                                                        <button
-                                                                            type='button'
-                                                                            onClick={() => field.onChange(selected.filter(v => v !== val))}
-                                                                            className='ml-0.5 text-orange-400 hover:text-orange-700 dark:hover:text-orange-200 transition-colors'
-                                                                        >
-                                                                            <FaTimes size={9} />
-                                                                        </button>
-                                                                    </span>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                    {/* Search input */}
-                                                    <div className='relative'>
-                                                        <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs' />
-                                                        <input
-                                                            type='text'
-                                                            value={stravaSearch}
-                                                            onChange={e => { setStravaSearch(e.target.value); setDropdownOpen(true) }}
-                                                            onFocus={() => setDropdownOpen(true)}
-                                                            placeholder='Tìm loại hoạt động...'
-                                                            className='w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all'
-                                                        />
-                                                    </div>
-                                                    {/* Dropdown */}
-                                                    {dropdownOpen && filtered.length > 0 && (
-                                                        <div className='absolute z-50 mt-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl max-h-40 overflow-y-auto'>
-                                                            {filtered.map(st => (
-                                                                <button
-                                                                    key={st.value}
-                                                                    type='button'
-                                                                    onClick={() => {
-                                                                        field.onChange([...selected, st.value])
-                                                                        setStravaSearch('')
-                                                                        setDropdownOpen(false)
-                                                                    }}
-                                                                    className='w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0'
-                                                                >
-                                                                    {st.label}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {dropdownOpen && filtered.length === 0 && stravaSearch && (
-                                                        <div className='absolute z-50 mt-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl px-4 py-3 text-sm text-gray-400'>
-                                                            Không tìm thấy loại hoạt động nào
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        }}
-                                    />
-                                </div>
-                            )}
 
                             <div className='flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-gray-700'>
                                 <button

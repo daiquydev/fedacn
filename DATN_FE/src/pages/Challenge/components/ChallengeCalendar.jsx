@@ -294,7 +294,7 @@ export default function ChallengeCalendar({ challenge, progressEntries = [], onD
       {/* Overall progress bar */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-semibold text-gray-500">Tiến độ tổng thể</span>
+          <span className="text-xs font-semibold text-gray-500">Tiến độ cá nhân</span>
           <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{completedDays}/{totalDays} ngày</span>
         </div>
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

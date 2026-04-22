@@ -12,6 +12,9 @@ export interface SavedWorkoutExercise {
     exercise_name: string
     exercise_name_vi?: string
     sets: SavedWorkoutSet[]
+    /** Giây mỗi rep (theo cấu hình bài tập khi lưu) */
+    duration_default?: number
+    rest_time_default?: number
 }
 
 export interface SavedWorkoutSchedule {
@@ -45,7 +48,9 @@ const SavedWorkoutExerciseSchema = new mongoose.Schema<SavedWorkoutExercise>(
         exercise_id: { type: mongoose.SchemaTypes.ObjectId, ref: 'exercises', required: true },
         exercise_name: { type: String, required: true },
         exercise_name_vi: { type: String, default: '' },
-        sets: { type: [SavedWorkoutSetSchema], default: [] }
+        sets: { type: [SavedWorkoutSetSchema], default: [] },
+        duration_default: { type: Number, required: false },
+        rest_time_default: { type: Number, required: false }
     },
     { _id: false }
 )

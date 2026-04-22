@@ -50,10 +50,6 @@ export interface User {
     type: RequestType
   }
   isDeleted?: boolean
-  stravaProviderId?: string
-  stravaAccessToken?: string
-  stravaRefreshToken?: string
-  stravaTokenExpiresAt?: Date
 }
 
 const UserSchema = new mongoose.Schema<User>(
@@ -199,11 +195,7 @@ const UserSchema = new mongoose.Schema<User>(
       proof: { type: String, default: null },
       type: { type: Number, default: null }
     },
-    isDeleted: { type: Boolean, default: false },
-    stravaProviderId: { type: String, default: null },
-    stravaAccessToken: { type: String, default: null },
-    stravaRefreshToken: { type: String, default: null },
-    stravaTokenExpiresAt: { type: Date, default: null }
+    isDeleted: { type: Boolean, default: false }
   },
   {
     timestamps: true,

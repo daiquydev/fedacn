@@ -152,7 +152,7 @@ export default function CommentItems({ comment, post }) {
             <span className='text-slate-500 text-xs dark:text-slate-300'>{formatRelativeTimeVi(comment.createdAt)}</span>
           </div>
         </div>
-        <ShowMoreContent className='text-sm' lines={2}>
+        <ShowMoreContent className='text-sm whitespace-pre-line' lines={2}>
           <p className=''>{comment.content}</p>
         </ShowMoreContent>
 
@@ -264,7 +264,7 @@ function CommentChildItems({ comment, profile, navigate, post }) {
                 {formatRelativeTimeVi(comment.createdAt)}
               </span> */}
             </div>
-            <ShowMoreContent className='text-sm' lines={2}>
+            <ShowMoreContent className='text-sm whitespace-pre-line' lines={2}>
               <p className='text-sm'>{comment.content}</p>
             </ShowMoreContent>
           </div>

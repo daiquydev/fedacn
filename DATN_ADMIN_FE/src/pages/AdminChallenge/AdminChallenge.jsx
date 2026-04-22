@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-    FaTrophy, FaSearch, FaTrash, FaUsers, FaCheck, FaClock, FaBan,
+    FaTrophy, FaSearch, FaTrash, FaUsers, FaCheck, FaClock,
     FaRunning, FaAppleAlt, FaDumbbell, FaFilter, FaChevronDown,
-    FaTimes, FaSortAmountDown, FaUndo, FaBullseye, FaEye
+    FaTimes, FaSortAmountDown, FaUndo, FaBullseye, FaEye,
+    FaChartBar, FaFolderOpen, FaCalendarAlt, FaCircle, FaExclamationTriangle, FaFire,
+    FaThList, FaCheckCircle
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import adminChallengeApi from '../../apis/challengeApi'
@@ -16,12 +18,6 @@ const TYPE_CONFIG = {
     nutrition: { label: 'Ăn uống', icon: FaAppleAlt, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
     outdoor_activity: { label: 'Ngoài trời', icon: FaRunning, badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
     fitness: { label: 'Thể dục', icon: FaDumbbell, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }
-}
-
-const STATUS_CONFIG = {
-    active: { label: 'Đang hoạt động', icon: FaCheck, cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-    completed: { label: 'Hoàn thành', icon: FaClock, cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-    cancelled: { label: 'Đã hủy', icon: FaBan, cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }
 }
 
 const fmt = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '—'
@@ -51,7 +47,7 @@ function ParticipantsModal({ challenge, onClose }) {
                     <img src={challenge.image} alt={challenge.title} className='w-20 h-20 rounded-xl object-cover shrink-0' />
                 ) : (
                     <div className='w-20 h-20 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-3xl shrink-0 shadow-lg'>
-                        {challenge.badge_emoji || '🏆'}
+                        {challenge.badge_emoji ? <span className='text-3xl leading-none' aria-hidden>{challenge.badge_emoji}</span> : <FaTrophy className='text-3xl' aria-hidden />}
                     </div>
                 )}
                 <div>
@@ -65,9 +61,18 @@ function ParticipantsModal({ challenge, onClose }) {
             <div className='grid grid-cols-2 gap-4'>
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
                     <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Loại & Danh mục</p>
-                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
-                        {challenge.challenge_type === 'nutrition' ? '🥗 Ăn uống' : challenge.challenge_type === 'outdoor_activity' ? '🏃 Ngoài trời' : '💪 Thể dục'}
-                        {challenge.category && ` - ${challenge.category}`}
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 inline-flex items-center gap-1.5 flex-wrap'>
+                        {(() => {
+                            const tc = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
+                            const TIcon = tc.icon || FaDumbbell
+                            return (
+                                <>
+                                    <TIcon className='text-amber-500 shrink-0' size={14} />
+                                    <span>{tc.label}</span>
+                                </>
+                            )
+                        })()}
+                        {challenge.category && <span className='text-gray-500 font-medium'>— {challenge.category}</span>}
                     </p>
                 </div>
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
@@ -185,7 +190,7 @@ function ParticipantsModal({ challenge, onClose }) {
                                         </div>
                                     </td>
                                     <td className='px-4 py-3'>
-                                        <span className='text-xs font-semibold text-orange-600 dark:text-orange-400'>🔥 {p.streak_count || 0}</span>
+                                        <span className='inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400'><FaFire className='shrink-0 text-orange-500' size={11} aria-hidden /> {p.streak_count || 0}</span>
                                     </td>
                                     <td className='px-4 py-3'>
                                         {p.is_completed ? (
@@ -372,12 +377,12 @@ export default function AdminChallenge() {
                 <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
                     {[
                         {
-                            key: 'all', label: 'Tất cả', icon: FaTrophy,
+                            key: 'all', label: 'Tất cả', icon: FaThList,
                             count: stats.total,
                             onClick: () => { setFilterStatus('all'); setFilterType('all'); setPage(1) }
                         },
                         {
-                            key: 'active', label: 'Đang hoạt động', icon: FaCheck,
+                            key: 'active', label: 'Hoạt động', icon: FaCheckCircle,
                             count: stats.active,
                             onClick: () => { setFilterStatus('active'); setFilterType('all'); setPage(1) }
                         },
@@ -403,15 +408,16 @@ export default function AdminChallenge() {
                         },
                     ].map(tab => (
                         <button
+                            type='button'
                             key={tab.key}
                             onClick={tab.onClick}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                            className={`admin-hero-tab shrink-0 ${
                                 activeTabKey === tab.key ? 'bg-white text-amber-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                             }`}
                         >
-                            <tab.icon size={13} />
+                            <tab.icon size={14} className='shrink-0 opacity-95' aria-hidden />
                             {tab.label}
-                            <span className='font-black'>({tab.count ?? 0})</span>
+                            <span className='font-black tabular-nums'>({tab.count ?? 0})</span>
                         </button>
                     ))}
                 </div>
@@ -448,15 +454,16 @@ export default function AdminChallenge() {
                 return (
                     <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2 overflow-hidden'>
                         <div className='flex flex-wrap items-center gap-3 px-4 py-3'>
-                            <span className='flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
-                                📊 Thống kê
+                            <span className='flex flex-col gap-0.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
+                                <span className='flex items-center gap-1.5'><FaChartBar size={12} className='shrink-0' /> Thống kê</span>
+                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo trang hiện tại</span>
                             </span>
 
                             {[
-                                { label: 'Tổng TC', value: activeChallenges.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                { label: 'TB thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                                { label: 'ĂN UỐNG / NGOÀI TRỜI / THỂ DỤC', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                { label: 'Tổng (lọc) / trên trang', value: `${total} / ${activeChallenges.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra (trang)', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'Trung bình thành viên (trang)', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'Ăn uống / Ngoài trời / Thể dục (trang)', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
@@ -500,15 +507,16 @@ export default function AdminChallenge() {
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value)}
                                 placeholder='Tìm theo tên thử thách, mô tả...'
-                                className='w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:bg-white dark:focus:bg-slate-600 transition-all'
+                                className='min-h-10 w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-8 text-sm outline-none transition-all focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:bg-slate-600'
                             />
                         </div>
                         <button
+                            type='button'
                             onClick={() => setShowAdvanced(!showAdvanced)}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                            className={`admin-page-btn shrink-0 ${
                                 showAdvanced || activeFilterCount > 0
-                                    ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
-                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                                    ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'
                             }`}
                         >
                             <FaFilter size={12} />
@@ -525,33 +533,37 @@ export default function AdminChallenge() {
                     {/* Active filter chips */}
                     {activeFilterCount > 0 && (
                         <div className='flex flex-wrap gap-2 mt-3'>
-                            {filterType !== 'all' && (
+                            {filterType !== 'all' && (() => {
+                                const ft = TYPE_CONFIG[filterType]
+                                const FtIcon = ft?.icon || FaTrophy
+                                return (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'>
-                                    {TYPE_CONFIG[filterType]?.label || filterType}
+                                    <FtIcon size={11} className='shrink-0 opacity-90' aria-hidden /> {ft?.label || filterType}
                                     <button onClick={() => { setFilterType('all'); setFilterCategory('all'); setPage(1) }} className='hover:text-amber-900 dark:hover:text-amber-100'><FaTimes size={9} /></button>
                                 </span>
-                            )}
+                                )
+                            })()}
                             {filterCategory !== 'all' && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'>
-                                    🏷️ {filterCategory}
+                                    <FaFolderOpen size={11} className='shrink-0 opacity-80' /> {filterCategory}
                                     <button onClick={() => { setFilterCategory('all'); setPage(1) }} className='hover:text-indigo-900 dark:hover:text-indigo-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {filterDateFrom && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
-                                    📅 Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
+                                    <FaCalendarAlt size={11} className='shrink-0 opacity-80' /> Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
                                     <button onClick={() => { setFilterDateFrom(''); setPage(1) }} className='hover:text-orange-900 dark:hover:text-orange-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {filterDateTo && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
-                                    📅 Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
+                                    <FaCalendarAlt size={11} className='shrink-0 opacity-80' /> Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
                                     <button onClick={() => { setFilterDateTo(''); setPage(1) }} className='hover:text-orange-900 dark:hover:text-orange-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {sortBy !== 'newest' && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'>
-                                    ↕️ {sortBy === 'oldest' ? 'Cũ nhất' : sortBy === 'popular' ? 'Phổ biến nhất' : 'Sắp diễn ra'}
+                                    <FaSortAmountDown size={11} className='shrink-0 opacity-80' /> {sortBy === 'oldest' ? 'Cũ nhất' : sortBy === 'popular' ? 'Phổ biến nhất' : 'Sắp diễn ra'}
                                     <button onClick={() => { setSortBy('newest'); setPage(1) }} className='hover:text-purple-900 dark:hover:text-purple-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
@@ -577,9 +589,9 @@ export default function AdminChallenge() {
                                     className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
                                 >
                                     <option value='all'>Tất cả loại</option>
-                                    <option value='nutrition'>🥗 Ăn uống</option>
-                                    <option value='outdoor_activity'>🏃 Ngoài trời</option>
-                                    <option value='fitness'>💪 Thể dục</option>
+                                    <option value='nutrition'>Ăn uống</option>
+                                    <option value='outdoor_activity'>Ngoài trời</option>
+                                    <option value='fitness'>Thể dục</option>
                                 </select>
                             </div>
 
@@ -606,7 +618,7 @@ export default function AdminChallenge() {
                                     className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
                                 >
                                     <option value='all'>Tất cả trạng thái</option>
-                                    <option value='active'>Đang hoạt động</option>
+                                    <option value='active'>Hoạt động</option>
                                     <option value='completed'>Hoàn thành</option>
                                     <option value='cancelled'>Đã hủy</option>
                                     <option value='deleted'>Đã xóa</option>
@@ -645,12 +657,13 @@ export default function AdminChallenge() {
                                     { value: 'earliest', label: 'Sắp diễn ra' }
                                 ].map(s => (
                                     <button
+                                        type='button'
                                         key={s.value}
                                         onClick={() => { setSortBy(s.value); setPage(1) }}
-                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                                        className={`inline-flex min-h-9 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                                             sortBy === s.value
-                                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-1 ring-amber-300 dark:ring-amber-700'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-700'
+                                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
                                         }`}
                                     >
                                         {s.label}
@@ -667,7 +680,7 @@ export default function AdminChallenge() {
                 <Loading />
             ) : isError ? (
                 <div className='text-center py-16'>
-                    <div className='text-red-500 text-4xl mb-3'>⚠️</div>
+                    <div className='text-red-500 mb-3 flex justify-center'><FaExclamationTriangle className='text-4xl' aria-hidden /></div>
                     <p className='text-gray-500 dark:text-gray-400'>{error?.response?.data?.message || 'Không thể tải dữ liệu'}</p>
                     <button onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-challenges'] })}
                         className='mt-3 text-sm text-blue-600 hover:underline'>Thử lại</button>
@@ -694,9 +707,7 @@ export default function AdminChallenge() {
                                         </tr>
                                     ) : challenges.map((c, idx) => {
                                         const typeCfg = TYPE_CONFIG[c.challenge_type] || {}
-                                        const statusCfg = STATUS_CONFIG[c.status] || {}
                                         const TypeIcon = typeCfg.icon || FaTrophy
-                                        const StatusIcon = statusCfg.icon || FaClock
                                         const creator = c.creator_id
 
                                         return (
@@ -712,7 +723,7 @@ export default function AdminChallenge() {
                                                             <img src={c.image} alt={c.title} className='w-10 h-10 rounded-lg object-cover shrink-0' onError={e => { e.target.style.display = 'none' }} />
                                                         ) : (
                                                             <div className='w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-lg shrink-0'>
-                                                                {c.badge_emoji || '🏆'}
+                                                                {c.badge_emoji ? <span className='text-lg leading-none' aria-hidden>{c.badge_emoji}</span> : <FaTrophy className='text-lg' aria-hidden />}
                                                             </div>
                                                         )}
                                                         <div>
@@ -724,8 +735,8 @@ export default function AdminChallenge() {
                                                 {/* Type + Category */}
                                                 <td className='px-4 py-3 whitespace-nowrap'>
                                                     <div>
-                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${typeCfg.badge}`}>
-                                                            <TypeIcon size={9} />
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full ${typeCfg.badge}`}>
+                                                            <TypeIcon size={11} className='shrink-0' aria-hidden />
                                                             {typeCfg.label || c.challenge_type}
                                                         </span>
                                                         {c.category && (
@@ -736,8 +747,8 @@ export default function AdminChallenge() {
                                                 {/* Dates */}
                                                 <td className='px-4 py-3 whitespace-nowrap'>
                                                     <div className='flex flex-col gap-0.5 text-xs text-gray-600 dark:text-gray-300'>
-                                                        <span>🟢 {fmt(c.start_date)}</span>
-                                                        <span>🔴 {fmt(c.end_date)}</span>
+                                                        <span className='inline-flex items-center gap-1'><FaCircle className='text-emerald-500 shrink-0' style={{ fontSize: '6px' }} aria-hidden /> {fmt(c.start_date)}</span>
+                                                        <span className='inline-flex items-center gap-1'><FaCircle className='text-rose-500 shrink-0' style={{ fontSize: '6px' }} aria-hidden /> {fmt(c.end_date)}</span>
                                                     </div>
                                                 </td>
                                                 {/* Goal */}
@@ -787,29 +798,32 @@ export default function AdminChallenge() {
                                                     <div className='flex items-center gap-1.5'>
                                                         {!c.is_deleted && (
                                                             <button
+                                                                type='button'
                                                                 onClick={() => setParticipantsChallenge(c)}
                                                                 title='Xem thành viên'
-                                                                className='p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
+                                                                className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-200'
                                                             >
-                                                                <FaEye size={14} />
+                                                                <FaEye size={15} />
                                                             </button>
                                                         )}
                                                         {c.is_deleted ? (
                                                             <button
+                                                                type='button'
                                                                 onClick={() => setConfirmAction({ type: 'restore', challenge: c })}
                                                                 title='Khôi phục'
-                                                                className='p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors flex items-center gap-1.5'
+                                                                className='inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-green-600 transition-colors hover:bg-green-50 hover:text-green-800 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-200'
                                                             >
-                                                                <FaUndo size={14} />
+                                                                <FaUndo size={15} />
                                                                 <span className='text-xs font-semibold'>Khôi phục</span>
                                                             </button>
                                                         ) : (
                                                             <button
+                                                                type='button'
                                                                 onClick={() => setConfirmAction({ type: 'delete', challenge: c })}
                                                                 title='Xóa'
-                                                                className='p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors'
+                                                                className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-200'
                                                             >
-                                                                <FaTrash size={14} />
+                                                                <FaTrash size={15} />
                                                             </button>
                                                         )}
                                                     </div>
@@ -826,9 +840,10 @@ export default function AdminChallenge() {
                     {totalPage > 1 && (
                         <div className='flex items-center justify-center gap-2 mt-5'>
                             <button
+                                type='button'
                                 disabled={page <= 1}
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
-                                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                             >
                                 ← Trước
                             </button>
@@ -842,9 +857,10 @@ export default function AdminChallenge() {
                                 .map(p =>
                                     typeof p === 'number' ? (
                                         <button
+                                            type='button'
                                             key={p}
                                             onClick={() => setPage(p)}
-                                            className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page ? 'bg-amber-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${p === page ? 'bg-amber-600 text-white shadow-sm' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'}`}
                                         >
                                             {p}
                                         </button>
@@ -854,9 +870,10 @@ export default function AdminChallenge() {
                                 )
                             }
                             <button
+                                type='button'
                                 disabled={page >= totalPage}
                                 onClick={() => setPage(p => Math.min(totalPage, p + 1))}
-                                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                             >
                                 Sau →
                             </button>

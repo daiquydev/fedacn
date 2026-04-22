@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import { getMyChallenges, getPublicUserChallenges } from '../../../../apis/challengeApi'
+import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../../../utils/challengeProgress'
 import Loading from '../../../../components/GlobalComponents/Loading'
 
 const LIMIT = 9
@@ -64,16 +65,9 @@ function ChallengeCard({ participation }) {
   const isOngoing = now >= startDate && now <= endDate
   const isPast = now > endDate
 
-  const safeStart = new Date(challenge.start_date)
-  safeStart.setHours(0, 0, 0, 0)
-  const safeEnd = new Date(challenge.end_date)
-  safeEnd.setHours(0, 0, 0, 0)
-  const totalRequiredDays = Math.max(
-    1,
-    Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-  )
+  const totalRequiredDays = getChallengeTotalRequiredDays(challenge)
   const completedDays = participation.current_value || 0
-  const progress = Math.min(100, Math.round((completedDays / totalRequiredDays) * 100))
+  const progress = getChallengePersonalProgressPercent(challenge, participation)
   const daysLeft = Math.max(0, Math.ceil((endDate - now) / (24 * 60 * 60 * 1000)))
 
   return (
@@ -140,7 +134,9 @@ function ChallengeCard({ participation }) {
             <div className='flex justify-between text-xs mb-1'>
               <span className='text-gray-500 dark:text-gray-400 flex items-center gap-1'>
                 <FaFire className='text-orange-400' />
-                {completedDays} / {totalRequiredDays} ngày
+                <span>Tiến độ cá nhân</span>
+                <span className='text-gray-400'>·</span>
+                <span>{completedDays} / {totalRequiredDays} ngày</span>
               </span>
               <span className={`font-medium ${progress >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
                 {progress}%

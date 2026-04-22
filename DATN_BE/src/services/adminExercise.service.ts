@@ -1,5 +1,16 @@
 // Admin Exercise Service
 import ExerciseModel from '../models/schemas/exercise.schema'
+import { mapExercisesTimingDefaults, withExerciseTimingDefaults } from '~/utils/exerciseTiming.utils'
+
+/** Chỉ loại meta field — không validate/clamp (validation ở Admin FE) */
+function stripExerciseMeta(data: Record<string, unknown>) {
+    const out = { ...data } as Record<string, unknown>
+    delete out._id
+    delete out.__v
+    delete out.createdAt
+    delete out.updatedAt
+    return out
+}
 
 class AdminExerciseService {
     async getAll(query: any = {}) {
@@ -31,7 +42,7 @@ class AdminExerciseService {
         const limit = parseInt(query.limit) || 50
         const skip = (page - 1) * limit
 
-        const [exercises, total] = await Promise.all([
+        const [rawList, total] = await Promise.all([
             ExerciseModel.find(filter)
                 .populate('equipment_ids', 'name name_en image_url')
                 .populate('muscle_group_ids', 'name name_en')
@@ -41,25 +52,31 @@ class AdminExerciseService {
                 .limit(limit),
             ExerciseModel.countDocuments(filter)
         ])
+        const exercises = mapExercisesTimingDefaults(rawList as unknown[])
         return { exercises, total, page, limit }
     }
 
     async getById(id: string) {
-        return ExerciseModel.findById(id)
+        const doc = await ExerciseModel.findById(id)
             .populate('equipment_ids', 'name name_en image_url')
             .populate('muscle_group_ids', 'name name_en')
             .populate('secondary_muscle_ids', 'name name_en')
+        return doc ? withExerciseTimingDefaults(doc) : null
     }
 
     async create(data: any) {
-        return ExerciseModel.create(data)
+        const doc = stripExerciseMeta(data as Record<string, unknown>)
+        const created = await ExerciseModel.create(doc)
+        return withExerciseTimingDefaults(created)
     }
 
     async update(id: string, data: any) {
-        return ExerciseModel.findByIdAndUpdate(id, data, { new: true })
+        const doc = stripExerciseMeta(data as Record<string, unknown>)
+        const raw = await ExerciseModel.findByIdAndUpdate(id, { $set: doc }, { new: true })
             .populate('equipment_ids', 'name name_en image_url')
             .populate('muscle_group_ids', 'name name_en')
             .populate('secondary_muscle_ids', 'name name_en')
+        return raw ? withExerciseTimingDefaults(raw) : null
     }
 
     async softDelete(id: string) {

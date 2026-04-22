@@ -701,7 +701,7 @@ export default function PersonalDashboard() {
               <StatCard icon={MdArticle} title="Tổng bài viết" value={posts?.summary?.totalPosts || 0} color="blue" />
               <StatCard icon={FaHeart} title="Tổng lượt thích" value={posts?.summary?.totalLikes || 0} color="rose" />
               <StatCard icon={FaComment} title="Tổng bình luận" value={posts?.summary?.totalComments || 0} color="purple" />
-              <StatCard icon={IoMdTrendingUp} title="TB likes/bài" value={posts?.summary?.averageLikesPerPost || 0} color="emerald" />
+              <StatCard icon={IoMdTrendingUp} title="Trung bình lượt thích / bài" value={posts?.summary?.averageLikesPerPost || 0} color="emerald" />
             </div>
 
             {/* My Posts List */}

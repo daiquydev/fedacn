@@ -62,7 +62,7 @@ export default function UserList() {
     setPage(1)
   }
 
-  const selectCls = 'px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+  const selectCls = 'min-h-10 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900 pt-0 pb-4 px-4'>
@@ -74,24 +74,26 @@ export default function UserList() {
         </div>
 
         {/* Tabs inside Hero Banner */}
-        <div className='relative z-10 flex gap-2 mt-3'>
+        <div className='relative z-10 mt-3 flex flex-wrap gap-2'>
           <button
+            type='button'
             onClick={() => handleTabChange('active')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+            className={`admin-hero-tab shrink-0 ${
               tab === 'active' ? 'bg-white text-blue-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            <FaUserCheck size={14} />
-            Đang hoạt động ({stats.active ?? 0})
+            <FaUserCheck size={14} className='shrink-0 opacity-95' aria-hidden />
+            Hoạt động <span className='font-black tabular-nums'>({stats.active ?? 0})</span>
           </button>
           <button
+            type='button'
             onClick={() => handleTabChange('inactive')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+            className={`admin-hero-tab shrink-0 ${
               tab === 'inactive' ? 'bg-white text-blue-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            <FaUserSlash size={13} />
-            Bị khóa / đã xóa ({stats.inactive ?? (stats.banned ?? 0) + (stats.deleted ?? 0)})
+            <FaUserSlash size={14} className='shrink-0 opacity-95' aria-hidden />
+            Bị khóa / đã xóa <span className='font-black tabular-nums'>({stats.inactive ?? (stats.banned ?? 0) + (stats.deleted ?? 0)})</span>
           </button>
         </div>
 
@@ -116,7 +118,7 @@ export default function UserList() {
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               placeholder='Tìm kiếm người dùng...'
-              className='w-full pl-9 pr-8 py-2.5 text-sm border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-600 transition-all'
+              className='min-h-10 w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-8 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-gray-700 dark:text-white dark:focus:bg-slate-600'
             />
           </div>
           <select value={sort} onChange={e => { setSort(e.target.value); setPage(1) }} className={selectCls}>
@@ -175,9 +177,10 @@ export default function UserList() {
           {totalPage > 1 && (
             <div className='flex items-center justify-center gap-2 mt-5'>
               <button
+                type='button'
                 disabled={page <= 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
-                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
               >
                 ← Trước
               </button>
@@ -191,9 +194,10 @@ export default function UserList() {
                 .map(p =>
                   typeof p === 'number' ? (
                     <button
+                      type='button'
                       key={p}
                       onClick={() => setPage(p)}
-                      className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${p === page ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'}`}
                     >
                       {p}
                     </button>
@@ -203,9 +207,10 @@ export default function UserList() {
                 )
               }
               <button
+                type='button'
                 disabled={page >= totalPage}
                 onClick={() => setPage(p => Math.min(totalPage, p + 1))}
-                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
               >
                 Sau →
               </button>

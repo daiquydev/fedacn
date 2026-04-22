@@ -1,4 +1,5 @@
 import { roundKcal } from '../../utils/mathUtils'
+import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../utils/exerciseLabels'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -27,6 +28,7 @@ import { getSavedWorkouts as apiGetSavedWorkouts,
 } from '../../apis/savedWorkoutApi'
 import { addChallengeProgress } from '../../apis/challengeApi'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
+import ExerciseDetailModal from '../../components/ExerciseDetailModal'
 
 import OutdoorSetupStep from './components/OutdoorSetupStep'
 import OutdoorTrackingStep from './components/OutdoorTrackingStep'
@@ -691,9 +693,7 @@ const KcalResultStep = ({ result, onConfirm, onBack }) => {
 }
 
 // AI Description Step
-const DIFF_COLOR_AI = { beginner: 'bg-green-100 text-green-700', intermediate: 'bg-yellow-100 text-yellow-700', advanced: 'bg-red-100 text-red-700' }
-const DIFF_LABEL_AI = { beginner: 'Dễ', intermediate: 'Trung bình', advanced: 'Khó' }
-const CAT_LABEL_AI = { strength: 'Sức mạnh', cardio: 'Cardio', stretching: 'Giãn cơ', plyometrics: 'Plyometrics' }
+const DIFF_COLOR_AI = { beginner: 'bg-green-100 text-green-700', intermediate: 'bg-yellow-100 text-yellow-700', advanced: 'bg-red-100 text-red-700', expert: 'bg-red-100 text-red-700' }
 
 const AIDescriptionStep = ({ onConfirm, onBack }) => {
   const [description, setDescription] = React.useState('')
@@ -704,6 +704,7 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
   const [allExercises, setAllExercises] = React.useState([])
   const [swappingIndex, setSwappingIndex] = React.useState(null)
   const [error, setError] = React.useState('')
+  const [detailExercise, setDetailExercise] = React.useState(null)
 
   React.useEffect(() => {
     getAllExercises().then(res => setAllExercises(res?.data?.result || [])).catch(() => { })
@@ -797,10 +798,13 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
     setSelectedAIExercises(items)
   }
 
-  const diffLabel = (d) => d === 'beginner' ? 'Dễ' : d === 'intermediate' ? 'Trung bình' : 'Khó'
-
   return (
     <div>
+      <ExerciseDetailModal
+        exercise={detailExercise}
+        onClose={() => setDetailExercise(null)}
+        aiReason={detailExercise?.reason}
+      />
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium mb-3">
           <FaBrain /> AI Gợi ý Tập Luyện
@@ -888,10 +892,13 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
                               {ex.difficulty && (
                                 <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold flex-shrink-0
                                   ${ex.difficulty === 'beginner' ? 'bg-green-100 text-green-700' : ex.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                                  {diffLabel(ex.difficulty)}
+                                  {formatExerciseDifficultyVi(ex.difficulty)}
                                 </span>
                               )}
-                              <button onClick={() => toggleAIEx(ex)} className="p-1.5 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 text-xs flex-shrink-0" title="Bỏ chọn">
+                              <button type="button" onClick={(e) => { e.stopPropagation(); setDetailExercise(ex) }} className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition flex-shrink-0" title="Chi tiết bài tập">
+                                <FaInfoCircle className="text-sm" />
+                              </button>
+                              <button type="button" onClick={() => toggleAIEx(ex)} className="p-1.5 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 text-xs flex-shrink-0" title="Bỏ chọn">
                                 <FaTimes />
                               </button>
                             </div>
@@ -930,12 +937,12 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
                           <p className="font-semibold text-sm">{ex.name}</p>
                           {ex.difficulty && (
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${DIFF_COLOR_AI[ex.difficulty] || 'bg-gray-100 text-gray-600'}`}>
-                              {DIFF_LABEL_AI[ex.difficulty] || ex.difficulty}
+                              {formatExerciseDifficultyVi(ex.difficulty)}
                             </span>
                           )}
                           {ex.category && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold">
-                              {CAT_LABEL_AI[ex.category] || ex.category}
+                              {formatExerciseCategoryVi(ex.category)}
                             </span>
                           )}
                         </div>
@@ -948,11 +955,18 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
                         )}
                       </div>
                     </div>
-                    <button onClick={() => handleSwap(idx)} disabled={swappingIndex !== null}
-                      title="Đổi bài tập khác"
-                      className="flex-shrink-0 p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 transition disabled:opacity-40">
-                      {swappingIndex === idx ? <FaRedo className="animate-spin text-sm" /> : <FaRedo className="text-sm" />}
-                    </button>
+                    <div className="flex flex-col gap-1 flex-shrink-0">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setDetailExercise(ex) }}
+                        title="Chi tiết bài tập"
+                        className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition">
+                        <FaInfoCircle className="text-sm" />
+                      </button>
+                      <button type="button" onClick={() => handleSwap(idx)} disabled={swappingIndex !== null}
+                        title="Đổi bài tập khác"
+                        className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 transition disabled:opacity-40">
+                        {swappingIndex === idx ? <FaRedo className="animate-spin text-sm" /> : <FaRedo className="text-sm" />}
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -1211,15 +1225,6 @@ const ExerciseListStep = ({ exercises, isLoading, selectedExercises, onToggle, o
     )
   }
 
-  const diffLabel = (d) => d === 'beginner' ? 'Dễ' : d === 'intermediate' ? 'Trung bình' : 'Khó'
-  const catLabel = (c) => c === 'strength' ? 'Sức mạnh' : c === 'cardio' ? 'Cardio' : c === 'stretching' ? 'Giãn cơ' : 'Plyometrics'
-
-  const getYouTubeId = (url) => {
-    if (!url) return null
-    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/)
-    return m ? m[1] : null
-  }
-
   const onDragEnd = (result) => {
     if (!result.destination) return
     const items = Array.from(selectedExercises)
@@ -1236,105 +1241,7 @@ const ExerciseListStep = ({ exercises, isLoading, selectedExercises, onToggle, o
         Đã chọn <strong className="text-green-600">{selectedExercises.length}</strong>.
       </p>
 
-      {/* Exercise detail modal */}
-      {detailEx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setDetailEx(null)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-            {/* Video section */}
-            {detailEx.video_url && getYouTubeId(detailEx.video_url) ? (
-              <div className="w-full aspect-video rounded-t-2xl overflow-hidden bg-black">
-                <iframe
-                  src={`https://www.youtube.com/embed/${getYouTubeId(detailEx.video_url)}`}
-                  className="w-full h-full" frameBorder="0" allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                />
-              </div>
-            ) : detailEx.video_url ? (
-              <div className="w-full aspect-video rounded-t-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
-                <a href={detailEx.video_url} target="_blank" rel="noopener noreferrer"
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-blue-700 transition">
-                  🎬 Xem video hướng dẫn
-                </a>
-              </div>
-            ) : (
-              <div className="w-full h-32 rounded-t-2xl bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <GiBiceps className="text-5xl text-white/80" />
-              </div>
-            )}
-
-            <div className="p-6 space-y-4">
-              {/* Header */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-bold">{detailEx.name}</h3>
-                  {detailEx.name_vi && <p className="text-sm text-gray-500 mt-0.5">{detailEx.name_vi}</p>}
-                </div>
-                <button onClick={() => setDetailEx(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"><FaTimes /></button>
-              </div>
-
-              {/* Tags */}
-              <div className="flex gap-2 flex-wrap">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${detailEx.difficulty === 'beginner' ? 'bg-green-100 text-green-700' : detailEx.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{diffLabel(detailEx.difficulty)}</span>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{catLabel(detailEx.category)}</span>
-                {(() => {
-                  const cpu = detailEx.default_sets?.[0]?.calories_per_unit ?? null
-                  return cpu != null
-                    ? <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">🔥 {cpu} kcal/đơn vị</span>
-                    : null
-                })()}
-              </div>
-
-
-
-              {/* Instructions */}
-              {detailEx.instructions?.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Hướng dẫn thực hiện</p>
-                  <ol className="text-sm space-y-2">
-                    {detailEx.instructions.map((inst, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
-                        <span className="pt-0.5">{inst}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-
-              {/* Tips */}
-              {detailEx.tips && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">💡 Mẹo</p>
-                  <p className="text-sm">{detailEx.tips}</p>
-                </div>
-              )}
-
-              {/* Default Sets */}
-              {detailEx.default_sets?.length > 0 && (
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-3">📋 Set tập mặc định</p>
-                  <div className="overflow-hidden rounded-lg border border-orange-200 dark:border-orange-800">
-                    <div className="grid grid-cols-4 gap-px bg-orange-200 dark:bg-orange-800">
-                      {['Set', 'Reps (Số lần)', 'Weight (Mức tạ)', 'kcal'].map(h => (
-                        <div key={h} className="bg-orange-100 dark:bg-orange-900/60 px-3 py-2 text-[11px] font-bold text-orange-700 dark:text-orange-300 text-center">{h}</div>
-                      ))}
-                    </div>
-                    {detailEx.default_sets.map((s, i) => (
-                      <div key={i} className="grid grid-cols-4 gap-px bg-orange-200 dark:bg-orange-800">
-                        <div className="bg-white dark:bg-gray-800 px-3 py-2 text-sm text-center font-bold text-blue-600">{s.set_number}</div>
-                        <div className="bg-white dark:bg-gray-800 px-3 py-2 text-sm text-center">{s.reps} lần</div>
-                        <div className="bg-white dark:bg-gray-800 px-3 py-2 text-sm text-center">{s.weight} kg</div>
-                        <div className="bg-white dark:bg-gray-800 px-3 py-2 text-sm text-center font-bold text-orange-600">{((s.reps || 0) * (s.weight || 0) * (s.calories_per_unit ?? 10)).toFixed(0)} kcal</div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-orange-500 mt-2 text-center">kcal = Reps × Weight × kcal/đơn vị</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ExerciseDetailModal exercise={detailEx} onClose={() => setDetailEx(null)} />
 
       {/* Selected exercises with drag-drop */}
       {selectedExercises.length > 0 && (
@@ -1358,7 +1265,10 @@ const ExerciseListStep = ({ exercises, isLoading, selectedExercises, onToggle, o
                             <p className="font-medium text-sm truncate">{ex.name}</p>
                             <p className="text-[10px] text-gray-400 truncate">{ex.name_vi}</p>
                           </div>
-                          <button onClick={() => onToggle(ex)} className="p-1.5 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 text-xs" title="Bỏ chọn">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setDetailEx(ex) }} className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition flex-shrink-0" title="Chi tiết bài tập">
+                            <FaInfoCircle className="text-sm" />
+                          </button>
+                          <button type="button" onClick={() => onToggle(ex)} className="p-1.5 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 text-xs" title="Bỏ chọn">
                             <FaTimes />
                           </button>
                         </div>
@@ -1400,7 +1310,7 @@ const ExerciseListStep = ({ exercises, isLoading, selectedExercises, onToggle, o
                   ${ex.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
                     ex.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700'}`}>
-                  {diffLabel(ex.difficulty)}
+                  {formatExerciseDifficultyVi(ex.difficulty)}
                 </span>
                 {ex.default_sets?.length > 0 && (
                   <span className="px-2 py-0.5 bg-violet-100 text-violet-700 rounded-lg text-[10px] font-semibold">
@@ -1423,8 +1333,8 @@ const ExerciseListStep = ({ exercises, isLoading, selectedExercises, onToggle, o
 // Smart Step 5: AI-suggested exercises with kcal tracking
 const SmartExerciseSuggestStep = ({ suggestData, selectedExercises, onChangeSelected, onConfirm, onBack, targetKcal }) => {
   const [showAll, setShowAll] = useState(false)
+  const [detailEx, setDetailEx] = useState(null)
   const allExercises = suggestData?.all_exercises || []
-  const diffLabel = (d) => d === 'beginner' ? 'Dễ' : d === 'intermediate' ? 'Trung bình' : 'Khó'
 
   const totalKcal = selectedExercises.reduce((sum, ex) => sum + (ex.estimated_kcal || 0), 0)
   const pct = Math.min(100, Math.round((totalKcal / targetKcal) * 100))
@@ -1451,6 +1361,7 @@ const SmartExerciseSuggestStep = ({ suggestData, selectedExercises, onChangeSele
 
   return (
     <div>
+      <ExerciseDetailModal exercise={detailEx} onClose={() => setDetailEx(null)} />
       <div className="text-center mb-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium mb-2">
           <FaBrain /> Gợi ý bài tập thông minh
@@ -1504,7 +1415,10 @@ const SmartExerciseSuggestStep = ({ suggestData, selectedExercises, onChangeSele
                             <p className="text-[10px] text-gray-400">{ex.name_vi}</p>
                           </div>
                           <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg flex-shrink-0">🔥 {ex.estimated_kcal} kcal</span>
-                          <button onClick={() => toggleEx(ex)} className="p-1.5 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 text-xs flex-shrink-0">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setDetailEx(ex) }} className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition flex-shrink-0" title="Chi tiết bài tập">
+                            <FaInfoCircle className="text-sm" />
+                          </button>
+                          <button type="button" onClick={() => toggleEx(ex)} className="p-1.5 rounded-lg bg-red-100 text-red-500 hover:bg-red-200 text-xs flex-shrink-0">
                             <FaTimes />
                           </button>
                         </div>
@@ -1529,22 +1443,26 @@ const SmartExerciseSuggestStep = ({ suggestData, selectedExercises, onChangeSele
           {showAll && (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
               {notSelected.map(ex => (
-                <div key={ex._id} onClick={() => toggleEx(ex)}
-                  className="flex items-center gap-3 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 cursor-pointer transition">
-                  <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
-                    <GiBiceps className="text-gray-500" />
+                <div key={ex._id} className="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 transition">
+                  <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => toggleEx(ex)}>
+                    <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
+                      <GiBiceps className="text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{ex.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{ex.name_vi}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold ${ex.difficulty === 'beginner' ? 'bg-green-100 text-green-700' : ex.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                        {formatExerciseDifficultyVi(ex.difficulty)}
+                      </span>
+                      <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">🔥 {ex.estimated_kcal}</span>
+                      <FaPlus className="text-blue-500 text-xs" />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{ex.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{ex.name_vi}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold ${ex.difficulty === 'beginner' ? 'bg-green-100 text-green-700' : ex.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                      {diffLabel(ex.difficulty)}
-                    </span>
-                    <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">🔥 {ex.estimated_kcal}</span>
-                    <FaPlus className="text-blue-500 text-xs" />
-                  </div>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setDetailEx(ex) }} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition flex-shrink-0" title="Chi tiết bài tập">
+                    <FaInfoCircle className="text-sm" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -1579,6 +1497,8 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
       exercise_name: ex.name,
       exercise_name_vi: ex.name_vi,
       calories_per_unit_default: ex.default_sets?.[0]?.calories_per_unit ?? 10,
+      duration_default: ex.duration_default,
+      rest_time_default: ex.rest_time_default,
       sets: (ex.default_sets && ex.default_sets.length > 0)
         ? ex.default_sets.map(s => ({ ...s, completed: false }))
         : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10, completed: false }]
@@ -1742,11 +1662,25 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
 
   // Rest timer between sets
   const [restCountdown, setRestCountdown] = useState(0)
+  const [restDurationBase, setRestDurationBase] = useState(1)
   const [isResting, setIsResting] = useState(false)
-  const REST_DURATION = 60 // seconds
 
-  // Minimum time per set: reps × 3s, at least 5s
-  const getMinTime = (set) => Math.max((set.reps || 1) * 3, 5)
+  // Giây/rep từ Admin (duration_default), tối thiểu 1. Giá trị > 25 (dữ liệu cũ kiểu 30–45) coi như 3s/rep.
+  const getSecondsPerRep = (ex) => {
+    const raw = Number(ex?.duration_default)
+    if (!Number.isFinite(raw) || raw < 1) return 3
+    if (raw > 25) return 3
+    return Math.min(120, Math.max(1, Math.round(raw)))
+  }
+
+  const getRestSeconds = (ex) => {
+    const raw = Number(ex?.rest_time_default)
+    if (!Number.isFinite(raw) || raw < 0) return 0
+    return Math.min(600, Math.round(raw))
+  }
+
+  // Thời gian tối thiểu mỗi set = (số rep) × (giây/rep do Admin cấu hình), tối thiểu 5 giây
+  const getMinTimeForSet = (set, ex) => Math.max((set.reps || 1) * getSecondsPerRep(ex), 5)
 
   // Main session timer
   React.useEffect(() => {
@@ -1851,7 +1785,8 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
     if (!start) return Infinity
     const set = exerciseSets[exIdx]?.sets[setIdx]
     if (!set) return Infinity
-    const minTime = getMinTime(set)
+    const ex = exerciseSets[exIdx]
+    const minTime = getMinTimeForSet(set, ex)
     const pausedMs = setPausedDurations[key] || 0
     // If currently paused, also add current pause duration
     const currentPauseMs = (isPaused && pauseStartTime) ? (Date.now() - pauseStartTime) : 0
@@ -1888,10 +1823,18 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
     // Check if there are more uncompleted sets in this exercise
     const remainingUncompleted = currentExercise.sets.filter((s, i) => i !== setIdx && !s.completed && !s.skipped)
     if (remainingUncompleted.length > 0) {
-      // Start rest timer before next set
-      setRestCountdown(REST_DURATION)
-      setIsResting(true)
-      toast(`Set ${setIdx + 1} hoàn thành! Nghỉ ${REST_DURATION}s...`, { icon: '✅', duration: 2000 })
+      const restSec = getRestSeconds(currentExercise)
+      const nextIdx = currentExercise.sets.findIndex((s, i) => i > setIdx && !s.completed && !s.skipped)
+      if (restSec <= 0 && nextIdx !== -1) {
+        const key = `${currentExIndex}-${nextIdx}`
+        setSetStartTimes(prev2 => ({ ...prev2, [key]: Date.now() }))
+        toast(`Set ${setIdx + 1} hoàn thành!`, { icon: '✅', duration: 2000 })
+      } else {
+        setRestDurationBase(restSec)
+        setRestCountdown(restSec)
+        setIsResting(true)
+        toast(`Set ${setIdx + 1} hoàn thành! Nghỉ ${restSec}s...`, { icon: '✅', duration: 2000 })
+      }
     } else {
       // All sets done for this exercise
       toast.success(`Hoàn thành: ${currentExercise.exercise_name} 💪`)
@@ -1999,7 +1942,7 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
             <p className="text-xs font-medium opacity-90 mb-1">⏸ NGHỈ GIỮA SET</p>
             <div className="text-5xl font-black font-mono my-2">{restCountdown}s</div>
             <div className="w-full bg-white/20 rounded-full h-2 mb-3">
-              <div className="bg-white rounded-full h-2 transition-all duration-1000" style={{ width: `${(restCountdown / REST_DURATION) * 100}%` }}/>
+              <div className="bg-white rounded-full h-2 transition-all duration-1000" style={{ width: `${(restCountdown / Math.max(restDurationBase, 1)) * 100}%` }}/>
             </div>
             <button onClick={skipRest}
               className="px-5 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium backdrop-blur-sm transition">
@@ -2065,7 +2008,7 @@ const WorkoutSessionStep = ({ exerciseSets: initialSets, sessionId, onComplete, 
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                             <div className={`h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-1000 ${isPaused ? 'opacity-50' : ''}`}
-                              style={{ width: `${Math.max(0, (1 - gateRemaining / getMinTime(set)) * 100)}%` }}/>
+                              style={{ width: `${Math.max(0, (1 - gateRemaining / getMinTimeForSet(set, currentExercise)) * 100)}%` }}/>
                           </div>
                           <span className={`text-[10px] font-mono font-bold w-8 text-right ${isPaused ? 'text-orange-500' : 'text-blue-500'}`}>
                             {isPaused ? '⏸' : `${gateRemaining}s`}
@@ -2301,7 +2244,9 @@ export default function Training() {
         _id: ex.exercise_id,
         name: ex.exercise_name,
         name_vi: ex.exercise_name_vi || '',
-        default_sets: ex.sets?.length > 0 ? ex.sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }]
+        default_sets: ex.sets?.length > 0 ? ex.sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }],
+        duration_default: ex.duration_default ?? ex.exercise_id?.duration_default,
+        rest_time_default: ex.rest_time_default ?? ex.exercise_id?.rest_time_default
       }))
       setSelectedExercises(exercises)
       setMode('from_challenge')
@@ -2473,7 +2418,13 @@ export default function Training() {
     const sessionData = {
       equipment_used: selectedEquipment,
       muscles_targeted: selectedMuscles,
-      exercises: editedSets.map(ex => ({ exercise_id: ex.exercise_id, exercise_name: ex.exercise_name, sets: ex.sets }))
+      exercises: editedSets.map(ex => ({
+        exercise_id: ex.exercise_id,
+        exercise_name: ex.exercise_name,
+        sets: ex.sets,
+        duration_default: ex.duration_default,
+        rest_time_default: ex.rest_time_default
+      }))
     }
     if (mode === 'smart' && kcalResult) {
       sessionData.is_smart_mode = true
@@ -2499,7 +2450,9 @@ export default function Training() {
       _id: ex.exercise_id?._id || ex.exercise_id || ex._id,
       name: ex.exercise_name,
       name_vi: ex.exercise_name_vi || '',
-      default_sets: ex.sets
+      default_sets: ex.sets,
+      duration_default: ex.duration_default ?? ex.exercise_id?.duration_default,
+      rest_time_default: ex.rest_time_default ?? ex.exercise_id?.rest_time_default
     }))
     setSelectedExercises(exercises)
     setMode('from_saved')
@@ -2521,6 +2474,8 @@ export default function Training() {
         exercise_id: ex.exercise_id,
         exercise_name: ex.exercise_name,
         exercise_name_vi: ex.exercise_name_vi || '',
+        duration_default: ex.duration_default,
+        rest_time_default: ex.rest_time_default,
         sets: ex.sets.map(s => ({
           set_number: s.set_number,
           reps: s.reps,
@@ -2690,7 +2645,13 @@ export default function Training() {
                 const sessionData = {
                   equipment_used: [],
                   muscles_targeted: [],
-                  exercises: editedSets.map(ex => ({ exercise_id: ex.exercise_id, exercise_name: ex.exercise_name, sets: ex.sets })),
+                  exercises: editedSets.map(ex => ({
+                    exercise_id: ex.exercise_id,
+                    exercise_name: ex.exercise_name,
+                    sets: ex.sets,
+                    duration_default: ex.duration_default,
+                    rest_time_default: ex.rest_time_default
+                  })),
                   source: 'calculator'
                 }
                 createSessionMutation.mutate(sessionData)

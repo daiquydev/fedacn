@@ -1,12 +1,14 @@
 import ExerciseModel from '~/models/schemas/exercise.schema'
 import { roundKcal } from '~/utils/math.utils'
+import { mapExercisesTimingDefaults, withExerciseTimingDefaults } from '~/utils/exerciseTiming.utils'
 class ExerciseService {
     async getAllExercises() {
-        return ExerciseModel.find({ is_active: true, isDeleted: { $ne: true } })
+        const list = await ExerciseModel.find({ is_active: true, isDeleted: { $ne: true } })
             .populate('equipment_ids', 'name name_en image_url')
             .populate('muscle_group_ids', 'name name_en')
             .populate('secondary_muscle_ids', 'name name_en')
             .sort({ name: 1 })
+        return mapExercisesTimingDefaults(list as unknown[])
     }
 
     async filterExercises(equipment: string[], muscles: string[]) {
@@ -20,18 +22,20 @@ class ExerciseService {
             query.primary_muscles = { $in: muscles }
         }
 
-        return ExerciseModel.find(query)
+        const list = await ExerciseModel.find(query)
             .populate('equipment_ids', 'name name_en image_url')
             .populate('muscle_group_ids', 'name name_en')
             .populate('secondary_muscle_ids', 'name name_en')
             .sort({ name: 1 })
+        return mapExercisesTimingDefaults(list as unknown[])
     }
 
     async getExerciseById(id: string) {
-        return ExerciseModel.findById(id)
+        const doc = await ExerciseModel.findById(id)
             .populate('equipment_ids', 'name name_en image_url')
             .populate('muscle_group_ids', 'name name_en')
             .populate('secondary_muscle_ids', 'name name_en')
+        return doc ? withExerciseTimingDefaults(doc) : null
     }
 
     /**
@@ -68,7 +72,8 @@ class ExerciseService {
                 }, 0)
                 // Fallback for bodyweight exercises (weight = 0): use calories_per_min × duration_default
                 if (estimated_kcal === 0) {
-                    estimated_kcal = (ex.calories_per_min || 5) * ((ex.duration_default || 45) / 60) * durationMinutes
+                    // duration_default là giây/rep; ước lượng kcal fallback không phụ thuộc vào nó
+                    estimated_kcal = (ex.calories_per_min || 5) * (45 / 60) * durationMinutes
                 }
             } else {
                 // No default sets: use MET-based estimate
@@ -76,7 +81,7 @@ class ExerciseService {
             }
 
             estimated_kcal = roundKcal(estimated_kcal)
-            return { exercise: ex.toObject(), estimated_kcal }
+            return { exercise: withExerciseTimingDefaults(ex.toObject()), estimated_kcal }
         })
 
         // Greedy selection: sort by kcal desc, pick until sum >= target, max 8 exercises

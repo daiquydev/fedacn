@@ -2,8 +2,8 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaUndo, FaChevronDown } from 'react-icons/fa'
-import { GiBiceps } from 'react-icons/gi'
+import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaUndo, FaChevronDown, FaRunning, FaBolt, FaListOl, FaLightbulb, FaLink, FaThList, FaEyeSlash, FaStopwatch } from 'react-icons/fa'
+import { GiBiceps, GiMeditation } from 'react-icons/gi'
 import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader'
 import {
     adminGetEquipment, adminCreateEquipment, adminUpdateEquipment, adminDeleteEquipment,
@@ -37,22 +37,24 @@ function TablePagination({ page, totalPages, onPageChange }) {
             return acc
         }, [])
     return (
-        <div className='flex items-center justify-center gap-2 mt-5'>
+        <div className='mt-5 flex flex-wrap items-center justify-center gap-2'>
             <button
+                type='button'
                 disabled={page <= 1}
                 onClick={() => onPageChange(Math.max(1, page - 1))}
-                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
             >
                 ← Trước
             </button>
             {pageList.map(p =>
                 typeof p === 'number' ? (
                     <button
+                        type='button'
                         key={p}
                         onClick={() => onPageChange(p)}
-                        className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${p === page
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                             }`}
                     >
                         {p}
@@ -62,9 +64,10 @@ function TablePagination({ page, totalPages, onPageChange }) {
                 )
             )}
             <button
+                type='button'
                 disabled={page >= totalPages}
                 onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
             >
                 Sau →
             </button>
@@ -138,26 +141,28 @@ function EquipmentManager() {
             <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 px-6 py-4 mb-2 shadow-xl'>
                 <div className='relative z-10 flex items-center justify-between'>
                     <h1 className='text-2xl font-bold text-white'>Quản lý Thiết bị</h1>
-                    <button onClick={() => { resetForm(); setShowForm(true) }}
-                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg shrink-0'>
-                        <FaPlus className='text-xs' /> Thêm mới
+                    <button type='button' onClick={() => { resetForm(); setShowForm(true) }}
+                        className='inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50'>
+                        <FaPlus size={14} className='shrink-0' aria-hidden /> Thêm mới
                     </button>
                 </div>
                 {/* Filter stat tabs */}
-                <div className='relative z-10 flex gap-2 mt-3'>
+                <div className='relative z-10 mt-3 flex flex-wrap gap-2'>
                     {[
-                        { key: 'all', label: 'Tất cả', count: items.length },
-                        { key: 'active', label: 'Hoạt động', count: activeCount },
-                        { key: 'hidden', label: 'Đã ẩn', count: hiddenCount },
+                        { key: 'all', label: 'Tất cả', Icon: FaThList, count: items.length },
+                        { key: 'active', label: 'Hoạt động', Icon: FaCheckCircle, count: activeCount },
+                        { key: 'hidden', label: 'Đã ẩn', Icon: FaEyeSlash, count: hiddenCount },
                     ].map(tab => (
                         <button
+                            type='button'
                             key={tab.key}
                             onClick={() => setFilterEqStatus(tab.key)}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                            className={`admin-hero-tab shrink-0 ${
                                 filterEqStatus === tab.key ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                             }`}
                         >
-                            {tab.label} <span className='font-black'>({tab.count})</span>
+                            <tab.Icon size={14} className='shrink-0 opacity-95' aria-hidden />
+                            {tab.label} <span className='font-black tabular-nums'>({tab.count})</span>
                         </button>
                     ))}
                 </div>
@@ -172,7 +177,7 @@ function EquipmentManager() {
                     <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs' />
                     <input value={search} onChange={e => setSearch(e.target.value)}
                         placeholder='Tìm thiết bị...'
-                        className='pl-9 pr-3 py-2 text-sm w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 outline-none transition-all' />
+                        className='min-h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/30 dark:border-slate-600 dark:bg-slate-800 dark:text-white' />
                 </div>
             </div>
 
@@ -188,8 +193,8 @@ function EquipmentManager() {
                         {/* Modal header */}
                         <div className='flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-600 to-indigo-600 flex-shrink-0'>
                             <h4 className='font-bold text-white text-base flex items-center gap-2'>
-                                <span>{editingId ? '✏️' : '✨'}</span>
-                                {editingId ? 'Chỉnh sửa thiết bị' : 'Thêm thiết bị mới'}
+                                {editingId ? <FaEdit className='text-base' aria-hidden /> : <FaPlus className='text-base' aria-hidden />}
+                                <span>{editingId ? 'Chỉnh sửa thiết bị' : 'Thêm thiết bị mới'}</span>
                             </h4>
                             <button onClick={resetForm}
                                 className='p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors'>
@@ -238,7 +243,7 @@ function EquipmentManager() {
                                         : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
                                         }`}>
                                     {form.is_active ? <FaToggleOn className='text-lg text-emerald-500' /> : <FaToggleOff className='text-lg text-slate-400' />}
-                                    {form.is_active ? 'Đang hoạt động' : 'Đã ẩn'}
+                                    {form.is_active ? 'Hoạt động' : 'Đã ẩn'}
                                 </button>
                             </div>
                         </div>
@@ -268,7 +273,7 @@ function EquipmentManager() {
                 </div>
             ) : filteredItems.length === 0 ? (
                 <div className='text-center py-12'>
-                    <span className='text-4xl mb-3 block'>🔍</span>
+                    <FaSearch className='text-4xl mb-3 mx-auto text-slate-300 dark:text-slate-600' aria-hidden />
                     <p className='text-slate-500'>Không tìm thấy thiết bị nào{search ? ` với từ khóa "${search}"` : ''}</p>
                 </div>
             ) : (
@@ -293,7 +298,7 @@ function EquipmentManager() {
                                             <p className='text-xs text-slate-400 dark:text-slate-500 font-medium truncate'>{item.name_en}</p>
                                         </div>
                                         <button onClick={() => toggleActiveMut.mutate({ id: item._id, is_active: !isActive })}
-                                            title={isActive ? 'Đang hoạt động — Nhấn để ẩn' : 'Đã ẩn — Nhấn để kích hoạt'}
+                                            title={isActive ? 'Hoạt động — Nhấn để ẩn' : 'Đã ẩn — Nhấn để kích hoạt'}
                                             className='flex-shrink-0 transition-all hover:scale-110'>
                                             {isActive
                                                 ? <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold'><FaCheckCircle className='text-[8px]' /> Hoạt động</span>
@@ -386,7 +391,7 @@ function DefaultSetsEditor({ sets, onChange, onDifficultyChange }) {
                         <FaMagic className='inline mr-0.5' />Dễ (3×12)
                     </button>
                     <button type='button' onClick={() => autoGenerate('intermediate')} className='px-2 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 hover:bg-amber-200'>
-                        <FaMagic className='inline mr-0.5' />TB (4×10)
+                        <FaMagic className='inline mr-0.5' />Trung bình (4×10)
                     </button>
                     <button type='button' onClick={() => autoGenerate('expert')} className='px-2 py-0.5 text-[10px] rounded bg-red-100 text-red-700 hover:bg-red-200'>
                         <FaMagic className='inline mr-0.5' />Khó (5×8)
@@ -440,7 +445,7 @@ function DefaultSetsEditor({ sets, onChange, onDifficultyChange }) {
 // ===================== EXERCISE MANAGEMENT =====================
 const CATEGORY_CONFIG = {
     strength: { label: 'Sức mạnh', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', bar: 'bg-blue-500', dot: 'bg-blue-500' },
-    cardio: { label: 'Cardio', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', bar: 'bg-red-500', dot: 'bg-red-500' },
+    cardio: { label: 'Tim mạch', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', bar: 'bg-red-500', dot: 'bg-red-500' },
     stretching: { label: 'Giãn cơ', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', bar: 'bg-green-500', dot: 'bg-green-500' },
     plyometrics: { label: 'Bật nhảy', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', bar: 'bg-orange-500', dot: 'bg-orange-500' }
 }
@@ -451,6 +456,27 @@ const DIFFICULTY_CONFIG = {
 }
 
 const LIMIT = 12
+
+/** Giây/rep: đồng bộ với Training (tối thiểu 1); validate chi tiết ở FE */
+const SEC_PER_REP_MIN = 1
+const SEC_PER_REP_MAX = 120
+const REST_SEC_MAX = 600
+
+function parseSecPerRepInput(raw) {
+    if (raw === '' || raw === null || raw === undefined) return null
+    const n = Math.round(Number(typeof raw === 'number' ? raw : String(raw).trim()))
+    if (!Number.isFinite(n)) return null
+    if (n < SEC_PER_REP_MIN || n > SEC_PER_REP_MAX) return null
+    return n
+}
+
+function parseRestSecInput(raw) {
+    if (raw === '' || raw === null || raw === undefined) return null
+    const n = Math.round(Number(typeof raw === 'number' ? raw : String(raw).trim()))
+    if (!Number.isFinite(n)) return null
+    if (n < 0 || n > REST_SEC_MAX) return null
+    return n
+}
 
 function ExerciseManager() {
     const qc = useQueryClient()
@@ -490,6 +516,8 @@ function ExerciseManager() {
     const initForm = {
         name: '', name_vi: '', description: '', instructions: '', tips: '', video_url: '', image_url: '',
         category: 'strength', difficulty: 'intermediate',
+        duration_default: 3,
+        rest_time_default: 0,
         equipment_ids: [], muscle_group_ids: [], secondary_muscle_ids: [],
         default_sets: [
             { set_number: 1, reps: 10, weight: 10, calories_per_unit: 10 },
@@ -539,14 +567,42 @@ function ExerciseManager() {
         qc.invalidateQueries({ queryKey: ['admin-exercises-count-deleted'] })
     }
 
+    const mergeExerciseIntoListCache = (updated) => {
+        if (!updated?._id) return
+        qc.setQueriesData({ queryKey: ['admin-exercises'], exact: false }, (old) => {
+            if (!old?.data?.result?.exercises) return old
+            const list = old.data.result.exercises
+            const idx = list.findIndex((e) => String(e._id) === String(updated._id))
+            if (idx === -1) return old
+            const next = [...list]
+            next[idx] = { ...next[idx], ...updated }
+            return {
+                ...old,
+                data: {
+                    ...old.data,
+                    result: { ...old.data.result, exercises: next }
+                }
+            }
+        })
+    }
+
     const createMut = useSafeMutation({
         mutationFn: (d) => adminCreateExercise(d),
-        onSuccess: () => { invalidateAll(); toast.success('Tạo bài tập thành công'); resetForm() },
+        onSuccess: () => {
+            invalidateAll()
+            toast.success('Tạo bài tập thành công')
+            resetForm()
+        },
         onError: () => toast.error('Lỗi tạo bài tập')
     })
     const updateMut = useSafeMutation({
         mutationFn: ({ id, d }) => adminUpdateExercise(id, d),
-        onSuccess: () => { invalidateAll(); toast.success('Cập nhật thành công'); resetForm() },
+        onSuccess: (res) => {
+            mergeExerciseIntoListCache(res?.data?.result)
+            invalidateAll()
+            toast.success('Cập nhật thành công')
+            resetForm()
+        },
         onError: () => toast.error('Lỗi cập nhật')
     })
     const deleteMut = useSafeMutation({
@@ -572,13 +628,28 @@ function ExerciseManager() {
             secondary_muscle_ids: (ex.secondary_muscle_ids || []).map(m => typeof m === 'object' ? m._id : m),
             default_sets: (ex.default_sets && ex.default_sets.length > 0) ? ex.default_sets : [
                 { set_number: 1, reps: 10, weight: 10, calories_per_unit: 10 }
-            ]
+            ],
+            duration_default: ex.duration_default ?? 3,
+            rest_time_default: ex.rest_time_default ?? 0
         })
         setEditingId(ex._id); setShowForm(true)
     }
     const handleSubmit = () => {
         if (!form.name) return toast.error('Tên bài tập không được để trống')
-        const payload = { ...form, instructions: form.instructions.split('\n').filter(Boolean) }
+        const repSec = parseSecPerRepInput(form.duration_default)
+        if (repSec === null) {
+            return toast.error(`Giây mỗi rep: nhập số nguyên từ ${SEC_PER_REP_MIN} đến ${SEC_PER_REP_MAX}`)
+        }
+        const restSec = parseRestSecInput(form.rest_time_default)
+        if (restSec === null) {
+            return toast.error(`Nghỉ giữa các set: nhập số nguyên từ 0 đến ${REST_SEC_MAX}`)
+        }
+        const payload = {
+            ...form,
+            instructions: form.instructions.split('\n').filter(Boolean),
+            duration_default: repSec,
+            rest_time_default: restSec
+        }
         editingId ? updateMut.mutate({ id: editingId, d: payload }) : createMut.mutate(payload)
     }
 
@@ -611,37 +682,38 @@ function ExerciseManager() {
             <div className='relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 px-6 py-4 mb-2 shadow-xl'>
                 <div className='relative z-10 flex items-center justify-between'>
                     <h1 className='text-2xl font-bold text-white'>Quản lý Bài tập</h1>
-                    <button onClick={() => { resetForm(); setShowForm(true) }}
-                        className='flex items-center gap-1.5 bg-white text-indigo-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all shadow-lg shrink-0'>
-                        <FaPlus className='text-xs' /> Thêm bài tập
+                    <button type='button' onClick={() => { resetForm(); setShowForm(true) }}
+                        className='inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50'>
+                        <FaPlus size={14} className='shrink-0' aria-hidden /> Thêm bài tập
                     </button>
                 </div>
 
                 {/* Status tabs */}
-                <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
-                    <button onClick={() => switchStatus('active')}
-                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'active' && !filterCategory ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-                        <FaCheckCircle className='text-xs' /> Tất cả ({totalActiveCount})
+                <div className='relative z-10 mt-3 flex flex-wrap gap-2'>
+                    <button type='button' onClick={() => switchStatus('active')}
+                        className={`admin-hero-tab shrink-0 ${status === 'active' && !filterCategory ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                        <FaThList size={14} className='shrink-0 opacity-95' aria-hidden /> Tất cả <span className='font-black tabular-nums'>({totalActiveCount})</span>
                     </button>
                     {[
-                        { key: 'strength', label: '💪 Sức mạnh', count: strengthCount },
-                        { key: 'cardio', label: '🏃 Cardio', count: cardioCount },
-                        { key: 'stretching', label: '🧘 Giãn cơ', count: stretchCount },
-                        { key: 'plyometrics', label: '⚡ Bật nhảy', count: plyoCount },
+                        { key: 'strength', Icon: FaDumbbell, label: 'Sức mạnh', count: strengthCount },
+                        { key: 'cardio', Icon: FaRunning, label: 'Tim mạch', count: cardioCount },
+                        { key: 'stretching', Icon: GiMeditation, label: 'Giãn cơ', count: stretchCount },
+                        { key: 'plyometrics', Icon: FaBolt, label: 'Bật nhảy', count: plyoCount },
                     ].map(cat => (
                         <button
+                            type='button'
                             key={cat.key}
                             onClick={() => { if (status !== 'active') switchStatus('active'); setFilterCategory(cat.key); setPage(1) }}
-                            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
+                            className={`admin-hero-tab shrink-0 ${
                                 filterCategory === cat.key ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                             }`}
                         >
-                            {cat.label} <span className='font-black'>({cat.count})</span>
+                            <cat.Icon size={14} className='shrink-0 opacity-95' aria-hidden /> {cat.label} <span className='font-black tabular-nums'>({cat.count})</span>
                         </button>
                     ))}
-                    <button onClick={() => switchStatus('deleted')}
-                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${status === 'deleted' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-                        <FaTrash className='text-xs' /> Đã xóa ({deletedCount})
+                    <button type='button' onClick={() => switchStatus('deleted')}
+                        className={`admin-hero-tab shrink-0 ${status === 'deleted' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                        <FaTrash size={14} className='shrink-0 opacity-95' aria-hidden /> Đã xóa <span className='font-black tabular-nums'>({deletedCount})</span>
                     </button>
                 </div>
 
@@ -664,16 +736,16 @@ function ExerciseManager() {
                         )}
                         <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
                             placeholder='Tìm tên bài tập (EN hoặc VI)...'
-                            className='pl-9 pr-8 py-2 text-sm w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 outline-none transition-all' />
+                            className='min-h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-sm outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 dark:border-slate-600 dark:bg-slate-800 dark:text-white' />
                     </div>
 
                     {/* Muscle Group filter dropdown */}
                     <div className='relative' ref={muscleFilterRef}>
-                        <button onClick={() => { setShowMuscleFilter(p => !p); setShowEquipmentFilter(false) }}
-                            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showMuscleFilter || filterMuscle
+                        <button type='button' onClick={() => { setShowMuscleFilter(p => !p); setShowEquipmentFilter(false) }}
+                            className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${showMuscleFilter || filterMuscle
                                 ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
                                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300'}`}>
-                            💪
+                            <GiBiceps className='text-sm shrink-0 opacity-90' aria-hidden />
                             <span className='hidden sm:inline'>{filterMuscle ? allMuscleGroups.find(m => m._id === filterMuscle)?.name || 'Nhóm cơ' : 'Nhóm cơ'}</span>
                             {filterMuscle && (
                                 <button onClick={(e) => { e.stopPropagation(); setFilterMuscle(''); setPage(1) }}
@@ -687,7 +759,7 @@ function ExerciseManager() {
                         {showMuscleFilter && (
                             <div className='absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 p-3'
                                 style={{ animation: 'fadeIn 0.15s ease-out' }}>
-                                <p className='text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest mb-2'>💪 Lọc theo Nhóm cơ</p>
+                                <p className='text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest mb-2 flex items-center gap-1'><GiBiceps className='shrink-0' size={12} aria-hidden /> Lọc theo nhóm cơ</p>
                                 <div className='max-h-48 overflow-y-auto flex flex-wrap gap-1.5 pr-1'>
                                     <button onClick={() => { setFilterMuscle(''); setPage(1); setShowMuscleFilter(false) }}
                                         className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filterMuscle === ''
@@ -710,11 +782,11 @@ function ExerciseManager() {
 
                     {/* Equipment filter dropdown */}
                     <div className='relative' ref={equipmentFilterRef}>
-                        <button onClick={() => { setShowEquipmentFilter(p => !p); setShowMuscleFilter(false) }}
-                            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showEquipmentFilter || filterEquipment
+                        <button type='button' onClick={() => { setShowEquipmentFilter(p => !p); setShowMuscleFilter(false) }}
+                            className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${showEquipmentFilter || filterEquipment
                                 ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
                                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300'}`}>
-                            🏋️
+                            <FaDumbbell className='text-sm shrink-0 opacity-90' aria-hidden />
                             <span className='hidden sm:inline'>{filterEquipment ? allEquipment.find(e => e._id === filterEquipment)?.name || 'Thiết bị' : 'Thiết bị'}</span>
                             {filterEquipment && (
                                 <button onClick={(e) => { e.stopPropagation(); setFilterEquipment(''); setPage(1) }}
@@ -728,7 +800,7 @@ function ExerciseManager() {
                         {showEquipmentFilter && (
                             <div className='absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 p-3'
                                 style={{ animation: 'fadeIn 0.15s ease-out' }}>
-                                <p className='text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2'>🏋️ Lọc theo Thiết bị</p>
+                                <p className='text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1'><FaDumbbell className='shrink-0' size={12} aria-hidden /> Lọc theo thiết bị</p>
                                 <div className='max-h-48 overflow-y-auto flex flex-wrap gap-1.5 pr-1'>
                                     <button onClick={() => { setFilterEquipment(''); setPage(1); setShowEquipmentFilter(false) }}
                                         className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${filterEquipment === ''
@@ -755,13 +827,13 @@ function ExerciseManager() {
                     <div className='flex flex-wrap gap-2 mt-2.5'>
                         {filterMuscle && (
                             <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'>
-                                💪 {allMuscleGroups.find(m => m._id === filterMuscle)?.name || 'Nhóm cơ'}
+                                <GiBiceps size={11} className='shrink-0 opacity-90' aria-hidden /> {allMuscleGroups.find(m => m._id === filterMuscle)?.name || 'Nhóm cơ'}
                                 <button onClick={() => { setFilterMuscle(''); setPage(1) }} className='hover:text-violet-900'><FaTimes size={9} /></button>
                             </span>
                         )}
                         {filterEquipment && (
                             <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'>
-                                🏋️ {allEquipment.find(e => e._id === filterEquipment)?.name || 'Thiết bị'}
+                                <FaDumbbell size={11} className='shrink-0 opacity-90' aria-hidden /> {allEquipment.find(e => e._id === filterEquipment)?.name || 'Thiết bị'}
                                 <button onClick={() => { setFilterEquipment(''); setPage(1) }} className='hover:text-blue-900'><FaTimes size={9} /></button>
                             </span>
                         )}
@@ -796,8 +868,8 @@ function ExerciseManager() {
                         {/* Modal header */}
                         <div className='flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-600 to-violet-600 flex-shrink-0'>
                             <h4 className='font-bold text-white text-base flex items-center gap-2'>
-                                <span>{editingId ? '✏️' : '✨'}</span>
-                                {editingId ? 'Chỉnh sửa bài tập' : 'Thêm bài tập mới'}
+                                {editingId ? <FaEdit className='text-base' aria-hidden /> : <FaPlus className='text-base' aria-hidden />}
+                                <span>{editingId ? 'Chỉnh sửa bài tập' : 'Thêm bài tập mới'}</span>
                             </h4>
                             <button onClick={resetForm}
                                 className='p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors'>
@@ -823,10 +895,10 @@ function ExerciseManager() {
                                 <div className='md:col-span-1'>
                                     <label className={labelClass}>Loại hình <span className='text-red-500'>*</span></label>
                                     <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={inputClass}>
-                                        <option value='strength'>💪 Sức mạnh</option>
-                                        <option value='cardio'>🏃 Cardio</option>
-                                        <option value='stretching'>🧘 Giãn cơ</option>
-                                        <option value='plyometrics'>⚡ Bật nhảy</option>
+                                        <option value='strength'>Sức mạnh</option>
+                                        <option value='cardio'>Tim mạch</option>
+                                        <option value='stretching'>Giãn cơ</option>
+                                        <option value='plyometrics'>Bật nhảy</option>
                                     </select>
                                 </div>
                             </div>
@@ -835,7 +907,7 @@ function ExerciseManager() {
                             <div className='grid grid-cols-1 md:grid-cols-5 gap-3'>
                                 {/* Left 40%: Equipment */}
                                 <div className='md:col-span-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-3'>
-                                    <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2'>🏋️ Thiết bị</p>
+                                    <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1'><FaDumbbell className='shrink-0' size={12} aria-hidden /> Thiết bị</p>
                                     <div className='flex flex-wrap gap-1.5'>
                                         {allEquipment.map(eq => (
                                             <button key={eq._id} type='button' onClick={() => toggleArrayItem('equipment_ids', eq._id)}
@@ -849,7 +921,7 @@ function ExerciseManager() {
 
                                 {/* Right 60%: Muscle Groups */}
                                 <div className='md:col-span-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-3'>
-                                    <p className='text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest mb-2'>💪 Nhóm cơ</p>
+                                    <p className='text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest mb-2 flex items-center gap-1'><GiBiceps className='shrink-0' size={12} aria-hidden /> Nhóm cơ</p>
                                     <div className='flex flex-wrap gap-1.5'>
                                         {allMuscleGroups.map(mg => (
                                             <button key={mg._id} type='button' onClick={() => toggleArrayItem('muscle_group_ids', mg._id)}
@@ -865,20 +937,63 @@ function ExerciseManager() {
                             {/* ── Row 3: Instructions (left) | Tips + Video (right) ── */}
                             <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                                 <div>
-                                    <label className={labelClass}>📋 Hướng dẫn <span className='text-slate-400 font-normal'>(mỗi bước 1 dòng)</span></label>
+                                    <label className={`${labelClass} inline-flex items-center gap-1.5`}><FaListOl className='text-slate-400 shrink-0' size={13} aria-hidden /> Hướng dẫn <span className='text-slate-400 font-normal'>(mỗi bước 1 dòng)</span></label>
                                     <textarea value={form.instructions} onChange={e => setForm({ ...form, instructions: e.target.value })}
                                         rows={4} className={inputClass} placeholder={'Bước 1: ...\nBước 2: ...\nBước 3: ...'} />
                                 </div>
                                 <div className='flex flex-col gap-2'>
                                     <div>
-                                        <label className={labelClass}>💡 Mẹo / Lưu ý</label>
+                                        <label className={`${labelClass} inline-flex items-center gap-1.5`}><FaLightbulb className='text-amber-500 shrink-0' size={13} aria-hidden /> Mẹo / lưu ý</label>
                                         <textarea value={form.tips} onChange={e => setForm({ ...form, tips: e.target.value })}
                                             rows={2} className={inputClass} placeholder='Nhập lưu ý...' />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>🔗 URL Video</label>
+                                        <label className={`${labelClass} inline-flex items-center gap-1.5`}><FaLink className='text-slate-400 shrink-0' size={13} aria-hidden /> URL video</label>
                                         <input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })}
                                             className={inputClass} placeholder='https://youtube.com/...' />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Thời gian thực hiện (dùng trên app User: cổng chờ theo rep × giây/rep; nghỉ giữa set) */}
+                            <div className='bg-amber-50/80 dark:bg-amber-900/15 rounded-xl border border-amber-200/80 dark:border-amber-800/40 p-3'>
+                                <p className='text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-2 flex items-center gap-1.5'>
+                                    <FaStopwatch className='shrink-0' size={12} aria-hidden /> Nhịp tập (app người dùng)
+                                </p>
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                                    <div>
+                                        <label className={labelClass}>Giây mỗi rep</label>
+                                        <input type='number' min={SEC_PER_REP_MIN} max={SEC_PER_REP_MAX} step={1}
+                                            value={form.duration_default}
+                                            onChange={e => setForm({ ...form, duration_default: e.target.value })}
+                                            onBlur={() => setForm(f => {
+                                                const v = parseSecPerRepInput(f.duration_default)
+                                                return {
+                                                    ...f,
+                                                    duration_default: v !== null ? v : SEC_PER_REP_MIN
+                                                }
+                                            })}
+                                            className={inputClass}
+                                            placeholder='3' />
+                                        <p className='text-[10px] text-slate-500 dark:text-slate-400 mt-1'>Số nguyên {SEC_PER_REP_MIN}–{SEC_PER_REP_MAX}: mỗi rep phải chờ đủ khoảng này trước khi hoàn thành set.</p>
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Nghỉ giữa các set (giây)</label>
+                                        <input type='number' min={0} max={REST_SEC_MAX} step={1}
+                                            value={form.rest_time_default}
+                                            onChange={e => setForm({ ...form, rest_time_default: e.target.value })}
+                                            onBlur={() => setForm(f => {
+                                                const ok = parseRestSecInput(f.rest_time_default)
+                                                if (ok !== null) return { ...f, rest_time_default: ok }
+                                                const n = parseInt(String(f.rest_time_default).trim(), 10)
+                                                return {
+                                                    ...f,
+                                                    rest_time_default: Number.isFinite(n) ? Math.max(0, Math.min(REST_SEC_MAX, n)) : 0
+                                                }
+                                            })}
+                                            className={inputClass}
+                                            placeholder='0' />
+                                        <p className='text-[10px] text-slate-500 dark:text-slate-400 mt-1'>0 = không bắt buộc nghỉ giữa các set.</p>
                                     </div>
                                 </div>
                             </div>
@@ -886,7 +1001,7 @@ function ExerciseManager() {
                             {/* ── Row 4: Default Sets (full width) ── */}
                             <div className='bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-3'>
                                 <div className='flex items-center justify-between mb-2'>
-                                    <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest'>📊 Set tập mặc định</p>
+                                    <p className='text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-1'><FaListOl className='shrink-0' size={12} aria-hidden /> Set tập mặc định</p>
                                     <span className='text-[10px] text-slate-400'>Độ khó: <strong className='text-slate-600 dark:text-slate-300'>{DIFFICULTY_CONFIG[form.difficulty]?.label || form.difficulty}</strong></span>
                                 </div>
                                 <DefaultSetsEditor
@@ -932,7 +1047,7 @@ function ExerciseManager() {
                         <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                             <thead className='bg-gray-50 dark:bg-slate-900'>
                                 <tr>
-                                    {['Bài tập', 'Loại hình', 'Độ khó', 'Sets × Reps', 'Nhóm cơ', 'Thiết bị', 'Hành động'].map(h => (
+                                    {['Bài tập', 'Loại hình', 'Độ khó', 'Sets × Reps', 's/rep · nghỉ', 'Nhóm cơ', 'Thiết bị', 'Hành động'].map(h => (
                                         <th key={h} className='px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>{h}</th>
                                     ))}
                                 </tr>
@@ -944,6 +1059,10 @@ function ExerciseManager() {
                                     const sets = ex.default_sets || []
                                     const equipList = (ex.equipment_ids || []).filter(e => typeof e === 'object')
                                     const muscleList = (ex.muscle_group_ids || []).filter(m => typeof m === 'object')
+                                    const dRep = Number(ex.duration_default)
+                                    const dRest = Number(ex.rest_time_default)
+                                    const repSec = Number.isFinite(dRep) && dRep >= SEC_PER_REP_MIN ? Math.round(dRep) : SEC_PER_REP_MIN
+                                    const restSec = Number.isFinite(dRest) && dRest >= 0 ? Math.round(dRest) : 0
                                     return (
                                         <tr key={ex._id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${status === 'deleted' ? 'opacity-70' : ''}`}>
                                             <td className='px-5 py-3'>
@@ -963,6 +1082,12 @@ function ExerciseManager() {
                                             </td>
                                             <td className='px-5 py-3 text-sm text-slate-500'>
                                                 {sets.length > 0 ? `${sets.length} × ${sets[0]?.reps} reps` : '—'}
+                                            </td>
+                                            <td className='px-5 py-3 text-xs text-slate-600 dark:text-slate-300 tabular-nums'>
+                                                <span className='font-semibold text-amber-700 dark:text-amber-400'>{repSec}</span>
+                                                <span className='text-slate-400'>s/rep</span>
+                                                <span className='text-slate-300 dark:text-slate-600 mx-1'>·</span>
+                                                <span className='font-medium'>{restSec}s</span>
                                             </td>
                                             <td className='px-5 py-3'>
                                                 <div className='flex flex-wrap gap-1'>

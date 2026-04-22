@@ -119,7 +119,7 @@ export default function InspectorList() {
                   id='visibility'
                   className='select  select-sm border bg-white dark:bg-slate-800 dark:border-none'
                 >
-                  <option value='active'>Đang hoạt động</option>
+                  <option value='active'>Hoạt động</option>
                   <option value='deleted'>Đã xóa</option>
                 </select>
 

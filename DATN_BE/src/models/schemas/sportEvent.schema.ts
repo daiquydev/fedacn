@@ -17,7 +17,6 @@ export interface SportEvent {
   image: string
   createdBy: Types.ObjectId
   eventType: 'Ngoài trời' | 'Trong nhà'
-  requireStrava?: boolean
   isJoined?: boolean
   participants_ids?: Types.ObjectId[]
   requirements?: string
@@ -51,7 +50,6 @@ const SportEventSchema = new mongoose.Schema<SportEvent>(
     image: { type: String, default: '' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
     eventType: { type: String, enum: ['Ngoài trời', 'Trong nhà'], default: 'Ngoài trời' },
-    requireStrava: { type: Boolean, default: false },
     participants_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'users' }],
     requirements: { type: String, default: '' },
     benefits: { type: String, default: '' },

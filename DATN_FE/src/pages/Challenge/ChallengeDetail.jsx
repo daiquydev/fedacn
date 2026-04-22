@@ -33,6 +33,7 @@ import ParticipantProgressModal from './components/ParticipantProgressModal'
 import ChallengeShareModal from '../../components/Challenge/ChallengeShareModal'
 import ModalReportChallenge from './components/ModalReportChallenge'
 import { format } from 'date-fns'
+import { getChallengePersonalProgressPercent } from '../../utils/challengeProgress'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', color: 'bg-emerald-500', checkinLabel: 'Chụp ảnh bữa ăn' },
@@ -225,8 +226,7 @@ export default function ChallengeDetail() {
   safeEndDate.setHours(0, 0, 0, 0)
   const totalRequiredDays = Math.max(1, Math.ceil((safeEndDate.getTime() - safeStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
-  // Current value tracks the number of completed days in Option B
-  const progress = participation ? Math.min(Math.round((participation.current_value / totalRequiredDays) * 100), 100) : 0
+  const progress = getChallengePersonalProgressPercent(challenge, participation)
 
   const startDate = challenge ? moment(challenge.start_date) : moment()
   const endDate = challenge ? moment(challenge.end_date) : moment()
@@ -603,7 +603,7 @@ export default function ChallengeDetail() {
           <div className="flex">
             {[
               { id: 'details', label: 'Chi tiết', icon: <FaCalendarAlt /> },
-              ...(challenge?.isJoined ? [{ id: 'progress', label: 'Tiến độ', icon: <FaMedal /> }] : []),
+              ...(challenge?.isJoined ? [{ id: 'progress', label: 'Tiến độ cá nhân', icon: <FaMedal /> }] : []),
               { id: 'participants', label: 'Người tham gia', icon: <FaUsers /> }
             ].map((tab) => (
               <button
@@ -644,7 +644,7 @@ export default function ChallengeDetail() {
                   <span className="text-3xl">📸</span>
                   <div>
                     <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Chụp ảnh bữa ăn</p>
-                    <p className="text-sm">Chuyển sang tab "Tiến độ", nhấn vào ngày hôm nay trên lịch. Chọn loại bữa (Sáng/Trưa/Tối/Phụ), chụp ảnh và ghi chú năng lượng.</p>
+                    <p className="text-sm">Chuyển sang tab "Tiến độ cá nhân", nhấn vào ngày hôm nay trên lịch. Chọn loại bữa (Sáng/Trưa/Tối/Phụ), chụp ảnh và ghi chú năng lượng.</p>
                   </div>
                 </div>
               )}
@@ -653,7 +653,7 @@ export default function ChallengeDetail() {
                   <span className="text-3xl">🏃</span>
                   <div>
                     <p className="font-semibold text-blue-700 dark:text-blue-400 mb-1">Ghi nhận khoảng cách</p>
-                    <p className="text-sm">Chuyển sang tab "Tiến độ", nhấn vào ngày hôm nay trên lịch. Nhập km đã {challenge.category || 'chạy/đi bộ/đạp xe'}, thời gian và calo tiêu hao.</p>
+                    <p className="text-sm">Chuyển sang tab "Tiến độ cá nhân", nhấn vào ngày hôm nay trên lịch. Nhập km đã {challenge.category || 'chạy/đi bộ/đạp xe'}, thời gian và calo tiêu hao.</p>
                   </div>
                 </div>
               )}
@@ -662,7 +662,7 @@ export default function ChallengeDetail() {
                   <span className="text-3xl">💪</span>
                   <div>
                     <p className="font-semibold text-pink-700 dark:text-pink-400 mb-1">Thể dục & ghi nhận tiến độ</p>
-                    <p className="text-sm">Chuyển sang tab "Tiến độ", nhấn vào ngày hôm nay trên lịch. Nhấn "Bắt đầu tập" để thực hiện các bài đã chọn. Đánh dấu hoàn thành các bài tập để tự động ghi nhận vào tiến độ của ngày.</p>
+                    <p className="text-sm">Chuyển sang tab "Tiến độ cá nhân", nhấn vào ngày hôm nay trên lịch. Nhấn "Bắt đầu tập" để thực hiện các bài đã chọn. Đánh dấu hoàn thành các bài tập để tự động ghi nhận vào tiến độ của ngày.</p>
                   </div>
                 </div>
               )}
@@ -683,7 +683,7 @@ export default function ChallengeDetail() {
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{ex.exercise_name}</p>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                          {ex.sets?.length || 1} set • {ex.sets?.[0]?.reps || 10} reps
+                          {ex.sets?.length || 1} hiệp • {ex.sets?.[0]?.reps || 10} lần lặp
                           {ex.sets?.[0]?.weight > 0 && ` • ${ex.sets[0].weight}kg`}
                         </p>
                       </div>
@@ -745,7 +745,7 @@ export default function ChallengeDetail() {
             {challenge.isJoined && participation && (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
                 <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
-                  <FaMedal className="text-orange-500" /> Tiến độ của bạn
+                  <FaMedal className="text-orange-500" /> Tiến độ cá nhân
                 </h2>
                 <div className="flex items-center gap-4 mb-4">
                   {/* Progress Ring */}
@@ -812,6 +812,7 @@ export default function ChallengeDetail() {
           <ChallengeParticipants
             participants={participantsList}
             isLoading={participantsLoading}
+            challenge={challenge}
             challengeType={challenge.challenge_type}
             goalUnit={challenge.goal_unit}
             onViewProgress={(p) => setSelectedParticipant(p)}

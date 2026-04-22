@@ -158,11 +158,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   const selectedPrivacy = PRIVACY_OPTIONS.find((o) => o.value === privacy)
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
-      onClick={closeModalPost}
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={closeModalPost}>
       <div
         className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden"
         style={{ maxHeight: '90vh' }}

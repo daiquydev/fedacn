@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaCalendarAlt, FaTrash, FaUndo, FaSearch,
     FaFilter, FaUsers, FaMapMarkerAlt, FaRunning, FaHome,
-    FaTimes, FaChevronDown, FaSortAmountDown, FaEye, FaBullseye, FaClock, FaCheck
+    FaTimes, FaChevronDown, FaSortAmountDown, FaEye, FaBullseye, FaClock, FaCheck,
+    FaChartBar, FaFolderOpen, FaCircle, FaExclamationTriangle, FaThList, FaCheckCircle
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import adminSportEventApi from '../../apis/sportEventApi'
@@ -27,6 +28,21 @@ const fmtNum = (n) => {
     if (n == null || Number.isNaN(n)) return '—'
     const x = Number(n)
     return x % 1 === 0 ? String(x) : x.toFixed(1)
+}
+
+const rawDateToMs = (raw) => {
+    if (raw == null || raw === '') return null
+    const t = new Date(raw).getTime()
+    return Number.isFinite(t) ? t : null
+}
+
+/** Đồng bộ với BE `sportEventHasStartedForDelete` */
+const isSportEventStartedForDelete = (ev) => {
+    const startMs = rawDateToMs(ev?.startDate ?? ev?.start_date)
+    if (startMs != null) return startMs <= Date.now()
+    const endMs = rawDateToMs(ev?.endDate ?? ev?.end_date)
+    if (endMs != null) return endMs < Date.now()
+    return false
 }
 
 const EVENT_TYPE_CONFIG = {
@@ -82,8 +98,8 @@ function EventDetailModal({ event, onClose }) {
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
                     <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Danh mục & Loại</p>
                     <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>{event.category}</p>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-1 ${typeCfg.badge}`}>
-                        <TypeIcon size={9} /> {typeCfg.label}
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full mt-1 ${typeCfg.badge}`}>
+                        <TypeIcon size={11} className='shrink-0' aria-hidden /> {typeCfg.label}
                     </span>
                 </div>
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
@@ -129,14 +145,6 @@ function EventDetailModal({ event, onClose }) {
                             )}
                             <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>{creator.name || creator.username || '—'}</span>
                         </div>
-                    </div>
-                )}
-                {event.eventType === 'Ngoài trời' && (
-                    <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl col-span-2'>
-                        <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Strava</p>
-                        <p className='text-sm text-gray-700 dark:text-gray-300'>
-                            {event.requireStrava ? 'Bắt buộc đồng bộ Strava' : 'Không bắt buộc Strava'}
-                        </p>
                     </div>
                 )}
             </div>
@@ -317,6 +325,7 @@ export default function AdminSportEvent() {
 
     const events = data?.data?.result?.events || []
     const totalPage = data?.data?.result?.totalPage || 1
+    const listTotal = data?.data?.result?.total ?? 0
 
     // Sport categories for the form dropdown — only active (non-deleted)
     const { data: catData } = useQuery({
@@ -361,8 +370,14 @@ export default function AdminSportEvent() {
 
     const handleConfirm = () => {
         if (!confirmAction) return
-        if (confirmAction.type === 'delete') softDeleteMutation.mutate(confirmAction.event._id)
-        else if (confirmAction.type === 'restore') restoreMutation.mutate(confirmAction.event._id)
+        if (confirmAction.type === 'delete') {
+            if (isSportEventStartedForDelete(confirmAction.event)) {
+                toast.error('Sự kiện đã bắt đầu, không thể xóa')
+                setConfirmAction(null)
+                return
+            }
+            softDeleteMutation.mutate(confirmAction.event._id)
+        } else if (confirmAction.type === 'restore') restoreMutation.mutate(confirmAction.event._id)
         setConfirmAction(null)
     }
 
@@ -389,12 +404,12 @@ export default function AdminSportEvent() {
                 <div className='relative z-10 flex gap-2 mt-3 flex-wrap'>
                     {[
                         {
-                            key: 'all', label: 'Tất cả', icon: FaCalendarAlt,
+                            key: 'all', label: 'Tất cả', icon: FaThList,
                             count: stats.total,
                             onClick: () => { setFilterStatus('all'); setFilterEventType('all'); setPage(1) }
                         },
                         {
-                            key: 'active', label: 'Đang hoạt động', icon: FaCalendarAlt,
+                            key: 'active', label: 'Hoạt động', icon: FaCheckCircle,
                             count: stats.active,
                             onClick: () => { setFilterStatus('active'); setFilterEventType('all'); setPage(1) }
                         },
@@ -418,12 +433,12 @@ export default function AdminSportEvent() {
                             key={tab.key}
                             type='button'
                             onClick={tab.onClick}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${activeTabKey === tab.key ? 'bg-white text-emerald-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
+                            className={`admin-hero-tab shrink-0 ${activeTabKey === tab.key ? 'bg-white text-emerald-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
                                 }`}
                         >
-                            <tab.icon size={13} />
+                            <tab.icon size={14} className='shrink-0 opacity-95' aria-hidden />
                             {tab.label}
-                            <span className='font-black'>({tab.count ?? 0})</span>
+                            <span className='font-black tabular-nums'>({tab.count ?? 0})</span>
                         </button>
                     ))}
                 </div>
@@ -460,16 +475,17 @@ export default function AdminSportEvent() {
                     <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2 overflow-hidden'>
                         <div className='flex flex-wrap items-center gap-3 px-4 py-3'>
                             {/* Label */}
-                            <span className='flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
-                                📊 Thống kê
+                            <span className='flex flex-col gap-0.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
+                                <span className='flex items-center gap-1.5'><FaChartBar size={12} className='shrink-0' /> Thống kê</span>
+                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo trang hiện tại (không phải tổng toàn hệ thống)</span>
                             </span>
 
                             {/* 4 stat pills */}
                             {[
-                                { label: 'Tổng SK', value: activeEvents.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                { label: 'TB thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                                { label: 'Ngoài trời / Trong nhà', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                { label: 'Tổng (lọc) / trên trang', value: `${listTotal} / ${activeEvents.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra (trang)', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'Trung bình thành viên (trang)', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'Ngoài trời / Trong nhà (trang)', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
@@ -515,14 +531,15 @@ export default function AdminSportEvent() {
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value)}
                                 placeholder='Tìm theo tên sự kiện, danh mục, địa điểm...'
-                                className='w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-600 transition-all'
+                                className='min-h-10 w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-8 text-sm outline-none transition-all focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:bg-slate-600'
                             />
                         </div>
                         <button
+                            type='button'
                             onClick={() => setShowAdvanced(!showAdvanced)}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${showAdvanced || activeFilterCount > 0
-                                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
-                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                            className={`admin-page-btn shrink-0 ${showAdvanced || activeFilterCount > 0
+                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'
                                 }`}
                         >
                             <FaFilter size={12} />
@@ -541,31 +558,31 @@ export default function AdminSportEvent() {
                         <div className='flex flex-wrap gap-2 mt-3'>
                             {filterCategory && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'>
-                                    📂 {filterCategory}
+                                    <FaFolderOpen size={11} className='shrink-0 opacity-80' /> {filterCategory}
                                     <button onClick={() => { setFilterCategory(''); setPage(1) }} className='hover:text-blue-900 dark:hover:text-blue-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {filterEventType !== 'all' && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'>
-                                    {filterEventType === 'Ngoài trời' ? '🌿' : '🏠'} {filterEventType}
+                                    {filterEventType === 'Ngoài trời' ? <FaRunning size={11} className='shrink-0 opacity-80' /> : <FaHome size={11} className='shrink-0 opacity-80' />} {filterEventType}
                                     <button onClick={() => { setFilterEventType('all'); setPage(1) }} className='hover:text-emerald-900 dark:hover:text-emerald-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {filterDateFrom && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
-                                    📅 Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
+                                    <FaCalendarAlt size={11} className='shrink-0 opacity-80' /> Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
                                     <button onClick={() => { setFilterDateFrom(''); setPage(1) }} className='hover:text-orange-900 dark:hover:text-orange-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {filterDateTo && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
-                                    📅 Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
+                                    <FaCalendarAlt size={11} className='shrink-0 opacity-80' /> Đến {new Date(filterDateTo).toLocaleDateString('vi-VN')}
                                     <button onClick={() => { setFilterDateTo(''); setPage(1) }} className='hover:text-orange-900 dark:hover:text-orange-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
                             {sortBy !== 'newest' && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'>
-                                    ↕️ {sortBy === 'oldest' ? 'Cũ nhất' : sortBy === 'popular' ? 'Phổ biến nhất' : 'Sắp diễn ra'}
+                                    <FaSortAmountDown size={11} className='shrink-0 opacity-80' /> {sortBy === 'oldest' ? 'Cũ nhất' : sortBy === 'popular' ? 'Phổ biến nhất' : 'Sắp diễn ra'}
                                     <button onClick={() => { setSortBy('newest'); setPage(1) }} className='hover:text-purple-900 dark:hover:text-purple-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
@@ -591,7 +608,7 @@ export default function AdminSportEvent() {
                                     className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all'
                                 >
                                     <option value='all'>Tất cả</option>
-                                    <option value='active'>Đang hoạt động</option>
+                                    <option value='active'>Hoạt động</option>
                                     <option value='deleted'>Đã xóa</option>
                                 </select>
                             </div>
@@ -617,8 +634,8 @@ export default function AdminSportEvent() {
                                     className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all'
                                 >
                                     <option value='all'>Tất cả loại</option>
-                                    <option value='Ngoài trời'>🌿 Ngoài trời</option>
-                                    <option value='Trong nhà'>🏠 Trong nhà</option>
+                                    <option value='Ngoài trời'>Ngoài trời</option>
+                                    <option value='Trong nhà'>Trong nhà</option>
                                 </select>
                             </div>
 
@@ -657,11 +674,12 @@ export default function AdminSportEvent() {
                                     { value: 'earliest', label: 'Sắp diễn ra' }
                                 ].map(s => (
                                     <button
+                                        type='button'
                                         key={s.value}
                                         onClick={() => { setSortBy(s.value); setPage(1) }}
-                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${sortBy === s.value
-                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-700'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                        className={`inline-flex min-h-9 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${sortBy === s.value
+                                                ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-700'
+                                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
                                             }`}
                                     >
                                         {s.label}
@@ -678,7 +696,7 @@ export default function AdminSportEvent() {
                 <Loading />
             ) : isError ? (
                 <div className='text-center py-16'>
-                    <div className='text-red-500 text-4xl mb-3'>⚠️</div>
+                    <div className='text-red-500 mb-3 flex justify-center'><FaExclamationTriangle className='text-4xl' aria-hidden /></div>
                     <p className='text-gray-500 dark:text-gray-400'>{error?.response?.data?.message || 'Không thể tải dữ liệu'}</p>
                     <button onClick={() => queryClient.invalidateQueries({ queryKey: ['adminSportEvents'] })}
                         className='mt-3 text-sm text-blue-600 hover:underline'>Thử lại</button>
@@ -690,7 +708,7 @@ export default function AdminSportEvent() {
                             <table className='w-full divide-y divide-gray-200 dark:divide-slate-700'>
                                 <thead className='bg-gray-50 dark:bg-gray-900'>
                                     <tr>
-                                        {['STT', 'Sự kiện', 'Danh mục / Loại', 'Thời gian', 'Địa điểm', 'Người tham gia', 'Tiến độ', 'Người tạo', 'Trạng thái', 'Hành động'].map(h => (
+                                        {['STT', 'Sự kiện', 'Danh mục / Loại', 'Thời gian', 'Địa điểm', 'Người tham gia', 'Tiến độ & giai đoạn', 'Người tạo', 'Hoạt động / đã xóa', 'Hành động'].map(h => (
                                             <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
                                         ))}
                                     </tr>
@@ -733,16 +751,16 @@ export default function AdminSportEvent() {
                                             <td className='px-4 py-3 whitespace-nowrap'>
                                                 <div>
                                                     <p className='text-sm font-medium text-gray-700 dark:text-gray-200'>{ev.category}</p>
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-0.5 ${typeCfg.badge}`}>
-                                                        <TypeIcon size={9} /> {typeCfg.label}
+                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full mt-0.5 ${typeCfg.badge}`}>
+                                                        <TypeIcon size={11} className='shrink-0' aria-hidden /> {typeCfg.label}
                                                     </span>
                                                 </div>
                                             </td>
                                             {/* Dates */}
                                             <td className='px-4 py-3 whitespace-nowrap'>
                                                 <div className='flex flex-col gap-0.5 text-xs text-gray-600 dark:text-gray-300'>
-                                                    <span>🟢 {formatDate(ev.startDate)}</span>
-                                                    <span>🔴 {formatDate(ev.endDate)}</span>
+                                                    <span className='inline-flex items-center gap-1'><FaCircle className='text-emerald-500 shrink-0' style={{ fontSize: '6px' }} aria-hidden /> {formatDate(ev.startDate)}</span>
+                                                    <span className='inline-flex items-center gap-1'><FaCircle className='text-rose-500 shrink-0' style={{ fontSize: '6px' }} aria-hidden /> {formatDate(ev.endDate)}</span>
                                                 </div>
                                             </td>
                                             {/* Location */}
@@ -825,9 +843,9 @@ export default function AdminSportEvent() {
                                             {/* Status */}
                                             <td className='px-4 py-3 whitespace-nowrap'>
                                                 {ev.isDeleted ? (
-                                                    <span className='px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'>Đã xóa</span>
+                                                    <span className='inline-flex min-h-8 items-center justify-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900 dark:text-red-300'>Đã xóa</span>
                                                 ) : (
-                                                    <span className='px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'>Hoạt động</span>
+                                                    <span className='inline-flex min-h-8 items-center justify-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'>Hoạt động</span>
                                                 )}
                                             </td>
                                             {/* Actions */}
@@ -838,9 +856,9 @@ export default function AdminSportEvent() {
                                                             type='button'
                                                             onClick={() => setDetailEvent(ev)}
                                                             title='Xem chi tiết'
-                                                            className='p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors'
+                                                            className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-200'
                                                         >
-                                                            <FaEye size={14} />
+                                                            <FaEye size={15} />
                                                         </button>
                                                     )}
                                                     {ev.isDeleted ? (
@@ -848,20 +866,22 @@ export default function AdminSportEvent() {
                                                             type='button'
                                                             onClick={() => setConfirmAction({ type: 'restore', event: ev })}
                                                             title='Khôi phục'
-                                                            className='p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors flex items-center gap-1.5'
+                                                            className='inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-green-600 transition-colors hover:bg-green-50 hover:text-green-800 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-200'
                                                         >
-                                                            <FaUndo size={14} />
+                                                            <FaUndo size={15} />
                                                             <span className='text-xs font-semibold'>Khôi phục</span>
                                                         </button>
                                                     ) : (
-                                                        <button
-                                                            type='button'
-                                                            onClick={() => setConfirmAction({ type: 'delete', event: ev })}
-                                                            title='Xóa'
-                                                            className='p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors'
-                                                        >
-                                                            <FaTrash size={14} />
-                                                        </button>
+                                                        !isSportEventStartedForDelete(ev) ? (
+                                                            <button
+                                                                type='button'
+                                                                onClick={() => setConfirmAction({ type: 'delete', event: ev })}
+                                                                title='Xóa'
+                                                                className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-200'
+                                                            >
+                                                                <FaTrash size={15} />
+                                                            </button>
+                                                        ) : null
                                                     )}
                                                 </div>
                                             </td>
@@ -877,9 +897,10 @@ export default function AdminSportEvent() {
                     {totalPage > 1 && (
                         <div className='flex items-center justify-center gap-2 mt-5'>
                             <button
+                                type='button'
                                 disabled={page <= 1}
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
-                                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                             >
                                 ← Trước
                             </button>
@@ -893,9 +914,10 @@ export default function AdminSportEvent() {
                                 .map(p =>
                                     typeof p === 'number' ? (
                                         <button
+                                            type='button'
                                             key={p}
                                             onClick={() => setPage(p)}
-                                            className={`w-8 h-8 text-sm rounded-lg font-medium transition-colors ${p === page ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-sm' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'}`}
                                         >
                                             {p}
                                         </button>
@@ -905,9 +927,10 @@ export default function AdminSportEvent() {
                                 )
                             }
                             <button
+                                type='button'
                                 disabled={page >= totalPage}
                                 onClick={() => setPage(p => Math.min(totalPage, p + 1))}
-                                className='px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                                className='admin-page-btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                             >
                                 Sau →
                             </button>
