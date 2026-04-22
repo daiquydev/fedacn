@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import {
   FaTimes, FaFileAlt, FaRunning, FaDumbbell,
   FaUsers, FaHeart, FaFire, FaCheck, FaExclamationTriangle, FaMoon,
-  FaCalendarAlt, FaEnvelope
+  FaCalendarAlt, FaEnvelope, FaTrophy
 } from 'react-icons/fa'
 
 const ACTIVITY_CONFIG = {
@@ -15,9 +15,15 @@ const ACTIVITY_CONFIG = {
   inactive: { label: 'Không hoạt động', emoji: '💤', color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', border: 'border-gray-400', icon: FaMoon }
 }
 
-function MetricCard({ icon: Icon, label, value, subtitle, iconBg }) {
+const VIOLATION_KIND_LABEL = {
+  post: 'Bài viết bị gỡ (vi phạm / báo cáo)',
+  sport_event: 'Sự kiện bị gỡ sau kiểm duyệt báo cáo',
+  challenge: 'Thử thách bị gỡ sau kiểm duyệt báo cáo'
+}
+
+function MetricCard({ icon: Icon, label, value, subtitle, iconBg, className = '' }) {
   return (
-    <div className='bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow'>
+    <div className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ${className}`}>
       <div className='flex items-center gap-3 mb-2'>
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
           <Icon className='text-white text-sm' />
@@ -53,17 +59,19 @@ export default function UserDetailDrawer({ userId, onClose }) {
   }, [onClose])
 
   const activityCfg = ACTIVITY_CONFIG[user?.activity_level] || ACTIVITY_CONFIG.inactive
+  const violations = Array.isArray(user?.moderation_violations) ? user.moderation_violations : []
+  const showViolationSection = (user?.banned_count ?? 0) > 0 || violations.length > 0
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className='fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] transition-opacity'
+        className='fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] transition-opacity'
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className='fixed right-0 top-0 h-full w-full max-w-md bg-gray-50 dark:bg-gray-900 shadow-2xl z-[70] overflow-y-auto animate-slide-in-right'>
+      <div className='fixed right-0 top-0 h-full w-full max-w-md bg-gray-50 dark:bg-gray-900 shadow-2xl z-[1210] overflow-y-auto animate-slide-in-right'>
 
         {/* Close button */}
         <button
@@ -135,58 +143,122 @@ export default function UserDetailDrawer({ userId, onClose }) {
                     <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold ${activityCfg.color} ${activityCfg.bg}`}>
                       {activityCfg.emoji} {activityCfg.label}
                     </div>
-                    <p className='text-[10px] text-gray-400 mt-1'>
-                      Bài viết×3 + Sự kiện×5 + Workout×2 + Follow×1 + Like×0.5
+                    <p className='text-[10px] text-gray-400 mt-1 leading-snug'>
+                      Bài viết×3 + Sự kiện×5 + Thử thách×4 + Workout×2 + Follow×1 + Like×0.5
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Metrics Grid */}
-              <div className='mb-6'>
-                <h3 className='text-sm font-bold text-gray-700 dark:text-gray-300 mb-3'>Chi tiết hoạt động</h3>
-                <div className='grid grid-cols-2 gap-3'>
-                  <MetricCard
-                    icon={FaFileAlt}
-                    label='Bài viết'
-                    value={user.posts_count}
-                    iconBg='bg-gradient-to-br from-blue-400 to-blue-600'
-                  />
-                  <MetricCard
-                    icon={FaRunning}
-                    label='Sự kiện tham gia'
-                    value={user.events_attended}
-                    iconBg='bg-gradient-to-br from-emerald-400 to-green-600'
-                  />
-                  <MetricCard
-                    icon={FaDumbbell}
-                    label='Buổi tập'
-                    value={user.workouts_completed}
-                    subtitle={`${(user.total_workout_kcal ?? 0).toLocaleString('vi-VN')} kcal đốt`}
-                    iconBg='bg-gradient-to-br from-orange-400 to-red-500'
-                  />
-                  <MetricCard
-                    icon={FaUsers}
-                    label='Người theo dõi'
-                    value={user.followers_count}
-                    iconBg='bg-gradient-to-br from-cyan-400 to-teal-500'
-                  />
-                  <MetricCard
-                    icon={FaHeart}
-                    label='Lượt thích'
-                    value={user.likes_count}
-                    subtitle='đã thích bài viết'
-                    iconBg='bg-gradient-to-br from-pink-400 to-rose-500'
-                  />
+              {/* Metrics — nhóm theo loại hoạt động */}
+              <div className='mb-6 space-y-5'>
+                <h3 className='text-sm font-bold text-gray-700 dark:text-gray-300'>Chi tiết hoạt động</h3>
+
+                <div>
+                  <p className='text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2'>
+                    Cộng đồng
+                  </p>
+                  <div className='grid grid-cols-2 gap-3'>
+                    <MetricCard
+                      icon={FaFileAlt}
+                      label='Bài viết'
+                      value={user.posts_count}
+                      iconBg='bg-gradient-to-br from-blue-400 to-blue-600'
+                    />
+                    <MetricCard
+                      icon={FaHeart}
+                      label='Lượt thích'
+                      value={user.likes_count}
+                      subtitle='đã thích bài viết'
+                      iconBg='bg-gradient-to-br from-pink-400 to-rose-500'
+                    />
+                    <MetricCard
+                      icon={FaUsers}
+                      label='Người theo dõi'
+                      value={user.followers_count}
+                      subtitle='theo dõi tài khoản này'
+                      iconBg='bg-gradient-to-br from-cyan-400 to-teal-500'
+                      className='col-span-2'
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className='text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2'>
+                    Sự kiện &amp; thử thách
+                  </p>
+                  <div className='grid grid-cols-2 gap-3'>
+                    <MetricCard
+                      icon={FaRunning}
+                      label='Sự kiện tham gia'
+                      value={user.events_attended}
+                      iconBg='bg-gradient-to-br from-emerald-400 to-green-600'
+                    />
+                    <MetricCard
+                      icon={FaTrophy}
+                      label='Thử thách tham gia'
+                      value={user.challenges_joined ?? 0}
+                      subtitle={`${user.challenges_completed ?? 0} đã hoàn thành · không tính đã bỏ cuộc`}
+                      iconBg='bg-gradient-to-br from-violet-400 to-purple-600'
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className='text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2'>
+                    Tập luyện
+                  </p>
+                  <div className='grid grid-cols-2 gap-3'>
+                    <MetricCard
+                      icon={FaDumbbell}
+                      label='Buổi tập hoàn thành'
+                      value={user.workouts_completed}
+                      subtitle={`${(user.total_workout_kcal ?? 0).toLocaleString('vi-VN')} kcal đốt`}
+                      iconBg='bg-gradient-to-br from-orange-400 to-red-500'
+                      className='col-span-2'
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Violation info */}
-              {(user.banned_count ?? 0) > 0 && (
+              {/* Violation / moderation history */}
+              {showViolationSection && (
                 <div className='rounded-2xl p-4 mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'>
-                  <p className='text-sm font-bold text-red-700 dark:text-red-400'>
-                    ⚠️ Lịch sử vi phạm: {user.banned_count} lần
+                  <p className='text-sm font-bold text-red-700 dark:text-red-400 mb-2'>
+                    ⚠️ Lịch sử vi phạm và nội dung đã gỡ
                   </p>
+                  <p className='text-xs text-red-600/90 dark:text-red-300/90 mb-3'>
+                    Điểm cảnh báo (banned_count): <span className='font-semibold'>{user.banned_count ?? 0}</span>
+                    {violations.length > 0 && (
+                      <> · Đã gỡ <span className='font-semibold'>{violations.length}</span> nội dung có thể truy vết</>
+                    )}
+                  </p>
+                  {violations.length > 0 ? (
+                    <ul className='space-y-2.5 max-h-64 overflow-y-auto pr-1'>
+                      {violations.map((v, idx) => (
+                        <li
+                          key={`${v.kind}-${v.ref_id}-${idx}`}
+                          className='text-xs rounded-xl bg-white/80 dark:bg-slate-900/50 border border-red-100 dark:border-red-900/40 p-3'
+                        >
+                          <p className='font-semibold text-red-800 dark:text-red-300'>
+                            {VIOLATION_KIND_LABEL[v.kind] || v.kind}
+                          </p>
+                          <p className='text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-wrap break-words'>
+                            {v.summary}
+                          </p>
+                          {v.occurred_at && (
+                            <p className='text-[10px] text-gray-400 mt-1.5'>
+                              {new Date(v.occurred_at).toLocaleString('vi-VN')}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className='text-xs text-red-700/80 dark:text-red-400/80'>
+                      Có {user.banned_count ?? 0} lần ghi nhận trên tài khoản nhưng không còn bản ghi chi tiết (dữ liệu cũ hoặc đã dọn).
+                    </p>
+                  )}
                 </div>
               )}
             </div>

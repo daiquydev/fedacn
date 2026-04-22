@@ -195,7 +195,8 @@ class AuthUserService {
         email: userInfo.email,
         user_name: userInfo.email.split('@')[0],
         avatar: userInfo.picture,
-        password: hashedPassword
+        password: hashedPassword,
+        auth_provider: 'google'
       })
       const [access_token, refresh_token] = await Promise.all([
         this.signAccessToken({

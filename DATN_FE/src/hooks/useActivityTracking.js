@@ -139,8 +139,9 @@ export default function useActivityTracking() {
                         return
                     }
 
-                    // GPS Anti-cheat: flag impossible speed (>50km/h = 13.9m/s) — skip point entirely
-                    if (timeDiff > 0 && dist / timeDiff > 13.9) {
+                    // GPS Anti-cheat: flag impossible speed (>70 km/h ≈ 19.44 m/s) — skip point entirely
+                    const maxSpeedMs = 70 / 3.6 // 70 km/h
+                    if (timeDiff > 0 && dist / timeDiff > maxSpeedMs) {
                         setGpsFlags(prev => [...prev, {
                             type: 'speed', speed: Math.round(dist / timeDiff * 3.6),
                             timestamp: Date.now()

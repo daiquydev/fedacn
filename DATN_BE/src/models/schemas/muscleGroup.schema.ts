@@ -3,7 +3,8 @@ import mongoose, { Schema } from 'mongoose'
 export interface MuscleGroup {
     name: string
     name_en: string
-    body_part_ids: string[]  // IDs used by react-body-highlighter SVG
+    /** Slug từ react-body-highlighter (có thể nhiều id / nhóm — ví dụ trapezius + neck). */
+    body_part_ids: string[]
     image_url: string
     description: string
     is_active: boolean

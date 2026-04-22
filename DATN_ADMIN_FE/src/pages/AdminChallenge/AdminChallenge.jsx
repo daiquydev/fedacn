@@ -456,14 +456,14 @@ export default function AdminChallenge() {
                         <div className='flex flex-wrap items-center gap-3 px-4 py-3'>
                             <span className='flex flex-col gap-0.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
                                 <span className='flex items-center gap-1.5'><FaChartBar size={12} className='shrink-0' /> Thống kê</span>
-                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo trang hiện tại</span>
+                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo danh sách hiện tại</span>
                             </span>
 
                             {[
-                                { label: 'Tổng (lọc) / trên trang', value: `${total} / ${activeChallenges.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                { label: 'Đang diễn ra (trang)', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                { label: 'Trung bình thành viên (trang)', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                                { label: 'Ăn uống / Ngoài trời / Thể dục (trang)', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                { label: 'Tổng (lọc) / hiển thị', value: `${total} / ${activeChallenges.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'Trung bình thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'Ăn uống / Ngoài trời / Thể dục', value: `${nutritionCount}/${outdoorCount}/${fitnessCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>

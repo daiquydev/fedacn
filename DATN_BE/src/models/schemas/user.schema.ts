@@ -50,6 +50,8 @@ export interface User {
     type: RequestType
   }
   isDeleted?: boolean
+  /** Đăng ký/đăng nhập chủ yếu qua Google — không dùng mật khẩu cục bộ */
+  auth_provider?: 'local' | 'google'
 }
 
 const UserSchema = new mongoose.Schema<User>(
@@ -58,6 +60,11 @@ const UserSchema = new mongoose.Schema<User>(
     user_name: { type: String, maxlength: 160, required: true },
     email: { type: String, maxlength: 160, required: true },
     password: { type: String, maxlength: 160, required: true },
+    auth_provider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local'
+    },
     cover_avatar: {
       type: String,
       default: ''

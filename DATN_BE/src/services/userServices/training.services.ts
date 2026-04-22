@@ -5,6 +5,66 @@ import NotificationModel from '~/models/schemas/notification.schema'
 import { NotificationTypes } from '~/constants/enums'
 
 class TrainingService {
+    private async addTrainingParticipantInternal(
+        training: any,
+        userId: string,
+        options: { skipExpiryCheck?: boolean } = {}
+    ) {
+        if (training.status !== 'active') throw new Error('Bài tập luyện đã kết thúc')
+
+        if (!options.skipExpiryCheck && new Date() > new Date(training.end_date)) {
+            throw new Error('Bài tập luyện đã hết hạn')
+        }
+
+        const existing = await TrainingParticipantModel.findOne({
+            training_id: new Types.ObjectId(training._id),
+            user_id: new Types.ObjectId(userId)
+        })
+
+        if (existing) {
+            if (existing.status !== 'quit') {
+                throw new Error('Bạn đã tham gia bài tập luyện này rồi')
+            }
+
+            existing.status = 'in_progress'
+            existing.current_value = 0
+            existing.goal_value = training.goal_value
+            existing.is_completed = false
+            existing.completed_at = null
+            existing.last_activity_at = null
+            existing.active_days = []
+            existing.joined_at = new Date()
+            await existing.save()
+
+            await TrainingModel.updateOne(
+                { _id: training._id },
+                { $inc: { participants_count: 1 } }
+            )
+
+            return existing
+        }
+
+        const participant = new TrainingParticipantModel({
+            training_id: new Types.ObjectId(training._id),
+            user_id: new Types.ObjectId(userId),
+            current_value: 0,
+            goal_value: training.goal_value,
+            is_completed: false,
+            completed_at: null,
+            last_activity_at: null,
+            active_days: [],
+            status: 'in_progress'
+        })
+        await participant.save()
+
+        await TrainingModel.updateOne(
+            { _id: training._id },
+            { $inc: { participants_count: 1 } }
+        )
+
+        return participant
+    }
+
     // ==================== TRAINING CRUD ====================
 
     async createTraining({
@@ -39,6 +99,7 @@ class TrainingService {
         const startDate = start_date_iso ? new Date(start_date_iso) : new Date()
         if (!end_date_iso) throw new Error('Vui lòng chọn ngày kết thúc')
         const endDate = new Date(end_date_iso)
+        if (endDate <= startDate) throw new Error('Ngày kết thúc phải sau ngày bắt đầu')
 
         const training = new TrainingModel({
             creator_id: new Types.ObjectId(creator_id),
@@ -58,8 +119,8 @@ class TrainingService {
 
         await training.save()
 
-        // Auto-join the creator
-        await this.joinTraining(training._id.toString(), creator_id)
+        // Auto-join the creator (skip expiry check to avoid timezone edge cases)
+        await this.addTrainingParticipantInternal(training, creator_id, { skipExpiryCheck: true })
 
         return training
     }
@@ -124,6 +185,29 @@ class TrainingService {
             .populate('creator_id', 'name avatar email')
         if (!training) throw new Error('Bài tập luyện không tồn tại')
 
+        const creatorId = (() => {
+            const c = training.creator_id as unknown as { _id?: Types.ObjectId } | Types.ObjectId
+            if (c && typeof c === 'object' && '_id' in c && c._id) return c._id.toString()
+            return (c as Types.ObjectId).toString()
+        })()
+
+        if (!training.is_public) {
+            if (!userId) throw new Error('Bài tập luyện không tồn tại')
+            const isCreator = userId === creatorId
+            let isParticipant = false
+            if (!isCreator) {
+                const participant = await TrainingParticipantModel.findOne({
+                    training_id: new Types.ObjectId(trainingId),
+                    user_id: new Types.ObjectId(userId),
+                    status: { $ne: 'quit' }
+                })
+                    .select('_id')
+                    .lean()
+                isParticipant = !!participant
+            }
+            if (!isCreator && !isParticipant) throw new Error('Bài tập luyện không tồn tại')
+        }
+
         const result: any = training.toObject()
 
         // Calculate time remaining
@@ -178,40 +262,16 @@ class TrainingService {
     async joinTraining(trainingId: string, userId: string) {
         const training = await TrainingModel.findById(trainingId)
         if (!training) throw new Error('Bài tập luyện không tồn tại')
-        if (training.status !== 'active') throw new Error('Bài tập luyện đã kết thúc')
-
-        // Check if end date has passed
-        if (new Date() > new Date(training.end_date)) {
-            throw new Error('Bài tập luyện đã hết hạn')
-        }
-
-        const existing = await TrainingParticipantModel.findOne({
-            training_id: new Types.ObjectId(trainingId),
-            user_id: new Types.ObjectId(userId),
-            status: { $ne: 'quit' }
-        })
-        if (existing) throw new Error('Bạn đã tham gia bài tập luyện này rồi')
-
-        const participant = new TrainingParticipantModel({
-            training_id: new Types.ObjectId(trainingId),
-            user_id: new Types.ObjectId(userId),
-            current_value: 0,
-            goal_value: training.goal_value,
-            is_completed: false,
-            completed_at: null,
-            last_activity_at: null,
-            active_days: [],
-            status: 'in_progress'
-        })
-        await participant.save()
-
-        training.participants_count += 1
-        await training.save()
-
-        return participant
+        return this.addTrainingParticipantInternal(training, userId, { skipExpiryCheck: false })
     }
 
     async quitTraining(trainingId: string, userId: string) {
+        const training = await TrainingModel.findById(trainingId).select('creator_id')
+        if (!training) throw new Error('Bài tập luyện không tồn tại')
+        if (training.creator_id.toString() === userId) {
+            throw new Error('Người tạo không thể rời bài tập luyện')
+        }
+
         const participant = await TrainingParticipantModel.findOne({
             training_id: new Types.ObjectId(trainingId),
             user_id: new Types.ObjectId(userId),
@@ -222,7 +282,10 @@ class TrainingService {
         participant.status = 'quit'
         await participant.save()
 
-        await TrainingModel.findByIdAndUpdate(trainingId, { $inc: { participants_count: -1 } })
+        await TrainingModel.updateOne(
+            { _id: new Types.ObjectId(trainingId), participants_count: { $gt: 0 } },
+            { $inc: { participants_count: -1 } }
+        )
 
         return participant
     }

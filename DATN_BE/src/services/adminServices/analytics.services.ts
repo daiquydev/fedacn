@@ -6,6 +6,8 @@ import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventAttendanceModel from '~/models/schemas/sportEventAttendance.schema'
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import UserModel from '~/models/schemas/user.schema'
+import CommentPostModel from '~/models/schemas/commentPost.schema'
+import LikePostModel from '~/models/schemas/likePost.schema'
 import { UserRoles } from '~/constants/enums'
 
 function getDateRange(period?: string, startDate?: string, endDate?: string): { from: Date | null; to: Date } {
@@ -330,6 +332,275 @@ class AnalyticsService {
         dailyIndoorEvents,
         dailyOutdoorJoins,
         dailyIndoorJoins
+      }
+    }
+  }
+
+  /** Thống kê sức khỏe cộng đồng: người hoạt động, hoàn thành thử thách, sự kiện. */
+  async getCommunityHealthAnalytics(period?: string, startDate?: string, endDate?: string) {
+    const { from, to } = getDateRange(period, startDate, endDate)
+    const createdRange = from ? { createdAt: { $gte: from, $lte: to } } : {}
+
+    const mergeDailyUserSets = (rowsList: { _id: string; u: unknown[] }[][]) => {
+      const merged = new Map<string, Set<string>>()
+      for (const rows of rowsList) {
+        for (const row of rows) {
+          if (!row?._id) continue
+          if (!merged.has(row._id)) merged.set(row._id, new Set())
+          for (const id of row.u || []) merged.get(row._id)!.add(String(id))
+        }
+      }
+      return [...merged.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([d, set]) => ({ _id: d, count: set.size }))
+    }
+
+    const postMatch = { is_banned: false, ...createdRange }
+    const commentMatch = { is_banned: false, ...createdRange }
+    const likeMatch = { ...createdRange }
+    const workoutMatch: Record<string, unknown> = { status: 'completed' }
+    if (from) workoutMatch.finished_at = { $gte: from, $lte: to }
+
+    const cpMatch: Record<string, unknown> = { last_activity_at: { $ne: null } }
+    if (from) (cpMatch.last_activity_at as Record<string, Date>) = { $gte: from, $lte: to }
+
+    const attMatch: Record<string, unknown> = {}
+    if (from) attMatch.updatedAt = { $gte: from, $lte: to }
+
+    const [
+      postsDaily,
+      commentsDaily,
+      likesDaily,
+      workoutsDaily,
+      cpDaily,
+      attDaily,
+      overallCompletion,
+      byTypeCompletion,
+      topByParticipants,
+      topByCheckins
+    ] = await Promise.all([
+      PostModel.aggregate([
+        { $match: postMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            u: { $addToSet: '$user_id' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      CommentPostModel.aggregate([
+        { $match: commentMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            u: { $addToSet: '$user_id' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      LikePostModel.aggregate([
+        { $match: likeMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            u: { $addToSet: '$user_id' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      WorkoutSessionModel.aggregate([
+        { $match: workoutMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$finished_at' } },
+            u: { $addToSet: '$user_id' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      ChallengeParticipantModel.aggregate([
+        { $match: cpMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$last_activity_at' } },
+            u: { $addToSet: '$user_id' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      SportEventAttendanceModel.aggregate([
+        { $match: attMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } },
+            u: { $addToSet: '$userId' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      ChallengeParticipantModel.aggregate([
+        { $match: { status: { $ne: 'quit' } } },
+        {
+          $lookup: {
+            from: 'challenges',
+            localField: 'challenge_id',
+            foreignField: '_id',
+            as: 'ch'
+          }
+        },
+        { $unwind: '$ch' },
+        { $match: { 'ch.is_deleted': { $ne: true } } },
+        {
+          $group: {
+            _id: null,
+            completed: {
+              $sum: {
+                $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
+              }
+            },
+            total: { $sum: 1 }
+          }
+        }
+      ]),
+      ChallengeParticipantModel.aggregate([
+        { $match: { status: { $ne: 'quit' } } },
+        {
+          $lookup: {
+            from: 'challenges',
+            localField: 'challenge_id',
+            foreignField: '_id',
+            as: 'ch'
+          }
+        },
+        { $unwind: '$ch' },
+        { $match: { 'ch.is_deleted': { $ne: true } } },
+        {
+          $group: {
+            _id: '$ch.challenge_type',
+            completed: {
+              $sum: {
+                $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
+              }
+            },
+            total: { $sum: 1 }
+          }
+        }
+      ]),
+      SportEventModel.aggregate([
+        { $match: { isDeleted: { $ne: true } } },
+        {
+          $addFields: {
+            participantCount: { $size: { $ifNull: ['$participants_ids', []] } }
+          }
+        },
+        { $sort: { participantCount: -1 } },
+        { $limit: 8 },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            category: 1,
+            eventType: 1,
+            participantCount: 1
+          }
+        }
+      ]),
+      (() => {
+        const attendanceCheckinPipeline: Record<string, unknown>[] = []
+        if (from) {
+          attendanceCheckinPipeline.push({ $match: { updatedAt: { $gte: from, $lte: to } } })
+        }
+        attendanceCheckinPipeline.push(
+          {
+            $lookup: {
+              from: 'sport_event_sessions',
+              localField: 'sessionId',
+              foreignField: '_id',
+              as: 'sess'
+            }
+          },
+          { $unwind: '$sess' },
+          { $group: { _id: '$sess.eventId', checkins: { $sum: 1 } } },
+          { $sort: { checkins: -1 } },
+          { $limit: 8 },
+          {
+            $lookup: {
+              from: 'sport_events',
+              localField: '_id',
+              foreignField: '_id',
+              as: 'ev'
+            }
+          },
+          { $unwind: { path: '$ev', preserveNullAndEmptyArrays: true } },
+          { $match: { 'ev.isDeleted': { $ne: true } } },
+          {
+            $project: {
+              _id: 1,
+              name: '$ev.name',
+              category: '$ev.category',
+              eventType: '$ev.eventType',
+              checkins: 1
+            }
+          }
+        )
+        return SportEventAttendanceModel.aggregate(attendanceCheckinPipeline as any[])
+      })()
+    ])
+
+    const dailyActiveUsers = mergeDailyUserSets([
+      postsDaily as { _id: string; u: unknown[] }[],
+      commentsDaily as { _id: string; u: unknown[] }[],
+      likesDaily as { _id: string; u: unknown[] }[],
+      workoutsDaily as { _id: string; u: unknown[] }[],
+      cpDaily as { _id: string; u: unknown[] }[],
+      attDaily as { _id: string; u: unknown[] }[]
+    ])
+
+    const peakDau = dailyActiveUsers.reduce((m, d) => Math.max(m, d.count), 0)
+    const avgDau =
+      dailyActiveUsers.length > 0
+        ? Math.round((dailyActiveUsers.reduce((s, d) => s + d.count, 0) / dailyActiveUsers.length) * 10) / 10
+        : 0
+
+    const [pu, cu, lu, wu, chu, au] = await Promise.all([
+      PostModel.distinct('user_id', postMatch),
+      CommentPostModel.distinct('user_id', commentMatch),
+      LikePostModel.distinct('user_id', likeMatch),
+      WorkoutSessionModel.distinct('user_id', workoutMatch),
+      ChallengeParticipantModel.distinct('user_id', cpMatch),
+      SportEventAttendanceModel.distinct('userId', attMatch)
+    ])
+    const distinctActiveUsers = new Set<string>()
+    ;[pu, cu, lu, wu, chu, au].forEach((arr) => (arr || []).forEach((id: any) => distinctActiveUsers.add(String(id))))
+
+    const oc = (overallCompletion as any[])[0] || { completed: 0, total: 0 }
+    const overallRatePercent =
+      oc.total > 0 ? Math.round((oc.completed / oc.total) * 1000) / 10 : 0
+
+    const byChallengeType = (byTypeCompletion as any[]).map((row) => ({
+      challenge_type: row._id,
+      completed: row.completed,
+      total: row.total,
+      ratePercent: row.total > 0 ? Math.round((row.completed / row.total) * 1000) / 10 : 0
+    }))
+
+    return {
+      userActivity: {
+        dailyActiveUsers,
+        peakDau,
+        avgDau,
+        distinctActiveUsersInPeriod: distinctActiveUsers.size
+      },
+      challengeCompletion: {
+        completedParticipants: oc.completed,
+        denominatorParticipants: oc.total,
+        overallRatePercent,
+        byChallengeType
+      },
+      eventEngagement: {
+        topByParticipants,
+        topByCheckins
       }
     }
   }

@@ -18,8 +18,43 @@ import UserModel from '~/models/schemas/user.schema'
 import MealPlanModel from '~/models/schemas/mealPlan.schema'
 import { ErrorWithStatus } from '~/utils/error'
 import { uploadFileToS3 } from '~/utils/s3'
+import { moderateCommunityText } from '~/services/userServices/communityTextModeration.services'
 
 class PostService {
+  private async canUserViewPost(post: { user_id: ObjectId; status?: PostStatus }, viewerId: string): Promise<boolean> {
+    const ownerId = post.user_id.toString()
+    if (ownerId === viewerId) return true
+
+    switch (post.status) {
+      case PostStatus.publish:
+        return true
+      case PostStatus.private:
+        return false
+      case PostStatus.following: {
+        const follow = await FollowModel.findOne({
+          user_id: new ObjectId(viewerId),
+          follow_id: post.user_id
+        }).lean()
+        return !!follow
+      }
+      case PostStatus.friends: {
+        const [viewerFollowsOwner, ownerFollowsViewer] = await Promise.all([
+          FollowModel.findOne({
+            user_id: new ObjectId(viewerId),
+            follow_id: post.user_id
+          }).lean(),
+          FollowModel.findOne({
+            user_id: post.user_id,
+            follow_id: new ObjectId(viewerId)
+          }).lean()
+        ])
+        return !!(viewerFollowsOwner && ownerFollowsViewer)
+      }
+      default:
+        return false
+    }
+  }
+
   private sanitizeCategory(category?: string) {
     const fallback = 'posts'
     if (!category) return fallback
@@ -27,7 +62,7 @@ class PostService {
       .toString()
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9\/-]+/g, '-')
+      .replace(/[^a-z0-9/-]+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^[-/]+|[-/]+$/g, '')
     return normalized || fallback
@@ -70,8 +105,19 @@ class PostService {
   }
 
   async createPostService({ content = '', privacy, file = [], user_id }: CreatePostBody) {
+    const trimmedContent = (content || '').trim()
+    if (trimmedContent.length > 0) {
+      const mod = await moderateCommunityText(trimmedContent, 'post')
+      if (!mod.allowed) {
+        throw new ErrorWithStatus({
+          message: `${POST_MESSAGE.INAPPROPRIATE_POST_TEXT} ${mod.reason}`,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+    }
+
     const newPost = await PostModel.create({
-      content: content,
+      content: trimmedContent,
       status: Number(privacy),
       user_id: new ObjectId(user_id)
     })
@@ -262,24 +308,40 @@ class PostService {
   }
 
   async getPostService({ post_id, user_id }: { post_id: string; user_id: string }) {
+    const postPermission = await PostModel.findOne({
+      _id: new ObjectId(post_id),
+      is_banned: false
+    })
+      .select('user_id status')
+      .lean()
+
+    if (!postPermission) {
+      throw new ErrorWithStatus({
+        message: POST_MESSAGE.POST_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const canView = await this.canUserViewPost(
+      {
+        user_id: postPermission.user_id as ObjectId,
+        status: postPermission.status as PostStatus
+      },
+      user_id
+    )
+
+    if (!canView) {
+      throw new ErrorWithStatus({
+        message: POST_MESSAGE.POST_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
     const post = await PostModel.aggregate([
       {
-        // check neu la post cua user thi cho xem ca post private va public cua user do, con khong thi chi xem public
         $match: {
           _id: new ObjectId(post_id),
-          is_banned: false,
-          $or: [
-            {
-              status: PostStatus.publish
-            },
-            {
-              status: PostStatus.following
-            },
-            {
-              status: PostStatus.private,
-              user_id: new ObjectId(user_id)
-            }
-          ]
+          is_banned: false
         }
       },
       {
@@ -979,8 +1041,19 @@ class PostService {
     privacy: string
     content: string
   }) {
+    const trimmedShare = (content || '').trim()
+    if (trimmedShare.length > 0) {
+      const mod = await moderateCommunityText(trimmedShare, 'post_share')
+      if (!mod.allowed) {
+        throw new ErrorWithStatus({
+          message: `${POST_MESSAGE.INAPPROPRIATE_POST_TEXT} ${mod.reason}`,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+    }
+
     const newPost = await PostModel.create({
-      content: content,
+      content: trimmedShare,
       status: Number(privacy),
       user_id: user_id,
       parent_id: parent_id,
@@ -1152,9 +1225,18 @@ class PostService {
     post_id: string
     parent_comment_id?: string
   }) {
+    const commentTrimmed = (content || '').trim()
+    const mod = await moderateCommunityText(commentTrimmed, 'comment')
+    if (!mod.allowed) {
+      throw new ErrorWithStatus({
+        message: `${POST_MESSAGE.INAPPROPRIATE_COMMENT_TEXT} ${mod.reason}`,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
     if (!parent_comment_id) {
       const newComment = await CommentPostModel.create({
-        content: content,
+        content: commentTrimmed,
         user_id: user_id,
         post_id: post_id
       })
@@ -1180,7 +1262,7 @@ class PostService {
       return newComment
     }
     const newComment = await CommentPostModel.create({
-      content: content,
+      content: commentTrimmed,
       user_id: user_id,
       post_id: post_id,
       parent_comment_id: parent_comment_id
@@ -1768,6 +1850,12 @@ class PostService {
       parent_comment_id: null
     })
     if (comment) {
+      if (comment.user_id.toString() !== user_id) {
+        throw new ErrorWithStatus({
+          message: 'Bạn không có quyền xóa bình luận này',
+          status: HTTP_STATUS.FORBIDDEN
+        })
+      }
       const commentId = comment._id
       await Promise.all([
         CommentPostModel.deleteMany({
@@ -1786,6 +1874,12 @@ class PostService {
       _id: comment_id
     })
     if (comment) {
+      if (comment.user_id.toString() !== user_id) {
+        throw new ErrorWithStatus({
+          message: 'Bạn không có quyền xóa bình luận này',
+          status: HTTP_STATUS.FORBIDDEN
+        })
+      }
       await CommentPostModel.deleteOne({
         _id: comment_id
       })

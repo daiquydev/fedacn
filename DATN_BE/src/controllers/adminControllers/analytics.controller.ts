@@ -30,3 +30,13 @@ export const getChallengeAnalyticsController = async (req: Request, res: Respons
   )
   return res.json({ result, message: 'Lấy thống kê thử thách thành công' })
 }
+
+export const getCommunityHealthAnalyticsController = async (req: Request, res: Response) => {
+  const { period, startDate, endDate } = req.query
+  const result = await analyticsService.getCommunityHealthAnalytics(
+    period as string,
+    startDate as string,
+    endDate as string
+  )
+  return res.json({ result, message: 'Lấy thống kê sức khỏe cộng đồng thành công' })
+}

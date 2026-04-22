@@ -14,6 +14,7 @@ import moment from 'moment'
 import toast from 'react-hot-toast'
 
 import {
+    getEventSessions,
     getVideoSessions,
     getVideoSessionStats,
     softDeleteVideoSession
@@ -104,6 +105,24 @@ export default function IndoorEventProgress({ event, userProgress }) {
     const [isDeleting, setIsDeleting] = useState(false)
     const [countdown, setCountdown] = useState(null)
     const countdownRef = useRef(null)
+
+    // ── Lịch buổi học (để gắn sessionId khi join video — trùng queryKey với SportEventDetail → tái dùng cache)
+    const { data: schedSessionsData } = useQuery({
+        queryKey: ['eventSessions', eventId],
+        queryFn: () => getEventSessions(eventId),
+        enabled: !!eventId && !!event?.isJoined && event?.eventType === 'Trong nhà'
+    })
+    const scheduleList = schedSessionsData?.data?.result || schedSessionsData?.result || []
+    const scheduleSessionIdForCall = useMemo(() => {
+        const now = moment()
+        for (const s of scheduleList) {
+            if (!s?.sessionDate) continue
+            const start = moment(s.sessionDate)
+            const end = start.clone().add(s.durationHours ?? 1, 'hours')
+            if (now.isBetween(start, end, null, '[]')) return s._id
+        }
+        return undefined
+    }, [scheduleList])
 
     // ── Fetch video sessions history
     const { data: vsData, refetch: refetchSessions } = useQuery({
@@ -398,6 +417,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
             {showVideoCall && (
                 <VideoCallModal
                     event={event}
+                    sessionId={scheduleSessionIdForCall}
                     onClose={() => setShowVideoCall(false)}
                     onCallEnded={handleCallEnded}
                 />

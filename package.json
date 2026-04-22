@@ -12,8 +12,13 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "defense:test": "npm test --prefix DATN_BE -- src/__tests__/defense-smoke.spec.ts",
+    "defense:kit": "echo Open docs/DEFENSE_KIT_OVERVIEW.md and docs/defense/05-demo-script-5-10-min.md",
     "seed:outdoor-event-activities": "node DATN_BE/scripts/seed_all_outdoor_events.js",
-    "seed:outdoor-event-activities:selftest": "node DATN_BE/scripts/seed_all_outdoor_events.js --selftest"
+    "seed:outdoor-event-activities:fast": "npm run seed:outdoor-event-activities:fast --prefix DATN_BE",
+    "seed:outdoor-event-activities:selftest": "node DATN_BE/scripts/seed_all_outdoor_events.js --selftest",
+    "seed:outdoor-progress": "npm run seed:outdoor-progress --prefix DATN_BE",
+    "seed:outdoor-progress:fast": "npm run seed:outdoor-progress:fast --prefix DATN_BE"
   },
   "eslintConfig": {
     "extends": [

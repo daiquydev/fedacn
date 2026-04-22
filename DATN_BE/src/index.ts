@@ -42,6 +42,11 @@ import trainingRouter from './routes/userRoutes/training.routes'
 import challengeRouter from './routes/userRoutes/challenge.routes'
 import adminChallengeRouter from './routes/adminRoutes/challenge.routes'
 import personalActivityRouter from './routes/userRoutes/personalActivity.routes'
+import { accessTokenValidator } from '~/middlewares/authUser.middleware'
+import { checkRole } from '~/middlewares/roles.middleware'
+import { UserRoles } from '~/constants/enums'
+import { wrapRequestHandler } from '~/utils/handler'
+import { getCommunityHealthAnalyticsController } from '~/controllers/adminControllers/analytics.controller'
 
 const app: Express = express()
 const port = envConfig.port
@@ -142,6 +147,13 @@ app.use('/api/admin/equipment', adminEquipmentRouter)
 app.use('/api/admin/muscle-groups', adminMuscleGroupRouter)
 app.use('/api/admin/exercises', adminExerciseRouter)
 app.use('/api/admin/challenges', adminChallengeRouter)
+// Đăng ký trước router /api/admin để tránh trường hợp không khớp route lồng nhau (404 trên một số môi trường)
+app.get(
+  '/api/admin/analytics/community-health',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getCommunityHealthAnalyticsController)
+)
 app.use('/api/admin', userAdminRouter)
 app.use('/api/inspectors', inspectorRouter)
 app.use('/api/writters', writterRouter)

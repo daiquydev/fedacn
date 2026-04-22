@@ -386,7 +386,7 @@
 }
 
 /* ── Laptop / tablet ngang: bản đồ full màn hình ───
-   Panel thống kê tách khỏi mép phải để map rộng tối đa */
+   Panel thống kê nổi, căn giữa phía dưới để map rộng tối đa */
 @media (min-width: 768px) {
   .tracking-hud {
     max-width: none;
@@ -397,8 +397,9 @@
 
 @media (min-width: 1024px) {
   .hud-glass-panel {
-    left: auto;
-    right: max(16px, env(safe-area-inset-right));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     bottom: max(16px, env(safe-area-inset-bottom));
     top: auto;
     width: min(380px, 36vw);

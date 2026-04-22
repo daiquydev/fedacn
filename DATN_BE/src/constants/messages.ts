@@ -55,7 +55,9 @@ export const POST_MESSAGE = {
   GET_POST_COMMENTS_SUCCESS: 'Lấy bình luận bài viết thành công',
   COMMENT_NOT_FOUND: 'Không tìm thấy bình luận',
   REPORT_POST_SUCCESS: 'Báo cáo bài viết thành công',
-  REPORTED_POST: 'Bài viết đã được báo cáo'
+  REPORTED_POST: 'Bài viết đã được báo cáo',
+  INAPPROPRIATE_POST_TEXT: 'Nội dung bài viết không phù hợp với cộng đồng.',
+  INAPPROPRIATE_COMMENT_TEXT: 'Nội dung bình luận không phù hợp với cộng đồng.'
 } as const
 
 export const SPORT_EVENT_MESSAGE = {
@@ -81,6 +83,8 @@ export const USER_MESSAGE = {
   USER_NOT_FOUND: 'Không tìm thấy người dùng',
   USER_NAME_ALREADY_EXISTS: 'Tên người dùng đã tồn tại',
   OLD_PASSWORD_INCORRECT: 'Mật khẩu cũ không chính xác',
+  GOOGLE_ACCOUNT_CANNOT_CHANGE_PASSWORD:
+    'Tài khoản đăng nhập bằng Google không hỗ trợ đổi mật khẩu trên hệ thống. Vui lòng quản lý mật khẩu tại tài khoản Google của bạn.',
   UPDATE_PASSWORD_SUCCESS: 'Cập nhật mật khẩu thành công',
   GET_BOOKMARKED_SUCCESS: 'Lấy danh sách đã bookmark thành công',
   RECOMMEND_USER_SUCCESS: 'Gợi ý người dùng thành công',

@@ -158,6 +158,37 @@ class UserAdminService {
           }
         }
       },
+      // Challenge participation (bỏ quit — không còn coi là đang tham gia)
+      {
+        $lookup: {
+          from: 'challenge_participants',
+          let: { uid: '$_id' },
+          pipeline: [{ $match: { $expr: { $eq: ['$user_id', '$$uid'] } } }],
+          as: 'challenge_parts'
+        }
+      },
+      {
+        $addFields: {
+          challenges_joined: {
+            $size: {
+              $filter: {
+                input: '$challenge_parts',
+                as: 'cp',
+                cond: { $ne: ['$$cp.status', 'quit'] }
+              }
+            }
+          },
+          challenges_completed: {
+            $size: {
+              $filter: {
+                input: '$challenge_parts',
+                as: 'cp',
+                cond: { $eq: ['$$cp.status', 'completed'] }
+              }
+            }
+          }
+        }
+      },
       // Activity score calculation
       {
         $addFields: {
@@ -165,6 +196,7 @@ class UserAdminService {
             $add: [
               { $multiply: ['$posts_count', 3] },
               { $multiply: ['$events_attended', 5] },
+              { $multiply: ['$challenges_joined', 4] },
               { $multiply: ['$workouts_completed', 2] },
               { $multiply: ['$followers_count', 1] },
               { $multiply: ['$likes_count', 0.5] }
@@ -194,11 +226,87 @@ class UserAdminService {
           posts: 0,
           likes: 0,
           event_attendance: 0,
-          workout_sessions: 0
+          workout_sessions: 0,
+          challenge_parts: 0
         }
       }
     ])
-    return user
+
+    if (!user.length) {
+      return user
+    }
+
+    const uid = new ObjectId(user_id)
+    const truncateSummary = (text: string | undefined, max = 160) => {
+      const s = (text ?? '').trim()
+      if (!s) return ''
+      if (s.length <= max) return s
+      return `${s.slice(0, max)}…`
+    }
+
+    const [bannedPosts, modEvents, modChallenges] = await Promise.all([
+      PostModel.find({ user_id: uid, is_banned: true })
+        .sort({ updatedAt: -1 })
+        .limit(40)
+        .select({ content: 1, updatedAt: 1 })
+        .lean(),
+      SportEventModel.find({
+        createdBy: uid,
+        isDeleted: true,
+        deletedFromReportModeration: true
+      })
+        .sort({ deletedAt: -1, updatedAt: -1 })
+        .limit(40)
+        .select({ name: 1, deletedAt: 1, updatedAt: 1 })
+        .lean(),
+      ChallengeModel.find({
+        creator_id: uid,
+        is_deleted: true,
+        deleted_from_report_moderation: true
+      })
+        .sort({ deleted_at: -1, updatedAt: -1 })
+        .limit(40)
+        .select({ title: 1, deleted_at: 1, updatedAt: 1 })
+        .lean()
+    ])
+
+    type ModerationViolation = {
+      kind: 'post' | 'sport_event' | 'challenge'
+      ref_id: string
+      summary: string
+      occurred_at?: Date | null
+    }
+
+    const moderation_violations: ModerationViolation[] = [
+      ...bannedPosts.map((p) => {
+        const preview = truncateSummary(p.content as string | undefined)
+        return {
+          kind: 'post' as const,
+          ref_id: String(p._id),
+          summary: preview || 'Bài viết không còn nội dung hiển thị',
+          occurred_at: (p as { updatedAt?: Date }).updatedAt
+        }
+      }),
+      ...modEvents.map((e) => ({
+        kind: 'sport_event' as const,
+        ref_id: String(e._id),
+        summary: truncateSummary(e.name as string | undefined) || 'Sự kiện',
+        occurred_at: (e.deletedAt as Date | null | undefined) ?? (e as { updatedAt?: Date }).updatedAt
+      })),
+      ...modChallenges.map((c) => ({
+        kind: 'challenge' as const,
+        ref_id: String(c._id),
+        summary: truncateSummary(c.title as string | undefined) || 'Thử thách',
+        occurred_at:
+          (c.deleted_at as Date | null | undefined) ?? (c as { updatedAt?: Date }).updatedAt
+      }))
+    ].sort((a, b) => {
+      const ta = a.occurred_at ? new Date(a.occurred_at).getTime() : 0
+      const tb = b.occurred_at ? new Date(b.occurred_at).getTime() : 0
+      return tb - ta
+    })
+
+    return [{ ...user[0], moderation_violations }]
   }
   async deleteUserByIdService(user_id: string) {
     const user = await UserModel.findById(user_id)

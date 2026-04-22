@@ -5,6 +5,7 @@ import BMIBarChart from './components/PieChart/PieChart'
 import EventTypeDoughnut from './components/EventTypeDoughnut/EventTypeDoughnut'
 import ChallengeAnalyticsSection from './components/ChallengeAnalyticsSection/ChallengeAnalyticsSection'
 import CommunitySection from './components/CommunitySection/CommunitySection'
+import CommunityHealthSection from './components/CommunityHealthSection/CommunityHealthSection'
 import SportEventCategoryCharts from './components/SportEventCategoryCharts/SportEventCategoryCharts'
 import InfoTooltip from './components/InfoTooltip/InfoTooltip'
 import { dashboard } from '../../apis/adminApi'
@@ -139,6 +140,8 @@ export default function Home() {
           subLabel='thử thách'
         />
       </div>
+
+      <CommunityHealthSection />
 
       {/* ══════════════════════════════════════════════════════════════
           NHÓM 1: 👥 NGƯỜI DÙNG & SỨC KHỎE

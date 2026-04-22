@@ -374,7 +374,7 @@ export default function AdminSportCategory() {
                         <table className='w-full divide-y divide-gray-100 dark:divide-gray-700'>
                             <thead className='bg-gray-50 dark:bg-gray-900'>
                                 <tr>
-                                    {['STT', 'Tên danh mục', 'Loại hình', 'Kcal/đơn vị', 'Hoạt động / đã xóa', 'Hành động'].map(h => (
+                                    {['STT', 'Tên danh mục', 'Loại hình', 'Kcal/đơn vị', 'Hành động'].map(h => (
                                         <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                                             {h}
                                         </th>
@@ -384,7 +384,7 @@ export default function AdminSportCategory() {
                             <tbody className='divide-y divide-gray-50 dark:divide-gray-700'>
                                 {paginatedCategories.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className='text-center py-16'>
+                                        <td colSpan={5} className='text-center py-16'>
                                             <FaDumbbell className='mx-auto text-4xl text-gray-300 mb-3' />
                                             <p className='text-gray-400 text-sm'>
                                                 {showDeleted ? 'Không có danh mục nào đã xóa' : 'Chưa có danh mục nào'}
@@ -436,17 +436,6 @@ export default function AdminSportCategory() {
                                                     {category.kcal_per_unit > 0 && (
                                                         <span className='text-xs text-gray-400 ml-1'>
                                                             {category.type === 'Ngoài trời' ? 'kcal/km' : 'kcal/phút'}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className='px-6 py-4 whitespace-nowrap'>
-                                                    {category.isDeleted ? (
-                                                        <span className='inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400'>
-                                                            <FaTrash size={10} className='shrink-0 opacity-90' aria-hidden /> Đã xóa
-                                                        </span>
-                                                    ) : (
-                                                        <span className='inline-flex min-h-8 items-center justify-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'>
-                                                            Hoạt động
                                                         </span>
                                                     )}
                                                 </td>

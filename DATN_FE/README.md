@@ -1,16 +1,43 @@
-# React + Vite
+# DATN_FE - User Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend cho nguoi dung cuoi cua do an "mang xa hoi the duc the thao cong dong".
 
-Currently, two official plugins are available:
+## Vai tro
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Feed xa hoi: post/comment/like/share, friends/follow, notification.
+- He thong fitness: challenge, training, sport event, tracking.
+- Cac tinh nang bo tro: profile, dashboard, meal plan, calculator.
 
-# How to use
+## Yeu cau
 
-`npm install` or `pnpm install` or `yarn add`
+- Node.js `20.9.0`
+- npm
+- Cau hinh bien moi truong trong `.env` (tham khao `.env.examples`)
 
-`nvm use 20.9.0`
+## Cai dat
 
-`npm run dev` You can play with docs and demos of your packages in local develop environment.
+```bash
+nvm use 20.9.0
+npm install
+```
+
+## Chay development
+
+```bash
+npm run dev
+```
+
+## Build production
+
+```bash
+npm run build
+npm run preview
+```
+
+## Tai lieu bao ve lien quan
+
+- `../docs/DEFENSE_KIT_OVERVIEW.md`
+- `../docs/defense/01-system-architecture.md`
+- `../docs/defense/03-use-cases.md`
+- `../docs/defense/04-api-main-flows.md`
+- `../docs/defense/05-demo-script-5-10-min.md`

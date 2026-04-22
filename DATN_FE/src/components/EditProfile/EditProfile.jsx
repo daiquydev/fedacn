@@ -1,15 +1,11 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
-import { useState, useContext } from 'react'
+import { useState, useContext, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { } from '@tanstack/react-query'
-import { FaUser, FaCamera, FaSave, FaEye, FaEyeSlash, FaLock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import { FaUser, FaSave, FaEye, FaEyeSlash, FaLock, FaCheckCircle, FaTimesCircle, FaInfoCircle } from 'react-icons/fa'
 import toast from 'react-hot-toast'
-import { updateProfile, updateAvatar, updateCoverAvatar, changePassword } from '../../apis/userApi'
+import { updateProfile, changePassword } from '../../apis/userApi'
 import { AppContext } from '../../contexts/app.context'
 import Input from '../../components/InputComponents/Input'
-import useravatar from '../../assets/images/useravatar.jpg'
-import avatarbg from '../../assets/images/avatarbg.jpg'
-import { getAvatarSrc, getImageUrl } from '../../utils/imageUrl'
 
 const GENDER_OPTIONS = [
   { value: '', label: 'Chọn giới tính' },
@@ -30,7 +26,6 @@ const PASSWORD_RULES = [
 function PasswordStrengthIndicator({ password }) {
   if (!password) return null
   const passed = PASSWORD_RULES.filter((r) => r.test(password)).length
-  const total = PASSWORD_RULES.length
 
   return (
     <div className='mt-3 space-y-1.5'>
@@ -69,8 +64,10 @@ function PasswordStrengthIndicator({ password }) {
 }
 
 export default function EditProfile({ user, onClose, onProfileUpdated }) {
-  const { setProfile } = useContext(AppContext)
+  const { setProfile, profile } = useContext(AppContext)
   const [activeTab, setActiveTab] = useState('basic')
+  const isGoogleOnlyAccount =
+    user?.auth_provider === 'google' || profile?.auth_provider === 'google'
   const [showPassword, setShowPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -79,6 +76,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
   const {
     register: registerBasic,
     handleSubmit: handleSubmitBasic,
+    reset: resetBasic,
     formState: { errors: errorsBasic }
   } = useForm({
     defaultValues: {
@@ -89,6 +87,17 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
       gender: user?.gender || ''
     }
   })
+
+  useEffect(() => {
+    if (!user) return
+    resetBasic({
+      name: user.name || '',
+      user_name: user.user_name || '',
+      birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
+      address: user.address || '',
+      gender: user.gender && ['male', 'female', 'other'].includes(user.gender) ? user.gender : ''
+    })
+  }, [user, resetBasic])
 
   // Password form
   const {
@@ -104,25 +113,29 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
     mutationFn: (data) => updateProfile(data)
   })
 
-  const updateAvatarMutation = useSafeMutation({
-    mutationFn: (data) => updateAvatar(data)
-  })
-
-  const updateCoverMutation = useSafeMutation({
-    mutationFn: (data) => updateCoverAvatar(data)
-  })
-
   const changePasswordMutation = useSafeMutation({
     mutationFn: (data) => changePassword(data)
   })
 
+  const buildUpdateProfileBody = (v) => {
+    const body = {}
+    if (v.name != null && String(v.name).trim() !== '') body.name = String(v.name).trim()
+    if (v.user_name != null && String(v.user_name).trim() !== '') body.user_name = String(v.user_name).trim()
+    if (v.birthday) body.birthday = v.birthday
+    if (v.address != null && String(v.address).trim() !== '') body.address = String(v.address).trim()
+    if (['male', 'female', 'other'].includes(v.gender)) body.gender = v.gender
+    return body
+  }
+
   // Handlers
-  const handleBasicSubmit = handleSubmitBasic((data) => {
+  const handleBasicSubmit = handleSubmitBasic((formValues) => {
+    const data = buildUpdateProfileBody(formValues)
     updateProfileMutation.mutate(data, {
       onSuccess: (response) => {
         toast.success('Cập nhật thông tin thành công!')
-        setProfile((prevProfile) => ({ ...prevProfile, ...data }))
-        if (onProfileUpdated) onProfileUpdated(response.data)
+        const updatedUser = response.data?.result
+        setProfile((prevProfile) => ({ ...prevProfile, ...(updatedUser || data) }))
+        if (onProfileUpdated) onProfileUpdated(updatedUser)
       },
       onError: (error) => {
         const msg = error?.response?.data?.errors?.[0]?.msg || 'Có lỗi xảy ra khi cập nhật thông tin'
@@ -150,45 +163,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
     )
   })
 
-  const handleAvatarChange = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      const formData = new FormData()
-      formData.append('image', file)
-
-      updateAvatarMutation.mutate(formData, {
-        onSuccess: (response) => {
-          toast.success('Cập nhật ảnh đại diện thành công!')
-          setProfile((prevProfile) => ({ ...prevProfile, avatar: response.data?.result?.avatar }))
-          if (onProfileUpdated) onProfileUpdated(response.data)
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi cập nhật ảnh đại diện')
-        }
-      })
-    }
-  }
-
-  const handleCoverChange = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      const formData = new FormData()
-      formData.append('image', file)
-
-      updateCoverMutation.mutate(formData, {
-        onSuccess: (response) => {
-          toast.success('Cập nhật ảnh bìa thành công!')
-          if (onProfileUpdated) onProfileUpdated(response.data)
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi cập nhật ảnh bìa')
-        }
-      })
-    }
-  }
-
   const newPassword = watchPassword('new_password')
-  const isPasswordStrong = PASSWORD_RULES.every((rule) => rule.test(newPassword))
 
   return (
     <div className='max-h-[80vh] overflow-y-auto'>
@@ -203,16 +178,6 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
           }`}
         >
           Thông tin cơ bản
-        </button>
-        <button
-          onClick={() => setActiveTab('avatar')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 ${
-            activeTab === 'avatar'
-              ? 'border-green-500 text-green-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Ảnh đại diện
         </button>
         <button
           onClick={() => setActiveTab('password')}
@@ -323,60 +288,30 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
         </form>
       )}
 
-      {/* Avatar Tab */}
-      {activeTab === 'avatar' && (
-        <div className='space-y-6'>
-          <h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-4'>Cập nhật ảnh đại diện</h3>
-
-          {/* Avatar Section */}
-          <div className='space-y-4'>
-            <h4 className='text-md font-medium text-gray-900 dark:text-white'>Ảnh đại diện</h4>
-            <div className='flex items-center gap-4'>
-              <img
-                src={getAvatarSrc(user?.avatar, useravatar)}
-                alt='Avatar'
-                className='w-20 h-20 rounded-full object-cover border-2 border-gray-300'
-                onError={(e) => {
-                  e.currentTarget.onerror = null
-                  e.currentTarget.src = useravatar
-                }}
-              />
-              <div>
-                <label className='inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer'>
-                  <FaCamera />
-                  Chọn ảnh mới
-                  <input type='file' accept='image/*' onChange={handleAvatarChange} className='hidden' />
-                </label>
-                <p className='text-sm text-gray-500 mt-1'>JPG, PNG tối đa 5MB</p>
+      {/* Password Tab */}
+      {activeTab === 'password' && isGoogleOnlyAccount && (
+        <div className='space-y-4'>
+          <h3 className='text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-2'>
+            <FaLock className='text-green-500' />
+            Đổi mật khẩu
+          </h3>
+          <div
+            role='status'
+            className='rounded-xl border border-amber-200/80 dark:border-amber-800/60 bg-amber-50/90 dark:bg-amber-950/35 px-4 py-4 text-sm text-amber-950 dark:text-amber-100'
+          >
+            <div className='flex gap-3'>
+              <FaInfoCircle className='text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5' aria-hidden />
+              <div className='space-y-2'>
+                <p className='font-medium text-amber-900 dark:text-amber-50'>Tài khoản đăng nhập bằng Google</p>
+                <p className='text-amber-900/90 dark:text-amber-100/90 leading-relaxed'>
+                  Bạn đang dùng Google để đăng nhập. Mật khẩu tài khoản này do Google quản lý — bạn không thể đổi mật
+                  khẩu tại đây. Để thay đổi mật khẩu đăng nhập, vui lòng dùng phần bảo mật trong tài khoản Google của
+                  bạn.
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Cover Photo Section */}
-          <div className='space-y-4'>
-            <h4 className='text-md font-medium text-gray-900 dark:text-white'>Ảnh bìa</h4>
-            <div className='space-y-3'>
-              <img
-                src={getImageUrl(user?.cover_avatar) || avatarbg}
-                alt='Cover'
-                className='w-full h-32 object-cover rounded-lg border-2 border-gray-300'
-                onError={(e) => {
-                  e.currentTarget.onerror = null
-                  e.currentTarget.src = avatarbg
-                }}
-              />
-              <div>
-                <label className='inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer'>
-                  <FaCamera />
-                  Chọn ảnh bìa mới
-                  <input type='file' accept='image/*' onChange={handleCoverChange} className='hidden' />
-                </label>
-                <p className='text-sm text-gray-500 mt-1'>JPG, PNG tối đa 5MB</p>
-              </div>
-            </div>
-          </div>
-
-          <div className='flex justify-end pt-4'>
+          <div className='flex justify-end pt-2'>
             <button
               type='button'
               onClick={onClose}
@@ -388,8 +323,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
         </div>
       )}
 
-      {/* Password Tab */}
-      {activeTab === 'password' && (
+      {activeTab === 'password' && !isGoogleOnlyAccount && (
         <form onSubmit={handlePasswordSubmit} className='space-y-4'>
           <h3 className='text-lg font-semibold text-gray-900 dark:text-white flex items-center mb-4'>
             <FaLock className='mr-2 text-green-500' />

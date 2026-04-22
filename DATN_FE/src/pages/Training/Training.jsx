@@ -36,11 +36,12 @@ import OutdoorTrackingStep from './components/OutdoorTrackingStep'
 // Fallback muscle labels for head/neck (non-selectable)
 const FALLBACK_LABELS = { 'head': 'Đầu', 'neck': 'Cổ' }
 
-// Map SVG polygon/path IDs that don't have a dedicated muscle group
-// to the nearest appropriate muscle group so every click selects something
+// Các vùng SVG không trùng name_en trong DB: ánh xạ sang nhóm cơ gần nhất.
+// Lưu ý: 'neck' (cổ trước) và 'trapezius' (cơ thang mặt sau) là hai id khác nhau
+// trong react-body-highlighter — không map neck→trapezius ở đây; dùng body_part_ids
+// (DB) + HIGHLIGHT_EXTRAS để vừa chọn vừa tô đúng cả hai vùng.
 const SVG_TO_MUSCLE_MAP = {
   'head': null,
-  'neck': 'trapezius',
   'knees': 'quadriceps',
   'left-soleus': 'calves',
   'right-soleus': 'calves',
@@ -58,6 +59,13 @@ const SVG_TO_MUSCLE_MAP = {
   'right-shin': 'calves',
   'left-wrist': 'forearm',
   'right-wrist': 'forearm'
+}
+
+// Bổ sung id SVG hợp lệ của thư viện để tô cùng màu với nhóm cơ (khi DB chỉ có id chính).
+const HIGHLIGHT_EXTRAS_BY_GROUP = {
+  trapezius: ['neck'],
+  quadriceps: ['knees'],
+  calves: ['left-soleus', 'right-soleus']
 }
 
 // Activity level options
@@ -1089,50 +1097,52 @@ const MuscleStep = ({ selectedMuscles, onToggle, muscleGroups = [] }) => {
 
   const allMuscleKeys = useMemo(() => muscleGroups.map(mg => mg.name_en), [muscleGroups])
 
+  const resolveSvgToGroupKey = useCallback((svgId) => {
+    if (Object.prototype.hasOwnProperty.call(SVG_TO_MUSCLE_MAP, svgId)) {
+      const mapped = SVG_TO_MUSCLE_MAP[svgId]
+      return mapped === null ? null : mapped
+    }
+    if (allMuscleKeys.includes(svgId)) return svgId
+    const matched = muscleGroups.find(mg => (mg.body_part_ids || []).includes(svgId))
+    if (matched) return matched.name_en
+    if (svgId === 'neck') return 'trapezius'
+    return null
+  }, [allMuscleKeys, muscleGroups])
+
   const bodyData = useMemo(() => {
-    return selectedMuscles.map(muscle => ({
-      name: muscleLabels[muscle] || muscle,
-      muscles: [muscle]
-    }))
-  }, [selectedMuscles, muscleLabels])
+    return selectedMuscles.map(nameEn => {
+      const mg = muscleGroups.find(m => m.name_en === nameEn)
+      const fromDb = (mg?.body_part_ids || []).filter(Boolean)
+      let muscles = fromDb.length ? [...fromDb] : [nameEn]
+      const extras = HIGHLIGHT_EXTRAS_BY_GROUP[nameEn]
+      if (extras) {
+        for (const id of extras) {
+          if (!muscles.includes(id)) muscles.push(id)
+        }
+      }
+      return {
+        name: muscleLabels[nameEn] || nameEn,
+        muscles
+      }
+    })
+  }, [selectedMuscles, muscleLabels, muscleGroups])
 
   const handleClick = useCallback(({ muscle }) => {
-    // Check if this muscle ID needs to be mapped to a different muscle group
-    if (muscle in SVG_TO_MUSCLE_MAP) {
-      const mapped = SVG_TO_MUSCLE_MAP[muscle]
-      if (mapped === null) return // head -> not selectable
-      onToggle(mapped)
-      return
-    }
-    // If the muscle ID is in allMuscleKeys, use it directly
-    if (allMuscleKeys.includes(muscle)) {
-      onToggle(muscle)
-      return
-    }
-    // Fallback: try to find the nearest muscle group by checking if any
-    // muscle group's body_part_ids includes this ID
-    const matched = muscleGroups.find(mg =>
-      (mg.body_part_ids || []).includes(muscle)
-    )
-    if (matched) {
-      onToggle(matched.name_en)
-    }
-  }, [onToggle, allMuscleKeys, muscleGroups])
+    const groupKey = resolveSvgToGroupKey(muscle)
+    if (groupKey == null) return
+    onToggle(groupKey)
+  }, [onToggle, resolveSvgToGroupKey])
 
   const handleMouseOver = useCallback((e) => {
     const target = e.target
     if (target.tagName === 'polygon' || target.tagName === 'path') {
-      let muscleId = target.getAttribute('data-muscle') || target.id
+      const muscleId = target.getAttribute('data-muscle') || target.id
       if (!muscleId) return
-      // Resolve mapped IDs to show the actual muscle group name
-      if (muscleId in SVG_TO_MUSCLE_MAP) {
-        const mapped = SVG_TO_MUSCLE_MAP[muscleId]
-        if (mapped === null) return // head is not selectable
-        muscleId = mapped
-      }
-      setHoveredMuscle(muscleId)
+      const groupKey = resolveSvgToGroupKey(muscleId)
+      if (groupKey == null) return
+      setHoveredMuscle(groupKey)
     }
-  }, [])
+  }, [resolveSvgToGroupKey])
 
   return (
     <div>

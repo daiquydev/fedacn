@@ -165,7 +165,8 @@ export const getProgressController = async (req: Request, res: Response) => {
         id,
         (user_id as string) || currentUserId,
         Number(page) || 1,
-        Number(limit) || 20
+        Number(limit) || 20,
+        currentUserId
     )
 
     return res.json({ message: 'Lấy tiến độ thành công', result })
@@ -174,40 +175,45 @@ export const getProgressController = async (req: Request, res: Response) => {
 export const getLeaderboardController = async (req: Request, res: Response) => {
     const { id } = req.params
     const { page, limit } = req.query
+    const viewerId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getLeaderboard(id, Number(page) || 1, Number(limit) || 50)
+    const result = await challengeService.getLeaderboard(id, Number(page) || 1, Number(limit) || 50, viewerId)
 
     return res.json({ message: 'Lấy bảng xếp hạng thành công', result })
 }
 
 export const getParticipantsController = async (req: Request, res: Response) => {
     const { id } = req.params
+    const viewerId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getParticipants(id)
+    const result = await challengeService.getParticipants(id, viewerId)
 
     return res.json({ message: 'Lấy danh sách người tham gia thành công', result })
 }
 
 export const getUserProgressController = async (req: Request, res: Response) => {
     const { id, userId } = req.params
+    const viewerId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getUserProgress(id, userId)
+    const result = await challengeService.getUserProgress(id, userId, viewerId)
 
     return res.json({ message: 'Lấy tiến độ người dùng thành công', result })
 }
 
 export const getChallengeActivityController = async (req: Request, res: Response) => {
     const { id, activityId } = req.params
+    const viewerId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getChallengeActivity(id, activityId)
+    const result = await challengeService.getChallengeActivity(id, activityId, viewerId)
 
     return res.json({ message: 'Lấy hoạt động thành công', result })
 }
 
 export const getChallengeProgressEntryController = async (req: Request, res: Response) => {
     const { id, progressId } = req.params
+    const viewerId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getChallengeProgressEntry(id, progressId)
+    const result = await challengeService.getChallengeProgressEntry(id, progressId, viewerId)
 
     return res.json({ message: 'Lấy tiến độ thành công', result })
 }

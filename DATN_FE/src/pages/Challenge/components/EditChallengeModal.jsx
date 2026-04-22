@@ -7,14 +7,14 @@ import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
-import moment from 'moment'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
     FaBullseye, FaCalendarAlt, FaUsers, FaImage,
     FaGlobe, FaUserFriends, FaLock, FaFire, FaClipboardList,
-    FaSave, FaClock, FaArrowLeft
+    FaSave, FaClock, FaArrowLeft,
+    FaFileAlt, FaStar, FaInfoCircle, FaCheckCircle
 } from 'react-icons/fa'
 import { BsClockHistory } from 'react-icons/bs'
 
@@ -88,7 +88,7 @@ const NON_OUTDOOR_GOALS = {
 }
 
 // ==================== PREVIEW MINI CARD ====================
-function PreviewCard({ form, selectedCat, outdoorCategories }) {
+function PreviewCard({ form, selectedCat }) {
     const typeConf = CHALLENGE_TYPES.find(t => t.key === form.challenge_type)
     const gradient = TYPE_GRADIENT[form.challenge_type] || 'from-gray-400 to-gray-500'
     const visConf = VISIBILITY_OPTIONS.find(v => v.value === form.visibility)
@@ -307,25 +307,23 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
     const nonOutdoorGoals = NON_OUTDOOR_GOALS[form.challenge_type] || []
 
     const pageHero = isPage && (
-        <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-8 mb-6">
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-10 mb-8">
             <div className="container mx-auto px-4">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="flex items-center text-amber-50 hover:text-white mb-5 transition text-sm"
+                    className="flex items-center text-emerald-50 hover:text-white mb-4 transition text-sm"
                 >
                     <FaArrowLeft className="mr-2" /> Quay lại
                 </button>
-                <div>
-                    <h1 className="text-3xl font-extrabold">Chỉnh sửa thử thách</h1>
-                    <p className="opacity-90 mt-1 text-sm">Cập nhật thông tin và xem trước bên phải (màn hình lớn).</p>
-                </div>
+                <h1 className="text-3xl font-extrabold">Chỉnh Sửa Thử Thách</h1>
+                <p className="opacity-90 mt-1">Cập nhật thông tin chi tiết cho thử thách của bạn</p>
             </div>
         </div>
     )
 
     const modalHeader = !isPage && (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-amber-500 to-orange-600">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-emerald-500 to-teal-600">
             <div className="flex items-center gap-3">
                 <FaTrophy className="text-white text-xl" />
                 <h2 className="text-xl font-black text-white">Chỉnh sửa thử thách</h2>
@@ -336,10 +334,8 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
         </div>
     )
 
-    const formScrollArea = (
-                <div className="flex flex-1 overflow-hidden min-h-0">
-                    {/* LEFT: Form (scrollable) */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0">
+    const challengeFormFields = (
+                        <>
 
                         {/* Loại thử thách (DISABLED - hiển thị readonly) */}
                         <div>
@@ -625,17 +621,16 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                             />
                             <p className="text-[10px] text-gray-400 text-right mt-0.5">{form.description.length}/500</p>
                         </div>
+                        </>
+    )
 
-                    </div>
-
-                    {/* RIGHT: Preview (sticky, hidden on mobile) */}
+    const previewAsideCompact = (
                     <div className="hidden lg:flex w-72 shrink-0 border-l border-gray-200 dark:border-gray-700 flex-col">
                         <div className="p-5 overflow-y-auto flex-1">
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                 <BsClockHistory /> Bản xem trước
                             </p>
-                            <PreviewCard form={form} selectedCat={selectedCat} outdoorCategories={outdoorCategories} />
-
+                            <PreviewCard form={form} selectedCat={selectedCat} />
                             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                                 <p className="text-[11px] text-blue-600 dark:text-blue-400 leading-relaxed">
                                     💡 Bản xem trước cập nhật real-time khi bạn nhập thông tin
@@ -643,7 +638,96 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                             </div>
                         </div>
                     </div>
+    )
+
+    const formScrollArea = (
+                <div className="flex flex-1 overflow-hidden min-h-0">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0">
+                        {challengeFormFields}
+                    </div>
+                    {previewAsideCompact}
                 </div>
+    )
+
+    const formPageLayout = (
+        <form
+            onSubmit={(e) => { e.preventDefault(); handleSubmit() }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+        >
+            <div className="lg:col-span-8 space-y-8">
+                <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
+                    <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
+                        <FaFileAlt className="text-green-500 text-xl" />
+                        <h2 className="text-xl font-bold dark:text-white">1. Thông tin thử thách</h2>
+                    </div>
+                    <div className="space-y-6">
+                        {challengeFormFields}
+                    </div>
+                </section>
+
+                <div className="lg:hidden sticky bottom-4 z-50">
+                    <button
+                        type="submit"
+                        disabled={mutation.isPending}
+                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition disabled:opacity-50"
+                    >
+                        {mutation.isPending ? 'ĐANG LƯU...' : '✨ LƯU THAY ĐỔI'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="lg:col-span-4 lg:sticky lg:top-8 h-fit space-y-6 pb-20 lg:pb-0">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2">
+                            <FaStar className="text-yellow-400" /> BẢN XEM TRƯỚC
+                        </h3>
+                        <div className="flex gap-1">
+                            <div className="w-2 h-2 rounded-full bg-red-400" />
+                            <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                            <div className="w-2 h-2 rounded-full bg-green-400" />
+                        </div>
+                    </div>
+                    <PreviewCard form={form} selectedCat={selectedCat} />
+
+                    <div className="space-y-3 my-8">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.title?.trim() ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Tên thử thách</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.startDate && form.endDate ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Khung thời gian</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.goal_value ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Mục tiêu</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.description?.trim() ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Mô tả</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={mutation.isPending}
+                        className="hidden lg:flex w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-emerald-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50"
+                    >
+                        {mutation.isPending ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : <>✨ LƯU THAY ĐỔI</>}
+                    </button>
+
+                    <div className="mt-6 flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-2xl">
+                        <FaInfoCircle className="text-yellow-600 shrink-0" />
+                        <p className="text-[11px] text-yellow-800 dark:text-yellow-400 font-bold leading-relaxed">
+                            Kiểm tra lại thông tin trước khi lưu.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </form>
     )
 
     const formFooter = (
@@ -655,7 +739,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                         type="button"
                         onClick={handleSubmit}
                         disabled={mutation.isPending}
-                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                     >
                         {mutation.isPending
                             ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Đang lưu...</>
@@ -665,20 +749,15 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                 </div>
     )
 
-    const cardShellClass = isPage
-        ? 'relative w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[calc(100vh-12rem)] min-h-[280px]'
-        : 'relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+    const cardShellClass = 'relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
 
     return (
         <>
             {isPage ? (
-                <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
                     {pageHero}
-                    <div className="container mx-auto px-4 pb-10">
-                        <div className={cardShellClass}>
-                            {formScrollArea}
-                            {formFooter}
-                        </div>
+                    <div className="container mx-auto px-4">
+                        {formPageLayout}
                     </div>
                 </div>
             ) : (

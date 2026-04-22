@@ -565,56 +565,65 @@ class SportEventService {
 
   // Join sport event
   async joinSportEventService(eventId: string, userId: string) {
+    const userObjectId = new Types.ObjectId(userId)
+    const now = new Date()
+
+    const updatedEvent = await SportEventModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        isDeleted: { $ne: true },
+        endDate: { $gte: now },
+        participants_ids: { $ne: userObjectId },
+        $expr: { $lt: ['$participants', '$maxParticipants'] }
+      },
+      {
+        $addToSet: { participants_ids: userObjectId },
+        $inc: { participants: 1 }
+      },
+      { new: true }
+    )
+      .populate('createdBy', 'name avatar')
+      .populate('participants_ids', 'name avatar')
+
+    if (updatedEvent) return updatedEvent
+
     const event = await SportEventModel.findById(eventId)
-
-    if (!event) {
-      throw new Error('Sport event not found')
-    }
-
-    if (event.participants_ids?.includes(new Types.ObjectId(userId))) {
-      throw new Error('Already joined this event')
-    }
-
-    if (event.participants >= event.maxParticipants) {
-      throw new Error('Event is full')
-    }
-
-    // Block joining ended events
-    if (event.endDate && new Date(event.endDate) < new Date()) {
-      throw new Error('Sự kiện đã kết thúc, không thể tham gia')
-    }
-
-    event.participants_ids?.push(new Types.ObjectId(userId))
-    event.participants += 1
-
-    await event.save()
-    return event
+    if (!event) throw new Error('Sport event not found')
+    if (event.isDeleted) throw new Error('Sự kiện đã bị xóa')
+    if (event.participants_ids?.some((id) => id.toString() === userId)) throw new Error('Already joined this event')
+    if (event.endDate && new Date(event.endDate) < now) throw new Error('Sự kiện đã kết thúc, không thể tham gia')
+    if (event.participants >= event.maxParticipants) throw new Error('Event is full')
+    throw new Error('Không thể tham gia sự kiện, vui lòng thử lại')
   }
 
   // Leave sport event
   async leaveSportEventService(eventId: string, userId: string) {
+    const userObjectId = new Types.ObjectId(userId)
+
+    const updatedEvent = await SportEventModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        isDeleted: { $ne: true },
+        createdBy: { $ne: userObjectId },
+        participants_ids: userObjectId
+      },
+      {
+        $pull: { participants_ids: userObjectId },
+        $inc: { participants: -1 }
+      },
+      { new: true }
+    )
+      .populate('createdBy', 'name avatar')
+      .populate('participants_ids', 'name avatar')
+
+    if (updatedEvent) return updatedEvent
+
     const event = await SportEventModel.findById(eventId)
-
-    if (!event) {
-      throw new Error('Sport event not found')
-    }
-
-    // Block creator from leaving — they must manage the event
-    if (event.createdBy?.toString() === userId) {
-      throw new Error('Người tạo sự kiện không thể rời khỏi sự kiện')
-    }
-
-    const index = event.participants_ids?.findIndex((id) => id.toString() === userId)
-
-    if (index === undefined || index === -1) {
-      throw new Error('Not joined this event')
-    }
-
-    event.participants_ids?.splice(index, 1)
-    event.participants -= 1
-
-    await event.save()
-    return event
+    if (!event) throw new Error('Sport event not found')
+    if (event.isDeleted) throw new Error('Sự kiện đã bị xóa')
+    if (event.createdBy?.toString() === userId) throw new Error('Người tạo sự kiện không thể rời khỏi sự kiện')
+    if (!event.participants_ids?.some((id) => id.toString() === userId)) throw new Error('Not joined this event')
+    throw new Error('Không thể rời sự kiện, vui lòng thử lại')
   }
 
   // Get my sport events
@@ -736,51 +745,53 @@ class SportEventService {
 
   // Remove participant from sport event (creator only)
   async removeParticipantService(eventId: string, creatorId: string, targetUserId: string) {
-    const event = await SportEventModel.findById(eventId)
-    if (!event) {
-      throw new Error('Sport event not found')
-    }
+    const creatorObjectId = new Types.ObjectId(creatorId)
+    const targetObjectId = new Types.ObjectId(targetUserId)
 
-    // Verify the requester is the event creator
-    const eventCreatorId = event.createdBy?.toString()
-    if (eventCreatorId !== creatorId) {
-      throw new Error('Only the event creator can remove participants')
-    }
-
-    // Prevent kicking the event creator
-    if (targetUserId === eventCreatorId) {
+    if (targetUserId === creatorId) {
       throw new Error('Không thể xóa người tạo sự kiện')
     }
 
-    // Check if the target user is actually a participant
-    const index = event.participants_ids?.findIndex((id) => id.toString() === targetUserId)
-    if (index === undefined || index === -1) {
-      throw new Error('User is not a participant of this event')
-    }
-
-    // Remove participant
-    event.participants_ids?.splice(index, 1)
-    event.participants = Math.max(0, event.participants - 1)
-    await event.save()
-
-    // Send notification to the removed user
-    const notification = new NotificationModel({
-      sender_id: new Types.ObjectId(creatorId),
-      receiver_id: new Types.ObjectId(targetUserId),
-      content: `đã xóa bạn khỏi sự kiện thể thao "${event.name}"`,
-      name_notification: `Bạn đã bị xóa khỏi sự kiện: ${event.name}`,
-      link_id: eventId,
-      type: NotificationTypes.sportEventInvite,
-      is_read: false
-    })
-    await notification.save()
-
-    // Return updated event with populated fields
-    const updatedEvent = await SportEventModel.findById(eventId)
+    const updatedEvent = await SportEventModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        isDeleted: { $ne: true },
+        createdBy: creatorObjectId,
+        participants_ids: targetObjectId,
+        participants: { $gte: 1 }
+      },
+      {
+        $pull: { participants_ids: targetObjectId },
+        $inc: { participants: -1 }
+      },
+      { new: true }
+    )
       .populate('createdBy', 'name avatar')
       .populate('participants_ids', 'name avatar')
 
-    return updatedEvent
+    if (updatedEvent) {
+      const notification = new NotificationModel({
+        sender_id: creatorObjectId,
+        receiver_id: targetObjectId,
+        content: `đã xóa bạn khỏi sự kiện thể thao "${updatedEvent.name}"`,
+        name_notification: `Bạn đã bị xóa khỏi sự kiện: ${updatedEvent.name}`,
+        link_id: eventId,
+        type: NotificationTypes.sportEventInvite,
+        is_read: false
+      })
+      await notification.save()
+      return updatedEvent
+    }
+
+    const event = await SportEventModel.findById(eventId)
+    if (!event) throw new Error('Sport event not found')
+    if (event.isDeleted) throw new Error('Sự kiện đã bị xóa')
+    const eventCreatorId = event.createdBy?.toString()
+    if (eventCreatorId !== creatorId) throw new Error('Only the event creator can remove participants')
+    if (!event.participants_ids?.some((id) => id.toString() === targetUserId)) {
+      throw new Error('User is not a participant of this event')
+    }
+    throw new Error('Không thể xóa thành viên, vui lòng thử lại')
   }
 
   async createReportSportEventService({

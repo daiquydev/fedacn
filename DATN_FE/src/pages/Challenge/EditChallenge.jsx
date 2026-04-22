@@ -34,7 +34,7 @@ export default function EditChallenge() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-4 px-4">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-gray-500 dark:text-gray-400">Đang tải thử thách...</p>
       </div>
     )

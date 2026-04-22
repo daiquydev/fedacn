@@ -23,11 +23,36 @@ import { useQuery } from '@tanstack/react-query'
 // ─── Config ──────────────────────────────────────────────────────────────────
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-const ICE_SERVERS = {
-    iceServers: [
+/** STUN mặc định + TURN tùy chọn qua biến môi trường (Vite phải prefix VITE_) */
+function buildRtcConfiguration() {
+    const json = import.meta.env.VITE_ICE_SERVERS_JSON
+    if (json && typeof json === 'string') {
+        try {
+            const parsed = JSON.parse(json)
+            if (Array.isArray(parsed)) return { iceServers: parsed }
+            if (parsed && Array.isArray(parsed.iceServers)) return { iceServers: parsed.iceServers }
+        } catch {
+            /* fall through */
+        }
+    }
+    const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' }
     ]
+    const turnUrls = (import.meta.env.VITE_TURN_URLS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    const turnUser = import.meta.env.VITE_TURN_USERNAME || ''
+    const turnCred = import.meta.env.VITE_TURN_CREDENTIAL || ''
+    for (const url of turnUrls) {
+        if (turnUser) {
+            iceServers.push({ urls: url, username: turnUser, credential: turnCred })
+        } else {
+            iceServers.push({ urls: url })
+        }
+    }
+    return { iceServers }
 }
 
 const ABSENCE_THRESHOLD = 10   // seconds of no face before pausing
@@ -100,7 +125,7 @@ function SelfPreviewVideo({ stream, camOn, isMain = false }) {
 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function VideoCallModal({ event, onClose, onCallEnded }) {
+export default function VideoCallModal({ event, sessionId: scheduleSessionId, onClose, onCallEnded }) {
     const { id: eventId } = useParams()
 
     // ── Who is the event creator?
@@ -183,7 +208,8 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
         async function init() {
             // 1. Join API
             try {
-                const res = await joinVideoSession(eventId, {})
+                const joinBody = scheduleSessionId ? { sessionId: scheduleSessionId } : {}
+                const res = await joinVideoSession(eventId, joinBody)
                 if (!cancelled) vsIdRef.current = res?.data?.result?._id
             } catch (err) {
                 toast.error('Không thể tham gia: ' + (err?.response?.data?.message || err.message))
@@ -318,7 +344,7 @@ export default function VideoCallModal({ event, onClose, onCallEnded }) {
         console.log(`[WebRTC] Creating PC for ${remoteSocketId}, initiator=${isInitiator}`)
         console.log(`[WebRTC] Local tracks:`, localStreamRef.current?.getTracks().map(t => t.kind))
 
-        const pc = new RTCPeerConnection(ICE_SERVERS)
+        const pc = new RTCPeerConnection(buildRtcConfiguration())
         peerConnsRef.current[remoteSocketId] = pc
 
         const tracks = localStreamRef.current?.getTracks() || []

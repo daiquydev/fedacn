@@ -359,7 +359,9 @@ export default function ChallengeDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">Rời thử thách?</h3>
-            <p className="text-gray-500 text-sm mb-4">Tiến độ của bạn sẽ bị mất. Bạn có chắc chắn muốn rời?</p>
+            <p className="text-gray-500 text-sm mb-4">
+              Bạn sẽ không ghi thêm tiến độ khi đã rời; dữ liệu đã ghi được giữ. Tham gia lại sẽ tiếp tục từ mức hiện tại. Bạn có chắc muốn rời?
+            </p>
             <div className="flex gap-3">
               <button onClick={() => setShowLeaveModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium text-sm">Hủy</button>
               <button onClick={() => quitMutation.mutate()} disabled={quitMutation.isPending} className="flex-1 py-2.5 rounded-lg bg-red-500 text-white font-medium text-sm hover:bg-red-600 transition disabled:opacity-50">
@@ -546,7 +548,7 @@ export default function ChallengeDetail() {
                     </button>
                     {challenge.hasPreviouslyQuit && (
                       <p className="text-xs text-yellow-300/80 flex items-center gap-1">
-                        ⚠️ Bạn đã rời thử thách này trước đó. Tham gia lại sẽ bắt đầu từ đầu.
+                        Bạn đã từng rời — tham gia lại sẽ tiếp tục tiến độ đã lưu.
                       </p>
                     )}
                   </div>

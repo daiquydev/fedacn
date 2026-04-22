@@ -68,22 +68,35 @@ class Http {
         console.log(error)
         const status = error.response?.status
         const url = error.config?.url || ''
+        /** Chuẩn hóa về dạng /challenges/... hoặc /sport-events/... (axios có thể là path tương đối hoặc URL đầy đủ) */
+        const normalizeApiPath = (raw) => {
+          const noQuery = (raw || '').split('?')[0]
+          const iCh = noQuery.indexOf('/challenges/')
+          if (iCh !== -1) return noQuery.slice(iCh)
+          const iSp = noQuery.indexOf('/sport-events/')
+          if (iSp !== -1) return noQuery.slice(iSp)
+          return noQuery
+        }
+        const urlPath = normalizeApiPath(url)
 
         // Suppress toast for preview card calls (404/410 = item deleted, handled gracefully by component)
-        const isSportEventPreview = /\/sport-events\/[a-f0-9]{24}$/i.test(url) && (status === 404 || status === 410)
+        const isSportEventPreview = /\/sport-events\/[a-f0-9]{24}$/i.test(urlPath) && (status === 404 || status === 410)
         const isChallengePreview =
-          /\/challenges\/[a-f0-9]{24}$/i.test(url) &&
+          /\/challenges\/[a-f0-9]{24}$/i.test(urlPath) &&
           (status === 404 || status === 410 || status === HttpStatusCode.Forbidden)
 
         // Suppress toast for GET requests fetching a single resource that may not exist
         // Components (ActivityPreviewCard, ActivityDetailModal, etc.) handle the empty state silently
         const isGetRequest = error.config?.method?.toLowerCase() === 'get'
         const isResourceFetch = isGetRequest && (
-          /\/sport-events\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}/i.test(url) ||
-          /\/challenges\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}/i.test(url) ||
-          /\/challenges\/[a-f0-9]{24}\/progress\/[a-f0-9]{24}/i.test(url) ||
-          /\/sport-events\/[a-f0-9]{24}\/video-sessions\/[a-f0-9]{24}/i.test(url) ||
-          /\/sport-events\/[a-f0-9]{24}\/sessions\/[a-f0-9]{24}/i.test(url)
+          /\/sport-events\/[a-f0-9]{24}\/activities\/[a-f0-9]{24}$/i.test(urlPath) ||
+          /\/sport-events\/[a-f0-9]{24}\/progress\/leaderboard$/i.test(urlPath) ||
+          // Thử thách: API dùng /activity/ (số ít), không phải /activities/
+          /\/challenges\/[a-f0-9]{24}\/activity\/[a-f0-9]{24}$/i.test(urlPath) ||
+          /\/challenges\/[a-f0-9]{24}\/progress-entry\/[a-f0-9]{24}$/i.test(urlPath) ||
+          /\/challenges\/[a-f0-9]{24}\/progress\/[a-f0-9]{24}$/i.test(urlPath) ||
+          /\/sport-events\/[a-f0-9]{24}\/video-sessions\/[a-f0-9]{24}$/i.test(urlPath) ||
+          /\/sport-events\/[a-f0-9]{24}\/sessions\/[a-f0-9]{24}$/i.test(urlPath)
         )
         const isSilentError = isSportEventPreview || isChallengePreview || isResourceFetch
 

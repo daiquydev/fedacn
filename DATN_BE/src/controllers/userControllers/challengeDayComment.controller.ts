@@ -36,6 +36,7 @@ export const getChallengeDayCommentsController = async (req: Request, res: Respo
       return res.status(400).json({ message: 'targetUserId and date are required' })
     }
 
+    const viewerUserId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
     const commentsData = await challengeDayCommentService.getComments(
       challengeId,
       targetUserId as string,
@@ -43,7 +44,8 @@ export const getChallengeDayCommentsController = async (req: Request, res: Respo
       {
         page: Number(page) || 1,
         limit: Number(limit) || 10
-      }
+      },
+      viewerUserId
     )
 
     return res.json({
@@ -62,10 +64,15 @@ export const getChallengeDayChildCommentsController = async (req: Request, res: 
     const { commentId } = req.params
     const { page, limit } = req.query
 
-    const commentsData = await challengeDayCommentService.getChildComments(commentId, {
-      page: Number(page) || 1,
-      limit: Number(limit) || 10
-    })
+    const viewerUserId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    const commentsData = await challengeDayCommentService.getChildComments(
+      commentId,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10
+      },
+      viewerUserId
+    )
 
     return res.json({
       result: commentsData,

@@ -35,16 +35,27 @@ class SportEventProgressService {
     if (!event) {
       throw new Error('Event not found')
     }
+    if (event.isDeleted) {
+      throw new Error('Sự kiện đã bị xóa')
+    }
 
     const isParticipant = event.participants_ids?.some((id) => id.toString() === userId)
     if (!isParticipant) {
       throw new Error('You must join the event first before adding progress')
     }
 
+    const progressDate = date ? new Date(date) : new Date()
+    if (event.startDate && progressDate < new Date(event.startDate)) {
+      throw new Error('Sự kiện chưa bắt đầu, chưa thể ghi nhận tiến độ')
+    }
+    if (event.endDate && progressDate > new Date(event.endDate)) {
+      throw new Error('Sự kiện đã kết thúc, không thể ghi nhận tiến độ')
+    }
+
     const newProgress = new SportEventProgressModel({
       eventId,
       userId,
-      date: date || new Date(),
+      date: progressDate,
       value,
       unit,
       distance,

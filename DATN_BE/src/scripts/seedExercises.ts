@@ -31,15 +31,25 @@ const muscleGroupSeed = [
     { name: 'Bắp tay trước', name_en: 'biceps', body_part_ids: ['biceps'], description: 'Cơ nhị đầu' },
     { name: 'Cẳng tay', name_en: 'forearm', body_part_ids: ['forearm'], description: 'Cơ cẳng tay' },
     { name: 'Vai trước', name_en: 'front-deltoids', body_part_ids: ['front-deltoids'], description: 'Cơ delta trước' },
-    { name: 'Đùi trước', name_en: 'quadriceps', body_part_ids: ['quadriceps'], description: 'Cơ tứ đầu đùi' },
+    { name: 'Đùi trước', name_en: 'quadriceps', body_part_ids: ['quadriceps', 'knees'], description: 'Cơ tứ đầu đùi' },
     { name: 'Đùi trong', name_en: 'adductor', body_part_ids: ['adductor'], description: 'Cơ khép đùi' },
-    { name: 'Cơ thang', name_en: 'trapezius', body_part_ids: ['trapezius'], description: 'Cơ thang lưng trên' },
+    {
+        name: 'Cơ thang',
+        name_en: 'trapezius',
+        body_part_ids: ['trapezius', 'neck'],
+        description: 'Cơ thang (gồm vùng cổ trước trên sơ đồ mặt trước và cơ thang mặt sau)'
+    },
     { name: 'Lưng trên', name_en: 'upper-back', body_part_ids: ['upper-back'], description: 'Cơ lưng trên' },
     { name: 'Lưng dưới', name_en: 'lower-back', body_part_ids: ['lower-back'], description: 'Cơ lưng dưới' },
     { name: 'Vai sau', name_en: 'back-deltoids', body_part_ids: ['back-deltoids'], description: 'Cơ delta sau' },
     { name: 'Bắp tay sau', name_en: 'triceps', body_part_ids: ['triceps'], description: 'Cơ tam đầu' },
     { name: 'Đùi sau', name_en: 'hamstring', body_part_ids: ['hamstring'], description: 'Cơ đùi sau' },
-    { name: 'Bắp chân', name_en: 'calves', body_part_ids: ['calves'], description: 'Cơ bắp chân' },
+    {
+        name: 'Bắp chân',
+        name_en: 'calves',
+        body_part_ids: ['calves', 'left-soleus', 'right-soleus'],
+        description: 'Cơ bắp chân'
+    },
     { name: 'Mông', name_en: 'gluteal', body_part_ids: ['gluteal'], description: 'Cơ mông' },
     { name: 'Đùi ngoài', name_en: 'abductors', body_part_ids: ['abductors'], description: 'Cơ dạng đùi' }
 ]

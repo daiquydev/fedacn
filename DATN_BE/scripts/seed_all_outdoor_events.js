@@ -8,7 +8,11 @@
  *   lỗi mạng/OSRM → fallback đường thẳng đi–về gần điểm xuất phát.
  * - Chạy lại: xóa activity_tracking + sport_event_progress cũ theo từng sự kiện rồi seed mới.
  *
- * Tuỳ chọn .env: OSRM_BASE_URL=https://router.project-osrm.org (mặc định)
+ * Tuỳ chọn .env:
+ *   OSRM_BASE_URL — mặc định https://router.project-osrm.org
+ *   OSRM_DELAY_MS — khoảng cách tối thiểu giữa các request (mặc định 90)
+ *   OSRM_USE_NEAREST=1 — gọi /nearest trước (chậm hơn, chính xác hơn). Mặc định không gọi (route đã snap).
+ *   SEED_SKIP_OSRM=1 — bỏ OSRM, chỉ đường thẳng đi–về (seed rất nhanh).
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
@@ -25,7 +29,9 @@ function endOfTodayLocal() {
 const TODAY = endOfTodayLocal()
 
 const OSRM_BASE = (process.env.OSRM_BASE_URL || 'https://router.project-osrm.org').replace(/\/$/, '')
-const OSRM_DELAY_MS = Math.max(0, Number(process.env.OSRM_DELAY_MS) || 280)
+const OSRM_DELAY_MS = Math.max(0, Number(process.env.OSRM_DELAY_MS) || 90)
+const OSRM_USE_NEAREST = process.env.OSRM_USE_NEAREST === '1' || process.env.OSRM_USE_NEAREST === 'true'
+const SEED_SKIP_OSRM = process.env.SEED_SKIP_OSRM === '1' || process.env.SEED_SKIP_OSRM === 'true'
 
 const DEFAULT_KCAL = 60
 
@@ -199,26 +205,49 @@ function osrmProfileForCategory(category) {
 
 let __osrmLast = 0
 async function osrmThrottle() {
+  if (SEED_SKIP_OSRM || OSRM_DELAY_MS <= 0) return
   const now = Date.now()
   const wait = OSRM_DELAY_MS - (now - __osrmLast)
   if (wait > 0) await new Promise((r) => setTimeout(r, wait))
   __osrmLast = Date.now()
 }
 
+async function fetchWithRetry(url, init = {}, retries = 3) {
+  let lastErr
+  const headers = { Accept: 'application/json', ...(init.headers || {}) }
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, { ...init, headers })
+      return res
+    } catch (e) {
+      lastErr = e
+      await new Promise((r) => setTimeout(r, 350 * (i + 1)))
+    }
+  }
+  throw lastErr
+}
+
+const __nearestCache = new Map()
 async function osrmNearest(profile, lat, lng) {
+  const key = `${profile}:${lat.toFixed(4)},${lng.toFixed(4)}`
+  if (__nearestCache.has(key)) return __nearestCache.get(key)
   const url = `${OSRM_BASE}/nearest/v1/${profile}/${lng},${lat}?number=1`
-  const res = await fetch(url, { headers: { Accept: 'application/json' } })
+  await osrmThrottle()
+  const res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) return null
   const j = await res.json()
   const loc = j.waypoints && j.waypoints[0] && j.waypoints[0].location
   if (!loc) return null
-  return { lat: loc[1], lng: loc[0] }
+  const out = { lat: loc[1], lng: loc[0] }
+  __nearestCache.set(key, out)
+  return out
 }
 
 /** Trả về mảng {lat,lng} dọc theo đường OSRM, hoặc null */
 async function osrmRouteLine(profile, lat1, lng1, lat2, lng2) {
   const url = `${OSRM_BASE}/route/v1/${profile}/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson&continue_straight=false`
-  const res = await fetch(url, { headers: { Accept: 'application/json' } })
+  await osrmThrottle()
+  const res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) return null
   const j = await res.json()
   if (j.code !== 'Ok' || !j.routes || !j.routes[0] || !j.routes[0].geometry) return null
@@ -227,11 +256,11 @@ async function osrmRouteLine(profile, lat1, lng1, lat2, lng2) {
   return coords.map(([lng, lat]) => ({ lat, lng }))
 }
 
+/** Tối đa 4 lần route (trước đây 7 + nearest → rất chậm với nhiều buổi) */
 async function buildHalfLegOnRoad(profile, slat, slng, bearingDeg, halfMeters) {
-  for (let attempt = 0; attempt < 7; attempt++) {
-    const crow = halfMeters * (1.15 + attempt * 0.32)
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const crow = halfMeters * (1.35 + attempt * 0.55)
     const end = destinationPoint(slat, slng, bearingDeg, crow)
-    await osrmThrottle()
     const line = await osrmRouteLine(profile, slat, slng, end.lat, end.lng)
     if (!line || line.length < 2) continue
     const L = polylineLengthM(line)
@@ -336,6 +365,10 @@ function generateGpsRouteStraightLine(distanceKm, startTime, avgSpeedMs, baseLat
  * GPS theo đường bộ (OSRM) đi–về; fallback straight-line.
  */
 async function generateGpsRouteRoad(distanceKm, startTime, avgSpeedMs, baseLat, baseLng, bearingDeg, category) {
+  if (SEED_SKIP_OSRM) {
+    return generateGpsRouteStraightLine(distanceKm, startTime, avgSpeedMs, baseLat, baseLng, bearingDeg)
+  }
+
   const distanceM = distanceKm * 1000
   const totalDurationS = distanceM / avgSpeedMs
   const halfM = distanceM / 2
@@ -343,10 +376,15 @@ async function generateGpsRouteRoad(distanceKm, startTime, avgSpeedMs, baseLat, 
 
   let path = null
   try {
-    await osrmThrottle()
-    const snapped = await osrmNearest(profile, baseLat, baseLng)
-    const startLat = snapped ? snapped.lat : baseLat
-    const startLng = snapped ? snapped.lng : baseLng
+    let startLat = baseLat
+    let startLng = baseLng
+    if (OSRM_USE_NEAREST) {
+      const snapped = await osrmNearest(profile, baseLat, baseLng)
+      if (snapped) {
+        startLat = snapped.lat
+        startLng = snapped.lng
+      }
+    }
     const halfLeg = await buildHalfLegOnRoad(profile, startLat, startLng, bearingDeg, halfM)
     if (halfLeg && halfLeg.length >= 2) {
       const back = [...halfLeg].reverse()
@@ -570,11 +608,15 @@ async function main() {
     process.exit(1)
   }
 
+  const t0 = Date.now()
   console.log('🔗 Đang kết nối MongoDB...')
   await mongoose.connect(MONGODB_URL)
   console.log('✅ Đã kết nối')
   console.log(`📅 Ngày seed hoạt động: từ ngày bắt đầu sự kiện → ${TODAY.toLocaleDateString('vi-VN')} (cuối ngày)`)
-  console.log(`🗺️  OSRM: ${OSRM_BASE} (profile theo loại: foot / bike / car)\n`)
+  console.log(
+    `🗺️  ${SEED_SKIP_OSRM ? 'GPS: đường thẳng (SEED_SKIP_OSRM=1)' : `OSRM ${OSRM_BASE}`} | delay ${OSRM_DELAY_MS}ms | nearest=${OSRM_USE_NEAREST}`
+  )
+  console.log(`   Gợi ý nhanh: SEED_SKIP_OSRM=1 hoặc OSRM_DELAY_MS=0 (chỉ khi server OSRM cho phép)\n`)
 
   const db = mongoose.connection.db
 
@@ -645,6 +687,7 @@ async function main() {
   console.log('🎉 Hoàn thành seed hoạt động Ngoài trời')
   console.log(`   Sự kiện đã xử lý: ${totalEventsDone}`)
   console.log(`   Tổng người có dữ liệu mới: ${totalUsersSeeded}`)
+  console.log(`⏱️  Tổng thời gian: ${((Date.now() - t0) / 1000).toFixed(1)} giây`)
   console.log(`${'='.repeat(60)}`)
 
   setTimeout(() => {

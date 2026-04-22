@@ -27,7 +27,7 @@ export const getTrainingController = async (req: Request, res: Response) => {
 }
 
 export const createTrainingController = async (req: Request, res: Response) => {
-    const userId = (req as any).decoded_authorization.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
     const { title, description, image, goal_type, goal_value, is_public, difficulty, badge_emoji, start_date_iso, end_date_iso } =
         req.body
 
@@ -50,7 +50,7 @@ export const createTrainingController = async (req: Request, res: Response) => {
 
 export const updateTrainingController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded_authorization.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
     const result = await trainingService.updateTraining(id, userId, req.body)
 
@@ -59,7 +59,7 @@ export const updateTrainingController = async (req: Request, res: Response) => {
 
 export const deleteTrainingController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded_authorization.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
     const result = await trainingService.deleteTraining(id, userId)
 
@@ -68,7 +68,7 @@ export const deleteTrainingController = async (req: Request, res: Response) => {
 
 export const joinTrainingController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded_authorization.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
     const result = await trainingService.joinTraining(id, userId)
 
@@ -77,7 +77,7 @@ export const joinTrainingController = async (req: Request, res: Response) => {
 
 export const quitTrainingController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded_authorization.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
     const result = await trainingService.quitTraining(id, userId)
 
@@ -85,7 +85,7 @@ export const quitTrainingController = async (req: Request, res: Response) => {
 }
 
 export const getMyTrainingsController = async (req: Request, res: Response) => {
-    const userId = (req as any).decoded_authorization.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
     const { page, limit } = req.query
 
     const result = await trainingService.getMyTrainings(userId, Number(page) || 1, Number(limit) || 20)

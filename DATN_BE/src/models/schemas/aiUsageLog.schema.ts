@@ -1,6 +1,11 @@
 import mongoose from 'mongoose'
 
-export type AIFeatureType = 'create_post' | 'analyze_fitness' | 'analyze_workout'
+export type AIFeatureType =
+  | 'create_post'
+  | 'analyze_fitness'
+  | 'analyze_workout'
+  | 'review_meal_image'
+  | 'moderate_community_text'
 
 export interface AIUsageLog {
     feature: AIFeatureType
@@ -12,7 +17,13 @@ const AIUsageLogSchema = new mongoose.Schema<AIUsageLog>(
     {
         feature: {
             type: String,
-            enum: ['create_post', 'analyze_fitness', 'analyze_workout'],
+            enum: [
+                'create_post',
+                'analyze_fitness',
+                'analyze_workout',
+                'review_meal_image',
+                'moderate_community_text'
+            ],
             required: true
         },
         user_id: {

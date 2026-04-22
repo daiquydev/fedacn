@@ -2,6 +2,7 @@ import { Types } from 'mongoose'
 import ChallengeModel from '~/models/schemas/challenge.schema'
 import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.schema'
 import ChallengeProgressModel from '~/models/schemas/challengeProgress.schema'
+import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import ActivityTrackingModel from '~/models/schemas/activityTracking.schema'
 import NotificationModel from '~/models/schemas/notification.schema'
 import FollowModel from '~/models/schemas/follow.schema'
@@ -205,7 +206,11 @@ class ChallengeService {
         difficulty?: string
         userId?: string
     }) {
-        const condition: any = { status: 'active', is_public: true, is_deleted: { $ne: true } }
+        const condition: any = {
+            status: 'active',
+            is_deleted: { $ne: true },
+            $or: [{ visibility: 'public' }, { visibility: { $exists: false }, is_public: true }]
+        }
 
         const searchCond = this.buildChallengeTitleDescriptionSearchCondition(search)
         if (searchCond) {
@@ -464,45 +469,52 @@ class ChallengeService {
             if (existing.status !== 'quit') {
                 return existing
             }
-            // User had quit previously, let them rejoin
-            existing.status = 'in_progress'
-            existing.current_value = 0
-            existing.goal_value = challenge.goal_value
-            existing.is_completed = false
-            existing.completed_at = null
-            existing.last_activity_at = null
-            existing.active_days = []
-            existing.completed_days = []
-            existing.streak_count = 0
-            existing.joined_at = new Date()
-
-            await existing.save()
-
-            challenge.participants_count += 1
-            await challenge.save()
-
-            return existing
+            // Đã từng quit: chỉ khôi phục tham gia — giữ nguyên tiến độ (quitChallenge không xóa/reset các trường đếm)
+            const transitioned = await ChallengeParticipantModel.findOneAndUpdate(
+                {
+                    _id: existing._id,
+                    status: 'quit'
+                },
+                { $set: { status: 'in_progress', goal_value: challenge.goal_value } },
+                { new: true }
+            )
+            if (transitioned) {
+                await ChallengeModel.updateOne({ _id: new Types.ObjectId(challengeId) }, { $inc: { participants_count: 1 } })
+                return transitioned
+            }
+            const latest = await ChallengeParticipantModel.findById(existing._id)
+            if (latest) return latest
+            throw new Error('Không thể tham gia thử thách, vui lòng thử lại')
         }
 
-        const participant = new ChallengeParticipantModel({
-            challenge_id: new Types.ObjectId(challengeId),
-            user_id: new Types.ObjectId(userId),
-            current_value: 0,
-            goal_value: challenge.goal_value,
-            is_completed: false,
-            completed_at: null,
-            last_activity_at: null,
-            active_days: [],
-            completed_days: [],
-            streak_count: 0,
-            status: 'in_progress'
-        })
-        await participant.save()
-
-        challenge.participants_count += 1
-        await challenge.save()
-
-        return participant
+        try {
+            const participant = new ChallengeParticipantModel({
+                challenge_id: new Types.ObjectId(challengeId),
+                user_id: new Types.ObjectId(userId),
+                current_value: 0,
+                goal_value: challenge.goal_value,
+                is_completed: false,
+                completed_at: null,
+                last_activity_at: null,
+                active_days: [],
+                completed_days: [],
+                streak_count: 0,
+                status: 'in_progress'
+            })
+            await participant.save()
+            await ChallengeModel.updateOne({ _id: new Types.ObjectId(challengeId) }, { $inc: { participants_count: 1 } })
+            return participant
+        } catch (e: any) {
+            // Duplicate key (concurrent join) -> return latest row without increasing count twice
+            if (e?.code === 11000) {
+                const latest = await ChallengeParticipantModel.findOne({
+                    challenge_id: new Types.ObjectId(challengeId),
+                    user_id: new Types.ObjectId(userId)
+                })
+                if (latest) return latest
+            }
+            throw e
+        }
     }
 
     /** Hai user là bạn bè (theo dõi lẫn nhau) trong collection follows */
@@ -604,6 +616,24 @@ class ChallengeService {
                 })
             }
         }
+    }
+
+    private async getChallengeForRead(challengeId: string, viewerId?: string) {
+        const challenge = await ChallengeModel.findById(challengeId)
+        if (!challenge) {
+            throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+        }
+        if (challenge.is_deleted) {
+            if (challenge.deleted_from_report_moderation) {
+                throw new ErrorWithStatus({
+                    message: 'Thử thách đã bị gỡ do vi phạm nội dung',
+                    status: HTTP_STATUS.GONE
+                })
+            }
+            throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+        }
+        await this.assertUserCanViewChallenge(challenge, viewerId)
+        return challenge
     }
 
     async joinChallenge(challengeId: string, userId: string) {
@@ -708,13 +738,23 @@ class ChallengeService {
         })
         if (!participant) throw new Error('Bạn chưa tham gia thử thách này')
 
-        participant.status = 'quit'
-        await participant.save()
+        const updatedParticipant = await ChallengeParticipantModel.findOneAndUpdate(
+            {
+                challenge_id: new Types.ObjectId(challengeId),
+                user_id: new Types.ObjectId(userId),
+                status: 'in_progress'
+            },
+            { $set: { status: 'quit' } },
+            { new: true }
+        )
+        if (!updatedParticipant) throw new Error('Bạn chưa tham gia thử thách này')
 
-        challenge.participants_count -= 1
-        await challenge.save()
+        await ChallengeModel.updateOne(
+            { _id: new Types.ObjectId(challengeId), participants_count: { $gt: 0 } },
+            { $inc: { participants_count: -1 } }
+        )
 
-        return participant
+        return updatedParticipant
     }
 
     async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
@@ -820,6 +860,90 @@ class ChallengeService {
 
     // ==================== PROGRESS ====================
 
+    /** Ngày lịch (YYYY-MM-DD) theo múi UTC+7 — cùng logic với getTodayString */
+    private getDateStringVN(d: Date): string {
+        const vnOffset = 7 * 60 * 60 * 1000
+        const vn = new Date(new Date(d).getTime() + vnOffset)
+        return vn.toISOString().split('T')[0]
+    }
+
+    /** Chưa tới ngày bắt đầu thử thách (theo lịch VN) */
+    private isBeforeChallengeStartCalendarVN(challenge: { start_date: Date }): boolean {
+        return this.getTodayString() < this.getDateStringVN(new Date(challenge.start_date))
+    }
+
+    /**
+     * Khung giờ check-in dinh dưỡng (HH:mm theo VN). Hỗ trợ ca qua đêm (vd 22:00–06:00).
+     */
+    private evaluateNutritionTimeWindow(challenge: {
+        challenge_type: string
+        nutrition_sub_type?: string
+        time_window_start?: string
+        time_window_end?: string
+    }): 'valid' | 'invalid_time' {
+        if (challenge.challenge_type !== 'nutrition' || challenge.nutrition_sub_type !== 'time_window') {
+            return 'valid'
+        }
+        if (!challenge.time_window_start || !challenge.time_window_end) return 'valid'
+
+        const nowVN = new Date(Date.now() + 7 * 60 * 60 * 1000)
+        const currentMinutes = nowVN.getUTCHours() * 60 + nowVN.getUTCMinutes()
+        const [startH, startM] = challenge.time_window_start.split(':').map(Number)
+        const [endH, endM] = challenge.time_window_end.split(':').map(Number)
+        const windowStart = startH * 60 + startM
+        const windowEnd = endH * 60 + endM
+
+        if (windowStart <= windowEnd) {
+            if (currentMinutes < windowStart || currentMinutes > windowEnd) return 'invalid_time'
+        } else {
+            if (currentMinutes < windowStart && currentMinutes > windowEnd) return 'invalid_time'
+        }
+        return 'valid'
+    }
+
+    /** Fitness: buổi tập phải của user, đã completed; bài đánh dấu xong phải thuộc challenge và có set hoàn thành trong session */
+    private async assertFitnessWorkoutSession(
+        challenge: { exercises?: { exercise_id: Types.ObjectId }[] },
+        userId: string,
+        data: {
+            workout_session_id?: string
+            completed_exercises?: Array<{ exercise_id: string; completed?: boolean }>
+        }
+    ) {
+        if (!data.workout_session_id) {
+            throw new Error('Vui lòng hoàn tất buổi tập (workout) để ghi nhận thử thách thể dục')
+        }
+        const ws = await WorkoutSessionModel.findOne({
+            _id: new Types.ObjectId(data.workout_session_id),
+            user_id: new Types.ObjectId(userId)
+        })
+        if (!ws) throw new Error('Buổi tập không tồn tại hoặc không thuộc tài khoản của bạn')
+        if (ws.status !== 'completed') {
+            throw new Error('Hoàn tất buổi tập trước khi ghi nhận vào thử thách')
+        }
+
+        const allowed = new Set((challenge.exercises || []).map((e) => e.exercise_id.toString()))
+        const completedList = (data.completed_exercises || []).filter((ce) => ce.completed === true)
+
+        for (const ce of completedList) {
+            const id = ce.exercise_id ? String(ce.exercise_id) : ''
+            if (!id) {
+                throw new Error('Thiếu exercise_id trong danh sách bài hoàn thành')
+            }
+            if (allowed.size > 0 && !allowed.has(id)) {
+                throw new Error('Có bài tập ghi nhận không nằm trong danh sách thử thách')
+            }
+            const exInWs = (ws.exercises || []).find((e: { exercise_id?: Types.ObjectId }) => e.exercise_id?.toString() === id)
+            if (!exInWs) {
+                throw new Error('Buổi tập không khớp với bài tập được ghi nhận')
+            }
+            const hasWork = (exInWs.sets || []).some((s: { completed?: boolean; skipped?: boolean }) => s.completed && !s.skipped)
+            if (!hasWork) {
+                throw new Error('Mỗi bài đánh dấu hoàn thành cần có ít nhất một set đã hoàn thành trong buổi tập')
+            }
+        }
+    }
+
     async addProgress(challengeId: string, userId: string, data: {
         value: number
         notes?: string
@@ -849,22 +973,11 @@ class ChallengeService {
             throw new Error('Thử thách đã hết hạn')
         }
 
-        let validationStatus = 'valid'
-
-        // Time-window check for nutrition challenges
-        if (challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window'
-            && challenge.time_window_start && challenge.time_window_end) {
-            // Get current time in Vietnam timezone (UTC+7)
-            const nowVN = new Date(Date.now() + 7 * 60 * 60 * 1000)
-            const currentMinutes = nowVN.getUTCHours() * 60 + nowVN.getUTCMinutes()
-            const [startH, startM] = challenge.time_window_start.split(':').map(Number)
-            const [endH, endM] = challenge.time_window_end.split(':').map(Number)
-            const windowStart = startH * 60 + startM
-            const windowEnd = endH * 60 + endM
-            if (currentMinutes < windowStart || currentMinutes > windowEnd) {
-                validationStatus = 'invalid_time'
-            }
+        if (this.isBeforeChallengeStartCalendarVN(challenge)) {
+            throw new Error('Thử thách chưa bắt đầu (theo ngày Việt Nam), chưa thể ghi nhận tiến độ')
         }
+
+        const validationStatus = this.evaluateNutritionTimeWindow(challenge)
 
         const participant = await ChallengeParticipantModel.findOne({
             challenge_id: new Types.ObjectId(challengeId),
@@ -873,13 +986,25 @@ class ChallengeService {
         })
         if (!participant) throw new Error('Bạn chưa tham gia thử thách này')
 
+        if (challenge.challenge_type === 'fitness') {
+            await this.assertFitnessWorkoutSession(challenge, userId, data)
+        }
+
+        // Không tin client tự đánh dấu AI đã duyệt (true) — chỉ server/AI sau này mới được set true
+        let aiReviewValid: boolean | null = data.ai_review_valid !== undefined ? data.ai_review_valid : null
+        let aiReviewReason = data.ai_review_reason || ''
+        if (challenge.challenge_type === 'nutrition' && aiReviewValid === true) {
+            aiReviewValid = null
+            aiReviewReason = ''
+        }
+
         // Determine source based on challenge_type
         let source = data.source || 'manual'
         if (challenge.challenge_type === 'nutrition') source = 'photo_checkin'
         else if (challenge.challenge_type === 'fitness') source = 'workout_session'
         else if (challenge.challenge_type === 'outdoor_activity') {
-            // Giữ source từ client: 'gps_tracking' (GPS thực) hoặc 'manual_input' (nhập tay)
-            source = data.source === 'manual_input' ? 'manual_input' : 'gps_tracking'
+            // Schema chỉ cho 'manual' | 'gps_tracking' — nhập tay → manual
+            source = data.source === 'manual_input' ? 'manual' : 'gps_tracking'
         }
 
         // Chỉ tạo ActivityTracking khi có GPS thực (không tạo khi nhập tay)
@@ -918,8 +1043,8 @@ class ChallengeService {
             notes: data.notes || '',
             proof_image: data.proof_image || '',
             food_name: data.food_name || '',
-            ai_review_valid: data.ai_review_valid !== undefined ? data.ai_review_valid : null,
-            ai_review_reason: data.ai_review_reason || '',
+            ai_review_valid: aiReviewValid,
+            ai_review_reason: aiReviewReason,
             distance: data.distance || null,
             duration_minutes: data.duration_minutes || null,
             avg_speed: data.avg_speed || null,
@@ -1025,7 +1150,14 @@ class ChallengeService {
         return { progress, participant }
     }
 
-    async getProgress(challengeId: string, userId?: string, page: number = 1, limit: number = 20) {
+    async getProgress(
+        challengeId: string,
+        userId?: string,
+        page: number = 1,
+        limit: number = 20,
+        viewerId?: string
+    ) {
+        await this.getChallengeForRead(challengeId, viewerId)
         const condition: any = { challenge_id: new Types.ObjectId(challengeId), is_deleted: { $ne: true } }
         if (userId) condition.user_id = new Types.ObjectId(userId)
 
@@ -1043,7 +1175,8 @@ class ChallengeService {
         return { progress: progressList, total, page, limit }
     }
 
-    async getChallengeActivity(challengeId: string, activityId: string) {
+    async getChallengeActivity(challengeId: string, activityId: string, viewerId?: string) {
+        await this.getChallengeForRead(challengeId, viewerId)
         const activity = await ActivityTrackingModel.findOne({
             _id: new Types.ObjectId(activityId),
             challengeId: new Types.ObjectId(challengeId)
@@ -1052,7 +1185,8 @@ class ChallengeService {
         return activity
     }
 
-    async getChallengeProgressEntry(challengeId: string, progressId: string) {
+    async getChallengeProgressEntry(challengeId: string, progressId: string, viewerId?: string) {
+        await this.getChallengeForRead(challengeId, viewerId)
         const entry = await ChallengeProgressModel.findOne({
             _id: new Types.ObjectId(progressId),
             challenge_id: new Types.ObjectId(challengeId),
@@ -1065,11 +1199,10 @@ class ChallengeService {
 
     // ==================== LEADERBOARD ====================
 
-    async getLeaderboard(challengeId: string, page: number = 1, limit: number = 50) {
+    async getLeaderboard(challengeId: string, page: number = 1, limit: number = 50, viewerId?: string) {
         const skip = (page - 1) * limit
 
-        const challenge = await ChallengeModel.findById(challengeId)
-        if (!challenge) throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+        const challenge = await this.getChallengeForRead(challengeId, viewerId)
 
         await this.ensureCreatorIsParticipant(challengeId)
 
@@ -1116,9 +1249,8 @@ class ChallengeService {
 
     // ==================== PARTICIPANTS ====================
 
-    async getParticipants(challengeId: string) {
-        const challenge = await ChallengeModel.findById(challengeId)
-        if (!challenge) throw new Error('Thử thách không tồn tại')
+    async getParticipants(challengeId: string, viewerId?: string) {
+        const challenge = await this.getChallengeForRead(challengeId, viewerId)
 
         await this.ensureCreatorIsParticipant(challengeId)
 
@@ -1221,9 +1353,8 @@ class ChallengeService {
         }
     }
 
-    async getUserProgress(challengeId: string, userId: string) {
-        const challenge = await ChallengeModel.findById(challengeId)
-        if (!challenge) throw new Error('Thử thách không tồn tại')
+    async getUserProgress(challengeId: string, userId: string, viewerId?: string) {
+        const challenge = await this.getChallengeForRead(challengeId, viewerId)
 
         // Get participant info
         const participant = await ChallengeParticipantModel.findOne({
@@ -1448,15 +1579,30 @@ class ChallengeService {
         if (category && category !== 'all') condition.category = category
 
         if (scope === 'public') {
-            // Công khai + bạn bè đều có is_public: true; riêng tư thì is_public: false.
-            // User đã đăng nhập vẫn cần thấy thử thách "chỉ mình tôi" do chính họ tạo (lọc FE theo visibility).
             if (userId) {
+                const iFollow = await FollowModel.find({ user_id: new Types.ObjectId(userId) }).select('follow_id').lean()
+                const iFollowIds = iFollow.map((f: any) => f.follow_id.toString())
+
+                let mutualFriendIds: Types.ObjectId[] = []
+                if (iFollowIds.length > 0) {
+                    const followMeBack = await FollowModel.find({
+                        user_id: { $in: iFollowIds.map((id) => new Types.ObjectId(id)) },
+                        follow_id: new Types.ObjectId(userId)
+                    })
+                        .select('user_id')
+                        .lean()
+                    mutualFriendIds = followMeBack.map((f: any) => new Types.ObjectId(f.user_id.toString()))
+                }
+
                 condition.$or = [
-                    { is_public: true },
-                    { visibility: 'private', creator_id: new Types.ObjectId(userId as string) }
+                    { visibility: 'public' },
+                    { visibility: { $exists: false }, is_public: true },
+                    { visibility: 'private', creator_id: new Types.ObjectId(userId as string) },
+                    { visibility: 'friends', creator_id: { $in: mutualFriendIds } },
+                    { visibility: 'friends', creator_id: new Types.ObjectId(userId as string) }
                 ]
             } else {
-                condition.is_public = true
+                condition.$or = [{ visibility: 'public' }, { visibility: { $exists: false }, is_public: true }]
             }
         } else if (challengeIds !== null) {
             condition._id = { $in: challengeIds }

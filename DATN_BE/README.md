@@ -1,45 +1,62 @@
-## Installation
+# DATN_BE - Backend API
 
-`nvm use 20.9.0`
+Backend cho do an "mang xa hoi the duc the thao cong dong".
+
+## Vai tro
+
+- Cung cap REST API cho user app (`DATN_FE`) va admin app (`DATN_ADMIN_FE`).
+- Xu ly auth/phan quyen, social interactions, challenge/training/sport event.
+- Cung cap notification va socket realtime.
+
+## Yeu cau
+
+- Node.js `20.9.0`
+- npm
+- MongoDB URL hop le trong file `.env`
+
+## Cai dat
 
 ```bash
-$ npm install
+nvm use 20.9.0
+npm install
 ```
 
-## Create .env file
-
-## Running the app
+## Chay development
 
 ```bash
-# development
-$ npm run dev
+npm run dev
 ```
 
-# How to use
+## Chay test
 
-`npm install` or `pnpm install` or `yarn add`
+```bash
+# full test
+npm test
 
-`nvm use 20.9.0`
+# smoke test phuc vu bao ve
+npm test -- src/__tests__/defense-smoke.spec.ts
+```
 
-`npm run dev` You can play with docs and demos of your packages in local develop environment.
+## Build production
 
-## Auditing recipe instructions
+```bash
+npm run build
+npm start
+```
 
-Use the helper script to find recipes (especially ones referenced inside meal plans) that are missing detailed cooking steps:
+## Tai lieu bao ve lien quan
+
+- `../docs/DEFENSE_KIT_OVERVIEW.md`
+- `../docs/defense/01-system-architecture.md`
+- `../docs/defense/02-erd-core-social-fitness.md`
+- `../docs/defense/03-use-cases.md`
+- `../docs/defense/04-api-main-flows.md`
+- `../docs/defense/05-demo-script-5-10-min.md`
+- `../docs/defense/06-automated-test-flows.md`
+
+## Script audit recipe (giu lai cho van hanh)
 
 ```bash
 npm run audit:recipe-instructions
-```
-
-Add the `--apply` flag to generate fallback instructions from `processing_food`, `content`, or `description` fields when possible:
-
-```bash
 npm run audit:recipe-instructions -- --apply --verbose
 ```
-
-Additional flags:
-
-- `--all-recipes`: scan the entire `recipes` collection instead of only those used in meal plans.
-- `--recipe=<id>`: inspect a single recipe document.
-- `--limit=<number>`: set an upper bound on documents fetched (useful for large datasets).
-- `--verbose`: log every affected record while running.

@@ -71,6 +71,81 @@ function pickImage(category: string): string {
     return pool[Math.floor(Math.random() * pool.length)]
 }
 
+/** Trích mô tả người dùng từ prompt FE (để tạo ảnh bìa theo ngữ cảnh). */
+function extractQuotedUserLine(prompt: string): string {
+    const patterns = [
+        /là mô tả sơ bộ của họ:\s*\n+"([\s\S]*?)"\s*\n\nHãy điền/i,
+        /Mô tả người dùng[^:]*:\s*\n+"([\s\S]*?)"\s*\n\nQuy tắc/i,
+        /Mô tả:\s*\n+"([\s\S]*?)"\s*\n\nQuy tắc/i
+    ]
+    for (const re of patterns) {
+        const m = prompt.match(re)
+        if (m?.[1]?.trim()) return m[1].trim().slice(0, 1500)
+    }
+    return ''
+}
+
+function hashSeed(input: string): number {
+    let h = 0
+    for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) | 0
+    return Math.abs(h) % 1_000_000
+}
+
+/** Ảnh bìa “AI”: Pollinations (text-to-image) theo mô tả + loại sự kiện; fallback ảnh stock đã kiểm chứng. */
+function buildPollinationsCoverPrompt(parsed: Record<string, unknown>, userQuote: string): string {
+    const name = String(parsed.name || parsed.title || 'sports event').slice(0, 120)
+    const cat = String(parsed.category || '').trim()
+    const blob = `${userQuote} ${name} ${cat}`.toLowerCase()
+
+    let scene =
+        'vietnam community sports event, energetic people, outdoor daylight, photorealistic wide shot, cinematic'
+    if (/bơi|swim|pool|hồ bơi/.test(blob)) {
+        scene =
+            'competitive swimming pool race vietnam, water splashes, sports photography, wide angle, natural light'
+    } else if (/đạp|bike|xe đạp|cycling|tour/.test(blob)) {
+        scene =
+            'group road cycling race vietnam morning, cyclists in motion, sport photography, trees and city background'
+    } else if (/chạy|marathon|giải chạy|5k|10k|21k|42k|road race|fun run/.test(blob)) {
+        scene =
+            'road running race vietnam urban park, many runners, morning golden light, marathon atmosphere, wide banner'
+    } else if (/bóng đá|football|soccer|đá banh/.test(blob)) {
+        scene = 'football soccer match on field vietnam, stadium evening lights, dynamic action'
+    } else if (/bóng rổ|basketball/.test(blob)) {
+        scene = 'indoor basketball court game, dynamic jump shot, sports arena lighting'
+    } else if (/tennis|cầu lông|badminton/.test(blob)) {
+        scene = 'tennis or badminton court match action, indoor or outdoor court vietnam'
+    } else if (/yoga|pilates|zumba/.test(blob)) {
+        scene = 'group yoga pilates class bright studio, calm energy, vietnam fitness community'
+    } else if (/gym|fitness|workout|tập tạ|tập gym|crossfit|tập luyện/.test(blob)) {
+        scene = 'modern gym workout training dumbbells barbells, motivational fitness photography'
+    } else if (/ăn|meal|nutrition|bữa|healthy|dinh dưỡng|detox|giảm cân|chế độ ăn/.test(blob)) {
+        scene =
+            'colorful healthy vietnamese meal bowls, fresh vegetables protein, food photography top view, vibrant'
+    } else if (String(parsed.eventType || '').includes('Trong nhà') || /\btrong nhà\b/.test(blob)) {
+        scene = 'indoor sports hall fitness class vietnam, bright space, active participants'
+    }
+
+    const q = `${name}, ${scene}, 8k detail, no text no watermark no logo`.replace(/\s+/g, ' ').trim()
+    return q.slice(0, 400)
+}
+
+function resolveCoverImageUrl(parsed: Record<string, unknown>, fullPrompt: string): string {
+    const useStock = String(process.env.AI_COVER_IMAGE_MODE || '').toLowerCase() === 'stock'
+    if (useStock) {
+        return pickImage(String(parsed.category || ''))
+    }
+    const userQuote = extractQuotedUserLine(fullPrompt)
+    try {
+        const prompt = buildPollinationsCoverPrompt(parsed, userQuote)
+        const seed = hashSeed(
+            `${parsed.name || parsed.title || ''}|${parsed.category || ''}|${userQuote.slice(0, 120)}`
+        )
+        return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=720&seed=${seed}&nologo=true`
+    } catch {
+        return pickImage(String(parsed.category || ''))
+    }
+}
+
 /**
  * POST /api/ai/generate
  * Proxy to Groq (free) to avoid browser CORS. Injects verified image URL.
@@ -112,11 +187,11 @@ aiRouter.post('/generate', async (req: Request, res: Response) => {
         const data = response.data
         let text = data?.choices?.[0]?.message?.content || ''
 
-        // ---- Inject a verified working image URL ----
+        // ---- Ảnh bìa: tạo theo mô tả (Pollinations) hoặc ảnh stock theo category ----
         try {
             const cleaned = text.replace(/```(?:json)?\n?/gi, '').replace(/```/g, '').trim()
-            const parsed = JSON.parse(cleaned)
-            parsed.image = pickImage(parsed.category || '')
+            const parsed = JSON.parse(cleaned) as Record<string, unknown>
+            parsed.image = resolveCoverImageUrl(parsed, prompt)
             text = JSON.stringify(parsed)
         } catch {
             // If parsing fails, still return the raw text and let FE handle it

@@ -9,10 +9,13 @@ import { FaUserEdit } from 'react-icons/fa'
 export default function ModalUpdateProfile({ handleCloseModalUpdateProfile, user }) {
   const { setProfile } = useContext(AppContext)
 
-  const handleProfileUpdated = (updatedUser) => {
+  const handleProfileUpdated = (payload) => {
     queryClient.invalidateQueries({ queryKey: ['me'] })
-    setProfile(updatedUser)
-    setProfileToLS(updatedUser)
+    const userDoc = payload && typeof payload === 'object' && 'result' in payload ? payload.result : payload
+    if (userDoc && (userDoc._id || userDoc.email)) {
+      setProfile(userDoc)
+      setProfileToLS(userDoc)
+    }
     handleCloseModalUpdateProfile()
   }
 

@@ -717,6 +717,12 @@ class UsersService {
         status: HTTP_STATUS.NOT_FOUND
       })
     }
+    if (user.auth_provider === 'google') {
+      throw new ErrorWithStatus({
+        message: USER_MESSAGE.GOOGLE_ACCOUNT_CANNOT_CHANGE_PASSWORD,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
     const compare = await comparePassword(old_password, user.password)
     if (!compare) {
       throw new ErrorWithStatus({

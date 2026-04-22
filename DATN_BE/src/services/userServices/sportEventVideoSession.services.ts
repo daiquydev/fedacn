@@ -1,10 +1,10 @@
 import SportEventVideoSessionModel from '~/models/schemas/sportEventVideoSession.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
-import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportCategoryModel from '~/models/schemas/sportCategory.schema'
 import { Types } from 'mongoose'
 import { roundKcal } from '~/utils/math.utils'
+import { capVideoSessionSeconds, resolveIndoorSessionIdForJoin } from './sportEventVideoSession.helpers'
 
 // ==================== CALORIE CALCULATION ====================
 // Lấy kcal_per_unit từ SportCategory (kcal/phút cho Trong nhà)
@@ -46,6 +46,9 @@ class SportEventVideoSessionService {
         // 1. Verify event exists and user is a participant
         const event = await SportEventModel.findById(eventId)
         if (!event) throw new Error('Sự kiện không tồn tại')
+        if (event.eventType !== 'Trong nhà') {
+            throw new Error('Chỉ sự kiện trong nhà mới có thể tham gia video call')
+        }
 
         const now = new Date()
         // Cho phép join sớm 10 phút trước khi bắt đầu
@@ -84,12 +87,8 @@ class SportEventVideoSessionService {
             })
         }
 
-        // 3. Optionally validate sessionId
-        let validSessionId: Types.ObjectId | undefined
-        if (sessionId) {
-            const session = await SportEventSessionModel.findOne({ _id: sessionId, eventId })
-            if (session) validSessionId = session._id as Types.ObjectId
-        }
+        // 3. Gắn buổi học lịch: sessionId từ client hoặc tự suy theo khung giờ buổi hiện tại
+        const validSessionId = await resolveIndoorSessionIdForJoin(eventId, sessionId, now)
 
         // 4. Create new active video session record
         const videoSession = await SportEventVideoSessionModel.create({
@@ -131,10 +130,17 @@ class SportEventVideoSessionService {
         // 2. Fetch event for category and targetUnit
         const event = await SportEventModel.findById(eventId)
         if (!event) throw new Error('Sự kiện không tồn tại')
+        if (event.eventType !== 'Trong nhà') {
+            throw new Error('Chỉ sự kiện trong nhà mới có thể kết thúc video call')
+        }
 
-        // 3. Calculate derived values
-        const safeTotalSeconds = Math.max(totalSeconds, activeSeconds, 0)
-        const safeActiveSeconds = Math.min(activeSeconds, safeTotalSeconds)
+        const endedAt = new Date()
+        const joinedAt = new Date(lockedSession.joinedAt)
+        const capped = capVideoSessionSeconds(joinedAt, endedAt, activeSeconds, totalSeconds)
+
+        // 3. Calculate derived values (đã giới hạn theo thời gian treo tường server)
+        const safeTotalSeconds = capped.safeTotalSeconds
+        const safeActiveSeconds = capped.safeActiveSeconds
         const kcalPerMinute = await getKcalPerMinute(event.category || '')
         const caloriesBurned = calcCalories(kcalPerMinute, safeActiveSeconds)
         const progressValue = calcProgressValue(event.targetUnit || '', safeActiveSeconds, caloriesBurned)
@@ -143,7 +149,7 @@ class SportEventVideoSessionService {
         const progress = await SportEventProgressModel.create({
             eventId: new Types.ObjectId(eventId),
             userId: new Types.ObjectId(userId),
-            date: new Date(),
+            date: endedAt,
             value: progressValue,
             unit: event.targetUnit || 'phút',
             calories: caloriesBurned,
@@ -158,7 +164,7 @@ class SportEventVideoSessionService {
             vsId,
             {
                 status: 'ended',
-                endedAt: new Date(),
+                endedAt,
                 activeSeconds: safeActiveSeconds,
                 totalSeconds: safeTotalSeconds,
                 caloriesBurned,
@@ -190,6 +196,11 @@ class SportEventVideoSessionService {
 
     // ─── Soft-delete a Video Session ────────────────────────────────────────────
     async softDeleteVideoSessionService(eventId: string, vsId: string, userId: string) {
+        const event = await SportEventModel.findById(eventId)
+        if (!event || event.eventType !== 'Trong nhà') {
+            throw new Error('Chỉ áp dụng cho sự kiện trong nhà')
+        }
+
         const session = await SportEventVideoSessionModel.findOne({
             _id: vsId,
             eventId,
@@ -215,6 +226,8 @@ class SportEventVideoSessionService {
     // ─── Get Video Sessions (history) ──────────────────────────────────────────
     async getVideoSessionsService(eventId: string, userId: string) {
         const event = await SportEventModel.findById(eventId)
+        if (!event || event.eventType !== 'Trong nhà') return []
+
         const startDate = event?.startDate ? new Date(event.startDate) : null
         const dateFilter = startDate ? { joinedAt: { $gte: startDate } } : {}
 
@@ -229,8 +242,9 @@ class SportEventVideoSessionService {
 
     // ─── Get Single Video Session By Id ──────────────────────────────────────────
     async getVideoSessionByIdService(eventId: string, vsId: string, userId: string) {
-        // We might want to allow anyone in the event (or public) to see the session details for feed
-        // If it's for feed, user doesn't strictly have to be the owner, but we can verify event existence.
+        const event = await SportEventModel.findById(eventId)
+        if (!event || event.eventType !== 'Trong nhà') return null
+
         const session = await SportEventVideoSessionModel.findOne({
             _id: vsId,
             eventId,
@@ -243,6 +257,9 @@ class SportEventVideoSessionService {
 
     // ─── Get Active Video Session ───────────────────────────────────────────────
     async getActiveVideoSessionService(eventId: string, userId: string) {
+        const event = await SportEventModel.findById(eventId)
+        if (!event || event.eventType !== 'Trong nhà') return null
+
         const session = await SportEventVideoSessionModel.findOne({
             eventId,
             userId,
@@ -255,6 +272,15 @@ class SportEventVideoSessionService {
     // ─── Aggregate stats ────────────────────────────────────────────────────────
     async getVideoSessionStatsService(eventId: string, userId: string) {
         const event = await SportEventModel.findById(eventId)
+        if (!event || event.eventType !== 'Trong nhà') {
+            return {
+                totalSessions: 0,
+                totalActiveSeconds: 0,
+                totalTotalSeconds: 0,
+                totalCalories: 0
+            }
+        }
+
         const startDate = event?.startDate ? new Date(event.startDate) : null
         const dateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
 

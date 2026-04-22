@@ -81,6 +81,122 @@ const formatTimeInput = (raw) => {
   return digits.slice(0, 2) + ':' + digits.slice(2)
 }
 
+// --- AI điền sự kiện: chuẩn hóa ngày + mục tiêu tập thể (tránh 200 người / 5 km tổng) ---
+const userHintedSingleDaySportEvent = (text) => {
+  const t = (text || '').toLowerCase()
+  return /(một\s*ngày|trong\s*ngày|trong\s*buổi|cùng\s*ngày|giao\s*lưu\s*trong\s*ngày|chỉ\s*diễn\s*ra\s*một\s*ngày)/i.test(t)
+}
+
+const inferRaceDistanceKmFromText = (...parts) => {
+  const raw = parts.filter(Boolean).join(' ').toLowerCase()
+  if (/(\b|\s)(42\s*k|42km|full\s*marathon|marathon\s*đủ|cự ly\s*42)\b/i.test(raw)) return 42
+  if (/(\b|\s)(21\s*k|21km|nửa\s*marathon|half\s*marathon|cự ly\s*21)\b/i.test(raw)) return 21
+  if (/(\b|\s)(10\s*k|10km|cự ly\s*10)\b/i.test(raw)) return 10
+  if (/(\b|\s)(5\s*k|5km|5000\s*m|cự ly\s*5)\b/i.test(raw) || /\b5k\b/i.test(raw)) return 5
+  if (/marathon|giải\s*chạy|chạy\s*bộ|đường\s*chạy|race|fun\s*run/i.test(raw)) return 5
+  return 5
+}
+
+/** targetValue (km) trong app = TỔNG tích lũy cả nhóm trong cả sự kiện; UI chia cho maxParticipants. */
+const normalizeSportEventAIFields = (parsed, userDescription, todayISO) => {
+  const out = { ...parsed }
+  const today = moment(todayISO, 'YYYY-MM-DD', true)
+  const userT = (userDescription || '').trim()
+  const combined = [userT, out.name, out.description, out.detailedDescription].filter(Boolean).join(' ')
+
+  let start = moment(out.startDate, 'YYYY-MM-DD', true)
+  if (!start.isValid() || start.isBefore(today, 'day')) start = today.clone()
+
+  let end = moment(out.endDate, 'YYYY-MM-DD', true)
+  if (!end.isValid() || end.isBefore(start, 'day')) end = start.clone()
+
+  const shortPrompt = userT.length < 40
+  const singleDayOk = userHintedSingleDaySportEvent(userT)
+
+  let spanDays = end.diff(start, 'days')
+  if (!singleDayOk && spanDays < 1 && shortPrompt) {
+    end = start.clone().add(6, 'days')
+    spanDays = end.diff(start, 'days')
+  }
+  if (!singleDayOk && shortPrompt && start.isSame(today, 'day') && end.isSame(today, 'day')) {
+    start = today.clone().add(1, 'day')
+    end = start.clone().add(6, 'days')
+    spanDays = end.diff(start, 'days')
+  }
+
+  let maxP = Number(out.maxParticipants)
+  if (!Number.isFinite(maxP) || maxP < 20) maxP = 80
+  if (maxP > 500) maxP = 500
+  if (shortPrompt && maxP > 150) maxP = 100
+  out.maxParticipants = Math.round(maxP)
+
+  const unit = out.targetUnit || 'km'
+  const raceKm = inferRaceDistanceKmFromText(combined)
+  const tv = Number(out.targetValue)
+  const n = out.maxParticipants
+  const dayStretch = 1 + Math.min(3, spanDays) / 7
+
+  if (unit === 'km') {
+    const minTotal = Math.max(25, Math.round(n * raceKm * 0.35 * dayStretch))
+    let defaultTotal = Math.round(n * raceKm * 0.55 * dayStretch)
+    if (singleDayOk && spanDays < 1) {
+      defaultTotal = Math.round(n * raceKm * 0.5)
+    }
+    if (!Number.isFinite(tv) || tv <= 0) out.targetValue = defaultTotal
+    else if (tv < minTotal) out.targetValue = Math.max(defaultTotal, minTotal)
+  }
+
+  out.startDate = start.format('YYYY-MM-DD')
+  out.endDate = end.format('YYYY-MM-DD')
+  return out
+}
+
+const isValidEventTime = (t) => typeof t === 'string' && /^\d{2}:\d{2}$/.test(t)
+
+/** Bổ sung nội dung / giờ hợp lý khi model trả thiếu hoặc không khớp mô tả. */
+const enrichSportEventTextsAndTime = (parsed, userDescription) => {
+  const out = { ...parsed }
+  const userT = (userDescription || '').trim()
+  const name = (out.name || 'Sự kiện thể thao').trim()
+  const cat = (out.category || '').toLowerCase()
+  const blob = `${userT} ${name} ${out.description || ''} ${cat}`.toLowerCase()
+
+  if (!isValidEventTime(out.eventTime)) {
+    if (/bóng đá|football|đá banh/.test(blob)) out.eventTime = '18:30'
+    else if (/bơi|swim|hồ bơi/.test(blob)) out.eventTime = '06:00'
+    else if (/gym|yoga|zumba|pilates|fitness|trong nhà/i.test(blob) || out.eventType === 'Trong nhà') out.eventTime = '08:00'
+    else out.eventTime = '05:45'
+  }
+
+  if (!out.location?.trim()) {
+    out.location =
+      out.eventType === 'Trong nhà'
+        ? 'Trung tâm thể thao đa năng (Quận 1, TP.HCM) — chi tiết sân sẽ gửi trước giờ G'
+        : 'Khu vực công viên / đường chạy ven sông TP.HCM (BTC thông báo điểm hẹn trước ngày diễn ra)'
+  }
+
+  if (!out.description?.trim()) {
+    out.description = `${name}: đồng hành cộng đồng vận động, ghi nhận tiến độ nhóm qua ứng dụng.`.slice(0, 150)
+  }
+  if (!out.detailedDescription?.trim()) {
+    const hint = userT ? ` Nội dung gợi ý từ người tạo: ${userT}` : ''
+    out.detailedDescription =
+      `Sự kiện "${name}" (${out.category || 'thể thao'}) từ ${out.startDate} đến ${out.endDate}. Người tham gia đồng bộ hoạt động trên app; BTC cập nhật lịch và quy định an toàn.${hint}`.slice(
+        0,
+        1200
+      )
+  }
+  if (!out.requirements?.trim()) {
+    out.requirements =
+      'Sức khỏe ổn định; tuân thủ an toàn giao thông / sân bãi; có smartphone cài ứng dụng để ghi nhận hoạt động; đọc kỹ thông báo BTC.'
+  }
+  if (!out.benefits?.trim()) {
+    out.benefits =
+      'Gắn kết cộng đồng yêu thể thao; theo dõi mục tiêu tập thể; duy trì thói quen vận động đều đặn; nhận thành tích nhóm trên nền tảng.'
+  }
+  return out
+}
+
 // ============================================================
 
 const CreateSportEvent = () => {
@@ -170,20 +286,26 @@ Người dùng muốn tạo một sự kiện thể thao. Dưới đây là mô 
 Hãy điền đầy đủ tất cả các trường sau thành một JSON object hợp lệ. Tuân thủ các quy tắc:
 1. Nếu mô tả đã có thông tin rõ ràng cho một trường → dùng thông tin đó.
 2. Nếu không có → tự suy luận hợp lý, thực tế, phù hợp văn hóa Việt Nam và ngữ cảnh thể thao.
-3. Ngày: định dạng YYYY-MM-DD. startDate phải >= ${today}. endDate phải >= startDate. Chọn ngày trong tương lai gần, hợp lý.
+3. Ngày: định dạng YYYY-MM-DD. startDate phải >= ${today}. endDate phải >= startDate.
+   - Nếu mô tả RẤT NGẮN (chỉ kiểu "tạo giải chạy bộ") và KHÔNG nói "một ngày"/"trong ngày" → mặc định khoảng 7 ngày (endDate = startDate + 6 ngày), bắt đầu từ ngày mai hoặc cuối tuần tới, KHÔNG gom cả sự kiện vào hôm nay.
+   - Chỉ để startDate = endDate khi mô tả là sự kiện một buổi / một ngày rõ ràng.
 4. eventType: chỉ được là "Ngoài trời" hoặc "Trong nhà".
    - Hoạt động ngoài trời (category thuộc list: ${outdoorCategories}) → "Ngoài trời"
    - Hoạt động trong nhà (category thuộc list: ${indoorCategories}) → "Trong nhà"
 5. category: phải là một trong các giá trị sau (chọn phù hợp nhất với mô tả): ${allCategoryNames}. Chỉ điền tên category (không kèm loại).
 6. targetUnit: chỉ được là một trong: "km", "kcal", "phút", "giờ". Chọn đơn vị phù hợp với loại hoạt động.
-7. image: Mặc định để ''
-8. description: tối đa 150 ký tự, ngắn gọn, hấp dẫn, tiếng Việt.
-9. detailedDescription: đoạn văn dài hơn, trình bày lịch trình, thông tin chi tiết, tiếng Việt.
-10. requirements: yêu cầu tham gia ngắn gọn (VD: Sức khỏe ổn định, có kinh nghiệm...).
-11. benefits: lợi ích khi tham gia ngắn gọn (VD: Voucher ưu đãi, huy chương, mạng lưới kết nối...).
-12. maxParticipants: số nguyên hợp lý (từ 20 đến 500).
-13. Vị trí địa lý: Nếu không nêu cụ thể, hãy chọn một địa điểm thực tế, ngẫu nhiên trong thành phố Hồ Chí Minh, phù hợp với loại sự kiện.
-14. Chỉ trả về JSON object, không có markdown, không có giải thích, không có ký tự thừa.
+7. targetValue (CỰC KỲ QUAN TRỌNG): đây là TỔNG mục tiêu cả nhóm phải tích lũy trong TOÀN BỘ khoảng startDate→endDate (ứng dụng sẽ chia cho maxParticipants để hiển thị góp phần mỗi người). KHÔNG được nhầm với cự ly một vòng chạy (vd 5km).
+   - Với chạy bộ ngoài trời, đơn vị km: targetValue nên xấp xỉ maxParticipants × (cự ly gợi ý mỗi người trong kỳ, vd 3–8 km/người) × số ngày diễn ra / 7, tối thiểu đủ lớn để không bị "200 người nhưng chỉ 5 km tổng".
+   - Ví dụ: giải 5km, ~100 người, sự kiện 7 ngày → targetValue (km) kiểu vài trăm đến vài nghìn tùy độ tham gia kỳ vọng, không phải số 5.
+8. image: luôn để chuỗi rỗng "" (hệ thống sẽ tự gán ảnh bìa theo mô tả + loại sự kiện).
+9. description: tối đa 150 ký tự, tiếng Việt; phải khớp chủ đề với name và category (không nói lan man sang môn khác).
+10. detailedDescription: 2–5 đoạn tiếng Việt: giới thiệu, lịch trình gợi ý theo startDate/endDate, quy định chung, liên hệ/BTC gợi ý; mọi số liệu (km, người) phải thống nhất với các trường JSON.
+11. requirements: 1–3 câu tiếng Việt, liên quan trực tiếp môn/category (vd chạy bộ → sức khỏe tim mạch, giày thể thao; bơi → biết bơi/khăn…).
+12. benefits: 1–3 câu tiếng Việt, cụ thể theo loại sự kiện (huy chương ảo, cộng đồng, quà tài trợ gợi ý…), không copy mẫu chung chung nếu mô tả đã có ý riêng.
+13. maxParticipants: từ 20 đến 500; mô tả ngắn không nêu quy mô → ưu tiên 60–120 thay vì luôn 200.
+14. Vị trí địa lý: Nếu không nêu cụ thể → địa điểm thật tại TP.HCM khớp category (chạy → công viên/ven sông; bơi → hồ bơi công cộng có tên; gym → khu vực quận gợi ý).
+15. eventTime: HH:mm, hợp lý với loại sự kiện (chạy/đạp sáng 05:00–06:30; bóng đá ngoài trời thường 17:30–19:30; gym/yoga trong nhà 08:00–10:00 hoặc 18:00–20:00).
+16. Chỉ trả về JSON object, không có markdown, không có giải thích, không có ký tự thừa.
 
 JSON output (chỉ object, không gì khác):
 {
@@ -221,7 +343,11 @@ JSON output (chỉ object, không gì khác):
 
       // Strip markdown code fences if present (though response_format json_object should prevent it, just to be sure)
       const cleaned = rawText.replace(/```(?:json)?\n?/gi, '').replace(/```/g, '').trim()
-      const parsed = JSON.parse(cleaned)
+      const parsedRaw = JSON.parse(cleaned)
+      const parsed = enrichSportEventTextsAndTime(
+        normalizeSportEventAIFields(parsedRaw, aiDescription.trim(), today),
+        aiDescription.trim()
+      )
 
       // Validate and apply fields
       setNewEvent(prev => {
@@ -244,7 +370,7 @@ JSON output (chỉ object, không gì khác):
         if (['km', 'kcal', 'phút', 'giờ'].includes(parsed.targetUnit)) {
           updated.targetUnit = parsed.targetUnit
         }
-        if (parsed.image) updated.image = parsed.image
+        if (parsed.image && String(parsed.image).startsWith('http')) updated.image = parsed.image
         if (parsed.description) updated.description = parsed.description.slice(0, 150)
         if (parsed.detailedDescription) updated.detailedDescription = parsed.detailedDescription
         if (parsed.requirements) updated.requirements = parsed.requirements

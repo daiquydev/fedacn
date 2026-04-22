@@ -3,7 +3,7 @@
  * theo từng bộ môn (category). Từ ngày bắt đầu đến “hôm nay” (VN), nhiều kiểu người.
  *
  * Luồng thật (FE + BE):
- * - OutdoorCheckinModal: nhập tay (value = km, source manual_input → BE lưu gps_tracking|manual tùy) hoặc
+ * - OutdoorCheckinModal: nhập tay (value = km, source manual_input → BE lưu source = manual) hoặc
  *   ChallengeTracking: GPS (value = km, gps_route, source gps_tracking).
  * - addProgress: outdoor + gps_tracking → tạo ActivityTracking (totalDistance mét, gpsRoute, …) + progress.activity_id.
  *   Nhập tay không tạo ActivityTracking (activity_id null).
@@ -15,8 +15,16 @@
  * Chạy sau: npm run seed:challenges && npm run seed:challenge-participants
  *   npm run seed:outdoor-progress
  *
- * Ghi đè:
+ * GPS theo đường bộ (OSRM), fallback đường thẳng — giống seed sự kiện ngoài trời.
+ * Chạy nhanh (không gọi OSRM):
+ *   npm run seed:outdoor-progress:fast
+ *   hoặc SEED_SKIP_OSRM=1 npm run seed:outdoor-progress
+ *
+ * Ghi đè (nên bật khi chạy lại — tránh nhân đôi bản ghi và làm chậm aggregate):
  *   SEED_OUTDOOR_REPLACE=1 npm run seed:outdoor-progress
+ *
+ * Hiệu năng: mỗi người tham gia ghi 1 lần insertMany(activity) + insertMany(progress),
+ * không còn hàng nghìn create() tuần tự (trước đây dễ >30 phút với Atlas).
  * Neo ngày:
  *   SEED_OUTDOOR_AS_OF=2026-04-12 npm run seed:outdoor-progress
  * Mọi thử thách outdoor (không chỉ bản ghi seed ‖fedacn-seed‖):
@@ -25,6 +33,8 @@
 import mongoose from 'mongoose'
 import { config } from 'dotenv'
 import path from 'path'
+
+import { buildGpsRouteForSeed } from './osrmGpsRoute'
 
 import ChallengeModel from '../src/models/schemas/challenge.schema'
 import ChallengeProgressModel from '../src/models/schemas/challengeProgress.schema'
@@ -94,28 +104,6 @@ function atVN(key: string, hourVN: number, minuteVN: number): Date {
   return new Date(`${key}T${pad(hourVN)}:${pad(minuteVN)}:00+07:00`)
 }
 
-function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-/** Điểm đích cách (lat,lng) một quãng great-circle ~distKm theo bearingDeg (0=Bắc). */
-function destinationLatLng(lat: number, lng: number, bearingDeg: number, distKm: number) {
-  const R = 6371
-  const br = (bearingDeg * Math.PI) / 180
-  const d = distKm / R
-  const φ1 = (lat * Math.PI) / 180
-  const λ1 = (lng * Math.PI) / 180
-  const φ2 = Math.asin(Math.sin(φ1) * Math.cos(d) + Math.cos(φ1) * Math.sin(d) * Math.cos(br))
-  const λ2 = λ1 + Math.atan2(Math.sin(br) * Math.sin(d) * Math.cos(φ1), Math.cos(d) - Math.sin(φ1) * Math.sin(φ2))
-  return { lat: (φ2 * 180) / Math.PI, lng: (λ2 * 180) / Math.PI }
-}
-
 /** Neo GPS theo bộ môn — khu vực VN khác nhau để bản đồ / route không trùng. */
 function anchorForCategory(category: string): { lat: number; lng: number; label: string } {
   const c = category || ''
@@ -141,40 +129,6 @@ function sportProfile(category: string): SportProfile {
   if (c.includes('Chạy') && c.includes('dài')) return { avgKmh: 10.5, maxKmh: 16, altBase: 12, altAmp: 6 }
   if (c.includes('Chạy')) return { avgKmh: 11.2, maxKmh: 17, altBase: 15, altAmp: 8 }
   return { avgKmh: 10, maxKmh: 18, altBase: 10, altAmp: 6 }
-}
-
-/**
- * Polyline giống lộ trình thật: nội suy start→end + wiggle; tốc độ/độ cao theo profile môn.
- */
-function buildGpsRoute(
-  startLat: number,
-  startLng: number,
-  targetKm: number,
-  seed: number,
-  profile: SportProfile,
-  startMs: number,
-  endMs: number
-): { points: GpsPoint[]; lengthM: number } {
-  const bearing = 28 + (seed % 130)
-  const end = destinationLatLng(startLat, startLng, bearing, Math.max(0.5, targetKm * 0.94))
-  const n = Math.max(28, Math.min(100, Math.round(targetKm * 18)))
-  const points: GpsPoint[] = []
-  let prev = { lat: startLat, lng: startLng }
-  let lengthM = 0
-  for (let i = 0; i <= n; i++) {
-    const f = i / n
-    let lat = startLat + (end.lat - startLat) * f
-    let lng = startLng + (end.lng - startLng) * f
-    lat += Math.sin(f * Math.PI * (7 + (seed % 5))) * 0.00026
-    lng += Math.cos(f * Math.PI * (6 + (seed % 4))) * 0.0002
-    if (i > 0) lengthM += haversineM(prev.lat, prev.lng, lat, lng)
-    prev = { lat, lng }
-    const ts = startMs + Math.round(((endMs - startMs) * i) / n)
-    const spdMs = (profile.avgKmh / 3.6) * (0.82 + 0.35 * Math.sin(f * 9 + seed * 0.1))
-    const alt = profile.altBase + profile.altAmp * Math.sin(f * Math.PI * 4 + seed * 0.05)
-    points.push({ lat, lng, timestamp: ts, speed: spdMs, altitude: alt })
-  }
-  return { points, lengthM }
 }
 
 function roundKcal(n: number): number {
@@ -281,6 +235,8 @@ type PatternKind =
   | 'mix_manual'
   /** Phần lớn ngày dưới goal; thỉnh thoảng một ngày đủ (vẫn có GPS). */
   | 'chronic_fail'
+  /** Theo từng ngày: bỏ hẳn / chưa đủ goal / đủ / vượt — trộn giống người chơi thật. */
+  | 'random_daily'
 
 const PATTERNS: PatternKind[] = [
   'perfect',
@@ -290,7 +246,8 @@ const PATTERNS: PatternKind[] = [
   'almost_end',
   'random_miss',
   'mix_manual',
-  'chronic_fail'
+  'chronic_fail',
+  'random_daily'
 ]
 
 /** Mỗi segment sau khi seed đều được gắn ActivityTracking + polyline GPS (insertSession). */
@@ -360,10 +317,20 @@ function planDay(
     return [{ km: Math.max(0.25, goalKm * 0.38), label: 'Phần lớn ngày không đạt' }]
   }
 
+  if (pattern === 'random_daily') {
+    const h =
+      (dayKey + pattern + String(dayIndex)).split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 1000 / 1000
+    if (h < 0.11) return null
+    if (h < 0.38) return [{ km: Math.max(0.2, goalKm * (0.28 + h * 0.45)), label: 'Chưa đạt goal ngày' }]
+    if (h < 0.91) return [{ km: Math.round((goalKm + h * 0.25) * 100) / 100, label: 'Đạt goal ngày' }]
+    return [{ km: Math.round(goalKm * (1.04 + h * 0.06) * 100) / 100, label: 'Vượt nhẹ goal' }]
+  }
+
   return [{ km: goalKm + (dayIndex % 3) * 0.1, label: 'Buổi chính — đủ tốt' }]
 }
 
-async function insertSession(
+/** Một phiên — chỉ build object, không ghi DB (để insertMany theo lô). */
+async function buildSessionPair(
   ch: OutdoorChallengeLean,
   userId: mongoose.Types.ObjectId,
   dayKey: string,
@@ -374,7 +341,7 @@ async function insertSession(
   sessionLabel: string,
   anchor: { lat: number; lng: number; label: string },
   profile: SportProfile
-) {
+): Promise<{ activityDoc: Record<string, unknown> | null; progressDoc: Record<string, unknown> }> {
   const hourVN = 5 + ((dayIdx + slotIdx * 2 + pIndex) % 14)
   const minuteVN = 8 + ((dayIdx * 7 + slotIdx * 11 + pIndex) % 48)
   const endTime = atVN(dayKey, hourVN, minuteVN)
@@ -385,17 +352,31 @@ async function insertSession(
   const kcalPerKm = ch.kcal_per_unit ?? 0
   const kcal = roundKcal(km * (kcalPerKm > 0 ? kcalPerKm : 60))
 
-  let activityId: mongoose.Types.ObjectId | null = null
   let source: 'gps_tracking' | 'manual' = 'manual'
+  let activityDoc: Record<string, unknown> | null = null
 
   if (km > 0) {
     const seed = dayIdx * 1000 + slotIdx * 100 + pIndex * 17
     const jitterLat = anchor.lat + (seed % 7) * 0.0004 - 0.0012
     const jitterLng = anchor.lng + (seed % 5) * 0.0004 - 0.0008
-    const { points, lengthM } = buildGpsRoute(jitterLat, jitterLng, km, seed, profile, startMs, endTime.getTime())
+    const bearingDeg = 28 + (seed % 130)
+    const avgSpeedMs = avgKmh / 3.6
+    const { points, lengthM } = await buildGpsRouteForSeed({
+      baseLat: jitterLat,
+      baseLng: jitterLng,
+      targetKm: km,
+      bearingDeg,
+      category: ch.category || '',
+      startMs,
+      endMs: endTime.getTime(),
+      avgSpeedMs,
+      altBase: profile.altBase,
+      altAmp: profile.altAmp,
+      seed
+    })
     const distM = lengthM > 200 ? lengthM : km * 1000
     const durSec = durationMin * 60
-    const activity = await ActivityTrackingModel.create({
+    activityDoc = {
       challengeId: ch._id,
       userId,
       activityType: ch.category || 'Ngoài trời',
@@ -412,14 +393,13 @@ async function insertSession(
       gpsRoute: points,
       pauseIntervals: [],
       source: 'challenge_seed'
-    })
-    activityId = activity._id as mongoose.Types.ObjectId
+    }
     source = 'gps_tracking'
   }
 
   const notes = outdoorNotes(ch, km, km > 0 ? 'gps' : 'manual', anchor.label, sessionLabel)
 
-  await ChallengeProgressModel.create({
+  const progressDoc: Record<string, unknown> = {
     challenge_id: ch._id,
     user_id: userId,
     date: endTime,
@@ -439,10 +419,31 @@ async function insertSession(
     exercises_count: null,
     completed_exercises: [],
     source,
-    activity_id: activityId,
+    activity_id: null,
     validation_status: 'valid',
     is_deleted: false
-  })
+  }
+
+  return { activityDoc, progressDoc }
+}
+
+/** Ghi theo lô: 2 round-trip Mongo thay vì 2 × N lần create. */
+async function flushParticipantSessions(
+  activityDocs: Record<string, unknown>[],
+  progressRows: { doc: Record<string, unknown>; activityIndex: number | null }[]
+) {
+  if (progressRows.length === 0) return
+  let insertedIds: mongoose.Types.ObjectId[] = []
+  if (activityDocs.length > 0) {
+    const inserted = await ActivityTrackingModel.insertMany(activityDocs, { ordered: true })
+    insertedIds = inserted.map((d) => d._id as mongoose.Types.ObjectId)
+  }
+  for (const row of progressRows) {
+    if (row.activityIndex != null && insertedIds[row.activityIndex]) {
+      row.doc.activity_id = insertedIds[row.activityIndex]
+    }
+  }
+  await ChallengeProgressModel.insertMany(progressRows.map((r) => r.doc))
 }
 
 async function main() {
@@ -451,8 +452,12 @@ async function main() {
     process.exit(1)
   }
 
+  const t0 = Date.now()
   await mongoose.connect(MONGODB_URL)
   console.log('Đã kết nối MongoDB')
+  console.log(
+    `GPS: SEED_SKIP_OSRM=${process.env.SEED_SKIP_OSRM || '(unset)'} (1 = bỏ OSRM) | OSRM_DELAY_MS=${process.env.OSRM_DELAY_MS ?? '90'}`
+  )
 
   const asOf = process.env.SEED_OUTDOOR_AS_OF ? new Date(process.env.SEED_OUTDOOR_AS_OF) : new Date()
   const lastVN = toVNDateKey(asOf)
@@ -528,11 +533,18 @@ async function main() {
       .limit(MAX_USERS)
       .lean()
 
+    console.log(`→ "${ch.title}" (${String(ch._id)}): ${parts.length} người × ${totalDays} ngày — ghi theo lô (insertMany)`)
+
     let pIndex = 0
     for (const p of parts) {
-      const pattern = PATTERNS[pIndex % PATTERNS.length]
+      /** Mỗi người một “kiểu chơi” ngẫu nhiên → có ngày đủ goal, có ngày thiếu / bỏ */
+      const pattern = PATTERNS[Math.floor(Math.random() * PATTERNS.length)]
       pIndex++
       const uid = p.user_id as mongoose.Types.ObjectId
+      const tUser = Date.now()
+
+      const activityDocs: Record<string, unknown>[] = []
+      const batchProgress: { doc: Record<string, unknown>; activityIndex: number | null }[] = []
 
       for (let dayIdx = 0; dayIdx < dayKeys.length; dayIdx++) {
         const dayKey = dayKeys[dayIdx]
@@ -541,18 +553,29 @@ async function main() {
 
         let slot = 0
         for (const seg of plan) {
-          await insertSession(ch, uid, dayKey, slot, pIndex, dayIdx, seg.km, seg.label, anchor, profile)
-          slot++
+          const pair = await buildSessionPair(ch, uid, dayKey, slot, pIndex, dayIdx, seg.km, seg.label, anchor, profile)
+          let activityIndex: number | null = null
+          if (pair.activityDoc) {
+            activityIndex = activityDocs.length
+            activityDocs.push(pair.activityDoc)
+          }
+          batchProgress.push({ doc: pair.progressDoc, activityIndex })
           progressRows++
           if (seg.km > 0) sessions++
+          slot++
         }
       }
 
+      await flushParticipantSessions(activityDocs, batchProgress)
       await recalculateParticipantOutdoor(ch, uid)
+      console.log(
+        `   [${pIndex}/${parts.length}] user ${String(uid).slice(-6)}… ${batchProgress.length} progress, ${activityDocs.length} activity — ${((Date.now() - tUser) / 1000).toFixed(1)}s`
+      )
     }
   }
 
   console.log(`Đã tạo ~${sessions} activity GPS + ${progressRows} challenge_progress outdoor.`)
+  console.log(`Thời gian chạy: ${((Date.now() - t0) / 1000).toFixed(1)} giây`)
   await mongoose.disconnect()
   console.log('Đã ngắt kết nối.')
 }

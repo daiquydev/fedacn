@@ -477,15 +477,15 @@ export default function AdminSportEvent() {
                             {/* Label */}
                             <span className='flex flex-col gap-0.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
                                 <span className='flex items-center gap-1.5'><FaChartBar size={12} className='shrink-0' /> Thống kê</span>
-                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo trang hiện tại (không phải tổng toàn hệ thống)</span>
+                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo danh sách hiện tại (không phải tổng toàn hệ thống)</span>
                             </span>
 
                             {/* 4 stat pills */}
                             {[
-                                { label: 'Tổng (lọc) / trên trang', value: `${listTotal} / ${activeEvents.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                { label: 'Đang diễn ra (trang)', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                { label: 'Trung bình thành viên (trang)', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                                { label: 'Ngoài trời / Trong nhà (trang)', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                { label: 'Tổng (lọc) / hiển thị', value: `${listTotal} / ${activeEvents.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'Trung bình thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'Ngoài trời / Trong nhà', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
@@ -708,7 +708,7 @@ export default function AdminSportEvent() {
                             <table className='w-full divide-y divide-gray-200 dark:divide-slate-700'>
                                 <thead className='bg-gray-50 dark:bg-gray-900'>
                                     <tr>
-                                        {['STT', 'Sự kiện', 'Danh mục / Loại', 'Thời gian', 'Địa điểm', 'Người tham gia', 'Tiến độ & giai đoạn', 'Người tạo', 'Hoạt động / đã xóa', 'Hành động'].map(h => (
+                                        {['STT', 'Sự kiện', 'Danh mục / Loại', 'Thời gian', 'Địa điểm', 'Người tham gia', 'Tiến độ & giai đoạn', 'Người tạo', 'Hành động'].map(h => (
                                             <th key={h} className='px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap'>{h}</th>
                                         ))}
                                     </tr>
@@ -716,7 +716,7 @@ export default function AdminSportEvent() {
                                 <tbody className='divide-y divide-gray-100 dark:divide-slate-700'>
                                     {events.length === 0 ? (
                                         <tr>
-                                            <td colSpan={10} className='text-center py-14'>
+                                            <td colSpan={9} className='text-center py-14'>
                                                 <FaCalendarAlt className='mx-auto text-4xl text-gray-300 mb-3' />
                                                 <p className='text-gray-400 text-sm'>Không có sự kiện nào</p>
                                             </td>
@@ -839,14 +839,6 @@ export default function AdminSportEvent() {
                                                     )}
                                                     <span className='text-xs text-gray-500 dark:text-gray-400 max-w-[88px] truncate'>{creator?.name || creator?.username || '—'}</span>
                                                 </div>
-                                            </td>
-                                            {/* Status */}
-                                            <td className='px-4 py-3 whitespace-nowrap'>
-                                                {ev.isDeleted ? (
-                                                    <span className='inline-flex min-h-8 items-center justify-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900 dark:text-red-300'>Đã xóa</span>
-                                                ) : (
-                                                    <span className='inline-flex min-h-8 items-center justify-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'>Hoạt động</span>
-                                                )}
                                             </td>
                                             {/* Actions */}
                                             <td className='px-4 py-3 whitespace-nowrap'>

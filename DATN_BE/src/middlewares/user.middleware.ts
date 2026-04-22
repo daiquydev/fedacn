@@ -1,4 +1,5 @@
 import { checkSchema } from 'express-validator'
+import mongoose from 'mongoose'
 import { AUTH_USER_MESSAGE, USER_MESSAGE } from '~/constants/messages'
 import UserModel from '~/models/schemas/user.schema'
 import { validate } from '~/utils/validation'
@@ -95,14 +96,24 @@ export const updateProfileValidator = validate(
         trim: true,
         custom: {
           options: async (value, { req }) => {
-            const currentUserId = (req as any).decoded_authorization?.user_id
+            const currentUserId = (req as any).decoded_authorization?.user_id as string | undefined
+            if (!currentUserId || value == null || value === '') return true
+
+            const me = await UserModel.findById(currentUserId).select('user_name').lean()
+            if (me?.user_name === value) return true
+
+            const excludeId = mongoose.Types.ObjectId.isValid(currentUserId)
+              ? new mongoose.Types.ObjectId(currentUserId)
+              : currentUserId
+
             const user = await UserModel.findOne({
               user_name: value,
-              _id: { $ne: currentUserId }
+              _id: { $ne: excludeId }
             })
             if (user) {
               throw new Error(USER_MESSAGE.USER_NAME_ALREADY_EXISTS)
             }
+            return true
           }
         }
       },

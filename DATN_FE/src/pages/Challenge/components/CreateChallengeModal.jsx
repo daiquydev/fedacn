@@ -15,15 +15,74 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
-    FaMagic, FaBullseye, FaCalendarAlt, FaUsers, FaImage,
+    FaBullseye, FaCalendarAlt, FaUsers, FaImage,
     FaGlobe, FaUserFriends, FaLock, FaFire, FaClipboardList, FaClock,
-    FaChevronRight, FaChevronLeft, FaArrowLeft
+    FaChevronRight, FaChevronLeft, FaArrowLeft,
+    FaFileAlt, FaStar, FaInfoCircle, FaCheckCircle
 } from 'react-icons/fa'
 import { MdAutoAwesome } from 'react-icons/md'
 import { BsClockHistory } from 'react-icons/bs'
 
 // ==================== AI PROXY ====================
 const AI_PROXY_ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`
+
+const userHintedSingleDayChallenge = (text) => {
+    const t = (text || '').toLowerCase()
+    return /(một\s*ngày|trong\s*ngày|cùng\s*ngày|chỉ\s*một\s*ngày)/i.test(t)
+}
+
+/** Tránh thử thách ngoài trời bắt đầu & kết thúc cùng ngày khi prompt quá ngắn. */
+const normalizeOutdoorChallengeAIFields = (parsed, userDesc, todayISO) => {
+    const out = { ...parsed }
+    const today = moment(todayISO, 'YYYY-MM-DD', true)
+    const userT = (userDesc || '').trim()
+
+    let start = moment(out.startDate, 'YYYY-MM-DD', true)
+    if (!start.isValid() || start.isBefore(today, 'day')) start = today.clone()
+
+    let end = moment(out.endDate, 'YYYY-MM-DD', true)
+    if (!end.isValid() || end.isBefore(start, 'day')) end = start.clone()
+
+    let span = end.diff(start, 'days')
+    const shortPrompt = userT.length < 45
+    const single = userHintedSingleDayChallenge(userT)
+
+    if (!single && (span < 1 || (shortPrompt && span < 6))) {
+        end = start.clone().add(13, 'days')
+        span = end.diff(start, 'days')
+    }
+    if (!single && shortPrompt && start.isSame(today, 'day') && end.isSame(today, 'day')) {
+        start = today.clone().add(1, 'day')
+        end = start.clone().add(13, 'days')
+    }
+
+    let goal = Number(out.goal_value)
+    if (!Number.isFinite(goal) || goal <= 0) goal = 5
+    const hint = `${userT} ${out.title || ''} ${out.description || ''}`.toLowerCase()
+    if (/(42\s*k|full\s*marathon|marathon\s*đủ)/i.test(hint) && goal < 8) goal = 10
+    else if (/(21\s*k|nửa\s*marathon)/i.test(hint) && goal < 6) goal = 8
+    else if (/(chạy|đạp|leo)/i.test(hint) && goal < 3) goal = 5
+
+    out.startDate = start.format('YYYY-MM-DD')
+    out.endDate = end.format('YYYY-MM-DD')
+    out.goal_value = Math.min(40, Math.round(goal))
+    return out
+}
+
+const enrichChallengeAICopy = (parsed, aiType, userDesc) => {
+    const out = { ...parsed }
+    const u = (userDesc || '').trim()
+    if (!String(out.title || '').trim()) {
+        if (aiType === 'nutrition') out.title = 'Thử thách ăn uống lành mạnh'
+        else if (aiType === 'fitness') out.title = 'Thử thách tập luyện đều đặn'
+        else out.title = 'Thử thách vận động ngoài trời'
+    }
+    if (!String(out.description || '').trim()) {
+        const base = String(out.title || '').trim() || 'Thử thách'
+        out.description = (u ? `${base}: ${u}` : `${base} — ghi nhận tiến độ mỗi ngày trên app.`).slice(0, 150)
+    }
+    return out
+}
 
 // ==================== DATE HELPERS ====================
 // Date input uses type="date" → value is YYYY-MM-DD
@@ -144,7 +203,7 @@ const NON_OUTDOOR_GOALS = {
 }
 
 // ==================== PREVIEW MINI CARD ====================
-function PreviewCard({ form, selectedCat, outdoorCategories }) {
+function PreviewCard({ form, selectedCat }) {
     const typeConf = CHALLENGE_TYPES.find(t => t.key === form.challenge_type)
     const gradient = TYPE_GRADIENT[form.challenge_type] || 'from-gray-400 to-gray-500'
     const visConf = VISIBILITY_OPTIONS.find(v => v.value === form.visibility)
@@ -486,11 +545,12 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
 
 Quy tắc:
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
+   - Mô tả ngắn (chỉ kiểu "tạo giải chạy bộ", "chạy bộ") và KHÔNG nói "một ngày"/"trong ngày" → endDate phải cách startDate ít nhất 6–20 ngày (thử thách nhiều ngày), bắt đầu từ ngày mai hoặc hôm nay nhưng KHÔNG để startDate = endDate = hôm nay.
 2. category: một trong [${outdoorNames}], chọn phù hợp nhất với mô tả.
-3. goal_value: số km di chuyển MỖI NGÀY hợp lý (thường 3-15km).
+3. goal_value: số km cần đạt MỖI NGÀY trong thử thách (thường 3–12 km với chạy/đạp thường; marathon tập luyện có thể 8–15).
 4. visibility: "public" | "friends" | "private".
-5. title: ngắn gọn, tiếng Việt, hấp dẫn, phù hợp hoạt động ngoài trời.
-6. description: tối đa 150 ký tự, tiếng Việt.
+5. title: ngắn gọn, tiếng Việt, hấp dẫn, phù hợp hoạt động ngoài trời; phải cùng chủ đề với mô tả (vd "giải chạy" → có từ chạy/bộ/đường chạy…).
+6. description: tối đa 150 ký tự, tiếng Việt; nhắc lại mục tiêu km/ngày và thời gian thử thách cho khớp goal_value và start/end.
 7. Chỉ trả về JSON object, không markdown.
 
 {
@@ -530,8 +590,8 @@ C) Gợi ý khung giờ khi nutrition_sub_type = "time_window" (24h, HH:mm)
 D) Khác
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
 2. visibility: "public" | "friends" | "private".
-3. title: ngắn gọn, tiếng Việt, hấp dẫn, chủ đề ăn uống.
-4. description: tối đa 150 ký tự, tiếng Việt.
+3. title: ngắn gọn, tiếng Việt, hấp dẫn, chủ đề ăn uống; khớp với mô tả (detox / giảm cân / tăng cơ…).
+4. description: tối đa 150 ký tự, tiếng Việt; phản ánh đúng goal_value (số bữa) và nutrition_sub_type đã chọn.
 5. Chỉ trả về JSON object, không markdown.
 
 {
@@ -555,8 +615,8 @@ Quy tắc:
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
 2. suggested_exercises: một mảng chứa tên tiếng Việt của 2 đến 4 bài tập phù hợp với mô tả nhất.
 3. visibility: "public" | "friends" | "private".
-4. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ LUYỆN TẬP THỂ DỤC.
-5. description: tối đa 150 ký tự, tiếng Việt, nói về luyện tập.
+4. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ LUYỆN TẬP THỂ DỤC; thống nhất với suggested_exercises (gym/yoga/cơ bụng…).
+5. description: tối đa 150 ký tự, tiếng Việt, nói về luyện tập và tần suất gợi ý khớp mô tả người dùng.
 6. Chỉ trả về JSON object, không markdown.
 
 {
@@ -584,7 +644,11 @@ Quy tắc:
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             const cleaned = (data?.text || '').replace(/```(?:json)?\n?/gi, '').replace(/```/g, '').trim()
-            const parsed = JSON.parse(cleaned)
+            const parsedRaw = JSON.parse(cleaned)
+            let parsed = aiType === 'outdoor_activity'
+                ? normalizeOutdoorChallengeAIFields(parsedRaw, aiDesc.trim(), today)
+                : parsedRaw
+            parsed = enrichChallengeAICopy(parsed, aiType, aiDesc.trim())
 
             // Resolve goal defaults per type
             const goalDefaults = {
@@ -657,6 +721,7 @@ Quy tắc:
                 }
                 if (['public', 'friends', 'private'].includes(parsed.visibility)) updated.visibility = parsed.visibility
                 if (parsed.description) updated.description = parsed.description.slice(0, 150)
+                if (parsed.image && String(parsed.image).startsWith('http')) updated.image = parsed.image
                 return updated
             })
 
@@ -720,27 +785,28 @@ Quy tắc:
     const nonOutdoorGoals = NON_OUTDOOR_GOALS[form.challenge_type] || []
 
     const pageHero = isPage && (
-        <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-8 mb-6">
+        <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white py-8 mb-8">
             <div className="container mx-auto px-4">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="flex items-center text-amber-50 hover:text-white mb-5 transition text-sm"
+                    className="flex items-center text-green-50 hover:text-white mb-5 transition text-sm"
                 >
                     <FaArrowLeft className="mr-2" /> Quay lại
                 </button>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-extrabold">Tạo thử thách mới</h1>
-                        <p className="opacity-90 mt-1 text-sm">Điền đầy đủ thông tin; xem trước hiển thị bên phải trên màn hình lớn.</p>
+                        <h1 className="text-3xl font-extrabold">Tạo Thử Thách Mới</h1>
+                        <p className="opacity-80 mt-1 text-sm">Điền đầy đủ thông tin để tạo thử thách và xem trước kết quả bên phải</p>
                     </div>
                     <button
                         type="button"
                         onClick={openAIModal}
-                        className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 hover:shadow-xl bg-white/20 hover:bg-white/30 text-white border border-white/25"
+                        className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 hover:shadow-xl hover:shadow-purple-500/40 hover:-translate-y-0.5"
+                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }}
                     >
-                        <MdAutoAwesome className="text-yellow-200 text-lg shrink-0" />
-                        <span className="hidden sm:inline">AI điền tự động</span>
+                        <MdAutoAwesome className="text-lg shrink-0" />
+                        <span className="hidden sm:inline">AI Điền Tự Động</span>
                         <span className="sm:hidden">AI</span>
                     </button>
                 </div>
@@ -749,7 +815,7 @@ Quy tắc:
     )
 
     const modalHeader = !isPage && (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-amber-500 to-orange-600">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-gradient-to-r from-green-600 to-teal-600">
             <div className="flex items-center gap-3">
                 <FaTrophy className="text-white text-xl" />
                 <h2 className="text-xl font-black text-white">Tạo thử thách mới</h2>
@@ -760,7 +826,7 @@ Quy tắc:
                     onClick={openAIModal}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-bold transition"
                 >
-                    <MdAutoAwesome className="text-yellow-300" /> AI điền
+                    <MdAutoAwesome className="text-white" /> AI điền
                 </button>
                 <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-white/20 text-white transition">
                     <FaTimes />
@@ -769,10 +835,8 @@ Quy tắc:
         </div>
     )
 
-    const formScrollArea = (
-                    <div className="flex flex-1 overflow-hidden min-h-0">
-                        {/* LEFT: Form (scrollable) */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0">
+    const challengeFormFields = (
+                        <>
 
                             {/* Loại thử thách */}
                             <div>
@@ -1118,18 +1182,16 @@ Quy tắc:
                                 />
                                 <p className="text-[10px] text-gray-400 text-right mt-0.5">{form.description.length}/500</p>
                             </div>
+                        </>
+    )
 
-                        </div>
-
-                        {/* RIGHT: Preview (sticky, hidden on mobile) */}
+    const previewAsideCompact = (
                         <div className="hidden lg:flex w-72 shrink-0 border-l border-gray-200 dark:border-gray-700 flex-col">
                             <div className="p-5 overflow-y-auto flex-1">
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                     <BsClockHistory /> Bản xem trước
                                 </p>
-                                <PreviewCard form={form} selectedCat={selectedCat} outdoorCategories={outdoorCategories} />
-
-                                {/* Info note */}
+                                <PreviewCard form={form} selectedCat={selectedCat} />
                                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                                     <p className="text-[11px] text-blue-600 dark:text-blue-400 leading-relaxed">
                                         💡 Bản xem trước cập nhật real-time khi bạn nhập thông tin
@@ -1137,7 +1199,96 @@ Quy tắc:
                                 </div>
                             </div>
                         </div>
+    )
+
+    const formScrollArea = (
+                    <div className="flex flex-1 overflow-hidden min-h-0">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0">
+                            {challengeFormFields}
+                        </div>
+                        {previewAsideCompact}
                     </div>
+    )
+
+    const formPageLayout = (
+        <form
+            onSubmit={(e) => { e.preventDefault(); handleSubmit() }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+        >
+            <div className="lg:col-span-8 space-y-8">
+                <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
+                    <div className="flex items-center gap-3 mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
+                        <FaFileAlt className="text-green-500 text-xl" />
+                        <h2 className="text-xl font-bold dark:text-white">1. Nội dung thử thách</h2>
+                    </div>
+                    <div className="space-y-6">
+                        {challengeFormFields}
+                    </div>
+                </section>
+
+                <div className="lg:hidden sticky bottom-4 z-50">
+                    <button
+                        type="submit"
+                        disabled={mutation.isPending}
+                        className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition disabled:opacity-50"
+                    >
+                        {mutation.isPending ? 'ĐANG TẠO...' : '✨ TẠO THỬ THÁCH NGAY'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="lg:col-span-4 lg:sticky lg:top-8 h-fit space-y-6 pb-20 lg:pb-0">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2">
+                            <FaStar className="text-yellow-400" /> BẢN XEM TRƯỚC
+                        </h3>
+                        <div className="flex gap-1">
+                            <div className="w-2 h-2 rounded-full bg-red-400" />
+                            <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                            <div className="w-2 h-2 rounded-full bg-green-400" />
+                        </div>
+                    </div>
+                    <PreviewCard form={form} selectedCat={selectedCat} />
+
+                    <div className="space-y-3 my-8">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.title?.trim() ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Tên thử thách</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.startDate && form.endDate ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Khung thời gian</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={(form.challenge_type === 'fitness' ? selectedExercises.length > 0 : form.goal_value) ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Mục tiêu / bài tập</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                            <FaCheckCircle className={form.description?.trim() ? 'text-green-500' : 'text-gray-300'} />
+                            <span className="text-sm dark:text-gray-300">Mô tả</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={mutation.isPending}
+                        className="hidden lg:flex w-full bg-gradient-to-r from-green-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-2xl hover:shadow-green-500/30 items-center justify-center gap-4 transition active:scale-95 disabled:opacity-50"
+                    >
+                        {mutation.isPending ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : <>✨ TẠO THỬ THÁCH</>}
+                    </button>
+
+                    <div className="mt-6 flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-2xl">
+                        <FaInfoCircle className="text-yellow-600 shrink-0" />
+                        <p className="text-[11px] text-yellow-800 dark:text-yellow-400 font-bold leading-relaxed">
+                            Kiểm tra lại mục tiêu và ngày trước khi đăng công khai.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </form>
     )
 
     const formFooter = (
@@ -1149,7 +1300,7 @@ Quy tắc:
                             type="button"
                             onClick={handleSubmit}
                             disabled={mutation.isPending}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold text-sm hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                         >
                             {mutation.isPending
                                 ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Đang tạo...</>
@@ -1159,20 +1310,15 @@ Quy tắc:
                     </div>
     )
 
-    const cardShellClass = isPage
-        ? 'relative w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[calc(100vh-12rem)] min-h-[280px]'
-        : 'relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+    const cardShellClass = 'relative w-full max-w-5xl max-h-[92vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
 
     return (
         <>
             {isPage ? (
-                <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
                     {pageHero}
-                    <div className="container mx-auto px-4 pb-10">
-                        <div className={cardShellClass}>
-                            {formScrollArea}
-                            {formFooter}
-                        </div>
+                    <div className="container mx-auto px-4">
+                        {formPageLayout}
                     </div>
                 </div>
             ) : (

@@ -367,7 +367,7 @@ export default function FriendManagement() {
           {/* Bạn bè (mutual follow) */}
           <PeopleSection
             title='Bạn bè'
-            subtitle='Đang theo dõi lẫn nhau — field bạn bè'
+            subtitle='Bạn bè đang theo dõi lẫn nhau'
             people={friends}
             badge='Bạn bè'
             emptyMessage='Bạn chưa có người bạn nào. Hãy chấp nhận lời mời!'

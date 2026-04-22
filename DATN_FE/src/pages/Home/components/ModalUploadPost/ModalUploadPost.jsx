@@ -148,8 +148,11 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
         closeModalPost()
         isSubmittingRef.current = false
       },
-      onError: () => {
-        toast.error('Có lỗi xảy ra khi đăng bài viết')
+      onError: (err) => {
+        // Interceptor (utils/http.js) đã toast cho hầu hết lỗi; riêng 422 bị bỏ qua ở interceptor
+        if (err?.response?.status === 422) {
+          toast.error(err?.response?.data?.message || 'Dữ liệu không hợp lệ')
+        }
         isSubmittingRef.current = false
       }
     })
