@@ -87,7 +87,7 @@ export default function CommunityHealthSection() {
           <div>
             <div className='flex items-center gap-2'>
               <h2 className='text-lg font-bold text-gray-800 dark:text-gray-100'>Sức khỏe cộng đồng</h2>
-              <InfoTooltip text='Gộp bài viết, bình luận, thích, buổi tập xong, hoạt động thử thách, điểm danh sự kiện. Xem cộng đồng có gắn bó theo thời gian không. Tỷ lệ xong thử thách và sự kiện nổi bật giúp đánh giá chất lượng tham gia.' />
+              <InfoTooltip text='Gộp bài viết, bình luận, thích, buổi tập xong, hoạt động thử thách, điểm danh sự kiện (ngày hoạt động = ngày check-in hoặc ngày tạo bản ghi điểm danh nếu chưa check-in). Tỷ lệ xong thử thách: trong kỳ lọc chỉ cohort joined_at; Toàn bộ = mọi người đang tham gia (trừ bỏ cuộc). Xếp hạng sự kiện theo điểm danh dùng cùng mốc thời gian đó.' />
             </div>
             <p className='text-xs text-gray-400'>Người hoạt động · Thử thách · Sự kiện</p>
           </div>
@@ -106,7 +106,7 @@ export default function CommunityHealthSection() {
         <MiniStat
           label='Trung bình / ngày'
           value={ua.avgDau ?? 0}
-          hint='Trung bình các ngày có dữ liệu'
+          hint='Theo số ngày lịch trong kỳ lọc (hoặc theo các ngày có dữ liệu nếu chọn Toàn bộ)'
         />
         <MiniStat
           label='Không trùng lặp'

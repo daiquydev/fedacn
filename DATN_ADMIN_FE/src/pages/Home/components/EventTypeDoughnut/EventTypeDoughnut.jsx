@@ -54,7 +54,7 @@ export default function EventTypeDoughnut({ sportEvents = {} }) {
           <p className='text-sm font-bold text-gray-600 dark:text-gray-300'>🏟️ Phân loại Sự kiện</p>
           <span className='text-[10px] bg-green-50 dark:bg-green-900/30 text-green-500 font-semibold px-2 py-0.5 rounded-full'>{total} sự kiện</span>
         </div>
-        <InfoTooltip text='Tỷ lệ sự kiện Ngoài trời vs Trong nhà. Nếu mất cân bằng nhiều → cần tạo thêm sự kiện loại thiếu để đa dạng hóa trải nghiệm. Cân bằng 50/50 là lý tưởng cho nền tảng phục vụ mọi đối tượng.' />
+        <InfoTooltip text='Tỷ lệ sự kiện Ngoài trời vs Trong nhà (theo tổng số sự kiện đang hoạt động). Tỷ lệ phụ thuộc đối tượng mục tiêu và mùa — nên theo dõi xu hướng theo thời gian thay vì cố một tỷ lệ cố định.' />
       </div>
       <div className='relative h-[280px]'>
         {outdoor === 0 && indoor === 0 ? (

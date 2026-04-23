@@ -488,7 +488,13 @@ class UserAdminService {
 
     // === BMI DISTRIBUTION ===
     const bmiUsers = await UserModel.aggregate([
-      { $match: { BMI: { $ne: null } } },
+      {
+        $match: {
+          role: UserRoles.user,
+          isDeleted: { $ne: true },
+          BMI: { $ne: null, $exists: true }
+        }
+      },
       { $project: { BMI: 1 } }
     ])
     const underWeight = bmiUsers.filter((u) => u.BMI < 18.5).length

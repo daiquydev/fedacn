@@ -132,7 +132,7 @@ export function EventActivityChart({ eventActivity = {} }) {
         yAxisID: 'y'
       },
       {
-        label: 'Số người mới tham gia SK Ngoài trời',
+        label: 'Lượt điểm danh SK Ngoài trời',
         data: buildDataset(dailyOutdoorJoins, allDates),
         borderColor: 'rgba(16, 185, 129, 1)',
         backgroundColor: 'rgba(16, 185, 129, 0.08)',
@@ -143,7 +143,7 @@ export function EventActivityChart({ eventActivity = {} }) {
         yAxisID: 'y1'
       },
       {
-        label: 'Số người mới tham gia SK Trong nhà',
+        label: 'Lượt điểm danh SK Trong nhà',
         data: buildDataset(dailyIndoorJoins, allDates),
         borderColor: 'rgba(139, 92, 246, 1)',
         backgroundColor: 'rgba(139, 92, 246, 0.08)',
@@ -180,7 +180,7 @@ export function EventActivityChart({ eventActivity = {} }) {
         beginAtZero: true,
         grid: { drawOnChartArea: false },
         ticks: { stepSize: 1, font: { size: 10 } },
-        title: { display: true, text: 'Người tham gia', font: { size: 10, weight: '600' }, color: 'rgba(100,100,100,0.7)' }
+        title: { display: true, text: 'Lượt điểm danh', font: { size: 10, weight: '600' }, color: 'rgba(100,100,100,0.7)' }
       }
     }
   }
@@ -191,7 +191,7 @@ export function EventActivityChart({ eventActivity = {} }) {
     <div className='bg-white rounded-2xl border border-gray-200 shadow-sm px-6 py-5 dark:bg-gray-800 dark:border-gray-700'>
       <div className='flex items-center justify-between mb-3'>
         <p className='text-sm font-bold text-gray-600 dark:text-gray-300'>🏅 Sự kiện Thể thao</p>
-        <InfoTooltip text='So sánh sự kiện mới tạo (đường liền) vs người mới tham gia (đường đứt). Nếu tạo nhiều nhưng tham gia ít → chất lượng sự kiện chưa hấp dẫn. Trục trái = Sự kiện, Trục phải = Người tham gia (khác đơn vị).' />
+        <InfoTooltip text='So sánh sự kiện mới tạo (đường liền) với lượt điểm danh theo ngày (đường đứt; mỗi lượt = một bản ghi tham gia buổi). Nếu tạo nhiều nhưng điểm danh thấp → cần xem lại chất lượng / thời điểm sự kiện. Trục trái = số sự kiện tạo, trục phải = lượt điểm danh (khác đơn vị, không so độ dốc trực tiếp).' />
       </div>
       {/* Stat cards: 2 rows x 2 columns for clear grouping */}
       <div className='grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4'>
@@ -206,12 +206,12 @@ export function EventActivityChart({ eventActivity = {} }) {
           <p className='text-[10px] text-gray-400 mt-0.5'>sự kiện</p>
         </div>
         <div className='bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl px-4 py-3 border border-teal-100 dark:border-teal-800'>
-          <p className='text-xs text-gray-500 mb-1'>🏃 Tham gia SK Ngoài trời</p>
+          <p className='text-xs text-gray-500 mb-1'>🏃 Điểm danh SK Ngoài trời</p>
           <p className='text-2xl font-black text-teal-600'>{(totals.outdoorJoins ?? 0).toLocaleString('vi-VN')}</p>
           <p className='text-[10px] text-gray-400 mt-0.5'>lượt tham gia</p>
         </div>
         <div className='bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/20 dark:to-pink-900/20 rounded-xl px-4 py-3 border border-fuchsia-100 dark:border-fuchsia-800'>
-          <p className='text-xs text-gray-500 mb-1'>🏋️ Tham gia SK Trong nhà</p>
+          <p className='text-xs text-gray-500 mb-1'>🏋️ Điểm danh SK Trong nhà</p>
           <p className='text-2xl font-black text-fuchsia-600'>{(totals.indoorJoins ?? 0).toLocaleString('vi-VN')}</p>
           <p className='text-[10px] text-gray-400 mt-0.5'>lượt tham gia</p>
         </div>

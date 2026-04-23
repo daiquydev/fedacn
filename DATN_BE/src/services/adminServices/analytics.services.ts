@@ -1,3 +1,4 @@
+import type { PipelineStage } from 'mongoose'
 import AIUsageLogModel from '~/models/schemas/aiUsageLog.schema'
 import ChallengeModel from '~/models/schemas/challenge.schema'
 import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.schema'
@@ -10,13 +11,115 @@ import CommentPostModel from '~/models/schemas/commentPost.schema'
 import LikePostModel from '~/models/schemas/likePost.schema'
 import { UserRoles } from '~/constants/enums'
 
+/** YYYY-MM-DD → đầu ngày theo giờ local (tránh lệch múi giờ so với chuỗi ...Z). */
+function parseLocalDateStart(isoYmd: string): Date {
+  const [y, m, d] = isoYmd.split('-').map((v) => parseInt(v, 10))
+  return new Date(y, m - 1, d, 0, 0, 0, 0)
+}
+
+/** YYYY-MM-DD → cuối ngày theo giờ local. */
+function parseLocalDateEnd(isoYmd: string): Date {
+  const [y, m, d] = isoYmd.split('-').map((v) => parseInt(v, 10))
+  return new Date(y, m - 1, d, 23, 59, 59, 999)
+}
+
+/** Số ngày lịch (bao gồm cả ngày đầu và ngày cuối) trong khoảng [from, to]. */
+function inclusiveCalendarDaySpan(from: Date, to: Date): number {
+  const start = new Date(from.getFullYear(), from.getMonth(), from.getDate())
+  const end = new Date(to.getFullYear(), to.getMonth(), to.getDate())
+  const diffDays = Math.round((end.getTime() - start.getTime()) / 86400000)
+  return Math.max(1, diffDays + 1)
+}
+
+/** Lượt tham gia sự kiện theo điểm danh (check-in), gom theo ngày attAt. */
+function buildDailyAttendanceJoinsPipeline(eventType: 'Ngoài trời' | 'Trong nhà', from: Date | null, to: Date): PipelineStage[] {
+  const pipeline: PipelineStage[] = [
+    { $addFields: { attAt: { $ifNull: ['$checkInTime', '$createdAt'] } } },
+    { $match: { attAt: { $lte: to } } }
+  ]
+  if (from) {
+    pipeline.push({ $match: { attAt: { $gte: from } } })
+  }
+  pipeline.push(
+    { $lookup: { from: 'sport_event_sessions', localField: 'sessionId', foreignField: '_id', as: 'sess' } },
+    { $unwind: '$sess' },
+    { $lookup: { from: 'sport_events', localField: 'sess.eventId', foreignField: '_id', as: 'ev' } },
+    { $unwind: '$ev' },
+    { $match: { 'ev.isDeleted': { $ne: true }, 'ev.eventType': eventType } },
+    { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$attAt' } }, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } }
+  )
+  return pipeline
+}
+
+/** Tổng lượt điểm danh (mỗi bản ghi attendance = một lượt) trong kỳ, theo loại sự kiện. */
+function buildTotalAttendanceJoinsPipeline(eventType: 'Ngoài trời' | 'Trong nhà', from: Date | null, to: Date): PipelineStage[] {
+  const pipeline: PipelineStage[] = [
+    { $addFields: { attAt: { $ifNull: ['$checkInTime', '$createdAt'] } } },
+    { $match: { attAt: { $lte: to } } }
+  ]
+  if (from) {
+    pipeline.push({ $match: { attAt: { $gte: from } } })
+  }
+  pipeline.push(
+    { $lookup: { from: 'sport_event_sessions', localField: 'sessionId', foreignField: '_id', as: 'sess' } },
+    { $unwind: '$sess' },
+    { $lookup: { from: 'sport_events', localField: 'sess.eventId', foreignField: '_id', as: 'ev' } },
+    { $unwind: '$ev' },
+    { $match: { 'ev.isDeleted': { $ne: true }, 'ev.eventType': eventType } },
+    { $count: 'total' }
+  )
+  return pipeline
+}
+
+/** $addFields attAt + lọc theo kỳ (check-in hoặc tạo bản ghi điểm danh). */
+function attendanceAttAtMatchStages(from: Date | null, to: Date): PipelineStage[] {
+  const stages: PipelineStage[] = [
+    { $addFields: { attAt: { $ifNull: ['$checkInTime', '$createdAt'] } } },
+    { $match: { attAt: { $lte: to } } }
+  ]
+  if (from) {
+    stages.push({ $match: { attAt: { $gte: from } } })
+  }
+  return stages
+}
+
+/** Top user theo lượt điểm danh sự kiện trong kỳ (mỗi attendance hợp lệ = 1 điểm). */
+function buildTopEventUsersByAttendancePipeline(from: Date | null, to: Date): PipelineStage[] {
+  return [
+    ...attendanceAttAtMatchStages(from, to),
+    { $lookup: { from: 'sport_event_sessions', localField: 'sessionId', foreignField: '_id', as: 'sess' } },
+    { $unwind: '$sess' },
+    { $lookup: { from: 'sport_events', localField: 'sess.eventId', foreignField: '_id', as: 'ev' } },
+    { $unwind: '$ev' },
+    { $match: { 'ev.isDeleted': { $ne: true } } },
+    { $group: { _id: '$userId', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 3 },
+    {
+      $lookup: {
+        from: 'users',
+        let: { uid: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$_id', '$$uid'] } } },
+          { $project: { name: 1, avatar: 1, user_name: 1 } }
+        ],
+        as: 'user'
+      }
+    },
+    { $unwind: '$user' },
+    { $project: { _id: 0, user: 1, count: 1 } }
+  ]
+}
+
 function getDateRange(period?: string, startDate?: string, endDate?: string): { from: Date | null; to: Date } {
   const now = new Date()
-  const to = endDate ? new Date(endDate + 'T23:59:59.999Z') : now
 
   if (startDate && endDate) {
-    return { from: new Date(startDate + 'T00:00:00.000Z'), to }
+    return { from: parseLocalDateStart(startDate), to: parseLocalDateEnd(endDate) }
   }
+
+  const to = now
 
   switch (period) {
     case '24h': {
@@ -177,7 +280,7 @@ class AnalyticsService {
       { $project: { _id: 0, user: 1, count: 1 } }
     ])
 
-    const challengeJoinDateMatch: any = {}
+    const challengeJoinDateMatch: Record<string, unknown> = { status: { $ne: 'quit' } }
     if (from) challengeJoinDateMatch.joined_at = { $gte: from, $lte: to }
 
     const topChallengeUsers = await ChallengeParticipantModel.aggregate([
@@ -200,29 +303,9 @@ class AnalyticsService {
       { $project: { _id: 0, user: 1, count: 1 } }
     ])
 
-    const sportEventMatchForUsers: any = { isDeleted: { $ne: true }, 'participants_ids.0': { $exists: true } }
-    if (from) sportEventMatchForUsers.createdAt = { $gte: from, $lte: to }
-
-    const topEventUsers = await SportEventModel.aggregate([
-      { $match: sportEventMatchForUsers },
-      { $unwind: '$participants_ids' },
-      { $group: { _id: '$participants_ids', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 3 },
-      {
-        $lookup: {
-          from: 'users',
-          let: { uid: '$_id' },
-          pipeline: [
-            { $match: { $expr: { $eq: ['$_id', '$$uid'] } } },
-            { $project: { name: 1, avatar: 1, user_name: 1 } }
-          ],
-          as: 'user'
-        }
-      },
-      { $unwind: '$user' },
-      { $project: { _id: 0, user: 1, count: 1 } }
-    ])
+    const topEventUsers = await SportEventAttendanceModel.aggregate(
+      buildTopEventUsersByAttendancePipeline(from, to)
+    )
 
     const workoutDateMatch: any = {}
     if (from) workoutDateMatch.finished_at = { $gte: from, $lte: to }
@@ -277,20 +360,13 @@ class AnalyticsService {
       { $sort: { _id: 1 } }
     ])
 
-    // Daily participant joins (Option C: unwind participants_ids, group by event createdAt)
-    const dailyOutdoorJoins = await SportEventModel.aggregate([
-      { $match: { ...sportEventDateMatch, eventType: 'Ngoài trời', 'participants_ids.0': { $exists: true } } },
-      { $unwind: '$participants_ids' },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
-      { $sort: { _id: 1 } }
-    ])
-
-    const dailyIndoorJoins = await SportEventModel.aggregate([
-      { $match: { ...sportEventDateMatch, eventType: 'Trong nhà', 'participants_ids.0': { $exists: true } } },
-      { $unwind: '$participants_ids' },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
-      { $sort: { _id: 1 } }
-    ])
+    // Lượt tham gia theo ngày: theo thời điểm điểm danh (check-in), không theo ngày tạo sự kiện
+    const dailyOutdoorJoins = await SportEventAttendanceModel.aggregate(
+      buildDailyAttendanceJoinsPipeline('Ngoài trời', from, to)
+    )
+    const dailyIndoorJoins = await SportEventAttendanceModel.aggregate(
+      buildDailyAttendanceJoinsPipeline('Trong nhà', from, to)
+    )
 
     // Totals
     const [totalPosts, totalNewUsers, totalOutdoor, totalIndoor] = await Promise.all([
@@ -300,18 +376,14 @@ class AnalyticsService {
       SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Trong nhà' })
     ])
 
-    // Total participant joins
+    // Tổng lượt điểm danh trong kỳ (khớp với chuỗi ngày ở trên)
     const [totalOutdoorJoins, totalIndoorJoins] = await Promise.all([
-      SportEventModel.aggregate([
-        { $match: { ...sportEventDateMatch, eventType: 'Ngoài trời' } },
-        { $project: { count: { $size: { $ifNull: ['$participants_ids', []] } } } },
-        { $group: { _id: null, total: { $sum: '$count' } } }
-      ]).then((r: any[]) => r[0]?.total || 0),
-      SportEventModel.aggregate([
-        { $match: { ...sportEventDateMatch, eventType: 'Trong nhà' } },
-        { $project: { count: { $size: { $ifNull: ['$participants_ids', []] } } } },
-        { $group: { _id: null, total: { $sum: '$count' } } }
-      ]).then((r: any[]) => r[0]?.total || 0)
+      SportEventAttendanceModel.aggregate(buildTotalAttendanceJoinsPipeline('Ngoài trời', from, to)).then(
+        (r: { total?: number }[]) => r[0]?.total || 0
+      ),
+      SportEventAttendanceModel.aggregate(buildTotalAttendanceJoinsPipeline('Trong nhà', from, to)).then(
+        (r: { total?: number }[]) => r[0]?.total || 0
+      )
     ])
 
     return {
@@ -363,9 +435,6 @@ class AnalyticsService {
 
     const cpMatch: Record<string, unknown> = { last_activity_at: { $ne: null } }
     if (from) (cpMatch.last_activity_at as Record<string, Date>) = { $gte: from, $lte: to }
-
-    const attMatch: Record<string, unknown> = {}
-    if (from) attMatch.updatedAt = { $gte: from, $lte: to }
 
     const [
       postsDaily,
@@ -430,63 +499,75 @@ class AnalyticsService {
         { $sort: { _id: 1 } }
       ]),
       SportEventAttendanceModel.aggregate([
-        { $match: attMatch },
+        ...attendanceAttAtMatchStages(from, to),
         {
           $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } },
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$attAt' } },
             u: { $addToSet: '$userId' }
           }
         },
         { $sort: { _id: 1 } }
       ]),
-      ChallengeParticipantModel.aggregate([
-        { $match: { status: { $ne: 'quit' } } },
-        {
-          $lookup: {
-            from: 'challenges',
-            localField: 'challenge_id',
-            foreignField: '_id',
-            as: 'ch'
-          }
-        },
-        { $unwind: '$ch' },
-        { $match: { 'ch.is_deleted': { $ne: true } } },
-        {
-          $group: {
-            _id: null,
-            completed: {
-              $sum: {
-                $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
-              }
-            },
-            total: { $sum: 1 }
-          }
+      (() => {
+        const completionParticipantMatch: Record<string, unknown> = { status: { $ne: 'quit' } }
+        if (from) {
+          completionParticipantMatch.joined_at = { $gte: from, $lte: to }
         }
-      ]),
-      ChallengeParticipantModel.aggregate([
-        { $match: { status: { $ne: 'quit' } } },
-        {
-          $lookup: {
-            from: 'challenges',
-            localField: 'challenge_id',
-            foreignField: '_id',
-            as: 'ch'
+        return ChallengeParticipantModel.aggregate([
+          { $match: completionParticipantMatch },
+          {
+            $lookup: {
+              from: 'challenges',
+              localField: 'challenge_id',
+              foreignField: '_id',
+              as: 'ch'
+            }
+          },
+          { $unwind: '$ch' },
+          { $match: { 'ch.is_deleted': { $ne: true } } },
+          {
+            $group: {
+              _id: null,
+              completed: {
+                $sum: {
+                  $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
+                }
+              },
+              total: { $sum: 1 }
+            }
           }
-        },
-        { $unwind: '$ch' },
-        { $match: { 'ch.is_deleted': { $ne: true } } },
-        {
-          $group: {
-            _id: '$ch.challenge_type',
-            completed: {
-              $sum: {
-                $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
-              }
-            },
-            total: { $sum: 1 }
-          }
+        ])
+      })(),
+      (() => {
+        const completionParticipantMatch: Record<string, unknown> = { status: { $ne: 'quit' } }
+        if (from) {
+          completionParticipantMatch.joined_at = { $gte: from, $lte: to }
         }
-      ]),
+        return ChallengeParticipantModel.aggregate([
+          { $match: completionParticipantMatch },
+          {
+            $lookup: {
+              from: 'challenges',
+              localField: 'challenge_id',
+              foreignField: '_id',
+              as: 'ch'
+            }
+          },
+          { $unwind: '$ch' },
+          { $match: { 'ch.is_deleted': { $ne: true } } },
+          {
+            $group: {
+              _id: '$ch.challenge_type',
+              completed: {
+                $sum: {
+                  $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
+                }
+              },
+              total: { $sum: 1 }
+            }
+          }
+        ])
+      })(),
       SportEventModel.aggregate([
         { $match: { isDeleted: { $ne: true } } },
         {
@@ -507,11 +588,8 @@ class AnalyticsService {
         }
       ]),
       (() => {
-        const attendanceCheckinPipeline: Record<string, unknown>[] = []
-        if (from) {
-          attendanceCheckinPipeline.push({ $match: { updatedAt: { $gte: from, $lte: to } } })
-        }
-        attendanceCheckinPipeline.push(
+        const attendanceCheckinPipeline: PipelineStage[] = [
+          ...attendanceAttAtMatchStages(from, to),
           {
             $lookup: {
               from: 'sport_event_sessions',
@@ -543,8 +621,8 @@ class AnalyticsService {
               checkins: 1
             }
           }
-        )
-        return SportEventAttendanceModel.aggregate(attendanceCheckinPipeline as any[])
+        ]
+        return SportEventAttendanceModel.aggregate(attendanceCheckinPipeline)
       })()
     ])
 
@@ -558,9 +636,12 @@ class AnalyticsService {
     ])
 
     const peakDau = dailyActiveUsers.reduce((m, d) => Math.max(m, d.count), 0)
+    const sumDau = dailyActiveUsers.reduce((s, d) => s + d.count, 0)
     const avgDau =
       dailyActiveUsers.length > 0
-        ? Math.round((dailyActiveUsers.reduce((s, d) => s + d.count, 0) / dailyActiveUsers.length) * 10) / 10
+        ? from
+          ? Math.round((sumDau / inclusiveCalendarDaySpan(from, to)) * 10) / 10
+          : Math.round((sumDau / dailyActiveUsers.length) * 10) / 10
         : 0
 
     const [pu, cu, lu, wu, chu, au] = await Promise.all([
@@ -569,7 +650,10 @@ class AnalyticsService {
       LikePostModel.distinct('user_id', likeMatch),
       WorkoutSessionModel.distinct('user_id', workoutMatch),
       ChallengeParticipantModel.distinct('user_id', cpMatch),
-      SportEventAttendanceModel.distinct('userId', attMatch)
+      SportEventAttendanceModel.aggregate([
+        ...attendanceAttAtMatchStages(from, to),
+        { $group: { _id: '$userId' } }
+      ]).then((rows: { _id: unknown }[]) => rows.map((r) => r._id))
     ])
     const distinctActiveUsers = new Set<string>()
     ;[pu, cu, lu, wu, chu, au].forEach((arr) => (arr || []).forEach((id: any) => distinctActiveUsers.add(String(id))))
