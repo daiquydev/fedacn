@@ -184,6 +184,8 @@ const SportEvent = () => {
     mutationFn: (eventId) => joinSportEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sportEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['myJoinedEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['eventStats'] })
       toast.success('Đã tham gia sự kiện!')
     },
     onError: (error) => {

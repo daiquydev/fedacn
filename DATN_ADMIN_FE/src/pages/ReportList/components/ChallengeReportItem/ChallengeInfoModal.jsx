@@ -185,7 +185,7 @@ export default function ChallengeInfoModal({ challenge: ch, onClose, reportCount
                 className='w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-slate-600'
               />
               <div className='min-w-0'>
-                <div className='text-xs text-gray-400'>Người tạo</div>
+                <div className='text-xs text-gray-400'>Người tổ chức</div>
                 <div className='font-semibold text-gray-800 dark:text-white truncate'>
                   {creator.name || '—'}
                   {creator.user_name ? <span className='font-normal text-gray-500'> @{creator.user_name}</span> : null}

@@ -144,7 +144,7 @@ function ChallengeListTab() {
                 <th className='py-3 px-4'>Trạng thái</th>
                 <th className='py-3 px-4'>Người tham gia</th>
                 <th className='py-3 px-4'>Thời gian</th>
-                <th className='py-3 px-4'>Người tạo</th>
+                <th className='py-3 px-4'>Người tổ chức</th>
                 <th className='py-3 px-4'>Hành động</th>
               </tr>
             </thead>

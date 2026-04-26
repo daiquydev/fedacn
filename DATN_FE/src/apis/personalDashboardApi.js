@@ -72,7 +72,7 @@ export const getNutritionTrend = async (days = 7) => {
   }
 }
 
-// Get training summary overview (range: 24h | 7days | 1month | 6months | all; optional startDate/endDate YYYY-MM-DD)
+// Get training summary overview (range: today | 7days | 1month | 6months | all; optional startDate/endDate YYYY-MM-DD)
 export const getTrainingSummary = async (params = 'all') => {
   try {
     const q =

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { FaCalendarAlt } from 'react-icons/fa'
 
 const buildPresets = (allLabel) => [
-  { label: '24h', value: '24h' },
+  { label: 'Hôm nay', value: 'today' },
   { label: '7 ngày', value: '7d' },
   { label: '1 tháng', value: '1m' },
   { label: '6 tháng', value: '6m' },
@@ -12,12 +12,18 @@ const buildPresets = (allLabel) => [
 
 /**
  * Dropdown time range filter — styled for User FE.
- * @param {string} value - current filter value (e.g. '7d', '1m', 'all')
+ * @param {string} value - current filter value (e.g. 'today', '7d', '1m', 'all')
  * @param {function} onChange - called with { period } or { startDate, endDate }
  * @param {string} accentColor - tailwind color for active accent (default: 'blue')
  * @param {string} allLabel - label for the "all time" option (default: 'Tất cả')
  */
-export default function TimeRangeDropdown({ value = '7d', onChange, accentColor = 'blue', allLabel = 'Tất cả' }) {
+export default function TimeRangeDropdown({
+  value = '7d',
+  onChange,
+  accentColor = 'blue',
+  allLabel = 'Tất cả',
+  selectId
+}) {
   const PRESETS = buildPresets(allLabel)
   const [showCustom, setShowCustom] = useState(false)
   // type="date" inputs give YYYY-MM-DD directly
@@ -68,6 +74,7 @@ export default function TimeRangeDropdown({ value = '7d', onChange, accentColor 
       {/* Dropdown select */}
       <div className="relative">
         <select
+          id={selectId}
           className={`appearance-none text-sm border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-8 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 outline-none cursor-pointer transition-all shadow-sm hover:shadow-md font-medium ${accent.select}`}
           value={showCustom ? 'custom' : value}
           onChange={handlePresetChange}

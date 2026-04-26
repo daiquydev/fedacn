@@ -7,7 +7,6 @@ import { useContext, useState } from 'react'
 import InputEmoji from '../../../components/InputComponents/InputEmoji'
 import { queryClient } from '../../../main'
 import { AppContext } from '../../../contexts/app.context'
-import { toast } from 'react-hot-toast'
 import { FaComments } from 'react-icons/fa'
 
 export default function ChallengeDayComments({ challengeId, targetUserId, date }) {
@@ -41,9 +40,6 @@ export default function ChallengeDayComments({ challengeId, targetUserId, date }
         onSuccess: async () => {
           await queryClient.invalidateQueries({ queryKey: [commentKey] })
           setContent('')
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi bình luận')
         }
       }
     )

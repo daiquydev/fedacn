@@ -74,6 +74,7 @@ export default function ChallengeDetail() {
     staleTime: 1000
   })
   const challenge = data?.data?.result
+  const isArchivedReadOnly = Boolean(challenge?.is_archived_read_only)
 
   // Fetch current user's friends
   const { data: meData } = useQuery({
@@ -81,6 +82,10 @@ export default function ChallengeDetail() {
     queryFn: currentAccount
   })
   const me = meData?.data?.result?.[0]
+
+  const isCreator =
+    Boolean(challenge && me?._id) &&
+    String(challenge?.creator_id?._id || challenge?.creator_id || '') === String(me?._id || '')
   const myFollowers = useMemo(() => me?.followers || [], [me])
   const myFollowings = useMemo(() => me?.followings || [], [me])
   const followerIds = useMemo(() => new Set(myFollowers.map(p => String(p._id))), [myFollowers])
@@ -92,7 +97,7 @@ export default function ChallengeDetail() {
   const friendIds = useMemo(() => new Set(myFriends.map(p => String(p._id))), [myFriends])
   const connectedIds = useMemo(() => new Set([...followerIds, ...followingIds]), [followerIds, followingIds])
 
-  /** Khớp quy tắc backend: công khai = mọi người; bạn bè = mutual follow với người tạo; chỉ mình tôi = không tham gia qua link */
+  /** Khớp quy tắc backend: công khai = mọi người; bạn bè = mutual follow với người tổ chức; chỉ mình tôi = không tham gia qua link */
   const mayJoinByVisibility = useMemo(() => {
     if (!challenge) return false
     const vis = challenge.visibility || 'public'
@@ -103,8 +108,9 @@ export default function ChallengeDetail() {
     return true
   }, [challenge, friendIds])
 
-  /** Công khai: mọi người đã tham gia đều mời được. Bạn bè: chỉ người tạo. Chỉ mình tôi: không hiện. */
+  /** Công khai: mọi người đã tham gia đều mời được. Bạn bè: chỉ người tổ chức. Chỉ mình tôi: không hiện. */
   const canShowInviteFriends = useMemo(() => {
+    if (isArchivedReadOnly) return false
     if (!challenge?.isJoined) return false
     const vis = challenge.visibility
     if (vis === 'private') return false
@@ -115,7 +121,7 @@ export default function ChallengeDetail() {
       return Boolean(creatorId && myId && creatorId === myId)
     }
     return false
-  }, [challenge?.isJoined, challenge?.visibility, challenge?.creator_id, me?._id])
+  }, [challenge?.isJoined, challenge?.visibility, challenge?.creator_id, me?._id, isArchivedReadOnly])
 
   const filteredFriendsForInvite = useMemo(() => {
     const kw = friendSearch.toLowerCase().trim()
@@ -182,9 +188,19 @@ export default function ChallengeDetail() {
 
   const quitMutation = useSafeMutation({
     mutationFn: () => quitChallenge(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['challenge', id] }); toast.success('Đã rời thử thách'); setShowLeaveModal(false) },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenge', id] })
+      queryClient.invalidateQueries({ queryKey: ['my-challenges'] })
+      queryClient.invalidateQueries({ queryKey: ['challengeStats'] })
+      toast.success('Đã rời thử thách')
+      setShowLeaveModal(false)
+    },
     onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
   })
+
+  useEffect(() => {
+    if (showLeaveModal && isCreator) setShowLeaveModal(false)
+  }, [showLeaveModal, isCreator])
 
   const progressMutation = useSafeMutation({
     mutationFn: (data) => addChallengeProgress(id, data),
@@ -314,9 +330,6 @@ export default function ChallengeDetail() {
     )
   }
 
-  const isCreator =
-    String(challenge?.creator_id?._id || challenge?.creator_id || '') === String(me?._id || '')
-
   // Handle day click from calendar → open DayChallengeModal
   const handleDayClick = (dateStr, dayData) => {
     // Lookup day entries from progressByDate
@@ -326,6 +339,7 @@ export default function ChallengeDetail() {
 
   // Start tracking from DayChallengeModal
   const handleStartTracking = () => {
+    if (isArchivedReadOnly) return
     if (challenge.challenge_type === 'outdoor_activity') {
       setSelectedDay(null)
       // Navigate to GPS tracking page (handled in DayChallengeModal)
@@ -337,7 +351,7 @@ export default function ChallengeDetail() {
 
   // Render sub-modal (type-specific tracking or manual input)
   const renderSubModal = () => {
-    if (!showSubModal || !selectedDay) return null
+    if (isArchivedReadOnly || !showSubModal || !selectedDay) return null
     const commonProps = {
       challenge,
       onClose: () => setShowSubModal(null),
@@ -355,7 +369,7 @@ export default function ChallengeDetail() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Leave Confirmation Modal */}
-      {showLeaveModal && (
+      {showLeaveModal && !isCreator && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">Rời thử thách?</h3>
@@ -363,8 +377,8 @@ export default function ChallengeDetail() {
               Bạn sẽ không ghi thêm tiến độ khi đã rời; dữ liệu đã ghi được giữ. Tham gia lại sẽ tiếp tục từ mức hiện tại. Bạn có chắc muốn rời?
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setShowLeaveModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium text-sm">Hủy</button>
-              <button onClick={() => quitMutation.mutate()} disabled={quitMutation.isPending} className="flex-1 py-2.5 rounded-lg bg-red-500 text-white font-medium text-sm hover:bg-red-600 transition disabled:opacity-50">
+              <button type="button" onClick={() => setShowLeaveModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium text-sm">Hủy</button>
+              <button type="button" onClick={() => quitMutation.mutate()} disabled={quitMutation.isPending} className="flex-1 py-2.5 rounded-lg bg-red-500 text-white font-medium text-sm hover:bg-red-600 transition disabled:opacity-50">
                 {quitMutation.isPending ? <AiOutlineLoading3Quarters className="animate-spin mx-auto" /> : 'Xác nhận rời'}
               </button>
             </div>
@@ -428,7 +442,7 @@ export default function ChallengeDetail() {
                     onError={e => { e.target.src = useravatar }}
                   />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-white/60 uppercase font-semibold leading-tight">Người tạo</p>
+                    <p className="text-[10px] text-white/60 uppercase font-semibold leading-tight">Người tổ chức</p>
                     <p className="text-sm font-semibold text-white truncate max-w-[150px] group-hover:text-orange-300 transition">{challenge.creator_id?.name}</p>
                   </div>
                 </div>
@@ -518,7 +532,12 @@ export default function ChallengeDetail() {
 
             {/* Action Buttons — Join / Leave / Share */}
             <div className="mt-6 flex flex-wrap items-center gap-2.5">
-              {!challenge.isJoined ? (
+              {isArchivedReadOnly && (
+                <div className="w-full max-w-xl px-4 py-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-50 text-sm leading-relaxed">
+                  <strong className="text-amber-100">Lưu trữ:</strong> Thử thách đã được gỡ khỏi danh sách công khai. Bạn vẫn xem được lịch sử và bảng xếp hạng; không thể tham gia mới, check-in hay báo cáo.
+                </div>
+              )}
+              {!isArchivedReadOnly && !challenge.isJoined ? (
                 isExpired ? (
                   <button className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default">
                     Thử thách đã kết thúc
@@ -532,7 +551,7 @@ export default function ChallengeDetail() {
                     >
                       <FaLock className="text-xs" />
                       {(challenge.visibility || 'public') === 'friends'
-                        ? 'Chỉ bạn bè của người tạo mới tham gia được'
+                        ? 'Chỉ bạn bè của người tổ chức mới tham gia được'
                         : 'Thử thách riêng tư — không mở tham gia qua liên kết'}
                     </button>
                   </div>
@@ -553,13 +572,14 @@ export default function ChallengeDetail() {
                     )}
                   </div>
                 )
-              ) : (
+              ) : !isArchivedReadOnly ? (
                 <>
                   <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
                     <MdCheckCircle className="text-base" /> Đã tham gia
                   </div>
                   {canShowInviteFriends && (
                     <button
+                      type="button"
                       onClick={() => setShowInviteModal(true)}
                       className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
                     >
@@ -567,16 +587,27 @@ export default function ChallengeDetail() {
                       Mời bạn bè
                     </button>
                   )}
-                  <button
-                    onClick={() => setShowLeaveModal(true)}
-                    disabled={quitMutation.isPending}
-                    className="px-5 py-2.5 bg-white/10 hover:bg-red-500/30 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-400/40 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
-                  >
-                    {quitMutation.isPending ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaTimes className="text-sm" />}
-                    Rời khỏi
-                  </button>
+                  {isCreator ? (
+                    <div className="px-5 py-2.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
+                      👑 Người tổ chức
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowLeaveModal(true)}
+                      disabled={quitMutation.isPending}
+                      className="px-5 py-2.5 bg-white/10 hover:bg-red-500/30 text-white/80 hover:text-red-300 border border-white/20 hover:border-red-400/40 rounded-lg font-semibold text-sm transition backdrop-blur-sm flex items-center gap-2"
+                    >
+                      {quitMutation.isPending ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaTimes className="text-sm" />}
+                      Rời khỏi
+                    </button>
+                  )}
                 </>
-              )}
+              ) : challenge.isJoined ? (
+                <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
+                  <MdCheckCircle className="text-base" /> Đã tham gia (chỉ xem)
+                </div>
+              ) : null}
               {/* Share button — always visible */}
               <button
                 onClick={() => setShowShareModal(true)}
@@ -584,7 +615,7 @@ export default function ChallengeDetail() {
               >
                 <FaShare className="text-sm" /> Chia sẻ
               </button>
-              {me?._id && !isCreator && (
+              {!isArchivedReadOnly && me?._id && !isCreator && (
                 <button
                   type="button"
                   onClick={() => setShowReportModal(true)}
@@ -801,7 +832,7 @@ export default function ChallengeDetail() {
               ) : (
                 <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
                   {(challenge.visibility || 'public') === 'friends'
-                    ? 'Chỉ bạn bè của người tạo mới có thể tham gia.'
+                    ? 'Chỉ bạn bè của người tổ chức mới có thể tham gia.'
                     : 'Thử thách riêng tư — không mở tham gia qua liên kết.'}
                 </p>
               )}
@@ -833,6 +864,7 @@ export default function ChallengeDetail() {
           dateStr={selectedDay.dateStr}
           dayEntries={progressByDate[selectedDay.dateStr]?.entries || []}
           dayTotal={progressByDate[selectedDay.dateStr]?.total || 0}
+          readOnly={isArchivedReadOnly}
           onClose={() => { setSelectedDay(null); setShowSubModal(null) }}
           onStartTracking={handleStartTracking}
           onRefresh={() => {

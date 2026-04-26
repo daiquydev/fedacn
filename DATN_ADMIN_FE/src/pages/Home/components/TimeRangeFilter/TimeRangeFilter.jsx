@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 
 const PRESETS = [
-  { label: '24h', value: '24h' },
+  { label: 'Hôm nay', value: 'today' },
   { label: '7 ngày', value: '7d' },
   { label: '1 tháng', value: '1m' },
   { label: '6 tháng', value: '6m' },

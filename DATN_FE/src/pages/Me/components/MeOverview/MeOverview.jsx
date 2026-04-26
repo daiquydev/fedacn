@@ -1,11 +1,12 @@
 import { roundKcal } from '../../../../utils/mathUtils'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { FaRunning, FaDumbbell, FaFireAlt, FaChartLine, FaArrowRight } from 'react-icons/fa'
+import { FaRunning, FaChartLine, FaArrowRight } from 'react-icons/fa'
 import { FaHeartPulse, FaArrowUp, FaArrowDown, FaEquals } from 'react-icons/fa6'
 import { Link } from 'react-router-dom'
 import { getMeStats, currentAccount } from '../../../../apis/userApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
+import ProfileTodayActivity from '../ProfileTodayActivity/ProfileTodayActivity'
 
 const fadeIn = {
   hidden: { opacity: 0, y: 15 },
@@ -15,24 +16,6 @@ const fadeIn = {
 const stagger = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-}
-
-function StatCard({ icon: Icon, label, value, color, bgColor }) {
-  return (
-    <motion.div variants={fadeIn}>
-      <div
-        className={`block p-5 rounded-2xl ${bgColor} border border-gray-100 dark:border-gray-700/50`}
-      >
-        <div className={`p-3 rounded-xl ${color} bg-white/80 dark:bg-gray-800/80 shadow-sm w-fit`}>
-          <Icon className='text-xl' />
-        </div>
-        <div className='mt-4'>
-          <div className='text-3xl font-bold text-gray-800 dark:text-white'>{value}</div>
-          <div className='text-sm text-gray-500 dark:text-gray-400 mt-1'>{label}</div>
-        </div>
-      </div>
-    </motion.div>
-  )
 }
 
 function HealthCompact({ user }) {
@@ -157,30 +140,7 @@ export default function MeOverview() {
 
   return (
     <motion.div variants={stagger} initial='hidden' animate='visible' className='space-y-6'>
-      {/* Quick Stats Grid */}
-      <motion.div variants={stagger} className='grid grid-cols-2 lg:grid-cols-4 gap-4'>
-        <StatCard
-          icon={FaRunning}
-          label='Sự kiện thể thao'
-          value={stats?.sportEvents?.joined_count || 0}
-          color='text-blue-600'
-          bgColor='bg-blue-50/80 dark:bg-blue-900/10'
-        />
-        <StatCard
-          icon={FaDumbbell}
-          label='Lịch bài tập'
-          value={stats?.workouts?.schedules_count || 0}
-          color='text-emerald-600'
-          bgColor='bg-emerald-50/80 dark:bg-emerald-900/10'
-        />
-        <StatCard
-          icon={FaFireAlt}
-          label='Tổng kcal đốt'
-          value={stats?.total_kcal_burned ? stats.total_kcal_burned.toLocaleString() : '0'}
-          color='text-red-600'
-          bgColor='bg-red-50/80 dark:bg-red-900/10'
-        />
-      </motion.div>
+      <ProfileTodayActivity userId={user?._id} />
 
       {/* Health + Recent - 2-column */}
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>

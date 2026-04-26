@@ -59,9 +59,6 @@ export default function useActivityTracking() {
     const lastSplitDistRef = useRef(0)
     const lastSplitTimeRef = useRef(0)
 
-    // GPS Anti-cheat flags
-    const [gpsFlags, setGpsFlags] = useState([]) // [{ type: 'teleport'|'speed', ... }]
-
     const timerRef = useRef(null)
     const watchIdRef = useRef(null)
     const wakeLockRef = useRef(null)
@@ -125,31 +122,6 @@ export default function useActivityTracking() {
                 const lastPos = lastPositionRef.current
                 if (lastPos) {
                     const dist = haversineDistance(lastPos.lat, lastPos.lng, latitude, longitude)
-                    const timeDiff = (point.timestamp - lastPos.timestamp) / 1000
-
-                    // GPS Anti-cheat: flag teleport (>500m jump) — skip point entirely (do NOT add to route)
-                    if (dist > 500) {
-                        setGpsFlags(prev => [...prev, {
-                            type: 'teleport', distance: Math.round(dist),
-                            timestamp: Date.now(), lat: latitude, lng: longitude
-                        }])
-                        // Update lastPos so next point calculates from here,
-                        // but do NOT add this point to gpsRoute (avoids drawing abnormal lines)
-                        lastPositionRef.current = point
-                        return
-                    }
-
-                    // GPS Anti-cheat: flag impossible speed (>70 km/h ≈ 19.44 m/s) — skip point entirely
-                    const maxSpeedMs = 70 / 3.6 // 70 km/h
-                    if (timeDiff > 0 && dist / timeDiff > maxSpeedMs) {
-                        setGpsFlags(prev => [...prev, {
-                            type: 'speed', speed: Math.round(dist / timeDiff * 3.6),
-                            timestamp: Date.now()
-                        }])
-                        // Do NOT count distance or add to route for this flagged point
-                        lastPositionRef.current = point
-                        return
-                    }
 
                     // Filter noise: ignore movements < 3m or > 100m (GPS jump)
                     if (dist >= 3 && dist <= 100) {
@@ -181,10 +153,8 @@ export default function useActivityTracking() {
                     if (timeDiff > 0) {
                         const dist = haversineDistance(lastPos.lat, lastPos.lng, latitude, longitude)
                         const calculatedSpeed = dist / timeDiff
-                        if (calculatedSpeed < 15) {
-                            setCurrentSpeed(calculatedSpeed)
-                            setMaxSpeed((prev) => Math.max(prev, calculatedSpeed))
-                        }
+                        setCurrentSpeed(calculatedSpeed)
+                        setMaxSpeed((prev) => Math.max(prev, calculatedSpeed))
                     }
                 }
 
@@ -324,10 +294,9 @@ export default function useActivityTracking() {
             avgPace,
             calories,
             pauseIntervals: pauseIntervalsRef.current,
-            splits,
-            gpsFlags
+            splits
         }
-    }, [gpsPoints, avgSpeed, maxSpeed, avgPace, calories, splits, gpsFlags])
+    }, [gpsPoints, avgSpeed, maxSpeed, avgPace, calories, splits])
 
     return {
         isTracking,
@@ -346,7 +315,6 @@ export default function useActivityTracking() {
         activityType,
         setActivityType,
         splits,
-        gpsFlags,
         start,
         pause,
         resume,

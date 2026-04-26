@@ -58,7 +58,7 @@ const StatCard = ({ icon, label, value, subValue, colorClass, isActive, onClick 
 )
 
 const FILTER_LABELS = {
-  '24h': '24 giờ gần nhất',
+  today: 'Hôm nay',
   '7d': '7 ngày gần nhất',
   '1m': '1 tháng gần nhất',
   '6m': '6 tháng gần nhất',
@@ -173,9 +173,13 @@ export default function SportEventProgress({
       return completedActivities.filter(a => moment(a.startTime).isBetween(start, end, null, '[]'))
     }
     if (timeFilter === 'all') return completedActivities
+    if (timeFilter === 'today') {
+      const start = moment().startOf('day')
+      const end = moment().endOf('day')
+      return completedActivities.filter((a) => moment(a.startTime).isBetween(start, end, null, '[]'))
+    }
     let cutoff
     switch (timeFilter) {
-      case '24h': cutoff = moment().subtract(24, 'hours'); break
       case '7d': cutoff = moment().subtract(7, 'days'); break
       case '1m': cutoff = moment().subtract(1, 'month'); break
       case '6m': cutoff = moment().subtract(6, 'months'); break
@@ -284,11 +288,12 @@ export default function SportEventProgress({
       const divisor = activeMetric === 'distance' ? 1000 : 1
       const precision = activeMetric === 'distance' ? 2 : 0
 
-      // 24h → show per-activity bars
-      if (timeFilter === '24h' && !customRange) {
-        const cutoff = moment().subtract(24, 'hours')
+      // Hôm nay → từng hoạt động trong ngày lịch
+      if (timeFilter === 'today' && !customRange) {
+        const start = moment().startOf('day')
+        const end = moment().endOf('day')
         const recentActivities = completedActivities
-          .filter(a => moment(a.startTime).isAfter(cutoff))
+          .filter(a => moment(a.startTime).isBetween(start, end, null, '[]'))
           .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
 
         return recentActivities.map(a => {
@@ -430,10 +435,11 @@ export default function SportEventProgress({
     // Default: use progressHistory
     if (!userProgress?.progressHistory) return []
 
-    if (timeFilter === '24h' && !customRange) {
-      const cutoff = moment().subtract(24, 'hours')
+    if (timeFilter === 'today' && !customRange) {
+      const start = moment().startOf('day')
+      const end = moment().endOf('day')
       const recentProgress = userProgress.progressHistory
-        .filter(entry => moment(entry.date).isAfter(cutoff))
+        .filter(entry => moment(entry.date).isBetween(start, end, null, '[]'))
         .sort((a, b) => moment(a.date).diff(moment(b.date)))
 
       return recentProgress.map(entry => ({
@@ -481,7 +487,7 @@ export default function SportEventProgress({
 
     const getDays = () => {
       switch (timeFilter) {
-        case '24h': return 1
+        case 'today': return 1
         case '7d': return 7
         case '1m': return 30
         case '6m': return 180
@@ -780,8 +786,8 @@ export default function SportEventProgress({
                     <span className="text-sm font-normal text-gray-400 ml-1">({metricUnit})</span>
                   </h3>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {timeFilter === '24h'
-                      ? 'Hiển thị từng hoạt động trong 24 giờ qua'
+                    {timeFilter === 'today'
+                      ? 'Hiển thị từng hoạt động trong ngày hôm nay'
                       : 'Nhấn vào cột để xem chi tiết ngày đó'}
                   </p>
                 </div>

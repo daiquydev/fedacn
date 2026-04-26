@@ -176,3 +176,44 @@ export const getMeStatsController = async (req: Request, res: Response) => {
     result: result
   })
 }
+
+export const getTodayActivityController = async (req: Request, res: Response) => {
+  const viewer = req.decoded_authorization as TokenPayload
+  const { id } = req.params as { id: string }
+  const allowed = new Set(['today', '24h', '7days', '1month', '6months', 'all', 'custom'])
+  let range = (req.query.range as string) || '7days'
+  if (!allowed.has(range)) range = '7days'
+  const startDate = (req.query.startDate as string) || undefined
+  const endDate = (req.query.endDate as string) || undefined
+
+  if (range === 'custom') {
+    if (!startDate || !endDate) {
+      throw new ErrorWithStatus({
+        message: 'Vui lòng chọn khoảng ngày (startDate, endDate) cho bộ lọc tùy chỉnh',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+    const s = new Date(startDate)
+    s.setHours(0, 0, 0, 0)
+    const e = new Date(endDate)
+    e.setHours(0, 0, 0, 0)
+    if (s.getTime() > e.getTime()) {
+      throw new ErrorWithStatus({
+        message: 'Ngày bắt đầu không được sau ngày kết thúc',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+  }
+
+  const result = await usersService.getTodayActivitySummary({
+    target_user_id: id,
+    viewer_user_id: viewer.user_id,
+    range,
+    startDate,
+    endDate
+  })
+  return res.json({
+    message: 'Lấy thống kê hoạt động thành công',
+    result
+  })
+}

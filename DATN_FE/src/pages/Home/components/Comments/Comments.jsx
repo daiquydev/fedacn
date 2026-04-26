@@ -8,7 +8,6 @@ import InputEmoji from '../../../../components/InputComponents/InputEmoji'
 import { queryClient } from '../../../../main'
 import { AppContext } from '../../../../contexts/app.context'
 import { SocketContext } from '../../../../contexts/socket.context'
-import toast from 'react-hot-toast'
 
 export default function Comments({ post }) {
   const [content, setContent] = useState('')
@@ -47,9 +46,6 @@ export default function Comments({ post }) {
             })
           ])
           setContent('')
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi bình luận')
         }
       }
     )

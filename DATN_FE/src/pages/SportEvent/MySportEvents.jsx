@@ -196,7 +196,9 @@ const MySportEvents = () => {
     mutationFn: (eventId) => deleteSportEvent(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myCreatedEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['myJoinedEvents'] })
       queryClient.invalidateQueries({ queryKey: ['eventStats'] })
+      queryClient.invalidateQueries({ queryKey: ['sportEvents'] })
       toast.success('Đã xóa sự kiện thành công!')
       setOpenDeleteBox(false)
       setSelectedEventId(null)

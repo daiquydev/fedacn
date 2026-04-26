@@ -284,7 +284,7 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
                 disabled
                 className="w-full py-2 bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 rounded-md text-sm font-bold flex justify-center items-center cursor-not-allowed gap-2"
               >
-                {vis === 'friends' ? 'Chỉ bạn bè người tạo' : 'Không thể tham gia'}
+                {vis === 'friends' ? 'Chỉ bạn bè người tổ chức' : 'Không thể tham gia'}
               </button>
             ) : (
               <button

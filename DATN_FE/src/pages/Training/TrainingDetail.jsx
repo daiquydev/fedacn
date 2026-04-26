@@ -286,7 +286,7 @@ export default function TrainingDetail() {
                     <FaCheckCircle className="text-blue-400" size={15} />
                   )}
                 </div>
-                <span className="text-gray-500 dark:text-gray-400">Người tạo thử thách</span>
+                <span className="text-gray-500 dark:text-gray-400">Người tổ chức thử thách</span>
               </div>
             </div>
 

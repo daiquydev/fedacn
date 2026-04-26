@@ -203,6 +203,9 @@ export default function SportEventDetail() {
     mutationFn: () => joinSportEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sportEvent', id] })
+      queryClient.invalidateQueries({ queryKey: ['myJoinedEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['eventStats'] })
+      queryClient.invalidateQueries({ queryKey: ['sportEvents'] })
       toast.success('Đã tham gia sự kiện thành công!')
     },
     onError: (error) => {
@@ -227,6 +230,8 @@ export default function SportEventDetail() {
     mutationFn: () => leaveSportEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sportEvent', id] })
+      queryClient.invalidateQueries({ queryKey: ['myJoinedEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['eventStats'] })
       toast.success('Đã rời khỏi sự kiện')
     },
     onError: (error) => {

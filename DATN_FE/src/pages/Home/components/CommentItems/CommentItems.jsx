@@ -83,9 +83,6 @@ export default function CommentItems({ comment, post }) {
             })
           ])
           setContent('')
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi trả lời bình luận')
         }
       }
     )

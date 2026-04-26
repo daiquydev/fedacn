@@ -6,6 +6,7 @@ import {
   AlbumStatus,
   BlogStatus,
   NotificationTypes,
+  PostStatus,
   RecipeStatus,
   RequestType,
   UserRoles
@@ -24,11 +25,76 @@ import UserModel from '~/models/schemas/user.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import WorkoutScheduleModel from '~/models/schemas/workoutSchedule.schema'
+import PostModel from '~/models/schemas/post.schema'
+import ChallengeProgressModel from '~/models/schemas/challengeProgress.schema'
+import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 
 import { comparePassword, hashPassword } from '~/utils/crypto'
 
 import { ErrorWithStatus } from '~/utils/error'
 import { deleteFileFromS3, uploadFileToS3 } from '~/utils/s3'
+
+const PROFILE_ACTIVITY_RANGES = new Set(['today', '24h', '7days', '1month', '6months', 'all', 'custom'])
+
+/** Khoảng thời gian cho thống kê hoạt động trên hồ sơ (today = 00:00–23:59 ngày hiện tại; 24h = alias của today). */
+function resolveProfileActivityBounds(
+  range: string,
+  startDateStr?: string,
+  endDateStr?: string
+): { start: Date | null; end: Date | null; periodLabel: string } {
+  const now = new Date()
+  const r = range === '24h' ? 'today' : range
+  if (r === 'custom' && startDateStr && endDateStr) {
+    const start = moment(startDateStr).startOf('day').toDate()
+    const end = moment(endDateStr).endOf('day').toDate()
+    const label = `${moment(start).format('DD/MM/YYYY')} – ${moment(end).format('DD/MM/YYYY')}`
+    return { start, end, periodLabel: label }
+  }
+  if (r === 'all') {
+    return { start: null, end: null, periodLabel: 'Toàn bộ thời gian' }
+  }
+  if (r === 'today') {
+    const start = moment().startOf('day').toDate()
+    const end = moment().endOf('day').toDate()
+    return {
+      start,
+      end,
+      periodLabel: moment().format('DD/MM/YYYY')
+    }
+  }
+  const start = new Date()
+  if (r === '7days') {
+    start.setDate(start.getDate() - 7)
+    return {
+      start,
+      end: now,
+      periodLabel: `${moment(start).format('DD/MM/YYYY')} – ${moment(now).format('DD/MM/YYYY')}`
+    }
+  }
+  if (r === '1month') {
+    start.setMonth(start.getMonth() - 1)
+    return {
+      start,
+      end: now,
+      periodLabel: `${moment(start).format('DD/MM/YYYY')} – ${moment(now).format('DD/MM/YYYY')}`
+    }
+  }
+  if (r === '6months') {
+    start.setMonth(start.getMonth() - 6)
+    return {
+      start,
+      end: now,
+      periodLabel: `${moment(start).format('DD/MM/YYYY')} – ${moment(now).format('DD/MM/YYYY')}`
+    }
+  }
+  // fallback
+  start.setDate(start.getDate() - 7)
+  return {
+    start,
+    end: now,
+    periodLabel: `${moment(start).format('DD/MM/YYYY')} – ${moment(now).format('DD/MM/YYYY')}`
+  }
+}
 
 class UsersService {
   async followUserService({ user_id, follow_id }: { user_id: string; follow_id: string }) {
@@ -998,6 +1064,83 @@ class UsersService {
         recent: []
       },
       total_kcal_burned: sportKcal + workoutKcal
+    }
+  }
+
+  /**
+   * Thống kê hoạt động theo khoảng thời gian (range: today | 7days | 1month | 6months | all | custom; 24h = alias của today).
+   * Bài viết: chính chủ — mọi bài không bị ban; người xem khác — chỉ bài public.
+   */
+  async getTodayActivitySummary({
+    target_user_id,
+    viewer_user_id,
+    range = '7days',
+    startDate: startDateStr,
+    endDate: endDateStr
+  }: {
+    target_user_id: string
+    viewer_user_id: string
+    range?: string
+    startDate?: string
+    endDate?: string
+  }) {
+    const raw = PROFILE_ACTIVITY_RANGES.has(range || '') ? range || '7days' : '7days'
+    const normalized = raw === '24h' ? 'today' : raw
+    const { start, end, periodLabel } = resolveProfileActivityBounds(raw, startDateStr, endDateStr)
+
+    const userOid = new ObjectId(target_user_id)
+    const isSelf = target_user_id === viewer_user_id
+
+    const postMatch: Record<string, unknown> = {
+      user_id: userOid,
+      is_banned: { $ne: true },
+      parent_id: null
+    }
+    if (!isSelf) {
+      postMatch.status = PostStatus.publish
+    }
+    if (start && end) {
+      postMatch.createdAt = { $gte: start, $lte: end }
+    }
+
+    const sportMatch: Record<string, unknown> = {
+      userId: userOid,
+      is_deleted: { $ne: true }
+    }
+    if (start && end) {
+      sportMatch.date = { $gte: start, $lte: end }
+    }
+
+    const challengeMatch: Record<string, unknown> = {
+      user_id: userOid,
+      is_deleted: { $ne: true }
+    }
+    if (start && end) {
+      challengeMatch.date = { $gte: start, $lte: end }
+    }
+
+    const workoutMatch: Record<string, unknown> = {
+      user_id: userOid,
+      status: 'completed'
+    }
+    if (start && end) {
+      workoutMatch.finished_at = { $gte: start, $lte: end }
+    }
+
+    const [posts, sport_event_activities, challenge_activities, training_sessions] = await Promise.all([
+      PostModel.countDocuments(postMatch),
+      SportEventProgressModel.countDocuments(sportMatch),
+      ChallengeProgressModel.countDocuments(challengeMatch),
+      WorkoutSessionModel.countDocuments(workoutMatch)
+    ])
+
+    return {
+      posts,
+      sport_event_activities,
+      challenge_activities,
+      training_sessions,
+      period_label: periodLabel,
+      range: normalized
     }
   }
 }

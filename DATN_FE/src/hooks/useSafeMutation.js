@@ -10,15 +10,20 @@ import { useCallback, useRef } from 'react'
  */
 export function useSafeMutation(options) {
   const mutation = useMutation(options)
-  const isPendingRef = useRef(false)
-
-  // Sync ref with mutation state for instant access in closures
-  isPendingRef.current = mutation.isPending
+  /** Khóa ngay trong cùng tick — `isPending` của React Query chỉ bật sau re-render nên double-click vẫn lọt nếu chỉ kiểm tra isPending */
+  const inFlightRef = useRef(false)
 
   const safeMutate = useCallback(
     (variables, mutateOptions) => {
-      if (isPendingRef.current) return
-      mutation.mutate(variables, mutateOptions)
+      if (inFlightRef.current) return
+      inFlightRef.current = true
+      mutation.mutate(variables, {
+        ...mutateOptions,
+        onSettled: (...args) => {
+          inFlightRef.current = false
+          mutateOptions?.onSettled?.(...args)
+        }
+      })
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mutation.mutate]
@@ -26,8 +31,15 @@ export function useSafeMutation(options) {
 
   const safeMutateAsync = useCallback(
     (variables, mutateOptions) => {
-      if (isPendingRef.current) return Promise.resolve()
-      return mutation.mutateAsync(variables, mutateOptions)
+      if (inFlightRef.current) return Promise.resolve()
+      inFlightRef.current = true
+      return mutation.mutateAsync(variables, {
+        ...mutateOptions,
+        onSettled: (...args) => {
+          inFlightRef.current = false
+          mutateOptions?.onSettled?.(...args)
+        }
+      })
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mutation.mutateAsync]

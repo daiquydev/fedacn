@@ -4,7 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FaCheckCircle, FaUserPlus, FaUserCheck, FaTrophy } from 'react-icons/fa'
-import { MdArticle, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md'
+import { MdArticle, MdDashboard, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md'
 import { HiClock } from 'react-icons/hi'
 import toast from 'react-hot-toast'
 
@@ -19,12 +19,14 @@ import Loading from '../../components/GlobalComponents/Loading'
 
 // Lazy load tab components
 const UserPost = lazy(() => import('./components/UserPost/UserPost'))
+const ProfileTodayActivity = lazy(() => import('../Me/components/ProfileTodayActivity/ProfileTodayActivity'))
 const MeSportEvents = lazy(() => import('../Me/components/MeSportEvents/MeSportEvents'))
 const MeWorkouts = lazy(() => import('../Me/components/MeWorkouts/MeWorkouts'))
 const MeChallenges = lazy(() => import('../Me/components/MeChallenges/MeChallenges'))
 
 
 const TABS = [
+  { key: 'overview', label: 'Tổng quan', icon: MdDashboard },
   { key: 'posts', label: 'Bài viết', icon: MdArticle },
   { key: 'sports', label: 'Thể thao', icon: MdSportsSoccer },
   { key: 'workouts', label: 'Bài tập', icon: MdFitnessCenter },
@@ -52,7 +54,7 @@ export default function UserProfile() {
   const { id } = useParams()
   const { profile } = useContext(AppContext)
   const { newSocket } = useContext(SocketContext)
-  const [activeTab, setActiveTab] = useState('posts')
+  const [activeTab, setActiveTab] = useState('overview')
   const [scrollPosition, setScrollPosition] = useState(0)
 
   const handleScroll = () => {
@@ -121,6 +123,8 @@ export default function UserProfile() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'overview':
+        return <ProfileTodayActivity userId={id} />
       case 'posts':
         return <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />
       case 'sports':
@@ -130,7 +134,7 @@ export default function UserProfile() {
       case 'challenges':
         return <MeChallenges isOwner={false} userId={id} />
       default:
-        return <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />
+        return <ProfileTodayActivity userId={id} />
     }
   }
 

@@ -113,9 +113,6 @@ export default function ChallengeDayCommentItems({ comment, challengeId, targetU
             queryClient.invalidateQueries({ queryKey: [childKey] })
           ])
           setContent('')
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi bình luận')
         }
       }
     )

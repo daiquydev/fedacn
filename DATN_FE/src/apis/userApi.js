@@ -32,3 +32,6 @@ export const bookmarkUser = () => http.get('/users/bookmarks')
 export const updateRequest = (body) => http.put('/users/update-to-chef', body)
 
 export const getMeStats = () => http.get('/users/me/stats')
+
+export const getUserTodayActivity = (userId, params = {}) =>
+  http.get(`/users/profile/${userId}/today-activity`, { params })

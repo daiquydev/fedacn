@@ -11,6 +11,7 @@ import { NotificationTypes } from '~/constants/enums'
 import { CHALLENGE_MESSAGE } from '~/constants/messages'
 import { ErrorWithStatus } from '~/utils/error'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { challengeHasStartedForDelete } from '~/utils/challengeDeleteGuard.utils'
 
 class ChallengeService {
     private async cleanupChallengePostMarkers(challengeId: string) {
@@ -28,6 +29,33 @@ class ChallengeService {
         } catch (err) {
             console.error('Failed to clean post markers for challenge:', challengeId, err)
         }
+    }
+
+    private creatorIdStringFromChallengeDoc(challenge: { creator_id: unknown }): string {
+        const c = challenge.creator_id as { _id?: Types.ObjectId } | Types.ObjectId | undefined
+        if (!c) return ''
+        if (typeof c === 'object' && '_id' in c && (c as { _id?: Types.ObjectId })._id) {
+            return (c as { _id: Types.ObjectId })._id.toString()
+        }
+        return (c as Types.ObjectId).toString()
+    }
+
+    /** Người tạo hoặc thành viên chưa rời — được xem thử thách đã gỡ (lưu trữ). */
+    private async isArchivedStakeholder(
+        challengeId: string,
+        challenge: { _id: Types.ObjectId; creator_id: unknown },
+        viewerId?: string
+    ): Promise<boolean> {
+        if (!viewerId) return false
+        if (this.creatorIdStringFromChallengeDoc(challenge) === viewerId) return true
+        const p = await ChallengeParticipantModel.findOne({
+            challenge_id: new Types.ObjectId(challengeId),
+            user_id: new Types.ObjectId(viewerId),
+            status: { $ne: 'quit' }
+        })
+            .select('_id')
+            .lean()
+        return !!p
     }
 
     /**
@@ -276,15 +304,19 @@ class ChallengeService {
                     status: HTTP_STATUS.GONE
                 })
             }
-            throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+            const canArchiveView = await this.isArchivedStakeholder(challengeId, challenge, userId)
+            if (!canArchiveView) {
+                throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+            }
+        } else {
+            await this.assertUserCanViewChallenge(challenge, userId)
         }
-
-        await this.assertUserCanViewChallenge(challenge, userId)
 
         await this.ensureCreatorIsParticipant(challengeId)
 
         const result: any = challenge.toObject()
         result.participants_count = await this.reconcileStoredParticipantsCount(challengeId)
+        result.is_archived_read_only = !!(challenge.is_deleted && !challenge.deleted_from_report_moderation)
 
         // Calculate time remaining
         const now = new Date()
@@ -327,6 +359,7 @@ class ChallengeService {
     async updateChallenge(challengeId: string, userId: string, updateData: any) {
         const challenge = await ChallengeModel.findById(challengeId)
         if (!challenge) throw new Error('Thử thách không tồn tại')
+        if (challenge.is_deleted) throw new Error('Không thể sửa thử thách đã gỡ khỏi hệ thống')
         if (challenge.creator_id.toString() !== userId) throw new Error('Bạn không có quyền sửa thử thách này')
 
         const allowedFields = [
@@ -359,6 +392,12 @@ class ChallengeService {
         const challenge = await ChallengeModel.findOne({ _id: challengeId, is_deleted: { $ne: true } })
         if (!challenge) throw new Error('Thử thách không tồn tại')
         if (challenge.creator_id.toString() !== userId) throw new Error('Bạn không có quyền xóa thử thách này')
+        if (challengeHasStartedForDelete(challenge)) {
+            throw new ErrorWithStatus({
+                message: 'Thử thách đã bắt đầu, không thể xóa',
+                status: HTTP_STATUS.BAD_REQUEST
+            })
+        }
 
         challenge.status = 'cancelled'
         challenge.is_deleted = true
@@ -564,7 +603,7 @@ class ChallengeService {
             const ok = await this.areUsersMutualFriends(userId, creatorId)
             if (!ok) {
                 throw new ErrorWithStatus({
-                    message: 'Chỉ bạn bè của người tạo mới có thể tham gia thử thách này.',
+                    message: 'Chỉ bạn bè của người tổ chức mới có thể tham gia thử thách này.',
                     status: HTTP_STATUS.FORBIDDEN
                 })
             }
@@ -611,7 +650,7 @@ class ChallengeService {
             const ok = await this.areUsersMutualFriends(userId, creatorId)
             if (!ok) {
                 throw new ErrorWithStatus({
-                    message: 'Chỉ bạn bè của người tạo mới có thể xem thử thách này.',
+                    message: 'Chỉ bạn bè của người tổ chức mới có thể xem thử thách này.',
                     status: HTTP_STATUS.FORBIDDEN
                 })
             }
@@ -630,7 +669,11 @@ class ChallengeService {
                     status: HTTP_STATUS.GONE
                 })
             }
-            throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+            const can = await this.isArchivedStakeholder(challengeId, challenge, viewerId)
+            if (!can) {
+                throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+            }
+            return challenge
         }
         await this.assertUserCanViewChallenge(challenge, viewerId)
         return challenge
@@ -726,9 +769,10 @@ class ChallengeService {
     async quitChallenge(challengeId: string, userId: string) {
         const challenge = await ChallengeModel.findById(challengeId)
         if (!challenge) throw new Error('Thử thách không tồn tại')
-        
+        if (challenge.is_deleted) throw new Error('Thử thách đã được gỡ, không thể thao tác')
+
         if (challenge.creator_id.toString() === userId) {
-            throw new Error('Người tạo không thể rời thử thách')
+            throw new Error('Người tổ chức không thể rời thử thách')
         }
 
         const participant = await ChallengeParticipantModel.findOne({
@@ -759,7 +803,10 @@ class ChallengeService {
 
     async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
         const skip = (page - 1) * limit
-        const condition: any = { creator_id: new Types.ObjectId(userId), is_deleted: { $ne: true } }
+        const condition: any = { creator_id: new Types.ObjectId(userId) }
+        if (status) {
+            condition.is_deleted = { $ne: true }
+        }
 
         const now = new Date()
         if (status === 'ongoing') {
@@ -783,32 +830,45 @@ class ChallengeService {
         return { challenges, totalPage, page, limit, total }
     }
 
-    async getMyChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
+    async getMyChallenges(
+        userId: string,
+        page: number = 1,
+        limit: number = 20,
+        status?: string,
+        options?: { includeArchivedJoins?: boolean }
+    ) {
         const skip = (page - 1) * limit
+        const includeArchivedJoins = options?.includeArchivedJoins === true
 
-        let challengeMatchCondition: any = {}
-        const now = new Date()
-        if (status === 'ongoing') {
-            challengeMatchCondition.start_date = { $lte: now }
-            challengeMatchCondition.end_date = { $gte: now }
-        } else if (status === 'ended') {
-            challengeMatchCondition.end_date = { $lt: now }
-        } else if (status === 'upcoming') {
-            challengeMatchCondition.start_date = { $gt: now }
-        }
-
-        let validChallengeIds = null
-        if (Object.keys(challengeMatchCondition).length > 0) {
-            const matchingChallenges = await ChallengeModel.find(challengeMatchCondition, '_id')
-            validChallengeIds = matchingChallenges.map(c => c._id)
-        }
-
-        const condition: any = {
+        const participantBase: any = {
             user_id: new Types.ObjectId(userId),
             status: { $ne: 'quit' }
         }
-        if (validChallengeIds) {
-            condition.challenge_id = { $in: validChallengeIds }
+        const myChallengeIds = await ChallengeParticipantModel.distinct('challenge_id', participantBase)
+
+        let challengeMatch: any = {
+            _id: { $in: myChallengeIds.length ? myChallengeIds : [] }
+        }
+        if (!includeArchivedJoins || status) {
+            challengeMatch.is_deleted = { $ne: true }
+        }
+        const now = new Date()
+        if (status === 'ongoing') {
+            challengeMatch.start_date = { $lte: now }
+            challengeMatch.end_date = { $gte: now }
+        } else if (status === 'ended') {
+            challengeMatch.end_date = { $lt: now }
+        } else if (status === 'upcoming') {
+            challengeMatch.start_date = { $gt: now }
+        }
+
+        const validChallengeIds = myChallengeIds.length
+            ? (await ChallengeModel.find(challengeMatch, '_id').lean()).map((c) => c._id)
+            : []
+
+        const condition: any = {
+            ...participantBase,
+            challenge_id: { $in: validChallengeIds }
         }
 
         const participations = await ChallengeParticipantModel.find(condition)
@@ -831,28 +891,41 @@ class ChallengeService {
         let total = 0, ongoing = 0, upcoming = 0, ended = 0
 
         if (type === 'created') {
-            const condition: any = { creator_id: new Types.ObjectId(userId), is_deleted: { $ne: true } }
-            const [t, o, u, e] = await Promise.all([
-                ChallengeModel.countDocuments(condition),
-                ChallengeModel.countDocuments({ ...condition, start_date: { $lte: now }, end_date: { $gte: now } }),
-                ChallengeModel.countDocuments({ ...condition, start_date: { $gt: now } }),
-                ChallengeModel.countDocuments({ ...condition, end_date: { $lt: now } })
+            const base: any = { creator_id: new Types.ObjectId(userId) }
+            const active: any = { ...base, is_deleted: { $ne: true } }
+            const [t, o, u, e, archivedN] = await Promise.all([
+                ChallengeModel.countDocuments(base),
+                ChallengeModel.countDocuments({ ...active, start_date: { $lte: now }, end_date: { $gte: now } }),
+                ChallengeModel.countDocuments({ ...active, start_date: { $gt: now } }),
+                ChallengeModel.countDocuments({ ...active, end_date: { $lt: now } }),
+                ChallengeModel.countDocuments({ ...base, is_deleted: true })
             ])
-            total = t; ongoing = o; upcoming = u; ended = e;
+            total = t
+            ongoing = o
+            upcoming = u
+            ended = e + archivedN
         } else {
             const participations = await ChallengeParticipantModel.find({
                 user_id: new Types.ObjectId(userId),
                 status: { $ne: 'quit' }
             }).select('challenge_id')
             const challengeIds = participations.map((p: any) => p.challenge_id)
-            const condition: any = { _id: { $in: challengeIds }, is_deleted: { $ne: true } }
-            const [t, o, u, e] = await Promise.all([
-                ChallengeModel.countDocuments(condition),
-                ChallengeModel.countDocuments({ ...condition, start_date: { $lte: now }, end_date: { $gte: now } }),
-                ChallengeModel.countDocuments({ ...condition, start_date: { $gt: now } }),
-                ChallengeModel.countDocuments({ ...condition, end_date: { $lt: now } })
+            if (!challengeIds.length) {
+                return { total: 0, ongoing: 0, upcoming: 0, ended: 0 }
+            }
+            const base: any = { _id: { $in: challengeIds } }
+            const active: any = { ...base, is_deleted: { $ne: true } }
+            const [t, o, u, e, archivedN] = await Promise.all([
+                ChallengeModel.countDocuments(base),
+                ChallengeModel.countDocuments({ ...active, start_date: { $lte: now }, end_date: { $gte: now } }),
+                ChallengeModel.countDocuments({ ...active, start_date: { $gt: now } }),
+                ChallengeModel.countDocuments({ ...active, end_date: { $lt: now } }),
+                ChallengeModel.countDocuments({ ...base, is_deleted: true })
             ])
-            total = t; ongoing = o; upcoming = u; ended = e;
+            total = t
+            ongoing = o
+            upcoming = u
+            ended = e + archivedN
         }
 
         return { total, ongoing, upcoming, ended }
@@ -967,6 +1040,7 @@ class ChallengeService {
     }) {
         const challenge = await ChallengeModel.findById(challengeId)
         if (!challenge) throw new Error('Thử thách không tồn tại')
+        if (challenge.is_deleted) throw new Error('Thử thách đã được gỡ, không thể ghi nhận tiến độ')
         if (challenge.status !== 'active') throw new Error('Thử thách đã kết thúc')
 
         if (new Date() > new Date(challenge.end_date)) {

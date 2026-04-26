@@ -19,13 +19,18 @@ export function buildTrainingCreatedAtFilter(
   }
 
   const from = new Date()
-  if (range === '24h') {
-    from.setTime(from.getTime() - 24 * 60 * 60 * 1000)
-  } else if (range === '7days') {
+  const r = range === '24h' ? 'today' : range
+  if (r === 'today') {
+    from.setHours(0, 0, 0, 0)
+    const to = new Date()
+    to.setHours(23, 59, 59, 999)
+    return { createdAt: { $gte: from, $lte: to } }
+  }
+  if (r === '7days') {
     from.setDate(from.getDate() - 7)
-  } else if (range === '1month') {
+  } else if (r === '1month') {
     from.setMonth(from.getMonth() - 1)
-  } else if (range === '6months') {
+  } else if (r === '6months') {
     from.setMonth(from.getMonth() - 6)
   } else {
     return {}

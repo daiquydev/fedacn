@@ -585,7 +585,7 @@ export default function ReportList() {
                   <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                     <thead className='bg-gray-50 dark:bg-slate-900'>
                       <tr>
-                        {['Người tạo thử thách', 'Thử thách'].map(h => (
+                        {['Người tổ chức thử thách', 'Thử thách'].map(h => (
                           <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                             {h}
                           </th>
@@ -652,7 +652,7 @@ export default function ReportList() {
                   <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                     <thead className='bg-gray-50 dark:bg-slate-900'>
                       <tr>
-                        {['Người tạo thử thách', 'Thử thách', 'Thời điểm xóa', 'Nội dung bị báo cáo', 'Hành động'].map(h => (
+                        {['Người tổ chức thử thách', 'Thử thách', 'Thời điểm xóa', 'Nội dung bị báo cáo', 'Hành động'].map(h => (
                           <th key={h} className='px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                             {h}
                           </th>

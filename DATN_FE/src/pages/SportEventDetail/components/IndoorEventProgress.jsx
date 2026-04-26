@@ -59,7 +59,7 @@ function formatCountdown(secs) {
 }
 
 const FILTER_LABELS = {
-    '24h': '24 giờ gần nhất',
+    today: 'Hôm nay',
     '7d': '7 ngày gần nhất',
     '1m': '1 tháng gần nhất',
     '6m': '6 tháng gần nhất',
@@ -178,10 +178,13 @@ export default function IndoorEventProgress({ event, userProgress }) {
             return endedSessions.filter(s => moment(s.joinedAt).isBetween(start, end, null, '[]'))
         }
         if (timeFilter === 'all') return endedSessions
-        const now = moment()
+        if (timeFilter === 'today') {
+            const start = moment().startOf('day')
+            const end = moment().endOf('day')
+            return endedSessions.filter((s) => moment(s.joinedAt).isBetween(start, end, null, '[]'))
+        }
         let cutoff
         switch (timeFilter) {
-            case '24h': cutoff = moment().subtract(24, 'hours'); break
             case '7d': cutoff = moment().subtract(7, 'days'); break
             case '1m': cutoff = moment().subtract(1, 'month'); break
             case '6m': cutoff = moment().subtract(6, 'months'); break
@@ -286,11 +289,12 @@ export default function IndoorEventProgress({ event, userProgress }) {
         const field = activeMetric === 'calories' ? 'caloriesBurned' : 'activeSeconds'
         const divisor = activeMetric === 'minutes' ? 60 : 1
 
-        // 24h → show per-session bars (individual entries)
-        if (timeFilter === '24h' && !customRange) {
-            const cutoff = moment().subtract(24, 'hours')
+        // Hôm nay → từng buổi trong ngày lịch
+        if (timeFilter === 'today' && !customRange) {
+            const start = moment().startOf('day')
+            const end = moment().endOf('day')
             const recentSessions = endedSessions
-                .filter(s => moment(s.joinedAt).isAfter(cutoff))
+                .filter(s => moment(s.joinedAt).isBetween(start, end, null, '[]'))
                 .sort((a, b) => moment(a.joinedAt).diff(moment(b.joinedAt)))
             return recentSessions.map(vs => ({
                 date: moment(vs.joinedAt).format('HH:mm'),
@@ -670,8 +674,8 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                         <span className="text-sm font-normal text-gray-400 ml-1">({metricUnit})</span>
                                     </h3>
                                     <p className="text-xs text-gray-400 mt-0.5">
-                                        {timeFilter === '24h'
-                                            ? 'Hiển thị từng buổi tham gia trong 24 giờ qua'
+                                        {timeFilter === 'today'
+                                            ? 'Hiển thị từng buổi tham gia trong ngày hôm nay'
                                             : 'Nhấn vào cột để xem chi tiết ngày đó'}
                                     </p>
                                 </div>
@@ -738,7 +742,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                                 return (
                                                     <div className="bg-white dark:bg-gray-800 p-3 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700 text-sm">
                                                         <p className="font-bold text-gray-800 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-700 pb-1">{data.date}</p>
-                                                        {timeFilter === '24h' ? (
+                                                        {timeFilter === 'today' ? (
                                                             <div className="space-y-1">
                                                                 <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Thời gian:</span> <span className="font-bold text-blue-500">{data.minutes} phút</span></p>
                                                                 <p className="flex justify-between gap-6"><span className="text-gray-500 dark:text-gray-400">Calories:</span> <span className="font-bold text-orange-500">{data.calories} kcal</span></p>

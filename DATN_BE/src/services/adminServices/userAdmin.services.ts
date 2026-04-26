@@ -189,35 +189,6 @@ class UserAdminService {
           }
         }
       },
-      // Activity score calculation
-      {
-        $addFields: {
-          activity_score: {
-            $add: [
-              { $multiply: ['$posts_count', 3] },
-              { $multiply: ['$events_attended', 5] },
-              { $multiply: ['$challenges_joined', 4] },
-              { $multiply: ['$workouts_completed', 2] },
-              { $multiply: ['$followers_count', 1] },
-              { $multiply: ['$likes_count', 0.5] }
-            ]
-          }
-        }
-      },
-      {
-        $addFields: {
-          activity_level: {
-            $switch: {
-              branches: [
-                { case: { $gte: ['$activity_score', 50] }, then: 'very_active' },
-                { case: { $gte: ['$activity_score', 20] }, then: 'active' },
-                { case: { $gte: ['$activity_score', 5] }, then: 'low_activity' }
-              ],
-              default: 'inactive'
-            }
-          }
-        }
-      },
       // Clean up — remove raw arrays, keep only counts
       {
         $project: {

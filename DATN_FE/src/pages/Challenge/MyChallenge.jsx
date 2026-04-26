@@ -161,9 +161,10 @@ export default function MyChallenge() {
     mutationFn: (id) => deleteChallenge(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
+      queryClient.invalidateQueries({ queryKey: ['my-challenges'] })
       queryClient.invalidateQueries({ queryKey: ['challengeStats'] })
       queryClient.invalidateQueries({ queryKey: ['challenges'] })
-      toast.success('Đã xóa thử thách thành công!')
+      toast.success('Đã gỡ thử thách. Bạn và người đã tham gia vẫn xem được lịch sử.')
       setOpenDeleteBox(false)
       setSelectedChallengeId(null)
     },
@@ -345,8 +346,8 @@ export default function MyChallenge() {
       {/* ═══ DELETE CONFIRM ═══ */}
       {openDeleteBox && (
         <DeleteConfirmBox
-          title='Xóa thử thách'
-          subtitle={`Bạn chắc chắn muốn xóa thử thách "${selectedInfo.name}"?`}
+          title='Gỡ thử thách'
+          subtitle={`Gỡ "${selectedInfo.name}" khỏi danh sách công khai? Chỉ áp dụng khi thử thách chưa bắt đầu. Bạn và người đã tham gia vẫn xem được dữ liệu cũ.`}
           handleDelete={confirmDelete}
           closeModal={() => setOpenDeleteBox(false)}
           isPending={deleteMutation.isPending}
@@ -501,6 +502,7 @@ function CreatedTabContent({
 
 // Helper: status badge
 function getStatusBadge(challenge) {
+  if (challenge.is_deleted) return { text: 'Đã gỡ', color: 'bg-slate-600', dot: false }
   const now = moment()
   const start = moment(challenge.start_date)
   const end = moment(challenge.end_date)
@@ -789,11 +791,23 @@ function ParticipantsSubTab({ challenge, participants, participantsTotal, isLoad
 // ═══════════════════════════════════════════════════════════
 // SUB-TAB: Settings
 // ═══════════════════════════════════════════════════════════
+function canCreatorSoftDeleteChallenge(challenge) {
+  if (!challenge?.start_date) return true
+  return moment().isBefore(moment(challenge.start_date))
+}
+
 function SettingsSubTab({ challenge, onDeleteClick, onEditClick, navigate }) {
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
+  const isRemoved = Boolean(challenge.is_deleted)
+  const canDelete = !isRemoved && canCreatorSoftDeleteChallenge(challenge)
 
   return (
     <div className="space-y-6 max-w-xl">
+      {isRemoved && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+          Thử thách này đã được gỡ khỏi danh sách công khai. Bạn và người đã tham gia vẫn xem được lịch sử trên trang chi tiết.
+        </div>
+      )}
       {/* Quick info */}
       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 space-y-4">
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -834,32 +848,53 @@ function SettingsSubTab({ challenge, onDeleteClick, onEditClick, navigate }) {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {!isRemoved && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => onEditClick(challenge)}
+            className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-semibold transition shadow-lg"
+          >
+            <FaEdit /> Sửa thử thách
+          </button>
+          <button
+            onClick={() => navigate(`/challenge/${challenge._id}`)}
+            className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-xl font-semibold transition"
+          >
+            <FaEye /> Xem trang thử thách
+          </button>
+        </div>
+      )}
+      {isRemoved && (
         <button
-          onClick={() => onEditClick(challenge)}
-          className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-semibold transition shadow-lg"
-        >
-          <FaEdit /> Sửa thử thách
-        </button>
-        <button
+          type="button"
           onClick={() => navigate(`/challenge/${challenge._id}`)}
-          className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-xl font-semibold transition"
+          className="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-xl font-semibold transition"
         >
-          <FaEye /> Xem trang thử thách
+          <FaEye /> Xem trang thử thách (lưu trữ)
         </button>
-      </div>
+      )}
 
       {/* Danger zone */}
-      <div className="border border-red-200 dark:border-red-900/50 rounded-xl p-5 bg-red-50/50 dark:bg-red-900/10">
-        <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">Vùng nguy hiểm</h4>
-        <p className="text-xs text-red-600/70 dark:text-red-400/70 mb-4">Xóa thử thách sẽ không thể hoàn tác. Tất cả dữ liệu liên quan sẽ bị ẩn.</p>
-        <button
-          onClick={() => onDeleteClick(challenge._id, challenge.title)}
-          className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-medium transition text-sm"
-        >
-          <FaTrash className="text-xs" /> Xóa thử thách
-        </button>
-      </div>
+      {!isRemoved && (
+        <div className="border border-red-200 dark:border-red-900/50 rounded-xl p-5 bg-red-50/50 dark:bg-red-900/10">
+          <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2">Gỡ thử thách</h4>
+          <p className="text-xs text-red-600/70 dark:text-red-400/70 mb-4">
+            Chỉ khi thử thách chưa bắt đầu. Thử thách sẽ biến mất khỏi bảng tin; bạn và người đã tham gia vẫn xem được lịch sử.
+          </p>
+          {canDelete ? (
+            <button
+              onClick={() => onDeleteClick(challenge._id, challenge.title)}
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-medium transition text-sm"
+            >
+              <FaTrash className="text-xs" /> Gỡ thử thách
+            </button>
+          ) : (
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Đã bắt đầu — không thể gỡ (để bảo vệ dữ liệu người tham gia). Bạn có thể chỉnh sửa hoặc kết thúc theo quy tắc thử thách nếu cần.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -4,8 +4,6 @@ import { createCommentBlog, getCommentBlog } from '../../../../apis/blogApi'
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
-
 import CommentItems from '../CommentItems'
 
 export default function Comments({ blog }) {
@@ -34,9 +32,6 @@ export default function Comments({ blog }) {
             queryKey: ['comments-blog']
           })
           reset()
-        },
-        onError: () => {
-          toast.error('Có lỗi xảy ra khi bình luận')
         }
       }
     )

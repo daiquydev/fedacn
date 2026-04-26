@@ -3,8 +3,6 @@ import TextArea from '../../../../components/InputComponents/TextArea'
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../../main'
 import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
-
 import CommentItems from '../CommentItems'
 import { createCommentRecipe, getCommentRecipe } from '../../../../apis/recipeApi'
 
@@ -34,9 +32,6 @@ export default function Comments({ recipe }) {
             queryKey: ['comments-recipes']
           })
           reset()
-        },
-        onError: () => {
-          toast.error('Lỗi khi gửi bình luận')
         }
       }
     )

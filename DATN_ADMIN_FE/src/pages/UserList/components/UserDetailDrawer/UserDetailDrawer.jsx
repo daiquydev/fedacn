@@ -1,19 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { getUserAdminById } from '../../../../apis/adminApi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
+import { getImageUrl } from '../../../../utils/imageUrl'
 import { useEffect } from 'react'
 import {
   FaTimes, FaFileAlt, FaRunning, FaDumbbell,
-  FaUsers, FaHeart, FaFire, FaCheck, FaExclamationTriangle, FaMoon,
+  FaUsers, FaHeart,
   FaCalendarAlt, FaEnvelope, FaTrophy
 } from 'react-icons/fa'
-
-const ACTIVITY_CONFIG = {
-  very_active: { label: 'Rất tích cực', emoji: '🔥', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30', border: 'border-orange-400', icon: FaFire },
-  active: { label: 'Tích cực', emoji: '✅', color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30', border: 'border-emerald-400', icon: FaCheck },
-  low_activity: { label: 'Ít tích cực', emoji: '⚠️', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-900/30', border: 'border-amber-400', icon: FaExclamationTriangle },
-  inactive: { label: 'Không hoạt động', emoji: '💤', color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', border: 'border-gray-400', icon: FaMoon }
-}
 
 const VIOLATION_KIND_LABEL = {
   post: 'Bài viết bị gỡ (vi phạm / báo cáo)',
@@ -58,7 +52,6 @@ export default function UserDetailDrawer({ userId, onClose }) {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onClose])
 
-  const activityCfg = ACTIVITY_CONFIG[user?.activity_level] || ACTIVITY_CONFIG.inactive
   const violations = Array.isArray(user?.moderation_violations) ? user.moderation_violations : []
   const showViolationSection = (user?.banned_count ?? 0) > 0 || violations.length > 0
 
@@ -95,17 +88,23 @@ export default function UserDetailDrawer({ userId, onClose }) {
           </div>
         ) : (
           <>
-            {/* Profile Header */}
-            <div className='relative bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-500 px-6 pt-8 pb-16'>
-              <div className='absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10' />
-              <div className='absolute left-10 -bottom-4 w-20 h-20 rounded-full bg-white/10' />
+            {/* Profile Header — ảnh bìa user */}
+            <div className='relative h-40 overflow-hidden bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-500'>
+              {user.cover_avatar ? (
+                <img
+                  src={getImageUrl(user.cover_avatar)}
+                  alt=''
+                  className='absolute inset-0 h-full w-full object-cover'
+                />
+              ) : null}
+              <div className='absolute inset-0 bg-gradient-to-b from-black/25 via-black/20 to-black/55' />
             </div>
 
             <div className='px-6 -mt-12 relative z-10'>
               {/* Avatar + Name */}
               <div className='flex items-end gap-4 mb-4'>
                 <img
-                  src={user.avatar || useravatar}
+                  src={!user.avatar || user.avatar === '' ? useravatar : getImageUrl(user.avatar)}
                   alt={user.name}
                   className='w-20 h-20 rounded-2xl object-cover ring-4 ring-white dark:ring-gray-900 shadow-lg'
                 />
@@ -124,29 +123,6 @@ export default function UserDetailDrawer({ userId, onClose }) {
                 <div className='flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-gray-100 dark:border-slate-700'>
                   <FaCalendarAlt size={10} />
                   Tham gia {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                </div>
-              </div>
-
-              {/* Activity Score */}
-              <div className={`rounded-2xl p-5 mb-5 border-2 ${activityCfg.border} ${activityCfg.bg}`}>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-xs text-gray-500 dark:text-gray-400 font-medium mb-1'>Điểm hoạt động</p>
-                    <div className='flex items-baseline gap-2'>
-                      <span className={`text-4xl font-black ${activityCfg.color}`}>
-                        {Math.round(user.activity_score ?? 0)}
-                      </span>
-                      <span className='text-sm text-gray-400'>điểm</span>
-                    </div>
-                  </div>
-                  <div className='text-right'>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold ${activityCfg.color} ${activityCfg.bg}`}>
-                      {activityCfg.emoji} {activityCfg.label}
-                    </div>
-                    <p className='text-[10px] text-gray-400 mt-1 leading-snug'>
-                      Bài viết×3 + Sự kiện×5 + Thử thách×4 + Workout×2 + Follow×1 + Like×0.5
-                    </p>
-                  </div>
                 </div>
               </div>
 

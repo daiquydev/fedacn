@@ -133,7 +133,9 @@ export const getMyChallengesController = async (req: Request, res: Response) => 
     const userId = (req as any).decoded.user_id
     const { page, limit, status } = req.query
 
-    const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string)
+    const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string, {
+        includeArchivedJoins: true
+    })
 
     return res.json({ message: 'Lấy thử thách của tôi thành công', result })
 }

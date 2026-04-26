@@ -139,7 +139,7 @@ const CloudinaryImageUploader = ({
                                 borderRadius: '50%',
                                 animation: 'spin 0.8s linear infinite'
                             }} />
-                            <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>Đang tải lên...</span>
+                            <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>Đang tải lên hình ảnh...</span>
                         </div>
                     )}
                 </div>
@@ -172,7 +172,7 @@ const CloudinaryImageUploader = ({
                                 animation: 'spin 0.8s linear infinite'
                             }} />
                             <p style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', margin: 0 }}>
-                                Đang tải lên Cloudinary...
+                                Đang tải lên hình ảnh...
                             </p>
                         </>
                     ) : (

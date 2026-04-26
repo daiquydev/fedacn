@@ -121,6 +121,7 @@ export default function DayChallengeModal({
   dateStr,
   dayEntries = [],
   dayTotal = 0,
+  readOnly = false,
   onClose,
   onStartTracking,
   onRefresh
@@ -453,13 +454,15 @@ export default function DayChallengeModal({
                                     <FaShareAlt className="text-[10px]" />
                                   </button>
                                 )}
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setDeleteEntry(entry) }}
-                                  className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                                  title="Xóa hoạt động"
-                                >
-                                  <FaTrash className="text-[10px]" />
-                                </button>
+                                {!readOnly && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setDeleteEntry(entry) }}
+                                    className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                                    title="Xóa hoạt động"
+                                  >
+                                    <FaTrash className="text-[10px]" />
+                                  </button>
+                                )}
                                 <FaChevronRight className="text-[10px] text-gray-300" />
                               </div>
                             </div>
@@ -517,7 +520,7 @@ export default function DayChallengeModal({
               )}
 
               {/* ── Action Button ── */}
-              {isToday && !isCompleted && (
+              {!readOnly && isToday && !isCompleted && (
                 <div>
                   {type === 'outdoor_activity' ? (
                     <button
@@ -548,7 +551,7 @@ export default function DayChallengeModal({
                 </div>
               )}
 
-              {isToday && isCompleted && type === 'outdoor_activity' && (
+              {!readOnly && isToday && isCompleted && type === 'outdoor_activity' && (
                 <button
                   onClick={handleStartRecording}
                   className="w-full py-3 rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition flex items-center justify-center gap-2"
@@ -557,7 +560,7 @@ export default function DayChallengeModal({
                 </button>
               )}
 
-              {isToday && isCompleted && type !== 'outdoor_activity' && (
+              {!readOnly && isToday && isCompleted && type !== 'outdoor_activity' && (
                 <button
                   onClick={onStartTracking}
                   className={`w-full py-3 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-bold text-sm hover:shadow-lg transition flex items-center justify-center gap-2 opacity-90`}

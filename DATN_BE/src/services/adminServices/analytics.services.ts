@@ -120,11 +120,12 @@ function getDateRange(period?: string, startDate?: string, endDate?: string): { 
   }
 
   const to = now
+  const p = period === '24h' ? 'today' : period
 
-  switch (period) {
-    case '24h': {
+  switch (p) {
+    case 'today': {
       const d = new Date(now)
-      d.setHours(d.getHours() - 24)
+      d.setHours(0, 0, 0, 0)
       return { from: d, to: now }
     }
     case '7d': {

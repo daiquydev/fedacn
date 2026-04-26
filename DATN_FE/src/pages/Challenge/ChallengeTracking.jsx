@@ -246,20 +246,6 @@ export default function ChallengeTracking() {
                         <span>Vị trí {tracker.gpsError ? '— lỗi' : tracker.gpsAccuracy ? `±${Math.round(tracker.gpsAccuracy)}m` : '— đang tìm...'}</span>
                     </div>
                 </div>
-
-                {/* Cảnh báo tín hiệu vị trí bất thường */}
-                {tracker.gpsFlags.length > 0 && (
-                    <div className='hud-warning'>
-                        <span>⚠️</span>
-                        <div>
-                            <p className='hud-warning-title'>Tín hiệu vị trí bất thường ({tracker.gpsFlags.length})</p>
-                            <p className='hud-warning-desc'>
-                                {tracker.gpsFlags.filter(f => f.type === 'teleport').length > 0 && 'Dịch chuyển đột ngột • '}
-                                {tracker.gpsFlags.filter(f => f.type === 'speed').length > 0 && 'Tốc độ vượt ngưỡng'}
-                            </p>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* GLASS OVERLAY — stats + progress + controls */}

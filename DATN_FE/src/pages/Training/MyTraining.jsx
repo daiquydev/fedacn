@@ -372,7 +372,7 @@ function PersonalActivityCard({ activity }) {
 }
 
 const PRESET_TO_API_RANGE = {
-  '24h': '24h',
+  today: 'today',
   '7d': '7days',
   '1m': '1month',
   '6m': '6months',

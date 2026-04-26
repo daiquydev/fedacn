@@ -191,13 +191,10 @@ export default function CalendarNotifications() {
     const visibleItems = list.slice(0, 2)
     const remainingCount = Math.max(0, list.length - 2)
 
-    // Option D: count of unchecked challenges for badge
-    const uncheckedCount = challenges.filter(c => !c.checkedIn).length
-
     const tabs = [
-        { key: 'event', label: 'Sự kiện', icon: FaRunning, count: events.length, urgent: 0 },
-        { key: 'workout', label: 'Tập luyện', icon: FaDumbbell, count: workouts.length, urgent: 0 },
-        { key: 'challenge', label: 'Thử thách', icon: FaTrophy, count: challenges.length, urgent: uncheckedCount }
+        { key: 'event', label: 'Sự kiện', icon: FaRunning, count: events.length },
+        { key: 'workout', label: 'Tập luyện', icon: FaDumbbell, count: workouts.length },
+        { key: 'challenge', label: 'Thử thách', icon: FaTrophy, count: challenges.length }
     ]
 
     return (
@@ -216,11 +213,11 @@ export default function CalendarNotifications() {
 
                 {/* Center: Tabs */}
                 <div className='flex items-center gap-0.5 bg-white/10 rounded-full p-0.5 flex-shrink-0'>
-                    {tabs.map(({ key, label, icon: Icon, count, urgent }) => (
+                    {tabs.map(({ key, label, icon: Icon, count }) => (
                         <button
                             key={key}
                             onClick={() => setActiveTab(key)}
-                            className={`relative flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all
                                 ${activeTab === key
                                     ? 'bg-white text-indigo-600 shadow-sm'
                                     : 'text-white/70 hover:text-white hover:bg-white/10'}`}
@@ -229,12 +226,6 @@ export default function CalendarNotifications() {
                             <span className={`text-[9px] rounded-full px-1.5 font-bold ${activeTab === key ? 'bg-indigo-100 text-indigo-600' : 'bg-white/15 text-white/80'}`}>
                                 {count}
                             </span>
-                            {/* Option D: urgent badge for unchecked challenges */}
-                            {urgent > 0 && (
-                                <span className='absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center shadow-sm animate-pulse'>
-                                    {urgent}
-                                </span>
-                            )}
                         </button>
                     ))}
                 </div>

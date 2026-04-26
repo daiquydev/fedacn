@@ -91,7 +91,7 @@ const CloudinaryImageUploader = ({
                     {uploading && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <div style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                            <span style={{ color: '#fff', fontSize: 11 }}>Đang tải lên...</span>
+                            <span style={{ color: '#fff', fontSize: 11 }}>Đang tải lên hình ảnh...</span>
                         </div>
                     )}
                 </div>
@@ -114,7 +114,7 @@ const CloudinaryImageUploader = ({
                     {uploading ? (
                         <>
                             <div style={{ width: 28, height: 28, border: '2px solid #bfdbfe', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                            <p style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6', margin: 0 }}>Đang tải lên...</p>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6', margin: 0 }}>Đang tải lên hình ảnh...</p>
                         </>
                     ) : (
                         <>
