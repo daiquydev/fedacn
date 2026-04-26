@@ -1,8 +1,10 @@
 import { roundKcal } from '../../../utils/mathUtils'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { updateChallenge } from '../../../apis/challengeApi'
+import { getAllExercises } from '../../../apis/exerciseApi'
 import sportCategoryApi from '../../../apis/sportCategoryApi'
+import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
@@ -73,22 +75,29 @@ const TYPE_GRADIENT = {
     fitness: 'from-purple-500 to-pink-600'
 }
 
-const NON_OUTDOOR_GOALS = {
-    fitness: [
-        { type: 'workout_count', label: 'Số buổi tập', unit: 'buổi' },
-        { type: 'total_kcal', label: 'Tổng kcal đốt', unit: 'kcal' },
-        { type: 'total_minutes', label: 'Tổng phút tập', unit: 'phút' },
-        { type: 'days_active', label: 'Số ngày hoạt động', unit: 'ngày' }
-    ],
-    nutrition: [
-        { type: 'days_completed', label: 'Số ngày hoàn thành', unit: 'ngày' },
-        { type: 'meals_logged', label: 'Số bữa check-in', unit: 'bữa' },
-        { type: 'kcal_target', label: 'Giữ calo (target/ngày)', unit: 'kcal/ngày' }
-    ]
+/** Chuẩn hoá exercises từ API → state chỉnh sửa (giống CreateChallengeModal). */
+const mapChallengeExercisesToSelected = (raw) => {
+    if (!Array.isArray(raw) || raw.length === 0) return []
+    return raw.map((ex) => {
+        const idObj = ex.exercise_id
+        const exercise_id =
+            typeof idObj === 'object' && idObj != null && idObj._id != null
+                ? String(idObj._id)
+                : String(idObj || '')
+        const fromRef = typeof idObj === 'object' && idObj != null ? idObj : null
+        return {
+            exercise_id,
+            exercise_name: ex.exercise_name || fromRef?.name || '',
+            exercise_name_vi: ex.exercise_name_vi || fromRef?.name_vi || '',
+            sets: Array.isArray(ex.sets) && ex.sets.length > 0
+                ? ex.sets
+                : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }]
+        }
+    }).filter((e) => e.exercise_id)
 }
 
 // ==================== PREVIEW MINI CARD ====================
-function PreviewCard({ form, selectedCat }) {
+function PreviewCard({ form, selectedCat, fitnessExerciseCount = 0 }) {
     const typeConf = CHALLENGE_TYPES.find(t => t.key === form.challenge_type)
     const gradient = TYPE_GRADIENT[form.challenge_type] || 'from-gray-400 to-gray-500'
     const visConf = VISIBILITY_OPTIONS.find(v => v.value === form.visibility)
@@ -132,7 +141,11 @@ function PreviewCard({ form, selectedCat }) {
                         <span>
                             {form.challenge_type === 'outdoor_activity'
                                 ? (form.goal_value ? `Mục tiêu/ngày: ${form.goal_value} km` : 'Mục tiêu/ngày: -- km')
-                                : (form.goal_value && form.goal_unit ? `Mục tiêu: ${form.goal_value} ${form.goal_unit}` : 'Mục tiêu: --')}
+                                : form.challenge_type === 'fitness'
+                                    ? (fitnessExerciseCount > 0
+                                        ? `Mục tiêu: ${fitnessExerciseCount} bài tập / ngày`
+                                        : 'Mục tiêu: --')
+                                    : (form.goal_value && form.goal_unit ? `Mục tiêu: ${form.goal_value} ${form.goal_unit}` : 'Mục tiêu: --')}
                         </span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -142,6 +155,12 @@ function PreviewCard({ form, selectedCat }) {
                     {visConf && (
                         <div className={`flex items-center gap-1.5 ${visConf.color}`}>
                             {visConf.icon} <span>{visConf.label}</span>
+                        </div>
+                    )}
+                    {form.challenge_type === 'nutrition' && form.nutrition_sub_type === 'time_window' && form.time_window_start && form.time_window_end && (
+                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                            <FaClock className="shrink-0" />
+                            <span>⏰ {form.time_window_start} – {form.time_window_end}</span>
                         </div>
                     )}
                     {estimatedKcal && estimatedKcal > 0 && (
@@ -181,6 +200,57 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
 
     const [errors, setErrors] = useState({})
 
+    const [selectedExercises, setSelectedExercises] = useState([])
+    const [exerciseSearch, setExerciseSearch] = useState('')
+    const [showExerciseDropdown, setShowExerciseDropdown] = useState(false)
+    const exerciseSearchRef = useRef(null)
+
+    const { data: exercisesData } = useQuery({
+        queryKey: ['all-exercises'],
+        queryFn: () => getAllExercises(),
+        staleTime: 60000,
+        enabled: form.challenge_type === 'fitness'
+    })
+    const allExercises = exercisesData?.data?.result || []
+
+    const filteredExercises = useMemo(() => {
+        const idStr = (id) => (id != null ? String(id) : '')
+        if (!exerciseSearch.trim()) {
+            return allExercises.filter(ex => !selectedExercises.some(s => idStr(s.exercise_id) === idStr(ex._id))).slice(0, 20)
+        }
+        const kw = exerciseSearch.toLowerCase().trim()
+        return allExercises
+            .filter(ex => !selectedExercises.some(s => idStr(s.exercise_id) === idStr(ex._id)))
+            .filter(ex => (ex.name || '').toLowerCase().includes(kw) || (ex.name_vi || '').toLowerCase().includes(kw))
+            .slice(0, 20)
+    }, [allExercises, exerciseSearch, selectedExercises])
+
+    const addExercise = (ex) => {
+        setSelectedExercises(prev => [...prev, {
+            exercise_id: ex._id,
+            exercise_name: ex.name,
+            exercise_name_vi: ex.name_vi || '',
+            sets: ex.default_sets?.length > 0 ? ex.default_sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }]
+        }])
+        setExerciseSearch('')
+        setShowExerciseDropdown(false)
+        if (errors.exercises) setErrors(prev => ({ ...prev, exercises: null }))
+    }
+
+    const removeExercise = (exerciseId) => {
+        setSelectedExercises(prev => prev.filter(e => e.exercise_id !== exerciseId))
+    }
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (exerciseSearchRef.current && !exerciseSearchRef.current.contains(e.target)) {
+                setShowExerciseDropdown(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
+
     // Fetch categories
     const { data: categoriesData } = useQuery({
         queryKey: ['sportCategories'],
@@ -194,16 +264,30 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
     // Populate form from challenge data
     useEffect(() => {
         if (challenge && (isPage || open)) {
+            const ctype = challenge.challenge_type || 'outdoor_activity'
+            const isNutrition = ctype === 'nutrition'
+            const isFitness = ctype === 'fitness'
+
             setForm({
                 title: challenge.title || '',
                 description: challenge.description || '',
                 image: challenge.image || '',
-                challenge_type: challenge.challenge_type || 'outdoor_activity',
+                challenge_type: ctype,
                 category: challenge.category || '',
                 kcal_per_unit: challenge.kcal_per_unit || 0,
-                goal_type: challenge.goal_type || 'daily_km',
-                goal_value: challenge.goal_value ? String(challenge.goal_value) : '',
-                goal_unit: challenge.goal_unit || 'km',
+                goal_type: isNutrition
+                    ? 'meals_logged'
+                    : isFitness
+                        ? 'exercises_completed'
+                        : (challenge.goal_type || 'daily_km'),
+                goal_value: challenge.goal_value != null && challenge.goal_value !== ''
+                    ? String(challenge.goal_value)
+                    : '',
+                goal_unit: isNutrition
+                    ? 'bữa'
+                    : isFitness
+                        ? 'bài tập'
+                        : (challenge.goal_unit || 'km'),
                 startDate: isoToInput(challenge.start_date),
                 endDate: isoToInput(challenge.end_date),
                 visibility: challenge.visibility || (challenge.is_public ? 'public' : 'private'),
@@ -212,6 +296,9 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                 time_window_start: challenge.time_window_start || '08:00',
                 time_window_end: challenge.time_window_end || '11:00'
             })
+            setSelectedExercises(isFitness ? mapChallengeExercisesToSelected(challenge.exercises) : [])
+            setExerciseSearch('')
+            setShowExerciseDropdown(false)
             setErrors({})
         }
     }, [challenge, open, isPage])
@@ -250,7 +337,8 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
     }
 
     const validateAll = () => {
-        const fields = { title: form.title, goal_value: form.goal_value, startDate: form.startDate, endDate: form.endDate }
+        const fields = { title: form.title, startDate: form.startDate, endDate: form.endDate }
+        if (form.challenge_type !== 'fitness') fields.goal_value = form.goal_value
         const newErrors = {}
         let valid = true
         for (const [k, v] of Object.entries(fields)) {
@@ -260,32 +348,60 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
         if (form.challenge_type === 'outdoor_activity' && !form.category) {
             newErrors.category = 'Vui lòng chọn danh mục'; valid = false
         }
+        if (form.challenge_type === 'fitness' && selectedExercises.length === 0) {
+            newErrors.exercises = 'Vui lòng chọn ít nhất 1 bài tập'; valid = false
+        }
+        if (form.challenge_type === 'nutrition' && form.nutrition_sub_type === 'time_window') {
+            if (!form.time_window_start || !form.time_window_end) {
+                newErrors.time_window = 'Vui lòng nhập khung giờ'; valid = false
+            } else {
+                const [sh, sm] = form.time_window_start.split(':').map(Number)
+                const [eh, em] = form.time_window_end.split(':').map(Number)
+                const startMin = sh * 60 + sm
+                const endMin = eh * 60 + em
+                if (endMin - startMin < 30) {
+                    newErrors.time_window = 'Khung giờ phải cách nhau ít nhất 30 phút'; valid = false
+                }
+            }
+        }
         setErrors(newErrors)
         return valid
     }
 
     // ==================== SUBMIT ====================
     const mutation = useSafeMutation({
-        mutationFn: () => updateChallenge(challenge._id, {
-            title: form.title.trim(),
-            description: form.description,
-            image: form.image,
-            goal_type: form.goal_type,
-            goal_value: Number(form.goal_value),
-            goal_unit: form.goal_unit,
-            start_date: parseDateToISO(form.startDate),
-            end_date: parseDateToISO(form.endDate),
-            visibility: form.visibility,
-            is_public: form.visibility !== 'private',
-            badge_emoji: form.badge_emoji,
-            category: form.category,
-            kcal_per_unit: form.kcal_per_unit || 0,
-            nutrition_sub_type: form.challenge_type === 'nutrition' ? form.nutrition_sub_type : 'free',
-            time_window_start: (form.challenge_type === 'nutrition' && form.nutrition_sub_type === 'time_window')
-                ? form.time_window_start : null,
-            time_window_end: (form.challenge_type === 'nutrition' && form.nutrition_sub_type === 'time_window')
-                ? form.time_window_end : null
-        }),
+        mutationFn: () => {
+            const isFitness = form.challenge_type === 'fitness'
+            const isNutrition = form.challenge_type === 'nutrition'
+            const payload = {
+                title: form.title.trim(),
+                description: form.description,
+                image: form.image,
+                goal_type: isFitness ? 'exercises_completed' : isNutrition ? 'meals_logged' : form.goal_type,
+                goal_value: isFitness ? selectedExercises.length : Number(form.goal_value),
+                goal_unit: isFitness ? 'bài tập' : isNutrition ? 'bữa' : form.goal_unit,
+                start_date: parseDateToISO(form.startDate),
+                end_date: parseDateToISO(form.endDate),
+                visibility: form.visibility,
+                is_public: form.visibility !== 'private',
+                badge_emoji: form.badge_emoji,
+                category: form.category,
+                kcal_per_unit: form.kcal_per_unit || 0,
+                nutrition_sub_type: isNutrition ? form.nutrition_sub_type : 'free',
+                time_window_start: (isNutrition && form.nutrition_sub_type === 'time_window')
+                    ? form.time_window_start : null,
+                time_window_end: (isNutrition && form.nutrition_sub_type === 'time_window')
+                    ? form.time_window_end : null
+            }
+            if (isFitness) {
+                payload.exercises = selectedExercises.map(ex => ({
+                    exercise_id: ex.exercise_id,
+                    exercise_name: ex.exercise_name,
+                    sets: ex.sets
+                }))
+            }
+            return updateChallenge(challenge._id, payload)
+        },
         onSuccess: () => {
             toast.success('✅ Cập nhật thử thách thành công!')
             queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
@@ -303,8 +419,6 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
     }
 
     if (!challenge || (!isPage && !open)) return null
-
-    const nonOutdoorGoals = NON_OUTDOOR_GOALS[form.challenge_type] || []
 
     const pageHero = isPage && (
         <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-10 mb-8">
@@ -403,33 +517,14 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                             </div>
                         )}
 
-                        {/* Non-outdoor: Goal type selector */}
-                        {form.challenge_type !== 'outdoor_activity' && nonOutdoorGoals.length > 0 && (
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Loại mục tiêu *</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {nonOutdoorGoals.map(g => (
-                                        <button
-                                            key={g.type}
-                                            onClick={() => { setField('goal_type', g.type); setField('goal_unit', g.unit) }}
-                                            className={`p-3 rounded-xl border-2 text-left transition-all ${form.goal_type === g.type ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}
-                                        >
-                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{g.label}</span>
-                                            <span className="block text-[10px] text-gray-400">{g.unit}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Nutrition: giới hạn giờ check-in (tuỳ chọn) */}
+                        {/* Nutrition: giới hạn giờ check-in (tuỳ chọn; đồng bộ với màn tạo) */}
                         {form.challenge_type === 'nutrition' && (
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                     <FaClock className="inline mr-1 text-emerald-500" /> Giờ check-in bữa ăn
                                 </label>
                                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
-                                    Mặc định thành viên có thể check-in cả ngày. Bật nếu thử thách yêu cầu ảnh bữa ăn chỉ trong một khung giờ nhất định.
+                                    Mặc định thành viên có thể check-in bất kỳ lúc nào trong ngày. Bật tuỳ chọn bên dưới nếu chỉ muốn chấp nhận ảnh bữa ăn trong một khung giờ (ví dụ chỉ bữa trưa tại công ty).
                                 </p>
                                 <label className="flex items-start gap-3 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-emerald-300 transition-all">
                                     <input
@@ -444,6 +539,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                                     time_window_start: prev.time_window_start || '11:00',
                                                     time_window_end: prev.time_window_end || '14:30'
                                                 }))
+                                                setErrors(p => ({ ...p, time_window: null }))
                                             } else {
                                                 setField('nutrition_sub_type', 'free')
                                             }
@@ -451,7 +547,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                     />
                                     <div>
                                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Giới hạn check-in trong khung giờ</p>
-                                        <p className="text-[11px] text-gray-400 mt-0.5">Check-in ngoài khoảng giờ sẽ không hợp lệ.</p>
+                                        <p className="text-[11px] text-gray-400 mt-0.5">Khi bật, ảnh check-in ngoài khoảng giờ này sẽ không hợp lệ.</p>
                                     </div>
                                 </label>
                                 {form.nutrition_sub_type === 'time_window' && (
@@ -469,6 +565,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                                             const h = String(date.getHours()).padStart(2, '0')
                                                             const m = String(date.getMinutes()).padStart(2, '0')
                                                             setField('time_window_start', `${h}:${m}`)
+                                                            setErrors(p => ({ ...p, time_window: null }))
                                                         }
                                                     }}
                                                     showTimeSelect
@@ -491,6 +588,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                                             const h = String(date.getHours()).padStart(2, '0')
                                                             const m = String(date.getMinutes()).padStart(2, '0')
                                                             setField('time_window_end', `${h}:${m}`)
+                                                            setErrors(p => ({ ...p, time_window: null }))
                                                         }
                                                     }}
                                                     showTimeSelect
@@ -504,25 +602,95 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                                 />
                                             </div>
                                         </div>
+                                        {errors.time_window && <p className="text-xs text-red-500 mt-2">{errors.time_window}</p>}
                                         <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">
-                                            Gợi ý: trưa 11:00–14:30 · sáng 06:00–10:30 · tối 17:30–21:00
+                                            Gợi ý: bữa trưa thường 11:00–14:30 · bữa sáng 06:00–10:30 · bữa tối 17:30–21:00
                                         </p>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Mục tiêu (value) */}
+                        {/* Fitness: chọn bài tập (đồng bộ màn tạo) */}
+                        {form.challenge_type === 'fitness' && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    💪 Chọn bài tập *
+                                </label>
+                                <div ref={exerciseSearchRef} className="relative">
+                                    <input
+                                        type="text"
+                                        value={exerciseSearch}
+                                        onChange={e => { setExerciseSearch(e.target.value); setShowExerciseDropdown(true) }}
+                                        onFocus={() => setShowExerciseDropdown(true)}
+                                        placeholder="Tìm bài tập..."
+                                        className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.exercises ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-purple-400'}`}
+                                    />
+                                    {showExerciseDropdown && filteredExercises.length > 0 && (
+                                        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-2xl max-h-[240px] overflow-y-auto">
+                                            {filteredExercises.map(ex => (
+                                                <button
+                                                    key={ex._id}
+                                                    type="button"
+                                                    onClick={() => addExercise(ex)}
+                                                    className="w-full text-left px-4 py-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition flex items-center gap-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                                                        <FaDumbbell className="text-purple-500 text-xs" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</p>
+                                                        <p className="text-[10px] text-gray-400 truncate">{ex.name_vi} • {formatExerciseCategoryVi(ex.category)} • {formatExerciseDifficultyVi(ex.difficulty)}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                {selectedExercises.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {selectedExercises.map((ex, idx) => (
+                                            <span
+                                                key={ex.exercise_id}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium"
+                                            >
+                                                <span className="w-5 h-5 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center justify-center">{idx + 1}</span>
+                                                {ex.exercise_name}
+                                                <button type="button" onClick={() => removeExercise(ex.exercise_id)} className="ml-0.5 hover:text-red-500 transition">
+                                                    <FaTimes className="text-xs" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                {errors.exercises && <p className="text-xs text-red-500 mt-1">{errors.exercises}</p>}
+                                <p className="text-[10px] text-gray-400 mt-1">Đã chọn {selectedExercises.length} bài tập</p>
+                            </div>
+                        )}
+
+                        {form.challenge_type === 'fitness' && selectedExercises.length > 0 && (
+                            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-xl p-3">
+                                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                                    🎯 Mục tiêu: <span className="text-lg font-black">{selectedExercises.length}</span> bài tập / ngày
+                                </p>
+                                <p className="text-[11px] text-purple-500 dark:text-purple-400 mt-0.5">Hoàn thành tất cả bài tập mỗi ngày để đạt mục tiêu</p>
+                            </div>
+                        )}
+
+                        {/* Mục tiêu (value) — ngoài trời + ăn uống; thể dục: theo số bài đã chọn */}
+                        {form.challenge_type !== 'fitness' && (
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                {form.challenge_type === 'outdoor_activity' ? '🎯 Mục tiêu mỗi ngày (km) *' : `🎯 Giá trị mục tiêu mỗi ngày (${form.goal_unit}) *`}
+                                {form.challenge_type === 'outdoor_activity'
+                                    ? '🎯 Mục tiêu mỗi ngày (km) *'
+                                    : '🍽️ Số bữa check-in *'}
                             </label>
                             <div className="flex gap-2">
                                 <input
                                     type="number"
                                     value={form.goal_value}
                                     onChange={e => { setField('goal_value', e.target.value); const err = validateField('goal_value', e.target.value); setErrors(p => ({ ...p, goal_value: err })) }}
-                                    placeholder={form.challenge_type === 'outdoor_activity' ? '50' : '20'}
+                                    placeholder={form.challenge_type === 'outdoor_activity' ? '50' : '1'}
                                     min="1"
                                     className={`flex-1 px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.goal_value ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-orange-400'}`}
                                 />
@@ -541,6 +709,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                 </div>
                             )}
                         </div>
+                        )}
 
                         {/* Ngày bắt đầu / kết thúc */}
                         <div className="grid grid-cols-2 gap-3">
@@ -630,7 +799,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                 <BsClockHistory /> Bản xem trước
                             </p>
-                            <PreviewCard form={form} selectedCat={selectedCat} />
+                            <PreviewCard form={form} selectedCat={selectedCat} fitnessExerciseCount={selectedExercises.length} />
                             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                                 <p className="text-[11px] text-blue-600 dark:text-blue-400 leading-relaxed">
                                     💡 Bản xem trước cập nhật real-time khi bạn nhập thông tin
@@ -688,7 +857,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                             <div className="w-2 h-2 rounded-full bg-green-400" />
                         </div>
                     </div>
-                    <PreviewCard form={form} selectedCat={selectedCat} />
+                    <PreviewCard form={form} selectedCat={selectedCat} fitnessExerciseCount={selectedExercises.length} />
 
                     <div className="space-y-3 my-8">
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
@@ -700,7 +869,11 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                             <span className="text-sm dark:text-gray-300">Khung thời gian</span>
                         </div>
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
-                            <FaCheckCircle className={form.goal_value ? 'text-green-500' : 'text-gray-300'} />
+                            <FaCheckCircle className={
+                                form.challenge_type === 'fitness'
+                                    ? (selectedExercises.length > 0 ? 'text-green-500' : 'text-gray-300')
+                                    : (form.goal_value ? 'text-green-500' : 'text-gray-300')
+                            } />
                             <span className="text-sm dark:text-gray-300">Mục tiêu</span>
                         </div>
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">

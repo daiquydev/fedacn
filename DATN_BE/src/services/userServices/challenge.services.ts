@@ -405,6 +405,7 @@ class ChallengeService {
             if (challenge?.challenge_type === 'fitness') {
                 safeUpdate.goal_value = safeUpdate.exercises.length
                 safeUpdate.goal_unit = 'bài tập'
+                safeUpdate.goal_type = 'exercises_completed'
             }
         }
 

@@ -683,40 +683,157 @@ class SportEventService {
     return { total, ongoing, upcoming, ended }
   }
 
-  // Get joined sport events
-  async getJoinedEventsService(userId: string, page: number = 1, limit: number = 10, status?: string, search?: string) {
+  // Get joined sport events (lọc/sắp xếp tương thích trang danh sách sự kiện — không có visibility)
+  async getJoinedEventsService(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    search?: string,
+    filters?: {
+      category?: string
+      eventType?: string
+      dateFrom?: string
+      dateTo?: string
+      sortBy?: string
+    }
+  ) {
     const skip = (page - 1) * limit
+    const userOid = new Types.ObjectId(userId)
+    const category = filters?.category
+    const eventType = filters?.eventType
+    const dateFrom = filters?.dateFrom
+    const dateTo = filters?.dateTo
+    const sortBy = filters?.sortBy
 
-    const condition: any = { participants_ids: new Types.ObjectId(userId), isDeleted: { $ne: true } }
+    const and: any[] = [{ participants_ids: userOid }, { isDeleted: { $ne: true } }]
 
-    // Search filter
-    if (search) {
-      condition.name = { $regex: search, $options: 'i' }
+    if (search?.trim()) {
+      const s = search.trim()
+      and.push({
+        $or: [
+          { name: { $regex: s, $options: 'i' } },
+          { description: { $regex: s, $options: 'i' } },
+          { location: { $regex: s, $options: 'i' } },
+          { category: { $regex: s, $options: 'i' } }
+        ]
+      })
     }
 
-    // Status filter
+    if (category && category !== 'all') and.push({ category })
+    if (eventType && eventType !== 'all') and.push({ eventType })
+
     const now = new Date()
     if (status === 'ongoing') {
-      condition.startDate = { $lte: now }
-      condition.endDate = { $gte: now }
+      and.push({ startDate: { $lte: now }, endDate: { $gte: now } })
     } else if (status === 'ended') {
-      condition.endDate = { $lt: now }
+      and.push({ endDate: { $lt: now } })
     } else if (status === 'upcoming') {
-      condition.startDate = { $gt: now }
+      and.push({ startDate: { $gt: now } })
     }
 
+    if (sortBy === 'ongoing') {
+      and.push({ startDate: { $lte: now }, endDate: { $gte: now } })
+    } else if (sortBy === 'ended') {
+      and.push({ endDate: { $lt: now } })
+    } else if (sortBy === 'soonest') {
+      and.push({ startDate: { $gt: now } })
+    }
+
+    if (dateFrom || dateTo) {
+      const sd: Record<string, Date> = {}
+      if (dateFrom) sd.$gte = new Date(dateFrom)
+      if (dateTo) sd.$lte = new Date(`${dateTo}T23:59:59.999Z`)
+      and.push({ startDate: sd })
+    }
+
+    const matchCondition = { $and: and }
+
+    if (sortBy === 'popular') {
+      const aggregationPipeline: any[] = [
+        { $match: matchCondition },
+        {
+          $addFields: {
+            statusOrder: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $and: [{ $lte: ['$startDate', now] }, { $gte: ['$endDate', now] }] },
+                    then: 0
+                  },
+                  {
+                    case: { $gt: ['$startDate', now] },
+                    then: 1
+                  }
+                ],
+                default: 2
+              }
+            }
+          }
+        },
+        { $sort: { statusOrder: 1, startDate: 1, _id: 1 } }
+      ]
+
+      const [countResult, rawEvents] = await Promise.all([
+        SportEventModel.aggregate([...aggregationPipeline, { $count: 'total' }]),
+        SportEventModel.aggregate([
+          ...aggregationPipeline,
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'createdBy',
+              foreignField: '_id',
+              as: '_createdByArr',
+              pipeline: [{ $project: { name: 1, avatar: 1 } }]
+            }
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'participants_ids',
+              foreignField: '_id',
+              as: 'participants_ids',
+              pipeline: [{ $project: { name: 1, avatar: 1 } }]
+            }
+          },
+          {
+            $addFields: {
+              createdBy: { $arrayElemAt: ['$_createdByArr', 0] }
+            }
+          },
+          { $project: { _createdByArr: 0, statusOrder: 0 } }
+        ])
+      ])
+
+      const total = countResult[0]?.total || 0
+      const totalPage = Math.ceil(total / limit) || 0
+      const events = rawEvents.map((e: any) => ({ ...e, isJoined: true }))
+
+      return { events, totalPage, page, limit, total }
+    }
+
+    let sortOption: any = { startDate: status === 'ended' ? -1 : 1 }
+    if (sortBy === 'newest') sortOption = { createdAt: -1 }
+    else if (sortBy === 'oldest') sortOption = { createdAt: 1 }
+    else if (sortBy === 'soonest') sortOption = { startDate: 1 }
+    else if (sortBy === 'ongoing') sortOption = { endDate: 1 }
+    else if (sortBy === 'ended') sortOption = { endDate: -1 }
+    else if (sortBy === 'joined') sortOption = { createdAt: -1 }
+
     const [events, total] = await Promise.all([
-      SportEventModel.find(condition)
+      SportEventModel.find(matchCondition)
         .populate('createdBy', 'name avatar')
         .populate('participants_ids', 'name avatar')
         .skip(skip)
         .limit(limit)
-        .sort({ startDate: status === 'ended' ? -1 : 1 })
+        .sort(sortOption)
         .exec(),
-      SportEventModel.countDocuments(condition)
+      SportEventModel.countDocuments(matchCondition)
     ])
 
-    const totalPage = Math.ceil(total / limit)
+    const totalPage = Math.ceil(total / limit) || 0
 
     return { events, totalPage, page, limit, total }
   }

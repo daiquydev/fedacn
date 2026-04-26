@@ -226,7 +226,7 @@ export const getMyEventsController = async (req: Request, res: Response) => {
 
 export const getJoinedEventsController = async (req: Request, res: Response) => {
   try {
-    const { page, limit, status, search } = req.query
+    const { page, limit, status, search, category, eventType, dateFrom, dateTo, sortBy } = req.query
     const userId = (req as any).decoded?.user_id
 
     if (!userId) {
@@ -235,7 +235,13 @@ export const getJoinedEventsController = async (req: Request, res: Response) => 
       })
     }
 
-    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string, search as string)
+    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string, search as string, {
+      category: category as string,
+      eventType: eventType as string,
+      dateFrom: dateFrom as string,
+      dateTo: dateTo as string,
+      sortBy: sortBy as string
+    })
     return res.json({
       result,
       message: 'Get joined sport events successfully'

@@ -21,13 +21,19 @@ import {
   FaCog,
   FaBullseye,
   FaStar,
-  FaChevronLeft
+  FaChevronLeft,
+  FaFilter,
+  FaChevronDown,
+  FaTimes,
+  FaSortAmountDown
 } from 'react-icons/fa'
-import { MdVideocam, MdLeaderboard, MdSportsScore, MdCheckCircle } from 'react-icons/md'
+import { MdVideocam, MdLeaderboard, MdSportsScore, MdCheckCircle, MdSportsSoccer } from 'react-icons/md'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { BsClockHistory, BsCalendarCheck, BsPeopleFill } from 'react-icons/bs'
 import { HiOutlineViewGrid } from 'react-icons/hi'
 import { getMyEvents, getJoinedEvents, getEventStats, deleteSportEvent, getParticipants, getLeaderboard, getEventOverallProgress, removeParticipant } from '../../apis/sportEventApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
+import { getSportIcon } from '../../utils/sportIcons'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
@@ -37,6 +43,16 @@ function rawDateToMs(raw) {
   if (raw == null || raw === '') return null
   const t = new Date(raw).getTime()
   return Number.isFinite(t) ? t : null
+}
+
+const formatDateDisplay = (isoDate) => {
+  if (!isoDate || isoDate.length !== 10) return ''
+  return isoDate.split('-').reverse().join('/')
+}
+
+const toISODate = (yyyymmdd) => {
+  if (!yyyymmdd || yyyymmdd.length !== 10) return undefined
+  return yyyymmdd
 }
 
 /** Đồng bộ với BE `sportEventHasStartedForDelete` (kể cả snake_case / sự kiện đã kết thúc) */
@@ -81,11 +97,16 @@ const MySportEvents = () => {
     return () => clearTimeout(t)
   }, [sidebarSearch])
 
-  // Joined tab: search, status filter
+  // Joined tab: search + bộ lọc (không có dropdown hiển thị như thử thách)
   const [joinedSearch, setJoinedSearch] = useState('')
   const [joinedDebouncedSearch, setJoinedDebouncedSearch] = useState('')
-  const [joinedStatus, setJoinedStatus] = useState('all')
   const JOINED_PER_PAGE = 6
+  const [joinedShowAdvanced, setJoinedShowAdvanced] = useState(false)
+  const [joinedEventType, setJoinedEventType] = useState('all')
+  const [joinedSelectedCategory, setJoinedSelectedCategory] = useState('all')
+  const [joinedSortBy, setJoinedSortBy] = useState('joined')
+  const [joinedFilterDateFrom, setJoinedFilterDateFrom] = useState('')
+  const [joinedFilterDateTo, setJoinedFilterDateTo] = useState('')
 
   // Debounced search for joined tab
   useEffect(() => {
@@ -93,10 +114,40 @@ const MySportEvents = () => {
     return () => clearTimeout(t)
   }, [joinedSearch])
 
+  const { data: joinedCategoriesData } = useQuery({
+    queryKey: ['sportCategories'],
+    queryFn: () => sportCategoryApi.getAll(),
+    enabled: activeTab === 'joined',
+    staleTime: 60_000
+  })
+  const joinedDbCategories = joinedCategoriesData?.data?.result || []
+  const joinedAvailableCategories = useMemo(() => {
+    if (joinedEventType === 'all') return joinedDbCategories
+    return joinedDbCategories.filter((cat) => cat.type === joinedEventType)
+  }, [joinedDbCategories, joinedEventType])
+
+  const clearJoinedListFilters = () => {
+    setJoinedSearch('')
+    setJoinedShowAdvanced(false)
+    setJoinedEventType('all')
+    setJoinedSelectedCategory('all')
+    setJoinedSortBy('joined')
+    setJoinedFilterDateFrom('')
+    setJoinedFilterDateTo('')
+  }
+
   // Reset joined page when filters change
   useEffect(() => {
     setJoinedPage(1)
-  }, [joinedDebouncedSearch, statusFilter])
+  }, [
+    joinedDebouncedSearch,
+    statusFilter,
+    joinedEventType,
+    joinedSelectedCategory,
+    joinedSortBy,
+    joinedFilterDateFrom,
+    joinedFilterDateTo
+  ])
 
   // Reset created page when filters change
   useEffect(() => {
@@ -136,13 +187,29 @@ const MySportEvents = () => {
   const createdTotal = createdEventsData?.data?.result?.total || 0
 
   const { data: joinedEventsData, isLoading: isLoadingJoined } = useQuery({
-    queryKey: ['myJoinedEvents', joinedPage, joinedDebouncedSearch, joinedStatus],
-    queryFn: () => getJoinedEvents({
-      page: joinedPage,
-      limit: JOINED_PER_PAGE,
-      search: joinedDebouncedSearch || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined
-    }),
+    queryKey: [
+      'myJoinedEvents',
+      joinedPage,
+      joinedDebouncedSearch,
+      statusFilter,
+      joinedEventType,
+      joinedSelectedCategory,
+      joinedSortBy,
+      joinedFilterDateFrom,
+      joinedFilterDateTo
+    ],
+    queryFn: () =>
+      getJoinedEvents({
+        page: joinedPage,
+        limit: JOINED_PER_PAGE,
+        search: joinedDebouncedSearch.trim() || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        eventType: joinedEventType !== 'all' ? joinedEventType : undefined,
+        category: joinedSelectedCategory !== 'all' ? joinedSelectedCategory : undefined,
+        dateFrom: toISODate(joinedFilterDateFrom),
+        dateTo: toISODate(joinedFilterDateTo),
+        sortBy: joinedSortBy !== 'joined' ? joinedSortBy : undefined
+      }),
     keepPreviousData: true
   })
 
@@ -423,7 +490,23 @@ const MySportEvents = () => {
               onSearchChange={setJoinedSearch}
               JOINED_PER_PAGE={JOINED_PER_PAGE}
               statusFilter={statusFilter}
-              onClearFilter={() => setStatusFilter('all')}
+              onClearFilter={() => {
+                setStatusFilter('all')
+                clearJoinedListFilters()
+              }}
+              joinedShowAdvanced={joinedShowAdvanced}
+              setJoinedShowAdvanced={setJoinedShowAdvanced}
+              joinedEventType={joinedEventType}
+              setJoinedEventType={setJoinedEventType}
+              joinedSelectedCategory={joinedSelectedCategory}
+              setJoinedSelectedCategory={setJoinedSelectedCategory}
+              joinedSortBy={joinedSortBy}
+              setJoinedSortBy={setJoinedSortBy}
+              joinedFilterDateFrom={joinedFilterDateFrom}
+              setJoinedFilterDateFrom={setJoinedFilterDateFrom}
+              joinedFilterDateTo={joinedFilterDateTo}
+              setJoinedFilterDateTo={setJoinedFilterDateTo}
+              joinedAvailableCategories={joinedAvailableCategories}
             />
           )}
         </div>
@@ -997,62 +1080,373 @@ function SettingsSubTab({ event, onDeleteClick, navigate }) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// JOINED TAB — Card grid with search, status filter, pagination
+// JOINED TAB — Tìm kiếm + Bộ lọc (loại hình, môn, ngày, sắp xếp) — không dropdown hiển thị
 // ═══════════════════════════════════════════════════════════
-function JoinedTabContent({ isLoading, events, navigate, joinedPage, joinedTotalPage, joinedTotal, onPageChange, joinedSearch, onSearchChange, statusFilter, onClearFilter, JOINED_PER_PAGE }) {
-  return (
-    <div className="p-5">
-      {/* Search + Status Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-          <input
-            type="text"
-            placeholder="Tìm sự kiện..."
-            value={joinedSearch}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder:text-gray-400 transition-all"
-          />
+function JoinedTabContent({
+  isLoading,
+  events,
+  navigate,
+  joinedPage,
+  joinedTotalPage,
+  joinedTotal,
+  onPageChange,
+  joinedSearch,
+  onSearchChange,
+  statusFilter,
+  onClearFilter,
+  JOINED_PER_PAGE,
+  joinedShowAdvanced,
+  setJoinedShowAdvanced,
+  joinedEventType,
+  setJoinedEventType,
+  joinedSelectedCategory,
+  setJoinedSelectedCategory,
+  joinedSortBy,
+  setJoinedSortBy,
+  joinedFilterDateFrom,
+  setJoinedFilterDateFrom,
+  joinedFilterDateTo,
+  setJoinedFilterDateTo,
+  joinedAvailableCategories
+}) {
+  const hasJoinedExtraFilters = useMemo(
+    () =>
+      Boolean(joinedSearch?.trim()) ||
+      statusFilter !== 'all' ||
+      joinedEventType !== 'all' ||
+      joinedSelectedCategory !== 'all' ||
+      joinedSortBy !== 'joined' ||
+      Boolean(joinedFilterDateFrom) ||
+      Boolean(joinedFilterDateTo),
+    [
+      joinedSearch,
+      statusFilter,
+      joinedEventType,
+      joinedSelectedCategory,
+      joinedSortBy,
+      joinedFilterDateFrom,
+      joinedFilterDateTo
+    ]
+  )
+
+  const advancedFilterCount = [joinedSortBy !== 'joined', Boolean(joinedFilterDateFrom), Boolean(joinedFilterDateTo)].filter(Boolean).length
+
+  const filterPanel = (
+    <div className="relative z-20 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-visible mb-5">
+      <div className="p-4">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 min-w-0">
+            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            {joinedSearch && (
+              <button
+                type="button"
+                onClick={() => onSearchChange('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FaTimes size={12} />
+              </button>
+            )}
+            <input
+              type="text"
+              placeholder="Tìm theo tên, mô tả, địa điểm, danh mục..."
+              className="w-full pl-10 pr-8 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
+              value={joinedSearch}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 items-center flex-wrap">
+            <button
+              type="button"
+              onClick={() => setJoinedShowAdvanced(!joinedShowAdvanced)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all shrink-0 ${
+                joinedShowAdvanced || joinedSortBy !== 'joined' || joinedFilterDateFrom || joinedFilterDateTo
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300'
+                  : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+              }`}
+            >
+              <FaFilter size={12} />
+              Bộ lọc
+              {advancedFilterCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {advancedFilterCount}
+                </span>
+              )}
+              <FaChevronDown size={10} className={`transition-transform ${joinedShowAdvanced ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {(joinedEventType !== 'all' ||
+          joinedSelectedCategory !== 'all' ||
+          joinedSortBy !== 'joined' ||
+          joinedSearch ||
+          joinedFilterDateFrom ||
+          joinedFilterDateTo) && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {joinedEventType !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                {joinedEventType === 'Ngoài trời' ? '🌿' : '🏠'} {joinedEventType}
+                <button type="button" onClick={() => { setJoinedEventType('all'); setJoinedSelectedCategory('all') }}>
+                  <FaTimes size={9} />
+                </button>
+              </span>
+            )}
+            {joinedSelectedCategory !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                🏅 {joinedSelectedCategory}
+                <button type="button" onClick={() => setJoinedSelectedCategory('all')}>
+                  <FaTimes size={9} />
+                </button>
+              </span>
+            )}
+            {joinedSortBy !== 'joined' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                ↕️{' '}
+                {{
+                  popular: 'Phổ biến nhất',
+                  newest: 'Mới nhất',
+                  oldest: 'Cũ nhất',
+                  soonest: 'Sắp diễn ra',
+                  ongoing: 'Đang diễn ra',
+                  joined: 'Đã tham gia',
+                  ended: 'Đã kết thúc'
+                }[joinedSortBy] || joinedSortBy}
+                <button type="button" onClick={() => setJoinedSortBy('joined')}>
+                  <FaTimes size={9} />
+                </button>
+              </span>
+            )}
+            {joinedFilterDateFrom && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                📅 Từ {formatDateDisplay(joinedFilterDateFrom)}
+                <button type="button" onClick={() => setJoinedFilterDateFrom('')}>
+                  <FaTimes size={9} />
+                </button>
+              </span>
+            )}
+            {joinedFilterDateTo && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                📅 Đến {formatDateDisplay(joinedFilterDateTo)}
+                <button type="button" onClick={() => setJoinedFilterDateTo('')}>
+                  <FaTimes size={9} />
+                </button>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                onSearchChange('')
+                setJoinedEventType('all')
+                setJoinedSelectedCategory('all')
+                setJoinedSortBy('joined')
+                setJoinedFilterDateFrom('')
+                setJoinedFilterDateTo('')
+              }}
+              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-colors"
+            >
+              <FaTimes size={9} /> Xóa tất cả
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 pb-3">
+        <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => {
+              setJoinedEventType('all')
+              setJoinedSelectedCategory('all')
+            }}
+            className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${
+              joinedEventType === 'all'
+                ? 'bg-white text-indigo-600 shadow-md dark:bg-gray-800'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            Tất cả loại hình
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setJoinedEventType('Ngoài trời')
+              setJoinedSelectedCategory('all')
+            }}
+            className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${
+              joinedEventType === 'Ngoài trời'
+                ? 'bg-white text-green-600 shadow-md dark:bg-gray-800'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            🌿 Ngoài trời
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setJoinedEventType('Trong nhà')
+              setJoinedSelectedCategory('all')
+            }}
+            className={`flex-1 lg:flex-none px-6 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-all ${
+              joinedEventType === 'Trong nhà'
+                ? 'bg-white text-blue-600 shadow-md dark:bg-gray-800'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            🏠 Trong nhà
+          </button>
         </div>
       </div>
 
-      {/* Loading */}
+      {joinedAvailableCategories.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+            <button
+              type="button"
+              className={`flex items-center shrink-0 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                joinedSelectedCategory === 'all'
+                  ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800/50 dark:text-indigo-400'
+                  : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-indigo-300'
+              }`}
+              onClick={() => setJoinedSelectedCategory('all')}
+            >
+              <MdSportsSoccer className={`mr-2 ${joinedSelectedCategory === 'all' ? 'text-indigo-500' : 'text-gray-400'}`} />
+              Tất cả môn
+            </button>
+            {joinedAvailableCategories.map((category) => {
+              const CatIcon = getSportIcon(category.icon)
+              return (
+                <button
+                  type="button"
+                  key={category._id}
+                  className={`flex items-center shrink-0 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                    joinedSelectedCategory === category.name
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800/50 dark:text-indigo-400'
+                      : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 hover:border-indigo-300'
+                  }`}
+                  onClick={() => setJoinedSelectedCategory(category.name)}
+                >
+                  <CatIcon className={`mr-2 ${joinedSelectedCategory === category.name ? 'text-indigo-500' : 'text-gray-400'}`} />
+                  {category.name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {joinedShowAdvanced && (
+        <div className="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700">
+          <div className="grid grid-cols-2 gap-3 pt-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                Từ ngày
+              </label>
+              <input
+                type="date"
+                value={joinedFilterDateFrom}
+                onChange={(e) => setJoinedFilterDateFrom(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                Đến ngày
+              </label>
+              <input
+                type="date"
+                value={joinedFilterDateTo}
+                onChange={(e) => setJoinedFilterDateTo(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+            <FaSortAmountDown className="text-gray-400 text-sm shrink-0" />
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase shrink-0">Sắp xếp:</span>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { value: 'popular', label: 'Phổ biến nhất' },
+                { value: 'newest', label: 'Mới nhất' },
+                { value: 'oldest', label: 'Cũ nhất' },
+                { value: 'soonest', label: 'Sắp diễn ra' },
+                { value: 'ongoing', label: 'Đang diễn ra' },
+                { value: 'joined', label: 'Đã tham gia' },
+                { value: 'ended', label: 'Đã kết thúc' }
+              ].map((s) => (
+                <button
+                  type="button"
+                  key={s.value}
+                  onClick={() => setJoinedSortBy(s.value)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    joinedSortBy === s.value
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-300 dark:ring-indigo-700'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  if (!isLoading && joinedTotal === 0) {
+    if (hasJoinedExtraFilters) {
+      return (
+        <div className="p-5">
+          {filterPanel}
+          <div className="text-center py-16 px-6">
+            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+              <FaSearch className="text-indigo-400 text-3xl" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy sự kiện phù hợp</h3>
+            <p className="text-gray-500 mb-6">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+            <button
+              type="button"
+              onClick={() => onClearFilter()}
+              className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-semibold transition"
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="p-5">
+        {filterPanel}
+        <div className="text-center py-16 px-6">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+            <FaTrophy className="text-indigo-400 text-3xl" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Bạn chưa tham gia sự kiện nào</h3>
+          <p className="text-gray-500 mb-6">Khám phá và tham gia các sự kiện thú vị!</p>
+          <Link to="/sport-event" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg">
+            Khám phá sự kiện
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-5">
+      {filterPanel}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(JOINED_PER_PAGE)].map((_, i) => (
             <div key={i} className="bg-gray-50 dark:bg-gray-700 rounded-xl h-64 animate-pulse" />
           ))}
         </div>
-      ) : events.length === 0 ? (
-        <div className="text-center py-16 px-6">
-          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-            <FaTrophy className="text-indigo-400 text-3xl" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">
-            {joinedSearch || statusFilter !== 'all' ? 'Không tìm thấy sự kiện phù hợp' : 'Bạn chưa tham gia sự kiện nào'}
-          </h3>
-          <p className="text-gray-500 mb-6">
-            {joinedSearch || statusFilter !== 'all' ? 'Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm' : 'Khám phá và tham gia các sự kiện thú vị!'}
-          </p>
-          {joinedSearch || statusFilter !== 'all' ? (
-            <button
-              onClick={() => { onSearchChange(''); onClearFilter() }}
-              className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-semibold transition"
-            >
-              Xóa bộ lọc
-            </button>
-          ) : (
-            <Link to="/sport-event" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg">
-              Khám phá sự kiện
-            </Link>
-          )}
-        </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {events.map((event) => {
               const status = getStatusBadge(event)
+              const imgSrc = event.image ? getImageUrl(event.image) : 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800'
               return (
                 <div
                   key={event._id}
@@ -1061,7 +1455,7 @@ function JoinedTabContent({ isLoading, events, navigate, joinedPage, joinedTotal
                 >
                   {/* Image */}
                   <div className="relative h-36">
-                    <img src={event.image} alt={event.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={imgSrc} alt={event.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     <span className={`absolute top-2.5 left-2.5 inline-flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-1 rounded-full ${status.color}`}>
                       {status.dot && <span className="w-1 h-1 rounded-full bg-white animate-pulse" />}
