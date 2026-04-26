@@ -120,6 +120,27 @@ export const quitChallengeController = async (req: Request, res: Response) => {
     return res.json({ message: 'Đã rời thử thách', result })
 }
 
+export const removeChallengeParticipantController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params
+        const { targetUserId } = req.body
+        const userId = (req as any).decoded?.user_id
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' })
+        }
+        if (!targetUserId) {
+            return res.status(400).json({ message: 'targetUserId is required' })
+        }
+
+        const result = await challengeService.removeParticipantByCreator(id, userId, targetUserId)
+
+        return res.json({ message: 'Đã xóa người tham gia', result })
+    } catch (error: any) {
+        return res.status(400).json({ message: error?.message || 'Không thể xóa người tham gia' })
+    }
+}
+
 export const getMyCreatedChallengesController = async (req: Request, res: Response) => {
     const userId = (req as any).decoded.user_id
     const { page, limit, status } = req.query
@@ -131,10 +152,17 @@ export const getMyCreatedChallengesController = async (req: Request, res: Respon
 
 export const getMyChallengesController = async (req: Request, res: Response) => {
     const userId = (req as any).decoded.user_id
-    const { page, limit, status } = req.query
+    const { page, limit, status, search, challenge_type, category, sortBy, dateFrom, dateTo, visibility } = req.query
 
     const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string, {
-        includeArchivedJoins: true
+        includeArchivedJoins: true,
+        search: search as string,
+        challenge_type: challenge_type as string,
+        category: category as string,
+        sortBy: sortBy as string,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        visibility: visibility as string
     })
 
     return res.json({ message: 'Lấy thử thách của tôi thành công', result })
@@ -186,9 +214,15 @@ export const getLeaderboardController = async (req: Request, res: Response) => {
 
 export const getParticipantsController = async (req: Request, res: Response) => {
     const { id } = req.params
+    const { page, limit, search } = req.query
     const viewerId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
 
-    const result = await challengeService.getParticipants(id, viewerId)
+    const parsedLimit = limit !== undefined && limit !== '' ? Number(limit) : undefined
+    const result = await challengeService.getParticipants(id, viewerId, {
+        page: Number(page) || 1,
+        limit: Number.isFinite(parsedLimit as number) ? parsedLimit : undefined,
+        search: (search as string) || ''
+    })
 
     return res.json({ message: 'Lấy danh sách người tham gia thành công', result })
 }

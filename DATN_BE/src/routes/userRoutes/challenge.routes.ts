@@ -7,6 +7,7 @@ import {
     deleteChallengeController,
     joinChallengeController,
     quitChallengeController,
+    removeChallengeParticipantController,
     getMyChallengesController,
     getMyCreatedChallengesController,
     getChallengeStatsController,
@@ -57,6 +58,7 @@ challengeRouter.post('/:id/report', verifyToken, wrapRequestHandler(reportChalle
 // Participation
 challengeRouter.post('/:id/join', verifyToken, wrapRequestHandler(joinChallengeController))
 challengeRouter.post('/:id/quit', verifyToken, wrapRequestHandler(quitChallengeController))
+challengeRouter.post('/:id/remove-participant', verifyToken, wrapRequestHandler(removeChallengeParticipantController))
 challengeRouter.post('/:id/invite', verifyToken, wrapRequestHandler(inviteFriendToChallengeController))
 
 // Progress

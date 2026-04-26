@@ -17,7 +17,16 @@ export const getPublicUserChallenges = (userId, params) => http.get(`/challenges
 export const addChallengeProgress = (id, data) => http.post(`/challenges/${id}/progress`, data)
 export const getChallengeProgress = (id, params) => http.get(`/challenges/${id}/progress`, { params })
 export const getChallengeLeaderboard = (id, params) => http.get(`/challenges/${id}/leaderboard`, { params })
-export const getChallengeParticipants = (id) => http.get(`/challenges/${id}/participants`)
+export const getChallengeParticipants = (id, params) => {
+  if (!params) return http.get(`/challenges/${id}/participants`)
+  const clean = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== '')
+  )
+  return http.get(`/challenges/${id}/participants`, { params: clean })
+}
+
+export const removeChallengeParticipant = (challengeId, targetUserId) =>
+  http.post(`/challenges/${challengeId}/remove-participant`, { targetUserId })
 export const getUserChallengeProgress = (challengeId, userId) => http.get(`/challenges/${challengeId}/progress/${userId}`)
 export const getChallengeActivity = (challengeId, activityId) => http.get(`/challenges/${challengeId}/activity/${activityId}`)
 export const getChallengeProgressEntry = (challengeId, progressId) => http.get(`/challenges/${challengeId}/progress-entry/${progressId}`)

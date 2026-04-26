@@ -76,6 +76,31 @@ class ChallengeService {
         return { $and: perWord }
     }
 
+    /** Áp điều kiện match challenge lên field sau $lookup (vd. challengeDoc) */
+    private prefixChallengeDocSearchCondition(
+        cond: Record<string, unknown> | null,
+        prefix: string
+    ): Record<string, unknown> | null {
+        if (!cond) return null
+        if (Array.isArray((cond as any).$and)) {
+            const parts = ((cond as any).$and as Record<string, unknown>[])
+                .map((c) => this.prefixChallengeDocSearchCondition(c, prefix))
+                .filter(Boolean) as Record<string, unknown>[]
+            return parts.length ? { $and: parts } : null
+        }
+        if (Array.isArray((cond as any).$or)) {
+            const parts = ((cond as any).$or as Record<string, unknown>[])
+                .map((c) => this.prefixChallengeDocSearchCondition(c, prefix))
+                .filter(Boolean) as Record<string, unknown>[]
+            return parts.length ? { $or: parts } : null
+        }
+        const out: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(cond)) {
+            out[`${prefix}.${k}`] = v
+        }
+        return out
+    }
+
     /** Đếm participant thực tế (bảng challenge_participants, không tính đã rời). */
     private async getActiveParticipantCountsMap(challengeIds: Types.ObjectId[]): Promise<Map<string, number>> {
         if (!challengeIds.length) return new Map()
@@ -801,6 +826,52 @@ class ChallengeService {
         return updatedParticipant
     }
 
+    /**
+     * Người tạo xóa một người khỏi thử thách (giống sự kiện: không được xóa chính mình).
+     */
+    async removeParticipantByCreator(challengeId: string, creatorId: string, targetUserId: string) {
+        if (targetUserId === creatorId) {
+            throw new Error('Không thể xóa người tạo thử thách')
+        }
+
+        const challenge = await ChallengeModel.findById(challengeId).select('title creator_id is_deleted')
+        if (!challenge) throw new Error('Thử thách không tồn tại')
+        if (challenge.is_deleted) throw new Error('Thử thách đã được gỡ, không thể thao tác')
+        if (challenge.creator_id.toString() !== creatorId) {
+            throw new Error('Chỉ người tạo thử thách mới có thể xóa người tham gia')
+        }
+
+        const updatedParticipant = await ChallengeParticipantModel.findOneAndUpdate(
+            {
+                challenge_id: new Types.ObjectId(challengeId),
+                user_id: new Types.ObjectId(targetUserId),
+                status: { $in: ['in_progress', 'completed'] }
+            },
+            { $set: { status: 'quit' } },
+            { new: true }
+        )
+        if (!updatedParticipant) {
+            throw new Error('Người dùng không còn trong danh sách tham gia hoặc đã rời thử thách')
+        }
+
+        await ChallengeModel.updateOne(
+            { _id: new Types.ObjectId(challengeId), participants_count: { $gt: 0 } },
+            { $inc: { participants_count: -1 } }
+        )
+
+        await NotificationModel.create({
+            sender_id: new Types.ObjectId(creatorId),
+            receiver_id: new Types.ObjectId(targetUserId),
+            content: `đã xóa bạn khỏi thử thách "${challenge.title}"`,
+            name_notification: `Bạn đã bị xóa khỏi thử thách: ${challenge.title}`,
+            link_id: challengeId,
+            type: NotificationTypes.challengeInvite,
+            is_read: false
+        })
+
+        return { ok: true }
+    }
+
     async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
         const skip = (page - 1) * limit
         const condition: any = { creator_id: new Types.ObjectId(userId) }
@@ -835,53 +906,233 @@ class ChallengeService {
         page: number = 1,
         limit: number = 20,
         status?: string,
-        options?: { includeArchivedJoins?: boolean }
+        options?: {
+            includeArchivedJoins?: boolean
+            search?: string
+            challenge_type?: string
+            category?: string
+            visibility?: string
+            dateFrom?: string
+            dateTo?: string
+            sortBy?: string
+        }
     ) {
         const skip = (page - 1) * limit
         const includeArchivedJoins = options?.includeArchivedJoins === true
+        const sortBy = options?.sortBy
+        const search = options?.search
+        const challenge_type = options?.challenge_type
+        const category = options?.category
+        const visibility = options?.visibility
+        const dateFrom = options?.dateFrom
+        const dateTo = options?.dateTo
 
-        const participantBase: any = {
-            user_id: new Types.ObjectId(userId),
-            status: { $ne: 'quit' }
-        }
-        const myChallengeIds = await ChallengeParticipantModel.distinct('challenge_id', participantBase)
+        const useAggregation =
+            Boolean(
+                (search && String(search).trim()) ||
+                    (challenge_type && challenge_type !== 'all') ||
+                    (category && category !== 'all') ||
+                    (visibility && visibility !== 'all') ||
+                    dateFrom ||
+                    dateTo
+            ) || Boolean(sortBy && sortBy !== 'joined')
 
-        let challengeMatch: any = {
-            _id: { $in: myChallengeIds.length ? myChallengeIds : [] }
+        // Đường cũ (nhanh) khi không có lọc nâng cao — giữ sort joined_at như trước
+        if (!useAggregation) {
+            const participantBase: any = {
+                user_id: new Types.ObjectId(userId),
+                status: { $ne: 'quit' }
+            }
+            const myChallengeIds = await ChallengeParticipantModel.distinct('challenge_id', participantBase)
+
+            let challengeMatch: any = {
+                _id: { $in: myChallengeIds.length ? myChallengeIds : [] }
+            }
+            if (!includeArchivedJoins || status) {
+                challengeMatch.is_deleted = { $ne: true }
+            }
+            const now = new Date()
+            if (status === 'ongoing') {
+                challengeMatch.start_date = { $lte: now }
+                challengeMatch.end_date = { $gte: now }
+            } else if (status === 'ended') {
+                challengeMatch.end_date = { $lt: now }
+            } else if (status === 'upcoming') {
+                challengeMatch.start_date = { $gt: now }
+            }
+
+            const validChallengeIds = myChallengeIds.length
+                ? (await ChallengeModel.find(challengeMatch, '_id').lean()).map((c) => c._id)
+                : []
+
+            const condition: any = {
+                ...participantBase,
+                challenge_id: { $in: validChallengeIds }
+            }
+
+            const participations = await ChallengeParticipantModel.find(condition)
+                .populate({
+                    path: 'challenge_id',
+                    populate: { path: 'creator_id', select: 'name avatar' }
+                })
+                .skip(skip)
+                .limit(limit)
+                .sort({ joined_at: -1 })
+
+            const total = await ChallengeParticipantModel.countDocuments(condition)
+            const totalPage = Math.ceil(total / limit) || 0
+
+            return { participations, totalPage, page, limit, total }
         }
-        if (!includeArchivedJoins || status) {
-            challengeMatch.is_deleted = { $ne: true }
-        }
+
         const now = new Date()
+        const challengeDocMatch: Record<string, unknown>[] = []
+
+        if (!includeArchivedJoins || status) {
+            challengeDocMatch.push({ 'challengeDoc.is_deleted': { $ne: true } })
+        }
+
         if (status === 'ongoing') {
-            challengeMatch.start_date = { $lte: now }
-            challengeMatch.end_date = { $gte: now }
+            challengeDocMatch.push({ 'challengeDoc.start_date': { $lte: now }, 'challengeDoc.end_date': { $gte: now } })
         } else if (status === 'ended') {
-            challengeMatch.end_date = { $lt: now }
+            challengeDocMatch.push({ 'challengeDoc.end_date': { $lt: now } })
         } else if (status === 'upcoming') {
-            challengeMatch.start_date = { $gt: now }
+            challengeDocMatch.push({ 'challengeDoc.start_date': { $gt: now } })
         }
 
-        const validChallengeIds = myChallengeIds.length
-            ? (await ChallengeModel.find(challengeMatch, '_id').lean()).map((c) => c._id)
-            : []
-
-        const condition: any = {
-            ...participantBase,
-            challenge_id: { $in: validChallengeIds }
+        if (sortBy === 'ongoing') {
+            challengeDocMatch.push({ 'challengeDoc.start_date': { $lte: now }, 'challengeDoc.end_date': { $gte: now } })
+        } else if (sortBy === 'ended') {
+            challengeDocMatch.push({ 'challengeDoc.end_date': { $lt: now } })
+        } else if (sortBy === 'soonest') {
+            challengeDocMatch.push({ 'challengeDoc.start_date': { $gt: now } })
         }
 
-        const participations = await ChallengeParticipantModel.find(condition)
-            .populate({
-                path: 'challenge_id',
-                populate: { path: 'creator_id', select: 'name avatar' }
+        if (challenge_type && challenge_type !== 'all') {
+            challengeDocMatch.push({ 'challengeDoc.challenge_type': challenge_type })
+        }
+        if (category && category !== 'all') {
+            challengeDocMatch.push({ 'challengeDoc.category': category })
+        }
+        if (visibility && visibility !== 'all') {
+            challengeDocMatch.push({ 'challengeDoc.visibility': visibility })
+        }
+
+        if (dateFrom) {
+            challengeDocMatch.push({ 'challengeDoc.end_date': { $gte: new Date(dateFrom) } })
+        }
+        if (dateTo) {
+            const toD = new Date(dateTo)
+            toD.setHours(23, 59, 59, 999)
+            challengeDocMatch.push({ 'challengeDoc.start_date': { $lte: toD } })
+        }
+
+        const searchCond = this.prefixChallengeDocSearchCondition(
+            this.buildChallengeTitleDescriptionSearchCondition(search),
+            'challengeDoc'
+        )
+        if (searchCond) challengeDocMatch.push(searchCond)
+
+        const preMatchStages: Record<string, unknown>[] = [
+            { $match: { user_id: new Types.ObjectId(userId), status: { $ne: 'quit' } } },
+            {
+                $lookup: {
+                    from: 'challenges',
+                    localField: 'challenge_id',
+                    foreignField: '_id',
+                    as: 'challengeDoc'
+                }
+            },
+            { $unwind: '$challengeDoc' }
+        ]
+
+        if (challengeDocMatch.length) {
+            preMatchStages.push({ $match: challengeDocMatch.length === 1 ? challengeDocMatch[0] : { $and: challengeDocMatch } })
+        }
+
+        let sortStage: Record<string, unknown> = { joined_at: -1 }
+        const sb = sortBy || 'popular'
+
+        if (sb === 'popular') {
+            preMatchStages.push({
+                $addFields: {
+                    _statusOrder: {
+                        $switch: {
+                            branches: [
+                                {
+                                    case: {
+                                        $and: [{ $lte: ['$challengeDoc.start_date', now] }, { $gte: ['$challengeDoc.end_date', now] }]
+                                    },
+                                    then: 0
+                                },
+                                {
+                                    case: { $gt: ['$challengeDoc.start_date', now] },
+                                    then: 1
+                                }
+                            ],
+                            default: 2
+                        }
+                    }
+                }
             })
-            .skip(skip)
-            .limit(limit)
-            .sort({ joined_at: -1 })
+            sortStage = { _statusOrder: 1, 'challengeDoc.participants_count': -1, 'challengeDoc.start_date': 1, joined_at: -1 }
+        } else if (sb === 'newest') {
+            sortStage = { 'challengeDoc.createdAt': -1, joined_at: -1 }
+        } else if (sb === 'oldest') {
+            sortStage = { 'challengeDoc.createdAt': 1, joined_at: 1 }
+        } else if (sb === 'soonest') {
+            sortStage = { 'challengeDoc.start_date': 1, joined_at: -1 }
+        } else if (sb === 'ending_soon') {
+            sortStage = { 'challengeDoc.end_date': 1, joined_at: -1 }
+        } else if (sb === 'joined') {
+            sortStage = { joined_at: -1 }
+        } else if (sb === 'ongoing' || sb === 'ended') {
+            sortStage = { joined_at: -1 }
+        } else {
+            sortStage = { joined_at: -1 }
+        }
 
-        const total = await ChallengeParticipantModel.countDocuments(condition)
-        const totalPage = Math.ceil(total / limit)
+        const pipeline: Record<string, unknown>[] = [
+            ...preMatchStages,
+            { $sort: sortStage },
+            {
+                $facet: {
+                    totalArr: [{ $count: 'c' }],
+                    data: [
+                        { $skip: skip },
+                        { $limit: limit },
+                        {
+                            $lookup: {
+                                from: 'users',
+                                localField: 'challengeDoc.creator_id',
+                                foreignField: '_id',
+                                as: '_creatorArr',
+                                pipeline: [{ $project: { name: 1, avatar: 1 } }]
+                            }
+                        },
+                        {
+                            $set: {
+                                'challengeDoc.creator_id': { $arrayElemAt: ['$_creatorArr', 0] }
+                            }
+                        },
+                        { $unset: ['_creatorArr', '_statusOrder'] },
+                        { $set: { challenge_id: '$challengeDoc' } },
+                        { $unset: 'challengeDoc' }
+                    ]
+                }
+            }
+        ]
+
+        const agg = await ChallengeParticipantModel.aggregate(pipeline as any[])
+        const row = agg[0] || { totalArr: [], data: [] }
+        const total = row.totalArr?.[0]?.c ?? 0
+        const totalPage = Math.ceil(total / limit) || 0
+        const raw = row.data || []
+
+        const participations = raw.map((doc: any) => {
+            const { challenge_id, ...rest } = doc
+            return { ...rest, challenge_id }
+        })
 
         return { participations, totalPage, page, limit, total }
     }
@@ -1323,7 +1574,11 @@ class ChallengeService {
 
     // ==================== PARTICIPANTS ====================
 
-    async getParticipants(challengeId: string, viewerId?: string) {
+    async getParticipants(
+        challengeId: string,
+        viewerId?: string,
+        opts?: { page?: number; limit?: number; search?: string }
+    ) {
         const challenge = await this.getChallengeForRead(challengeId, viewerId)
 
         await this.ensureCreatorIsParticipant(challengeId)
@@ -1401,29 +1656,69 @@ class ChallengeService {
             todayAgg.forEach(row => todayMap.set(row._id.toString(), row.today_sum))
         }
 
+        const page = Math.max(1, Number(opts?.page) || 1)
+        const limitParam = opts?.limit
+        const parsedLimit = Number(limitParam)
+        const limit =
+            limitParam !== undefined && limitParam !== null && String(limitParam) !== '' && Number.isFinite(parsedLimit)
+                ? Math.min(100, Math.max(1, parsedLimit))
+                : undefined
+        const search = (opts?.search || '').trim().toLowerCase()
+
+        let rows = participants.map((p) => {
+            const userId = p.user_id instanceof Types.ObjectId
+                ? p.user_id.toString()
+                : (p.user_id as any)?._id?.toString() || ''
+            const completedDays = (p as any).completed_days?.length || p.current_value
+            return {
+                user: p.user_id,
+                current_value: completedDays,
+                goal_value: p.goal_value,
+                total_required_days: totalRequiredDays,
+                today_value: todayMap.get(userId) || 0,
+                progress_percent: Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100),
+                is_completed: p.is_completed,
+                streak_count: p.streak_count,
+                active_days: p.active_days,
+                joined_at: p.joined_at,
+                last_activity_at: p.last_activity_at,
+                status: p.status
+            }
+        })
+
+        if (search) {
+            rows = rows.filter((row) => {
+                const u = row.user as { name?: string; email?: string } | Types.ObjectId
+                if (u instanceof Types.ObjectId) return false
+                const name = (u?.name && String(u.name).toLowerCase()) || ''
+                const email = (u?.email && String(u.email).toLowerCase()) || ''
+                return name.includes(search) || email.includes(search)
+            })
+        }
+
+        const total = rows.length
+        const ranked = rows.map((row, index) => ({ ...row, rank: index + 1 }))
+
+        if (limit == null) {
+            return {
+                participants: ranked,
+                total
+            }
+        }
+
+        const totalPages = Math.max(1, Math.ceil(total / limit))
+        const skip = (page - 1) * limit
+        const pageRows = ranked.slice(skip, skip + limit).map((row, i) => ({
+            ...row,
+            rank: skip + i + 1
+        }))
+
         return {
-            participants: participants.map((p, index) => {
-                const userId = p.user_id instanceof Types.ObjectId
-                    ? p.user_id.toString()
-                    : (p.user_id as any)?._id?.toString() || ''
-                const completedDays = (p as any).completed_days?.length || p.current_value
-                return {
-                    rank: index + 1,
-                    user: p.user_id,
-                    current_value: completedDays,
-                    goal_value: p.goal_value,
-                    total_required_days: totalRequiredDays,
-                    today_value: todayMap.get(userId) || 0,
-                    progress_percent: Math.min(Math.round((completedDays / totalRequiredDays) * 100), 100),
-                    is_completed: p.is_completed,
-                    streak_count: p.streak_count,
-                    active_days: p.active_days,
-                    joined_at: p.joined_at,
-                    last_activity_at: p.last_activity_at,
-                    status: p.status
-                }
-            }),
-            total: participants.length
+            participants: pageRows,
+            total,
+            page,
+            limit,
+            totalPages
         }
     }
 
