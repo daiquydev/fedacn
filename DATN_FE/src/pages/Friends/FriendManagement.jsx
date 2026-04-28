@@ -1,7 +1,7 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useMemo, useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { FaSearch, FaUserFriends, FaUserMinus, FaUserPlus, FaUser, FaHeart } from 'react-icons/fa'
+import { FaSearch, FaUserFriends, FaUserMinus, FaUserPlus, FaUser, FaHeart, FaSortAmountDown } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { currentAccount, followUser, recommendUser, unfollowUser } from '../../apis/userApi'
@@ -95,19 +95,63 @@ const PersonRow = ({ person, badge, actions, navigate }) => (
 )
 
 // Section with search box + list
-const PeopleSection = ({ title, subtitle, people, badge, renderActions, emptyMessage, disabled }) => {
+const getPersonTimestamp = (person) => {
+  const dateCandidates = [
+    person?.friendSince,
+    person?.followedAt,
+    person?.createdAt,
+    person?.updatedAt
+  ]
+
+  const firstValidDate = dateCandidates.find((value) => value && !Number.isNaN(new Date(value).getTime()))
+  return firstValidDate ? new Date(firstValidDate).getTime() : 0
+}
+
+const defaultSortOptions = [
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'oldest', label: 'Xa nhất' }
+]
+
+const PeopleSection = ({
+  title,
+  subtitle,
+  people,
+  badge,
+  renderActions,
+  emptyMessage,
+  disabled,
+  sortOptions = defaultSortOptions,
+  defaultSort = 'newest'
+}) => {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('')
+  const [sortBy, setSortBy] = useState(defaultSort)
 
-  const filtered = useMemo(() => {
-    if (!filter.trim()) return people
-    const kw = filter.toLowerCase().trim()
-    return people.filter((p) => {
-      const name = (p.name || '').toLowerCase()
-      const email = (p.email || '').toLowerCase()
-      return name.includes(kw) || email.includes(kw)
+  const filteredAndSorted = useMemo(() => {
+    const source = !filter.trim()
+      ? people
+      : people.filter((p) => {
+        const name = (p.name || '').toLowerCase()
+        const email = (p.email || '').toLowerCase()
+        const kw = filter.toLowerCase().trim()
+        return name.includes(kw) || email.includes(kw)
+      })
+
+    const sorted = [...source].sort((a, b) => {
+      const aTime = getPersonTimestamp(a)
+      const bTime = getPersonTimestamp(b)
+
+      if (sortBy === 'oldest') {
+        if (aTime !== bTime) return aTime - bTime
+      } else {
+        if (aTime !== bTime) return bTime - aTime
+      }
+
+      return (a.name || '').localeCompare(b.name || '', 'vi')
     })
-  }, [filter, people])
+
+    return sorted
+  }, [filter, people, sortBy])
 
   return (
     <section className='bg-white dark:bg-gray-800 shadow rounded-2xl p-4 flex flex-col gap-3'>
@@ -120,21 +164,38 @@ const PeopleSection = ({ title, subtitle, people, badge, renderActions, emptyMes
         </h2>
         <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>{subtitle}</p>
       </div>
-      <div className='relative'>
-        <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={12} />
-        <input
-          type='text'
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder='Tìm theo tên hoặc email'
-          className='w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-400 outline-none'
-        />
+      <div className='flex flex-col sm:flex-row gap-2'>
+        <div className='relative flex-1'>
+          <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={12} />
+          <input
+            type='text'
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder='Tìm theo tên hoặc email'
+            className='w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-400 outline-none'
+          />
+        </div>
+        <div className='relative sm:w-44'>
+          <FaSortAmountDown className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none' size={12} />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className='w-full pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-400 outline-none appearance-none'
+            aria-label={`Sắp xếp danh sách ${title}`}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-      {!filtered.length ? (
+      {!filteredAndSorted.length ? (
         <EmptyState message={emptyMessage} />
       ) : (
         <ul className='space-y-1.5 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent'>
-          {filtered.map((person) => (
+          {filteredAndSorted.map((person) => (
             <PersonRow
               key={person._id}
               person={person}
@@ -369,6 +430,10 @@ export default function FriendManagement() {
             title='Bạn bè'
             subtitle='Bạn bè đang theo dõi lẫn nhau'
             people={friends}
+            sortOptions={[
+              { value: 'newest', label: 'Bạn bè mới nhất' },
+              { value: 'oldest', label: 'Bạn bè xa nhất' }
+            ]}
             badge='Bạn bè'
             emptyMessage='Bạn chưa có người bạn nào. Hãy chấp nhận lời mời!'
             renderActions={(person) => (
@@ -387,6 +452,10 @@ export default function FriendManagement() {
             title='Lời mời kết bạn'
             subtitle='Người gửi lời mời, chưa được xử lý'
             people={incomingRequests}
+            sortOptions={[
+              { value: 'newest', label: 'Lời mời mới nhất' },
+              { value: 'oldest', label: 'Lời mời xa nhất' }
+            ]}
             badge='Chờ chấp nhận'
             emptyMessage='Không có lời mời kết bạn mới.'
             renderActions={(person) => (
@@ -418,6 +487,10 @@ export default function FriendManagement() {
             title='Người bạn theo dõi'
             subtitle='Tất cả người bạn đang follow'
             people={followings}
+            sortOptions={[
+              { value: 'newest', label: 'Theo dõi mới nhất' },
+              { value: 'oldest', label: 'Theo dõi xa nhất' }
+            ]}
             badge={(person) => {
               if (followerIds.has(String(person._id))) return 'Bạn bè'
               return 'Đang chờ xác nhận'
@@ -450,6 +523,10 @@ export default function FriendManagement() {
             title='Người theo dõi bạn'
             subtitle='Tất cả người đang follow bạn'
             people={allFollowers}
+            sortOptions={[
+              { value: 'newest', label: 'Follower mới nhất' },
+              { value: 'oldest', label: 'Follower xa nhất' }
+            ]}
             badge={(person) => {
               if (followingIds.has(String(person._id))) return 'Bạn bè'
               return 'Đang theo dõi bạn'
