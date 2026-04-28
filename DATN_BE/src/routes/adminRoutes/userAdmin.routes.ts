@@ -15,7 +15,9 @@ import {
 import {
   getAIUsageAnalyticsController,
   getChallengeAnalyticsController,
-  getCommunityAnalyticsController
+  getCommunityAnalyticsController,
+  getSystemOverviewAnalyticsController,
+  getUsersHealthAnalyticsController
 } from '~/controllers/adminControllers/analytics.controller'
 import { accessTokenValidator } from '~/middlewares/authUser.middleware'
 import { checkRole } from '~/middlewares/roles.middleware'
@@ -74,6 +76,20 @@ userAdminRouter.put(
   accessTokenValidator,
   wrapRequestHandler(checkRole([UserRoles.admin])),
   wrapRequestHandler(acceptRequestUpgradeController)
+)
+
+userAdminRouter.get(
+  '/analytics/system-overview',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getSystemOverviewAnalyticsController)
+)
+
+userAdminRouter.get(
+  '/analytics/users-health',
+  accessTokenValidator,
+  wrapRequestHandler(checkRole([UserRoles.admin])),
+  wrapRequestHandler(getUsersHealthAnalyticsController)
 )
 
 userAdminRouter.get(

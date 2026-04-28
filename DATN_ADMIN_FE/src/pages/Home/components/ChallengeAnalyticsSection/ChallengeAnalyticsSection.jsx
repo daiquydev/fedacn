@@ -16,6 +16,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import moment from 'moment'
 import { getChallengeAnalytics } from '../../../../apis/adminApi'
 import TimeRangeFilter from '../TimeRangeFilter/TimeRangeFilter'
+import { CHART_BG, CHART_COLORS } from '../chartTheme'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler)
 
@@ -32,24 +33,24 @@ function buildDataset(data = [], dates = []) {
 const TYPE_META = {
   nutrition: {
     label: 'Ăn uống',
-    color: 'rgba(245, 158, 11, 1)',
-    bg: 'rgba(245, 158, 11, 0.12)',
+    color: CHART_COLORS.warning,
+    bg: CHART_BG.warning,
     dotBg: 'bg-amber-500',
     cardBg: 'bg-amber-50 dark:bg-amber-900/20',
     textColor: 'text-amber-600 dark:text-amber-400'
   },
   outdoorActivity: {
     label: 'Ngoài trời',
-    color: 'rgba(34, 197, 94, 1)',
-    bg: 'rgba(34, 197, 94, 0.1)',
+    color: CHART_COLORS.success,
+    bg: CHART_BG.success,
     dotBg: 'bg-emerald-500',
     cardBg: 'bg-emerald-50 dark:bg-emerald-900/20',
     textColor: 'text-emerald-600 dark:text-emerald-400'
   },
   fitness: {
     label: 'Thể dục',
-    color: 'rgba(168, 85, 247, 1)',
-    bg: 'rgba(168, 85, 247, 0.1)',
+    color: CHART_COLORS.purple,
+    bg: CHART_BG.purple,
     dotBg: 'bg-violet-500',
     cardBg: 'bg-violet-50 dark:bg-violet-900/20',
     textColor: 'text-violet-600 dark:text-violet-400'
@@ -102,7 +103,9 @@ export default function ChallengeAnalyticsSection() {
     nutrition = 0,
     outdoorActivity = 0,
     fitness = 0,
-    total = 0
+    total = 0,
+    scopeBreakdown = {},
+    completionRates = {}
   } = chData
 
   const allDates = mergeDates(dailyNutrition, dailyOutdoorActivity, dailyFitness)
@@ -197,6 +200,17 @@ export default function ChallengeAnalyticsSection() {
     }
   }
 
+  const scopeDoughnutData = {
+    labels: ['Thử thách cộng đồng', 'Thử thách bạn bè', 'Thử thách cá nhân'],
+    datasets: [
+      {
+        data: [scopeBreakdown.community ?? 0, scopeBreakdown.friends ?? 0, scopeBreakdown.personal ?? 0],
+        backgroundColor: [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.purple],
+        borderWidth: 2
+      }
+    ]
+  }
+
   return (
     <div className='bg-white mx-2 rounded-2xl border border-gray-200 shadow-sm px-6 py-5 my-4 dark:bg-gray-800 dark:border-gray-700'>
       <div className='flex items-center justify-between mb-4 flex-wrap gap-2'>
@@ -226,6 +240,24 @@ export default function ChallengeAnalyticsSection() {
         </div>
       </div>
 
+      <div className='grid grid-cols-1 md:grid-cols-5 gap-3 mb-4'>
+        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
+          Tỷ lệ hoàn thành người tham gia: <span className='font-bold'>{completionRates.participantCompletionPercent ?? 0}%</span>
+        </div>
+        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
+          Tỷ lệ thử thách hoàn thành: <span className='font-bold'>{completionRates.challengeFullCompletionPercent ?? 0}%</span>
+        </div>
+        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
+          Cộng đồng: <span className='font-bold'>{scopeBreakdown.community ?? 0}</span>
+        </div>
+        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
+          Bạn bè: <span className='font-bold'>{scopeBreakdown.friends ?? 0}</span>
+        </div>
+        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
+          Cá nhân: <span className='font-bold'>{scopeBreakdown.personal ?? 0}</span>
+        </div>
+      </div>
+
       <div className='grid grid-cols-1 xl:grid-cols-5 gap-4'>
         <div className='xl:col-span-3 h-[260px]'>
           {total === 0 ? (
@@ -239,7 +271,7 @@ export default function ChallengeAnalyticsSection() {
         </div>
 
         <div className='xl:col-span-2 flex flex-col gap-3'>
-          <div className='relative h-[160px]'>
+          <div className='relative h-[150px]'>
             {total > 0 ? (
               <>
                 <Doughnut options={doughnutOptions} data={doughnutData} />
@@ -251,6 +283,12 @@ export default function ChallengeAnalyticsSection() {
             ) : (
               <div className='flex items-center justify-center h-full text-gray-300 text-sm'>Chưa có dữ liệu</div>
             )}
+          </div>
+          <div className='relative h-[150px]'>
+            <Doughnut
+              options={{ responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' } } }}
+              data={scopeDoughnutData}
+            />
           </div>
 
           {insight && (

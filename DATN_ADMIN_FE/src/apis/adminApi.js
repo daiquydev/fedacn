@@ -10,6 +10,8 @@ export const getAllRequestToChef = (params) => http.get(`/admin/request/upgrade-
 export const acceptRequestToChef = (body) => http.put(`/admin/request/accept-upgrade-to-chef`, body)
 export const rejectRequestToChef = (body) => http.put(`/admin/request/reject-upgrade-to-chef`, body)
 export const dashboard = () => http.get(`/admin/home/dashboard`)
+export const getSystemOverviewAnalytics = () => http.get('/admin/analytics/system-overview')
+export const getUsersHealthAnalytics = (params) => http.get('/admin/analytics/users-health', { params })
 export const getAIUsageAnalytics = (params) => http.get('/admin/analytics/ai-usage', { params })
 export const getChallengeAnalytics = (params) => http.get('/admin/analytics/challenges', { params })
 export const getCommunityAnalytics = (params) => http.get('/admin/analytics/community', { params })

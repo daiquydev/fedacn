@@ -40,3 +40,14 @@ export const getCommunityHealthAnalyticsController = async (req: Request, res: R
   )
   return res.json({ result, message: 'Lấy thống kê sức khỏe cộng đồng thành công' })
 }
+
+export const getSystemOverviewAnalyticsController = async (_req: Request, res: Response) => {
+  const result = await analyticsService.getSystemOverviewAnalytics()
+  return res.json({ result, message: 'Lấy tổng quan hệ thống thành công' })
+}
+
+export const getUsersHealthAnalyticsController = async (req: Request, res: Response) => {
+  const { period, startDate, endDate } = req.query
+  const result = await analyticsService.getUsersHealthAnalytics(period as string, startDate as string, endDate as string)
+  return res.json({ result, message: 'Lấy thống kê người dùng và sức khỏe thành công' })
+}

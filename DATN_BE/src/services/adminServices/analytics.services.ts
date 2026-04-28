@@ -5,6 +5,7 @@ import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.sch
 import PostModel from '~/models/schemas/post.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventAttendanceModel from '~/models/schemas/sportEventAttendance.schema'
+import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import UserModel from '~/models/schemas/user.schema'
 import CommentPostModel from '~/models/schemas/commentPost.schema'
@@ -112,6 +113,35 @@ function buildTopEventUsersByAttendancePipeline(from: Date | null, to: Date): Pi
   ]
 }
 
+/** Fallback top user theo số lần xuất hiện trong participants_ids (khi chưa có dữ liệu điểm danh). */
+function buildTopEventUsersByParticipantsPipeline(from: Date | null, to: Date): PipelineStage[] {
+  const match: Record<string, unknown> = { isDeleted: { $ne: true } }
+  if (from) {
+    match.createdAt = { $gte: from, $lte: to }
+  }
+
+  return [
+    { $match: match },
+    { $unwind: '$participants_ids' },
+    { $group: { _id: '$participants_ids', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 3 },
+    {
+      $lookup: {
+        from: 'users',
+        let: { uid: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$_id', '$$uid'] } } },
+          { $project: { name: 1, avatar: 1, user_name: 1 } }
+        ],
+        as: 'user'
+      }
+    },
+    { $unwind: '$user' },
+    { $project: { _id: 0, user: 1, count: 1 } }
+  ]
+}
+
 function getDateRange(period?: string, startDate?: string, endDate?: string): { from: Date | null; to: Date } {
   const now = new Date()
 
@@ -154,7 +184,115 @@ function getDateRange(period?: string, startDate?: string, endDate?: string): { 
   }
 }
 
+function normalizeGender(value: unknown): 'male' | 'female' | 'other' | 'unknown' {
+  if (value === 'male' || value === 'female' || value === 'other') return value
+  return 'unknown'
+}
+
+function bmiAsiaBucketLabel(bmi: number): string {
+  if (bmi < 18.5) return 'underweight'
+  if (bmi < 23) return 'normal'
+  if (bmi < 25) return 'overweight_risk'
+  if (bmi < 30) return 'obese_level_1'
+  return 'obese_level_2'
+}
+
 class AnalyticsService {
+  async getSystemOverviewAnalytics() {
+    const [totalUsers, totalEvents, totalChallenges, totalWorkouts] = await Promise.all([
+      UserModel.countDocuments({ role: UserRoles.user, isDeleted: { $ne: true } }),
+      SportEventModel.countDocuments({ isDeleted: { $ne: true } }),
+      ChallengeModel.countDocuments({ is_deleted: { $ne: true } }),
+      WorkoutSessionModel.countDocuments({ status: 'completed' })
+    ])
+
+    return {
+      users: totalUsers,
+      sportEvents: totalEvents,
+      challenges: totalChallenges,
+      workouts: totalWorkouts
+    }
+  }
+
+  async getUsersHealthAnalytics(period?: string, startDate?: string, endDate?: string) {
+    const { from, to } = getDateRange(period, startDate, endDate)
+    const createdRange = from ? { createdAt: { $gte: from, $lte: to } } : {}
+    const workoutRange = from ? { finished_at: { $gte: from, $lte: to } } : {}
+    const challengeJoinRange = from ? { joined_at: { $gte: from, $lte: to } } : {}
+
+    const [userGendersRaw, eventGenderRaw, challengeGenderRaw, workoutParticipantRaw, bmiUsers] = await Promise.all([
+      UserModel.aggregate([
+        { $match: { role: UserRoles.user, isDeleted: { $ne: true }, ...createdRange } },
+        { $group: { _id: '$gender', count: { $sum: 1 } } }
+      ]),
+      SportEventAttendanceModel.aggregate([
+        ...attendanceAttAtMatchStages(from, to),
+        { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'u' } },
+        { $unwind: '$u' },
+        { $match: { 'u.role': UserRoles.user, 'u.isDeleted': { $ne: true } } },
+        { $group: { _id: '$u.gender', count: { $sum: 1 } } }
+      ]),
+      ChallengeParticipantModel.aggregate([
+        { $match: { status: { $ne: 'quit' }, ...challengeJoinRange } },
+        { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'u' } },
+        { $unwind: '$u' },
+        { $match: { 'u.role': UserRoles.user, 'u.isDeleted': { $ne: true } } },
+        { $group: { _id: '$u.gender', count: { $sum: 1 } } }
+      ]),
+      WorkoutSessionModel.aggregate([
+        { $match: { status: 'completed', ...workoutRange } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$finished_at' } }, users: { $addToSet: '$user_id' } } },
+        { $project: { _id: 1, count: { $size: '$users' } } },
+        { $sort: { _id: 1 } }
+      ]),
+      UserModel.find({
+        role: UserRoles.user,
+        isDeleted: { $ne: true },
+        BMI: { $ne: null, $exists: true },
+        ...createdRange
+      })
+        .select({ BMI: 1 })
+        .lean()
+    ])
+
+    const initGender = { male: 0, female: 0, other: 0, unknown: 0 }
+    const toGenderBreakdown = (rows: { _id: unknown; count: number }[]) => {
+      const result = { ...initGender }
+      for (const row of rows || []) {
+        const key = normalizeGender(row._id)
+        result[key] += row.count || 0
+      }
+      return result
+    }
+
+    const bmiDist = {
+      underweight: 0,
+      normal: 0,
+      overweight_risk: 0,
+      obese_level_1: 0,
+      obese_level_2: 0
+    }
+    for (const item of bmiUsers as { BMI?: number }[]) {
+      const bmi = Number(item.BMI)
+      if (!Number.isFinite(bmi)) continue
+      const bucket = bmiAsiaBucketLabel(bmi) as keyof typeof bmiDist
+      bmiDist[bucket] += 1
+    }
+
+    return {
+      userGender: toGenderBreakdown(userGendersRaw as { _id: unknown; count: number }[]),
+      eventParticipantGender: toGenderBreakdown(eventGenderRaw as { _id: unknown; count: number }[]),
+      challengeParticipantGender: toGenderBreakdown(challengeGenderRaw as { _id: unknown; count: number }[]),
+      participantsOverTime: {
+        workouts: workoutParticipantRaw
+      },
+      bmiAsiaDistribution: {
+        total: bmiUsers.length,
+        ...bmiDist
+      }
+    }
+  }
+
   async getAIUsageAnalytics(period?: string, startDate?: string, endDate?: string) {
     const { from, to } = getDateRange(period, startDate, endDate)
     const dateMatch: any = {}
@@ -212,10 +350,42 @@ class AnalyticsService {
 
     const baseMatch = { is_deleted: { $ne: true }, ...dateMatch }
 
-    const [nutrition, outdoorActivity, fitness] = await Promise.all([
+    const [nutrition, outdoorActivity, fitness, scopeRaw, completionRaw, fullCompletionRaw] = await Promise.all([
       ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'nutrition' }),
       ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'outdoor_activity' }),
-      ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'fitness' })
+      ChallengeModel.countDocuments({ ...baseMatch, challenge_type: 'fitness' }),
+      ChallengeModel.aggregate([
+        { $match: baseMatch },
+        { $group: { _id: '$visibility', count: { $sum: 1 } } }
+      ]),
+      ChallengeParticipantModel.aggregate([
+        { $match: from ? { joined_at: { $gte: from, $lte: to }, status: { $ne: 'quit' } } : { status: { $ne: 'quit' } } },
+        {
+          $group: {
+            _id: null,
+            completed: {
+              $sum: {
+                $cond: [{ $or: [{ $eq: ['$is_completed', true] }, { $eq: ['$status', 'completed'] }] }, 1, 0]
+              }
+            },
+            total: { $sum: 1 }
+          }
+        }
+      ]),
+      ChallengeModel.aggregate([
+        { $match: baseMatch },
+        {
+          $group: {
+            _id: null,
+            completed: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'completed'] }, 1, 0]
+              }
+            },
+            total: { $sum: 1 }
+          }
+        }
+      ])
     ])
 
     const dailyRaw = await ChallengeModel.aggregate([
@@ -243,12 +413,26 @@ class AnalyticsService {
       .map((d: any) => ({ _id: d._id.date, count: d.count }))
 
     const total = nutrition + outdoorActivity + fitness
+    const scopeCounts = { community: 0, friends: 0, personal: 0 }
+    for (const row of scopeRaw as { _id: string; count: number }[]) {
+      if (row._id === 'public') scopeCounts.community += row.count
+      else if (row._id === 'friends') scopeCounts.friends += row.count
+      else if (row._id === 'private') scopeCounts.personal += row.count
+    }
+    const completion = (completionRaw as { completed: number; total: number }[])[0] || { completed: 0, total: 0 }
+    const fullCompletion = (fullCompletionRaw as { completed: number; total: number }[])[0] || { completed: 0, total: 0 }
 
     return {
       nutrition,
       outdoorActivity,
       fitness,
       total,
+      typeBreakdown: { eating: nutrition, outdoor: outdoorActivity, exercise: fitness },
+      scopeBreakdown: scopeCounts,
+      completionRates: {
+        participantCompletionPercent: completion.total > 0 ? Math.round((completion.completed / completion.total) * 1000) / 10 : 0,
+        challengeFullCompletionPercent: fullCompletion.total > 0 ? Math.round((fullCompletion.completed / fullCompletion.total) * 1000) / 10 : 0
+      },
       dailyNutrition,
       dailyOutdoorActivity,
       dailyFitness
@@ -304,9 +488,12 @@ class AnalyticsService {
       { $project: { _id: 0, user: 1, count: 1 } }
     ])
 
-    const topEventUsers = await SportEventAttendanceModel.aggregate(
+    let topEventUsers = await SportEventAttendanceModel.aggregate(
       buildTopEventUsersByAttendancePipeline(from, to)
     )
+    if (!topEventUsers.length) {
+      topEventUsers = await SportEventModel.aggregate(buildTopEventUsersByParticipantsPipeline(from, to))
+    }
 
     const workoutDateMatch: any = {}
     if (from) workoutDateMatch.finished_at = { $gte: from, $lte: to }
@@ -332,15 +519,21 @@ class AnalyticsService {
     ])
 
     // ── Platform Activity daily series ──
-    // Chart 1: Posts + New Users
+    // Chart 1: Posts + Likes + Comments
     const dailyPosts = await PostModel.aggregate([
       { $match: { is_banned: false, ...dateMatch } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
 
-    const dailyNewUsers = await UserModel.aggregate([
-      { $match: { role: UserRoles.user, ...dateMatch } },
+    const dailyLikes = await LikePostModel.aggregate([
+      { $match: { ...dateMatch } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ])
+
+    const dailyComments = await CommentPostModel.aggregate([
+      { $match: { is_banned: false, ...dateMatch } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
@@ -370,11 +563,19 @@ class AnalyticsService {
     )
 
     // Totals
-    const [totalPosts, totalNewUsers, totalOutdoor, totalIndoor] = await Promise.all([
+    const [totalPosts, totalLikes, totalComments, totalOutdoor, totalIndoor, completedSessions, totalSessions] = await Promise.all([
       PostModel.countDocuments({ is_banned: false, ...dateMatch }),
-      UserModel.countDocuments({ role: UserRoles.user, ...dateMatch }),
+      LikePostModel.countDocuments({ ...dateMatch }),
+      CommentPostModel.countDocuments({ is_banned: false, ...dateMatch }),
       SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Ngoài trời' }),
-      SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Trong nhà' })
+      SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Trong nhà' }),
+      SportEventSessionModel.countDocuments({
+        ...(from ? { sessionDate: { $gte: from, $lte: to } } : {}),
+        isCompleted: true
+      }),
+      SportEventSessionModel.countDocuments({
+        ...(from ? { sessionDate: { $gte: from, $lte: to } } : {})
+      })
     ])
 
     // Tổng lượt điểm danh trong kỳ (khớp với chuỗi ngày ở trên)
@@ -395,12 +596,19 @@ class AnalyticsService {
         workouts: topWorkoutUsers
       },
       communityActivity: {
-        totals: { posts: totalPosts, newUsers: totalNewUsers },
+        totals: { posts: totalPosts, likes: totalLikes, comments: totalComments },
         dailyPosts,
-        dailyNewUsers
+        dailyLikes,
+        dailyComments
       },
       eventActivity: {
-        totals: { outdoorEvents: totalOutdoor, indoorEvents: totalIndoor, outdoorJoins: totalOutdoorJoins, indoorJoins: totalIndoorJoins },
+        totals: {
+          outdoorEvents: totalOutdoor,
+          indoorEvents: totalIndoor,
+          outdoorJoins: totalOutdoorJoins,
+          indoorJoins: totalIndoorJoins,
+          completionRatePercent: totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 1000) / 10 : 0
+        },
         dailyOutdoorEvents,
         dailyIndoorEvents,
         dailyOutdoorJoins,

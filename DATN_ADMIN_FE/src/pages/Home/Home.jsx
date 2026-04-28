@@ -1,13 +1,12 @@
 import { BsPeopleFill } from 'react-icons/bs'
 import { MdSportsSoccer } from 'react-icons/md'
-import { FaNewspaper, FaTrophy } from 'react-icons/fa'
-import BMIBarChart from './components/PieChart/PieChart'
-import EventTypeDoughnut from './components/EventTypeDoughnut/EventTypeDoughnut'
+import { FaDumbbell, FaTrophy } from 'react-icons/fa'
 import ChallengeAnalyticsSection from './components/ChallengeAnalyticsSection/ChallengeAnalyticsSection'
 import CommunitySection from './components/CommunitySection/CommunitySection'
 import SportEventCategoryCharts from './components/SportEventCategoryCharts/SportEventCategoryCharts'
 import InfoTooltip from './components/InfoTooltip/InfoTooltip'
-import { dashboard } from '../../apis/adminApi'
+import UsersHealthSection from './components/UsersHealthSection/UsersHealthSection'
+import { dashboard, getSystemOverviewAnalytics } from '../../apis/adminApi'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -77,9 +76,14 @@ export default function Home() {
     queryFn: () => dashboard(),
     placeholderData: keepPreviousData
   })
+  const { data: systemOverviewData } = useQuery({
+    queryKey: ['system-overview'],
+    queryFn: () => getSystemOverviewAnalytics(),
+    placeholderData: keepPreviousData
+  })
 
   const result = data?.data?.result
-  const community = result?.communityStats
+  const systemOverview = systemOverviewData?.data?.result || {}
 
   return (
     <div className='mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 bg-gray-50 dark:bg-gray-900 min-h-screen'>
@@ -104,38 +108,35 @@ export default function Home() {
         emoji='📈'
         title='Tổng quan Hệ thống'
         subtitle='Theo dõi quy mô và tăng trưởng nền tảng'
-        infoText='Bốn chỉ số cốt lõi (người dùng, sự kiện, bài viết, thử thách) giúp nắm nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
+        infoText='Bốn chỉ số cốt lõi (người dùng, sự kiện, thử thách, buổi tập) giúp nắm nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
       />
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-6'>
         <StatCard
           icon={<BsPeopleFill size={26} />}
           iconBg='bg-gradient-to-br from-orange-400 to-orange-600'
           label='Tài khoản người dùng'
-          total={result?.account?.users?.total}
-          sub={result?.account?.users?.active}
+          total={systemOverview?.users}
           subLabel='tài khoản'
         />
         <StatCard
           icon={<MdSportsSoccer size={26} />}
           iconBg='bg-gradient-to-br from-green-400 to-emerald-600'
           label='Sự kiện Thể thao'
-          total={result?.sportEvents?.total}
+          total={systemOverview?.sportEvents}
           subLabel='sự kiện'
         />
         <StatCard
-          icon={<FaNewspaper size={24} />}
+          icon={<FaDumbbell size={24} />}
           iconBg='bg-gradient-to-br from-blue-400 to-cyan-600'
-          label='Bài viết Cộng đồng'
-          total={community?.totalPosts}
-          sub={community?.reportedPosts}
-          subLabel='bài viết'
-          subText='bị báo cáo'
+          label='Buổi tập luyện'
+          total={systemOverview?.workouts}
+          subLabel='buổi tập'
         />
         <StatCard
           icon={<FaTrophy size={24} />}
           iconBg='bg-gradient-to-br from-indigo-500 to-violet-700'
           label='Số lượng thử thách'
-          total={result?.challenges?.total}
+          total={systemOverview?.challenges}
           subLabel='thử thách'
         />
       </div>
@@ -147,16 +148,9 @@ export default function Home() {
         emoji='👥'
         title='Người dùng & Sức khỏe'
         subtitle='Hiểu cộng đồng — ai đang dùng, thể trạng ra sao'
-        infoText='Nhóm biểu đồ này giúp bạn hiểu cấu trúc cộng đồng người dùng: phân bố sức khỏe (BMI) và tỷ lệ sự kiện Ngoài trời/Trong nhà. Dùng để đánh giá nền tảng đang phục vụ đúng đối tượng chưa.'
+        infoText='KPI: cơ cấu giới tính, mức BMI, và người tham gia tập luyện theo thời gian. Ý nghĩa: phản ánh chân dung cộng đồng và xu hướng sức khỏe. Hành động: điều chỉnh nội dung, chiến dịch và chương trình can thiệp phù hợp từng nhóm.'
       />
-      <div className='grid w-full grid-cols-1 xl:grid-cols-2 gap-3 px-2'>
-        <div>
-          <BMIBarChart usersBMI={result?.usersBMI} />
-        </div>
-        <div>
-          <EventTypeDoughnut sportEvents={result?.sportEvents} />
-        </div>
-      </div>
+      <UsersHealthSection />
 
       {/* ══════════════════════════════════════════════════════════════
           NHÓM 2: 🏅 CỘNG ĐỒNG & SỰ KIỆN
@@ -183,7 +177,7 @@ export default function Home() {
         emoji='🏆'
         title='Thử thách'
         subtitle='Phân tích số lượng thử thách mới theo loại (dinh dưỡng, ngoài trời, thể lực)'
-        infoText='Biểu đồ đếm thử thách được tạo trong khoảng thời gian đã chọn. So sánh loại nào được tạo nhiều để điều chỉnh nội dung gợi ý, template và truyền thông. Dùng bộ lọc thời gian để theo dõi xu hướng.'
+        infoText='KPI: thử thách tạo mới theo loại, theo phạm vi và tỷ lệ hoàn thành. Ý nghĩa: đánh giá mức hấp dẫn và khả năng hoàn thành của từng dòng thử thách. Hành động: ưu tiên loại có tỷ lệ hoàn thành cao và tối ưu loại có tỷ lệ bỏ dở.'
       />
       <div className='px-2'>
         <ChallengeAnalyticsSection />
