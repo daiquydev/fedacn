@@ -246,65 +246,63 @@ export default function EventDetails({ event, onClose }) {
 
             {/* ---- Sport event specific section ---- */}
             {event.type === 'event' && (
-              <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
-                {/* Event type badge */}
-                <div className="flex items-center gap-3">
-                  <FaTag className="text-blue-500 dark:text-blue-400 mt-0.5 w-5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">Loại sự kiện</p>
-                    <span className={`inline-block px-2 py-0.5 rounded text-sm font-medium ${event.eventType === 'Trong nhà'
+              <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm dark:border-blue-900/30 dark:bg-gray-900">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      <FaTag className="text-[11px]" />
+                      Sự kiện thể thao
+                    </span>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${event.eventType === 'Trong nhà'
                       ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-                      : 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                      : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                       }`}>
                       {event.eventType === 'Trong nhà' ? '🏠 Trong nhà' : '🌿 Ngoài trời'}
                     </span>
+                    {event.isJoined && (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                        ✅ Đã tham gia
+                      </span>
+                    )}
                   </div>
-                </div>
 
-                {/* Participants */}
-                {event.maxParticipants > 0 && (
-                  <div className="flex items-start gap-3">
-                    <FaUsers className="text-blue-500 dark:text-blue-400 mt-1 w-5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">Người tham gia</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-gray-600 dark:text-gray-400">{event.participants}/{event.maxParticipants} người</span>
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500 rounded-full transition-all"
-                            style={{ width: `${Math.min((event.participants / event.maxParticipants) * 100, 100)}%` }}
-                          />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {event.maxParticipants > 0 && (
+                      <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-900/30 dark:bg-blue-900/15">
+                        <div className="mb-2 flex items-center gap-2">
+                          <FaUsers className="text-blue-500 dark:text-blue-400 w-4 h-4" />
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Người tham gia</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{event.participants}/{event.maxParticipants}</span>
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-blue-200/70 dark:bg-blue-950/40">
+                            <div
+                              className="h-full rounded-full bg-blue-500 transition-all"
+                              style={{ width: `${Math.min((event.participants / event.maxParticipants) * 100, 100)}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
+                    )}
+
+                    {event.organizer && (
+                      <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 dark:border-indigo-900/30 dark:bg-indigo-900/15">
+                        <div className="mb-1.5 flex items-center gap-2">
+                          <FaMedal className="text-indigo-500 dark:text-indigo-400 w-4 h-4" />
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Ban tổ chức</p>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{event.organizer}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {event.description && (
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Mô tả sự kiện</p>
+                      <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">{event.description}</p>
                     </div>
-                  </div>
-                )}
-
-                {/* Organizer */}
-                {event.organizer && (
-                  <div className="flex items-start gap-3">
-                    <FaMedal className="text-blue-500 dark:text-blue-400 mt-1 w-5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">Ban tổ chức</p>
-                      <p className="text-gray-600 dark:text-gray-400">{event.organizer}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Description */}
-                {event.description && (
-                  <div className="mt-3 p-4 bg-white dark:bg-gray-900 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                    <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-1">Mô tả</p>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-4">{event.description}</p>
-                  </div>
-                )}
-
-                {/* Joined badge */}
-                {event.isJoined && (
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium">
-                    ✅ Bạn đã tham gia sự kiện này
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
@@ -363,10 +361,22 @@ export default function EventDetails({ event, onClose }) {
 
             {/* ---- Workout detail section ---- */}
             {event.type === 'workout' && (
-              <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 mb-4">
-                  <MdFitnessCenter size={22} className="text-purple-500 dark:text-purple-400" />
-                  <p className="font-semibold text-gray-800 dark:text-gray-200 text-lg">Bài tập trong buổi</p>
+              <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MdFitnessCenter size={22} className="text-purple-500 dark:text-purple-400" />
+                    <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">Bài tập trong buổi</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                      {event.exercises?.length || 0} bài tập
+                    </span>
+                    {event.reminder && (
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                        🔔 Nhắc nhở bật
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {event.exercises && event.exercises.length > 0 ? (
@@ -374,21 +384,21 @@ export default function EventDetails({ event, onClose }) {
                     {event.exercises.map((ex, index) => (
                       <div
                         key={index}
-                        className="p-4 rounded-lg border border-purple-100 dark:border-purple-900/30 bg-white dark:bg-gray-900 shadow-sm"
+                        className="rounded-xl border border-purple-100 bg-white p-4 shadow-sm dark:border-purple-900/30 dark:bg-gray-900"
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="mb-2 flex items-start justify-between gap-2">
                           <p className="font-semibold text-gray-800 dark:text-gray-100">
                             {ex.exercise_name_vi || ex.exercise_name}
                           </p>
-                          <span className="text-xs font-medium text-purple-600 dark:text-purple-400 whitespace-nowrap">
+                          <span className="whitespace-nowrap rounded-full bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
                             {ex.sets?.length || 0} set
                           </span>
                         </div>
                         {ex.sets && ex.sets.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {ex.sets.map((s, si) => (
-                              <span key={si} className="bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded text-xs text-purple-700 dark:text-purple-300">
-                                Set {s.set_number}: {s.reps} reps × {s.weight} kg
+                              <span key={si} className="rounded-md border border-purple-100 bg-purple-50/70 px-2 py-0.5 text-xs text-purple-700 dark:border-purple-900/30 dark:bg-purple-900/20 dark:text-purple-300">
+                                Set {s.set_number}: {s.reps} reps x {s.weight} kg
                               </span>
                             ))}
                           </div>
@@ -397,23 +407,37 @@ export default function EventDetails({ event, onClose }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
-                    <FaDumbbell className="w-10 h-10 text-purple-400 mx-auto mb-2" />
+                  <div className="rounded-xl border border-purple-100 bg-purple-50/70 p-4 text-center dark:border-purple-900/30 dark:bg-purple-900/20">
+                    <FaDumbbell className="mx-auto mb-2 h-10 w-10 text-purple-400" />
                     <p className="text-gray-600 dark:text-gray-300">Chưa có chi tiết bài tập</p>
                   </div>
-                )}
-
-                {event.reminder && (
-                  <p className="mt-3 text-sm text-purple-600 dark:text-purple-400">🔔 Nhắc nhở đã bật</p>
                 )}
               </div>
             )}
 
             {event.type === 'challenge' && event.description && (
-              <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="p-4 bg-white dark:bg-gray-900 rounded-lg border border-amber-100 dark:border-amber-900/30">
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">Mô tả</p>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{event.description}</p>
+              <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+                <div className="rounded-xl border border-amber-100 bg-white p-4 shadow-sm dark:border-amber-900/30 dark:bg-gray-900">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                      🏆 Thử thách cộng đồng
+                    </span>
+                    {event.challenge_type && (
+                      <span className="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                        {event.challenge_type === 'nutrition'
+                          ? 'Ăn uống'
+                          : event.challenge_type === 'outdoor_activity'
+                            ? 'Hoạt động ngoài trời'
+                            : event.challenge_type === 'fitness'
+                              ? 'Thể dục'
+                              : 'Thử thách'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 dark:border-amber-900/30 dark:bg-amber-900/20">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Mô tả thử thách</p>
+                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{event.description}</p>
+                  </div>
                 </div>
               </div>
             )}
