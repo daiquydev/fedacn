@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FaShareAlt, FaCamera, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { MdVideocam } from 'react-icons/md'
 import moment from 'moment'
@@ -72,7 +73,7 @@ export default function IndoorDetailModal({ session, event, isCompletion = false
   const prevSlide = () => setCarouselIdx((i) => (i <= 0 ? screenshots.length - 1 : i - 1))
   const nextSlide = () => setCarouselIdx((i) => (i >= screenshots.length - 1 ? 0 : i + 1))
 
-  return (
+  const modalContent = (
     <div className='indoor-detail-overlay' onClick={onClose}>
       <div className='indoor-detail-card' onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -188,4 +189,6 @@ export default function IndoorDetailModal({ session, event, isCompletion = false
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }

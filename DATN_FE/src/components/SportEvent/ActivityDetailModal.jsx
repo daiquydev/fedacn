@@ -1,5 +1,6 @@
 import { roundKcal } from '../../utils/mathUtils'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import goongjs from '@goongmaps/goong-js'
 import { getActivity } from '../../apis/sportEventApi'
@@ -181,7 +182,7 @@ export default function ActivityDetailModal({
 
   const headerMode = isCompletion ? 'completion' : 'history'
 
-  return (
+  const modalContent = (
     <div className='activity-detail-overlay' onClick={onClose}>
       <div className='activity-detail-card' onClick={(e) => e.stopPropagation()}>
         {isLoading ? (
@@ -304,4 +305,6 @@ export default function ActivityDetailModal({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
