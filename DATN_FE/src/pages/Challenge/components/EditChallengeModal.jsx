@@ -1,5 +1,6 @@
 import { roundKcal } from '../../../utils/mathUtils'
 import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { updateChallenge } from '../../../apis/challengeApi'
 import { getAllExercises } from '../../../apis/exerciseApi'
@@ -176,6 +177,7 @@ function PreviewCard({ form, selectedCat, fitnessExerciseCount = 0 }) {
 
 // ==================== MAIN MODAL (layout="modal" | "page") ====================
 export default function EditChallengeModal({ open, onClose, challenge, layout = 'modal' }) {
+    const navigate = useNavigate()
     const queryClient = useQueryClient()
     const isPage = layout === 'page'
 
@@ -406,9 +408,15 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
             toast.success('✅ Cập nhật thử thách thành công!')
             queryClient.invalidateQueries({ queryKey: ['my-created-challenges'] })
             queryClient.invalidateQueries({ queryKey: ['challenges'] })
+            queryClient.invalidateQueries({ queryKey: ['challenges-feed'] })
             queryClient.invalidateQueries({ queryKey: ['my-challenges'] })
             queryClient.invalidateQueries({ queryKey: ['challenge', challenge._id] })
-            onClose()
+            // Trang full: sang chi tiết thử thách (giống chỉnh sửa sự kiện); modal: đóng như cũ
+            if (isPage && challenge?._id) {
+                navigate(`/challenge/${challenge._id}`, { replace: true })
+            } else {
+                onClose()
+            }
         },
         onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi khi cập nhật thử thách')
     })

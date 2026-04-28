@@ -466,7 +466,7 @@ export default function FriendManagement() {
                 />
               ) : (
                 <ActionButton
-                  label='Kết bạn'
+                  label='Chấp nhận'
                   variant='primary'
                   disabled={isUserPending(person._id)}
                   icon={FaUserPlus}

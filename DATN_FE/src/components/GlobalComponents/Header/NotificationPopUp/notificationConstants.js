@@ -259,7 +259,8 @@ export const NOTIFICATION_CONFIG = {
 
 // ─── Route map ───
 export const NOTIFICATION_ROUTES = {
-  [NotificationTypes.follow]: (n) => `/user/${n.link_id}`,
+  // follow notification represents an incoming friend request action
+  [NotificationTypes.follow]: () => '/friends',
   [NotificationTypes.likePost]: (n) => `/post/${n.link_id}`,
   [NotificationTypes.commentPost]: (n) => `/post/${n.link_id}`,
   [NotificationTypes.commentChildPost]: (n) => `/post/${n.link_id}`,
