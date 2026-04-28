@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FaRunning, FaCalendarAlt, FaUsers, FaArrowRight, FaMapMarkerAlt } from 'react-icons/fa'
+import { FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { getJoinedEvents, getPublicUserJoinedEvents } from '../../../../apis/sportEventApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
@@ -75,6 +76,7 @@ function EventCard({ event }) {
 export default function MeSportEvents({ userId }) {
   const isPublic = Boolean(userId)
   const [page, setPage] = useState(1)
+  const [keyword, setKeyword] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: isPublic
@@ -89,6 +91,15 @@ export default function MeSportEvents({ userId }) {
 
   const raw = data?.data?.result
   const events = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
+  const filteredEvents = events.filter((event) => {
+    const normalized = keyword.trim().toLowerCase()
+    if (!normalized) return true
+    const searchable = [event?.name, event?.category, event?.location, event?.eventType]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return searchable.includes(normalized)
+  })
   const totalPage = raw?.totalPage || 1
 
   if (isLoading) {
@@ -114,16 +125,34 @@ export default function MeSportEvents({ userId }) {
 
   return (
     <div>
+      <div className='mb-5'>
+        <label className='relative block'>
+          <FiSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' />
+          <input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder='Tìm sự kiện theo tên, loại hoặc địa điểm...'
+            className='w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2.5 pl-10 pr-4 text-sm text-gray-700 dark:text-gray-100 outline-none focus:border-emerald-500'
+          />
+        </label>
+      </div>
+
+      {filteredEvents.length === 0 && (
+        <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
+          Không tìm thấy sự kiện phù hợp với từ khóa "{keyword}".
+        </div>
+      )}
+
       <motion.div variants={stagger} initial='hidden' animate='visible'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {events.map((event) => (
+          {filteredEvents.map((event) => (
             <EventCard key={event._id} event={event} />
           ))}
         </div>
       </motion.div>
 
       {/* Pagination — cùng style Challenge.jsx */}
-      {totalPage > 1 && (
+      {totalPage > 1 && !keyword.trim() && (
         <div className='flex items-center justify-center gap-2 mt-8'>
           <button
             disabled={page <= 1}

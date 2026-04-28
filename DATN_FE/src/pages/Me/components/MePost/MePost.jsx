@@ -1,13 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { useInView } from 'react-intersection-observer'
 import { getMePosts } from '../../../../apis/postApi'
 import PostCard from '../../../../components/CardComponents/PostCard'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
+import { FiSearch } from 'react-icons/fi'
 
 export default function MePost({ user }) {
   const { ref, inView } = useInView()
+  const [keyword, setKeyword] = useState('')
   const fetchMePost = async ({ pageParam }) => {
     return await getMePosts({ page: pageParam })
   }
@@ -23,11 +25,21 @@ export default function MePost({ user }) {
     placeholderData: keepPreviousData
   })
 
-  const content = data?.pages.map((dataMePost) =>
-    dataMePost.data.result.posts.map((post) => {
-      return <PostCard key={post._id} data={post} />
-    })
+  const allPosts = useMemo(
+    () => data?.pages.flatMap((dataMePost) => dataMePost?.data?.result?.posts || []) || [],
+    [data]
   )
+  const filteredPosts = useMemo(() => {
+    const normalized = keyword.trim().toLowerCase()
+    if (!normalized) return allPosts
+    return allPosts.filter((post) => {
+      const searchable = [post?.title, post?.description, post?.content, post?.caption]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return searchable.includes(normalized)
+    })
+  }, [allPosts, keyword])
 
   useEffect(() => {
     if (inView && hasNextPage) {
@@ -51,15 +63,36 @@ export default function MePost({ user }) {
       <div className=' grid xl:mx-8 pt-2 xl:gap-6 xl:grid-cols-5'>
         <div className='xl:col-span-3'>
           <div className='my-3'>
-            {content}
+            <label className='relative block mb-4'>
+              <FiSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' />
+              <input
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder='Tìm bài viết theo nội dung...'
+                className='w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2.5 pl-10 pr-4 text-sm text-gray-700 dark:text-gray-100 outline-none focus:border-emerald-500'
+              />
+            </label>
+
+            {filteredPosts.map((post) => (
+              <PostCard key={post._id} data={post} />
+            ))}
+
+            {filteredPosts.length === 0 && (
+              <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
+                Không tìm thấy bài viết phù hợp với từ khóa "{keyword}".
+              </div>
+            )}
+
             {/* <div ref={ref}>{isFetchingNextPage && <Loading />}</div> */}
-            <div ref={ref}>
-              {isFetchingNextPage ? (
-                <Loading />
-              ) : (
-                <div className='flex justify-center font-medium'>Không còn bài viết</div>
-              )}
-            </div>
+            {!keyword.trim() && (
+              <div ref={ref}>
+                {isFetchingNextPage ? (
+                  <Loading />
+                ) : (
+                  <div className='flex justify-center font-medium'>Không còn bài viết</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className=' order-first xl:order-last xl:col-span-2'>

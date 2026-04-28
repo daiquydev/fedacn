@@ -1,6 +1,12 @@
 import { ObjectId } from 'mongodb'
 import NotificationModel from '~/models/schemas/notification.schema'
 
+const LEVEL_UP_REGEX = /(level|th[aă]ng\s*c[aấ]p)/i
+
+const getLevelUpExcludeCondition = () => ({
+  $nor: [{ content: { $regex: LEVEL_UP_REGEX } }, { name_notification: { $regex: LEVEL_UP_REGEX } }]
+})
+
 class NotificationService {
   async getListNotificationService({ user_id, page, limit }: { user_id: string; page: number; limit: number }) {
     if (!page) {
@@ -14,7 +20,8 @@ class NotificationService {
     const notifications = await NotificationModel.aggregate([
       {
         $match: {
-          receiver_id: new ObjectId(user_id)
+          receiver_id: new ObjectId(user_id),
+          ...getLevelUpExcludeCondition()
         }
       },
       // nối với bảng users để lấy thông tin của người gửi thông báo
@@ -46,7 +53,9 @@ class NotificationService {
       }
     ])
 
-    const totalPage = Math.ceil((await NotificationModel.find({ receiver_id: user_id })).length / limit)
+    const totalPage = Math.ceil(
+      (await NotificationModel.find({ receiver_id: user_id, ...getLevelUpExcludeCondition() })).length / limit
+    )
 
     return { notifications, totalPage, page, limit }
   }
@@ -62,12 +71,19 @@ class NotificationService {
     return true
   }
   async readAllNotificationService({ user_id }: { user_id: string }) {
-    await NotificationModel.updateMany({ receiver_id: new ObjectId(user_id), is_read: false }, { is_read: true })
+    await NotificationModel.updateMany(
+      { receiver_id: new ObjectId(user_id), is_read: false, ...getLevelUpExcludeCondition() },
+      { is_read: true }
+    )
     return true
   }
   async checkReadNotificationService({ user_id }: { user_id: string }) {
     // trả về số lượng thông báo chưa đọc
-    const count = await NotificationModel.countDocuments({ receiver_id: new ObjectId(user_id), is_read: false })
+    const count = await NotificationModel.countDocuments({
+      receiver_id: new ObjectId(user_id),
+      is_read: false,
+      ...getLevelUpExcludeCondition()
+    })
     return count
   }
 }

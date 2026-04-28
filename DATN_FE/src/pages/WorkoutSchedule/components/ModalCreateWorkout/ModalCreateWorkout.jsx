@@ -63,6 +63,7 @@ export default function ModalCreateWorkout({ handleCloseModalCreateWorkout }) {
         handleCloseModalCreateWorkout()
         navigate(`/schedule/ex-schedule/${data?.data.result._id}`)
         queryClient.invalidateQueries({ queryKey: ['workout-schedule'] })
+        queryClient.invalidateQueries({ queryKey: ['workoutSchedules'] })
         toast.success('Tạo lịch tập thành công')
       },
       onError: () => {

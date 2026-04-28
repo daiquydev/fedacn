@@ -11,6 +11,7 @@ import {
   FaDumbbell,
   FaFire
 } from 'react-icons/fa'
+import { FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { getMyChallenges, getPublicUserChallenges } from '../../../../apis/challengeApi'
 import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../../../utils/challengeProgress'
@@ -166,6 +167,7 @@ function ChallengeCard({ participation }) {
 export default function MeChallenges({ isOwner = true, userId }) {
   const isPublic = Boolean(userId)
   const [page, setPage] = useState(1)
+  const [keyword, setKeyword] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: isPublic
@@ -180,6 +182,16 @@ export default function MeChallenges({ isOwner = true, userId }) {
 
   const result = data?.data?.result
   const participations = result?.participations || []
+  const filteredParticipations = participations.filter((item) => {
+    const normalized = keyword.trim().toLowerCase()
+    if (!normalized) return true
+    const challenge = item?.challenge_id
+    const searchable = [challenge?.title, challenge?.challenge_type, challenge?.badge_emoji]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return searchable.includes(normalized)
+  })
   const totalPage = result?.totalPage || 1
 
   if (isLoading) {
@@ -212,16 +224,34 @@ export default function MeChallenges({ isOwner = true, userId }) {
 
   return (
     <div>
+      <div className='mb-5'>
+        <label className='relative block'>
+          <FiSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' />
+          <input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder='Tìm thử thách theo tiêu đề hoặc loại...'
+            className='w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2.5 pl-10 pr-4 text-sm text-gray-700 dark:text-gray-100 outline-none focus:border-emerald-500'
+          />
+        </label>
+      </div>
+
+      {filteredParticipations.length === 0 && (
+        <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
+          Không tìm thấy thử thách phù hợp với từ khóa "{keyword}".
+        </div>
+      )}
+
       <motion.div variants={stagger} initial='hidden' animate='visible'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {participations.map((p) => (
+          {filteredParticipations.map((p) => (
             <ChallengeCard key={p._id} participation={p} />
           ))}
         </div>
       </motion.div>
 
       {/* Pagination — cùng style Challenge.jsx */}
-      {totalPage > 1 && (
+      {totalPage > 1 && !keyword.trim() && (
         <div className='flex items-center justify-center gap-2 mt-8'>
           <button
             disabled={page <= 1}
