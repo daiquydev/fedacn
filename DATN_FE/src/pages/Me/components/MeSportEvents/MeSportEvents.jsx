@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { FaRunning, FaCalendarAlt, FaUsers, FaArrowRight, FaMapMarkerAlt } from 'react-icons/fa'
+import { FaRunning, FaCalendarAlt, FaUsers, FaArrowRight, FaMapMarkerAlt, FaPlusCircle, FaCheckCircle } from 'react-icons/fa'
 import { FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { getJoinedEvents, getPublicUserJoinedEvents } from '../../../../apis/sportEventApi'
+import { getJoinedEvents, getMyEvents, getPublicUserJoinedEvents } from '../../../../apis/sportEventApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
 
@@ -75,22 +75,48 @@ function EventCard({ event }) {
 
 export default function MeSportEvents({ userId }) {
   const isPublic = Boolean(userId)
-  const [page, setPage] = useState(1)
+  const [activeTab, setActiveTab] = useState('created')
+  const [pageByTab, setPageByTab] = useState({ created: 1, joined: 1 })
   const [keyword, setKeyword] = useState('')
+  const page = pageByTab[activeTab]
 
-  const { data, isLoading } = useQuery({
+  const createdQuery = useQuery({
     queryKey: isPublic
-      ? ['publicUserEvents', userId, { page, limit: LIMIT }]
-      : ['joinedEvents', { page, limit: LIMIT }],
+      ? ['publicUserEvents-created', userId, { page, limit: LIMIT }]
+      : ['myCreatedEvents-profile', { page, limit: LIMIT }],
+    queryFn: () =>
+      isPublic
+        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT })
+        : getMyEvents({ page, limit: LIMIT }),
+    enabled: activeTab === 'created',
+    placeholderData: keepPreviousData
+  })
+
+  const joinedQuery = useQuery({
+    queryKey: isPublic
+      ? ['publicUserEvents-joined', userId, { page, limit: LIMIT }]
+      : ['joinedEvents-profile', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
         ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT })
         : getJoinedEvents({ page, limit: LIMIT }),
+    enabled: activeTab === 'joined',
     placeholderData: keepPreviousData
   })
 
-  const raw = data?.data?.result
-  const events = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
+  const activeQuery = activeTab === 'created' ? createdQuery : joinedQuery
+  const raw = activeQuery?.data?.data?.result
+  const sourceEvents = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
+  const events = useMemo(() => {
+    if (!isPublic) return sourceEvents
+    const normalizeCreator = (event) =>
+      String(event?.createdBy?._id || event?.createdBy || event?.created_by?._id || event?.created_by || '')
+    if (activeTab === 'created') {
+      return sourceEvents.filter((event) => normalizeCreator(event) === String(userId))
+    }
+    return sourceEvents.filter((event) => normalizeCreator(event) !== String(userId))
+  }, [activeTab, isPublic, sourceEvents, userId])
+
   const filteredEvents = events.filter((event) => {
     const normalized = keyword.trim().toLowerCase()
     if (!normalized) return true
@@ -102,7 +128,7 @@ export default function MeSportEvents({ userId }) {
   })
   const totalPage = raw?.totalPage || 1
 
-  if (isLoading) {
+  if (activeQuery.isLoading) {
     return <Loading className='flex justify-center py-20' />
   }
 
@@ -110,13 +136,26 @@ export default function MeSportEvents({ userId }) {
     return (
       <div className='text-center py-16'>
         <FaRunning className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
-        <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>Chưa tham gia sự kiện nào</h3>
+        <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
+          {activeTab === 'created' ? 'Chưa tạo sự kiện nào' : 'Chưa tham gia sự kiện nào'}
+        </h3>
         {!isPublic && (
           <>
-            <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tham gia sự kiện thể thao để bắt đầu!</p>
-            <Link to='/sport-event' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
-              Khám phá sự kiện <FaArrowRight />
-            </Link>
+            {activeTab === 'created' ? (
+              <>
+                <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tạo sự kiện để cộng đồng cùng tham gia!</p>
+                <Link to='/sport-event/create' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+                  Tạo sự kiện <FaArrowRight />
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tham gia sự kiện thể thao để bắt đầu!</p>
+                <Link to='/sport-event' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+                  Khám phá sự kiện <FaArrowRight />
+                </Link>
+              </>
+            )}
           </>
         )}
       </div>
@@ -125,6 +164,31 @@ export default function MeSportEvents({ userId }) {
 
   return (
     <div>
+      <div className='mb-5 flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-800 p-1'>
+        <button
+          type='button'
+          onClick={() => setActiveTab('created')}
+          className={`flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${activeTab === 'created'
+            ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm'
+            : 'text-gray-500 dark:text-gray-300'
+            }`}
+        >
+          <FaPlusCircle className='text-xs' />
+          Sự kiện đã tạo
+        </button>
+        <button
+          type='button'
+          onClick={() => setActiveTab('joined')}
+          className={`flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${activeTab === 'joined'
+            ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm'
+            : 'text-gray-500 dark:text-gray-300'
+            }`}
+        >
+          <FaCheckCircle className='text-xs' />
+          Sự kiện đã tham gia
+        </button>
+      </div>
+
       <div className='mb-5'>
         <label className='relative block'>
           <FiSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' />
@@ -156,7 +220,10 @@ export default function MeSportEvents({ userId }) {
         <div className='flex items-center justify-center gap-2 mt-8'>
           <button
             disabled={page <= 1}
-            onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            onClick={() => {
+              setPageByTab((prev) => ({ ...prev, [activeTab]: Math.max(1, prev[activeTab] - 1) }))
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
             className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
           >
             ← Trước
@@ -172,7 +239,10 @@ export default function MeSportEvents({ userId }) {
               typeof p === 'number' ? (
                 <button
                   key={p}
-                  onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  onClick={() => {
+                    setPageByTab((prev) => ({ ...prev, [activeTab]: p }))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
                   className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                 >
                   {p}
@@ -184,7 +254,10 @@ export default function MeSportEvents({ userId }) {
           }
           <button
             disabled={page >= totalPage}
-            onClick={() => { setPage(p => Math.min(totalPage, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            onClick={() => {
+              setPageByTab((prev) => ({ ...prev, [activeTab]: Math.min(totalPage, prev[activeTab] + 1) }))
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
             className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
           >
             Sau →
