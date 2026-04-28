@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import ToastCustorm from '../components/GlobalComponents/ToastCustorm'
 import useSound from 'use-sound'
 import notifi from '../assets/sounds/notifi.mp3'
+import { useQueryClient } from '@tanstack/react-query'
 
 const initialSocketContext = {
   newSocket: null,
@@ -20,6 +21,7 @@ export const SocketProvider = ({ children }) => {
   const [play] = useSound(notifi)
   const [newSocket, setNewSocket] = useState(initialSocketContext.newSocket)
   const [notification, setNotification] = useState(initialSocketContext.notification)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const token = getAccessTokenFromLS()
@@ -34,39 +36,47 @@ export const SocketProvider = ({ children }) => {
         }
       })
       setNewSocket(socket)
-      socket.on('toast like', (data) => {
-        console.log('toast like', data)
+      const showIncomingToast = (data) => {
         setNotification(true)
         play()
         toast.custom((t) => <ToastCustorm t={t} name={data.name} content={data.content} avatar={data.avatar} />)
+      }
+
+      socket.on('toast like', (data) => {
+        console.log('toast like', data)
+        showIncomingToast(data)
+        queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        queryClient.invalidateQueries({ queryKey: ['notification'] })
       })
 
       socket.on('toast share', (data) => {
         console.log('toast share', data)
-        setNotification(true)
-        play()
-        toast.custom((t) => <ToastCustorm t={t} name={data.name} content={data.content} avatar={data.avatar} />)
+        showIncomingToast(data)
+        queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        queryClient.invalidateQueries({ queryKey: ['notification'] })
       })
 
       socket.on('toast comment', (data) => {
         console.log('toast comment', data)
-        setNotification(true)
-        play()
-        toast.custom((t) => <ToastCustorm t={t} name={data.name} content={data.content} avatar={data.avatar} />)
+        showIncomingToast(data)
+        queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        queryClient.invalidateQueries({ queryKey: ['notification'] })
       })
 
       socket.on('toast comment child', (data) => {
         console.log('toast comment child', data)
-        setNotification(true)
-        play()
-        toast.custom((t) => <ToastCustorm t={t} name={data.name} content={data.content} avatar={data.avatar} />)
+        showIncomingToast(data)
+        queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        queryClient.invalidateQueries({ queryKey: ['notification'] })
       })
 
       socket.on('toast follow', (data) => {
         console.log('toast follow', data)
-        setNotification(true)
-        play()
-        toast.custom((t) => <ToastCustorm t={t} name={data.name} content={data.content} avatar={data.avatar} />)
+        showIncomingToast(data)
+        queryClient.invalidateQueries({ queryKey: ['check-notification'] })
+        queryClient.invalidateQueries({ queryKey: ['notification'] })
+        queryClient.invalidateQueries({ queryKey: ['me'] })
+        queryClient.invalidateQueries({ queryKey: ['friend-recommendations'] })
       })
 
       socket.on('connect_error', (err) => {

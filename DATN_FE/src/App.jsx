@@ -1,15 +1,9 @@
 import './App.css'
 import useRouteElement from './useRouteElement'
-import 'react-toastify/dist/ReactToastify.css'
-import { injectStyle } from 'react-toastify/dist/inject-style'
 import { Toaster } from 'react-hot-toast'
 import { useContext, useEffect } from 'react'
 import { LocalStorageEventTarget } from './utils/auth'
 import { AppContext } from './contexts/app.context'
-
-if (typeof window !== 'undefined') {
-  injectStyle()
-}
 
 function App() {
   const routeElement = useRouteElement()

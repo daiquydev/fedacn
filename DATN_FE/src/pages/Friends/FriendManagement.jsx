@@ -95,6 +95,14 @@ const PersonRow = ({ person, badge, actions, navigate }) => (
 )
 
 // Section with search box + list
+const getObjectIdTimestamp = (id) => {
+  if (typeof id !== 'string' || id.length < 8) return 0
+  const hexSeconds = id.slice(0, 8)
+  const seconds = Number.parseInt(hexSeconds, 16)
+  if (Number.isNaN(seconds)) return 0
+  return seconds * 1000
+}
+
 const getPersonTimestamp = (person) => {
   const dateCandidates = [
     person?.friendSince,
@@ -104,12 +112,15 @@ const getPersonTimestamp = (person) => {
   ]
 
   const firstValidDate = dateCandidates.find((value) => value && !Number.isNaN(new Date(value).getTime()))
-  return firstValidDate ? new Date(firstValidDate).getTime() : 0
+  if (firstValidDate) return new Date(firstValidDate).getTime()
+
+  // Fallback for APIs that only return Mongo ObjectId without explicit timestamps.
+  return getObjectIdTimestamp(person?._id)
 }
 
 const defaultSortOptions = [
-  { value: 'newest', label: 'Mới nhất' },
-  { value: 'oldest', label: 'Xa nhất' }
+  { value: 'newest', label: 'Thời gian giảm dần' },
+  { value: 'oldest', label: 'Thời gian tăng dần' }
 ]
 
 const PeopleSection = ({
@@ -126,6 +137,7 @@ const PeopleSection = ({
   const navigate = useNavigate()
   const [filter, setFilter] = useState('')
   const [sortBy, setSortBy] = useState(defaultSort)
+  const currentSort = sortOptions.find((option) => option.value === sortBy) || sortOptions[0]
 
   const filteredAndSorted = useMemo(() => {
     const source = !filter.trim()
@@ -175,20 +187,20 @@ const PeopleSection = ({
             className='w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-400 outline-none'
           />
         </div>
-        <div className='relative sm:w-44'>
-          <FaSortAmountDown className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none' size={12} />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className='w-full pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-400 outline-none appearance-none'
-            aria-label={`Sắp xếp danh sách ${title}`}
+        <div className='relative'>
+          <button
+            type='button'
+            onClick={() => {
+              const currentIndex = sortOptions.findIndex((option) => option.value === sortBy)
+              const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % sortOptions.length : 0
+              setSortBy(sortOptions[nextIndex].value)
+            }}
+            className='w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-gray-800 hover:text-emerald-600 transition-colors inline-flex items-center justify-center'
+            aria-label={`Sắp xếp danh sách ${title}: ${currentSort?.label || ''}`}
+            title={`Sắp xếp: ${currentSort?.label || ''}`}
           >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <FaSortAmountDown size={14} className={sortBy === 'oldest' ? 'rotate-180 transition-transform' : 'transition-transform'} />
+          </button>
         </div>
       </div>
       {!filteredAndSorted.length ? (
@@ -431,8 +443,8 @@ export default function FriendManagement() {
             subtitle='Bạn bè đang theo dõi lẫn nhau'
             people={friends}
             sortOptions={[
-              { value: 'newest', label: 'Bạn bè mới nhất' },
-              { value: 'oldest', label: 'Bạn bè xa nhất' }
+              { value: 'newest', label: 'Thời gian giảm dần' },
+              { value: 'oldest', label: 'Thời gian tăng dần' }
             ]}
             badge='Bạn bè'
             emptyMessage='Bạn chưa có người bạn nào. Hãy chấp nhận lời mời!'
@@ -453,8 +465,8 @@ export default function FriendManagement() {
             subtitle='Người gửi lời mời, chưa được xử lý'
             people={incomingRequests}
             sortOptions={[
-              { value: 'newest', label: 'Lời mời mới nhất' },
-              { value: 'oldest', label: 'Lời mời xa nhất' }
+              { value: 'newest', label: 'Thời gian giảm dần' },
+              { value: 'oldest', label: 'Thời gian tăng dần' }
             ]}
             badge='Chờ chấp nhận'
             emptyMessage='Không có lời mời kết bạn mới.'
@@ -488,8 +500,8 @@ export default function FriendManagement() {
             subtitle='Tất cả người bạn đang follow'
             people={followings}
             sortOptions={[
-              { value: 'newest', label: 'Theo dõi mới nhất' },
-              { value: 'oldest', label: 'Theo dõi xa nhất' }
+              { value: 'newest', label: 'Thời gian giảm dần' },
+              { value: 'oldest', label: 'Thời gian tăng dần' }
             ]}
             badge={(person) => {
               if (followerIds.has(String(person._id))) return 'Bạn bè'
@@ -524,8 +536,8 @@ export default function FriendManagement() {
             subtitle='Tất cả người đang follow bạn'
             people={allFollowers}
             sortOptions={[
-              { value: 'newest', label: 'Follower mới nhất' },
-              { value: 'oldest', label: 'Follower xa nhất' }
+              { value: 'newest', label: 'Thời gian giảm dần' },
+              { value: 'oldest', label: 'Thời gian tăng dần' }
             ]}
             badge={(person) => {
               if (followingIds.has(String(person._id))) return 'Bạn bè'
