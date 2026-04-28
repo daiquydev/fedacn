@@ -14,17 +14,22 @@ export default function Input({
   isSearch = false,
   defaultValue,
   isTextarea = false,
-  isRequired = false
+  isRequired = false,
+  labelClassName = '',
+  wrapperClassName = ''
 }) {
+  const mergedLabelClass = labelClassName || 'text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'
+  const mergedWrapperClass = wrapperClassName || 'flex items-center rounded-lg border border-gray-300 dark:border-gray-600 h-full'
+
   return (
     <div className='w-full flex flex-col'>
       {title && (
-        <label className='text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'>
+        <label className={mergedLabelClass}>
           {title}
           {isRequired && <span className='text-red-500 ml-1'>*</span>}
         </label>
       )}
-      <div className='flex items-center  rounded-lg border border-gray-300 dark:border-gray-600 h-full'>
+      <div className={mergedWrapperClass}>
         {isSearch && (
           <div className='px-2'>
             <BiSearch className='text-lg text-red-500' />

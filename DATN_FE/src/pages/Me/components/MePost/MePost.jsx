@@ -7,6 +7,12 @@ import Loading from '../../../../components/GlobalComponents/Loading'
 import moment from 'moment'
 import { FiSearch } from 'react-icons/fi'
 
+const GENDER_LABELS = {
+  male: 'Nam',
+  female: 'Nữ',
+  other: 'Khác'
+}
+
 export default function MePost({ user }) {
   const { ref, inView } = useInView()
   const [keyword, setKeyword] = useState('')
@@ -40,6 +46,16 @@ export default function MePost({ user }) {
       return searchable.includes(normalized)
     })
   }, [allPosts, keyword])
+  const birthdayLabel = useMemo(() => {
+    if (!user?.birthday) return 'Chưa cập nhật'
+    const date = moment(user.birthday)
+    return date.isValid() ? date.format('DD/MM/YYYY') : 'Chưa cập nhật'
+  }, [user?.birthday])
+  const genderLabel = useMemo(() => {
+    const normalized = String(user?.gender || '').trim().toLowerCase()
+    if (!normalized) return 'Chưa cập nhật'
+    return GENDER_LABELS[normalized] || user?.gender
+  }, [user?.gender])
 
   useEffect(() => {
     if (inView && hasNextPage) {
@@ -109,13 +125,13 @@ export default function MePost({ user }) {
                 <div className='bg-white dark:bg-color-primary px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6'>
                   <dt className='text-sm font-medium  text-gray-500'> Ngày sinh </dt>
                   <dd className='mt-1 text-sm text-gray-900 dark:text-gray-300 sm:mt-0 sm:col-span-2'>
-                    {user?.birthday ? moment(user?.birthday).format('MMM Do YY') : 'Chưa cập nhật'}
+                    {birthdayLabel}
                   </dd>
                 </div>
                 <div className='bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6'>
                   <dt className='text-sm font-medium text-gray-500'>Giới tính</dt>
                   <dd className='mt-1 text-sm text-gray-900 dark:text-gray-300 sm:mt-0 sm:col-span-2'>
-                    {user?.gender}
+                    {genderLabel}
                   </dd>
                 </div>
                 <div className='bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6'>

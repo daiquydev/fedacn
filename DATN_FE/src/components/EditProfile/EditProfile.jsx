@@ -164,6 +164,11 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
   })
 
   const newPassword = watchPassword('new_password')
+  const fieldLabelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+  const fieldWrapperClass =
+    'flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus-within:ring-2 focus-within:ring-green-500/20 focus-within:border-green-500'
+  const fieldInputClass =
+    'h-10 px-3 py-2 text-sm text-gray-900 dark:text-white bg-transparent placeholder:text-gray-400'
 
   return (
     <div className='max-h-[80vh] overflow-y-auto'>
@@ -208,6 +213,9 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
               placeholder='Nhập họ và tên'
               register={registerBasic}
               errors={errorsBasic.name}
+              className={fieldInputClass}
+              labelClassName={fieldLabelClass}
+              wrapperClassName={fieldWrapperClass}
             />
 
             <Input
@@ -218,27 +226,30 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
               placeholder='Nhập tên người dùng'
               register={registerBasic}
               errors={errorsBasic.user_name}
+              className={fieldInputClass}
+              labelClassName={fieldLabelClass}
+              wrapperClassName={fieldWrapperClass}
             />
 
             {/* Email - Read-only */}
             <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Email</label>
+              <label className={fieldLabelClass}>Email</label>
               <input
                 type='email'
                 value={user?.email || ''}
                 readOnly
                 disabled
-                className='w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                className='w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               />
               <p className='text-xs text-gray-400 mt-1'>Email không thể thay đổi</p>
             </div>
 
             {/* Gender dropdown */}
             <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Giới tính</label>
+              <label className={fieldLabelClass}>Giới tính</label>
               <select
                 {...registerBasic('gender')}
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+                className='w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500'
               >
                 {GENDER_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -255,6 +266,9 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
               id='edit-birthday'
               register={registerBasic}
               errors={errorsBasic.birthday}
+              className={fieldInputClass}
+              labelClassName={fieldLabelClass}
+              wrapperClassName={fieldWrapperClass}
             />
 
             <Input
@@ -265,6 +279,9 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
               placeholder='Nhập địa chỉ'
               register={registerBasic}
               errors={errorsBasic.address}
+              className={fieldInputClass}
+              labelClassName={fieldLabelClass}
+              wrapperClassName={fieldWrapperClass}
             />
           </div>
 
