@@ -208,6 +208,7 @@ class ActivityTrackingService {
                 time: `${durationMinutes} phút`,
                 calories: caloriesRounded,
                 source: 'gps',
+                activityTrackingId: activity._id,
                 notes: `Hoạt động ${activity.activityType} - ${distanceKm.toFixed(2)}km trong ${durationMinutes} phút`
             })
 

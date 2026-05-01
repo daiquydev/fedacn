@@ -11,7 +11,7 @@ const GENDER_OPTIONS = [
   { value: '', label: 'Chọn giới tính' },
   { value: 'male', label: 'Nam' },
   { value: 'female', label: 'Nữ' },
-  { value: 'other', label: 'Khác' }
+  { value: 'unknown', label: 'Chưa cập nhật' }
 ]
 
 // Password strength rules matching BE validation
@@ -95,7 +95,7 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
       user_name: user.user_name || '',
       birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
       address: user.address || '',
-      gender: user.gender && ['male', 'female', 'other'].includes(user.gender) ? user.gender : ''
+      gender: user.gender && ['male', 'female', 'unknown'].includes(user.gender) ? user.gender : ''
     })
   }, [user, resetBasic])
 
@@ -123,7 +123,8 @@ export default function EditProfile({ user, onClose, onProfileUpdated }) {
     if (v.user_name != null && String(v.user_name).trim() !== '') body.user_name = String(v.user_name).trim()
     if (v.birthday) body.birthday = v.birthday
     if (v.address != null && String(v.address).trim() !== '') body.address = String(v.address).trim()
-    if (['male', 'female', 'other'].includes(v.gender)) body.gender = v.gender
+    if (['male', 'female', 'unknown'].includes(v.gender)) body.gender = v.gender
+    else if (v.gender === '' || v.gender === 'unknown') body.gender = 'unknown'
     return body
   }
 

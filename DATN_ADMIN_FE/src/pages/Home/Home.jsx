@@ -1,6 +1,6 @@
 import { BsPeopleFill } from 'react-icons/bs'
 import { MdSportsSoccer } from 'react-icons/md'
-import { FaDumbbell, FaTrophy } from 'react-icons/fa'
+import { FaTrophy } from 'react-icons/fa'
 import ChallengeAnalyticsSection from './components/ChallengeAnalyticsSection/ChallengeAnalyticsSection'
 import CommunitySection from './components/CommunitySection/CommunitySection'
 import SportEventCategoryCharts from './components/SportEventCategoryCharts/SportEventCategoryCharts'
@@ -108,9 +108,9 @@ export default function Home() {
         emoji='📈'
         title='Tổng quan Hệ thống'
         subtitle='Theo dõi quy mô và tăng trưởng nền tảng'
-        infoText='Bốn chỉ số cốt lõi (người dùng, sự kiện, thử thách, buổi tập) giúp nắm nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
+        infoText='Ba chỉ số cốt lõi (người dùng, sự kiện, thử thách) giúp nắm nhanh quy mô hệ thống. Nếu một chỉ số tăng bất thường → cần kiểm tra nguyên nhân. Nếu giảm → cần chiến lược thu hút.'
       />
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-6'>
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:gap-6'>
         <StatCard
           icon={<BsPeopleFill size={26} />}
           iconBg='bg-gradient-to-br from-orange-400 to-orange-600'
@@ -124,13 +124,6 @@ export default function Home() {
           label='Sự kiện Thể thao'
           total={systemOverview?.sportEvents}
           subLabel='sự kiện'
-        />
-        <StatCard
-          icon={<FaDumbbell size={24} />}
-          iconBg='bg-gradient-to-br from-blue-400 to-cyan-600'
-          label='Buổi tập luyện'
-          total={systemOverview?.workouts}
-          subLabel='buổi tập'
         />
         <StatCard
           icon={<FaTrophy size={24} />}
@@ -163,8 +156,8 @@ export default function Home() {
       <SectionHeader
         emoji='🏆'
         title='Top Môn Thể thao'
-        subtitle='Xếp hạng môn thể thao theo số sự kiện và lượng người tham gia'
-        infoText='So sánh môn nào có nhiều sự kiện nhất và môn nào thu hút nhiều người tham gia nhất. Nếu 1 môn có nhiều sự kiện nhưng ít người → cần quảng bá hơn. Ngược lại nếu ít sự kiện nhưng nhiều người → cần tạo thêm sự kiện cho môn đó.'
+        subtitle='Xếp hạng môn thể thao theo số sự kiện và số lượt người tham gia'
+        infoText='So sánh môn nào có nhiều sự kiện nhất và môn nào thu hút nhiều lượt người tham gia nhất. Nếu 1 môn có nhiều sự kiện nhưng ít lượt tham gia → cần quảng bá hơn. Ngược lại nếu ít sự kiện nhưng nhiều lượt tham gia → cần tạo thêm sự kiện cho môn đó.'
       />
       <div className='px-2'>
         <SportEventCategoryCharts sportEvents={result?.sportEvents} />

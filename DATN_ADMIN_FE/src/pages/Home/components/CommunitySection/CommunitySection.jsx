@@ -28,9 +28,9 @@ export default function CommunitySection() {
           <div>
             <div className='flex items-center gap-2'>
               <h2 className='text-lg font-bold text-gray-800 dark:text-gray-100'>Cộng đồng & Sự kiện</h2>
-              <InfoTooltip text='KPI: người dùng nổi bật theo bài viết, sự kiện, thử thách, buổi tập trong kỳ lọc. Ý nghĩa: nhận diện tài khoản có đóng góp cao cho cộng đồng. Hành động: dùng để tôn vinh, gợi ý ambassador, và kích hoạt chương trình giữ chân.' />
+              <InfoTooltip text='KPI: người dùng nổi bật theo bài viết, sự kiện, thử thách trong kỳ lọc. Ý nghĩa: nhận diện tài khoản có đóng góp cao cho cộng đồng. Hành động: dùng để tôn vinh, gợi ý ambassador, và kích hoạt chương trình giữ chân.' />
             </div>
-            <p className='text-xs text-gray-400'>Bài viết · lượt thích · bình luận · thử thách · điểm danh sự kiện · buổi tập</p>
+            <p className='text-xs text-gray-400'>Bài viết · lượt thích · bình luận · thử thách · tham gia sự kiện</p>
           </div>
         </div>
         <TimeRangeFilter value={filterParams.period || 'custom'} onChange={setFilterParams} />

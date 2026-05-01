@@ -1,22 +1,21 @@
-import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
+import mongoose from 'mongoose'
+import dotenv from 'dotenv'
+import ChallengeModel from './src/models/schemas/challenge.schema'
+import ChallengeParticipantModel from './src/models/schemas/challengeParticipant.schema'
 
-dotenv.config({ path: 'c:/DATN/fedacn/DATN_BE/.env' });
+dotenv.config()
 
-const uri = process.env.MONGODB_URL || '';
-
-async function run() {
-  await mongoose.connect(uri);
-  const db = mongoose.connection.db;
-  const event = await db.collection('sport_events').findOne({ _id: new mongoose.Types.ObjectId('69ad37c08530ab567e585987') });
-  console.log('Event:', event);
-  if (event) {
-     const category = await db.collection('sport_categories').findOne({ _id: new mongoose.Types.ObjectId(event.category) });
-     const categoryByName = await db.collection('sport_categories').findOne({ name: event.category });
-     console.log('Category by ID:', category);
-     console.log('Category by Name:', categoryByName);
+async function check() {
+  await mongoose.connect(process.env.MONGODB_URL || '')
+  const ev = await ChallengeModel.findById('69dbb47c9e1a6f2aafeb9939')
+  if (ev) {
+    console.log('Challenge found:', ev.toObject())
+    // Check participants
+    const participants = await ChallengeParticipantModel.find({ challengeId: ev._id })
+    console.log('Participants count:', participants.length)
+  } else {
+    console.log('Challenge NOT found!')
   }
-  process.exit(0);
+  process.exit(0)
 }
-
-run().catch(console.error);
+check()

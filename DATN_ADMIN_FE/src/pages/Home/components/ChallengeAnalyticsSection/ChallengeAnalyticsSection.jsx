@@ -104,8 +104,7 @@ export default function ChallengeAnalyticsSection() {
     outdoorActivity = 0,
     fitness = 0,
     total = 0,
-    scopeBreakdown = {},
-    completionRates = {}
+    scopeBreakdown = {}
   } = chData
 
   const allDates = mergeDates(dailyNutrition, dailyOutdoorActivity, dailyFitness)
@@ -212,83 +211,74 @@ export default function ChallengeAnalyticsSection() {
   }
 
   return (
-    <div className='bg-white mx-2 rounded-2xl border border-gray-200 shadow-sm px-6 py-5 my-4 dark:bg-gray-800 dark:border-gray-700'>
+    <div className='bg-white rounded-2xl border border-gray-200 shadow-sm px-6 py-5 my-4 dark:bg-gray-800 dark:border-gray-700'>
       <div className='flex items-center justify-between mb-4 flex-wrap gap-2'>
-        <div className='flex items-center gap-3'>
-          <span className='text-2xl'>🏆</span>
-          <div>
-            <h3 className='text-lg font-bold text-gray-800 dark:text-gray-100'>Số lượng thử thách theo loại</h3>
+        <div>
+          <h3 className='text-sm font-bold text-gray-600 dark:text-gray-300'>🏆 Số lượng thử thách theo loại</h3>
             <p className='text-xs text-gray-400'>Thử thách mới được tạo trong khoảng thời gian đã chọn</p>
-          </div>
         </div>
         <TimeRangeFilter value={filterParams.period || 'custom'} onChange={setFilterParams} />
       </div>
 
-      <div className='flex gap-3 mb-4 flex-wrap'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4'>
         {Object.entries(TYPE_META).map(([key, meta]) => (
-          <div key={key} className={`flex items-center gap-2 ${meta.cardBg} rounded-xl px-4 py-2`}>
-            <span className={`w-3 h-3 rounded-full ${meta.dotBg} shrink-0`} />
-            <div>
+          <div key={key} className='bg-white dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700 shadow-sm'>
+            <div className='flex items-center gap-2'>
+              <span className={`w-2.5 h-2.5 rounded-full ${meta.dotBg} shrink-0`} />
               <p className='text-xs text-gray-500'>{meta.label}</p>
-              <p className={`text-lg font-black ${meta.textColor}`}>{chData[key] ?? 0} thử thách</p>
+            </div>
+            <div>
+              <p className={`text-2xl font-black ${meta.textColor}`}>{chData[key] ?? 0}</p>
+              <p className='text-[11px] text-gray-400'>thử thách</p>
             </div>
           </div>
         ))}
-        <div className='ml-auto flex items-center gap-1 text-gray-400 text-sm self-center'>
-          Tổng:{' '}
-          <span className='font-black text-gray-700 dark:text-white text-base ml-1'>{total}</span> thử thách
-        </div>
-      </div>
-
-      <div className='grid grid-cols-1 md:grid-cols-5 gap-3 mb-4'>
-        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
-          Tỷ lệ hoàn thành người tham gia: <span className='font-bold'>{completionRates.participantCompletionPercent ?? 0}%</span>
-        </div>
-        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
-          Tỷ lệ thử thách hoàn thành: <span className='font-bold'>{completionRates.challengeFullCompletionPercent ?? 0}%</span>
-        </div>
-        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
-          Cộng đồng: <span className='font-bold'>{scopeBreakdown.community ?? 0}</span>
-        </div>
-        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
-          Bạn bè: <span className='font-bold'>{scopeBreakdown.friends ?? 0}</span>
-        </div>
-        <div className='rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs'>
-          Cá nhân: <span className='font-bold'>{scopeBreakdown.personal ?? 0}</span>
+        <div className='bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-600'>
+          <p className='text-xs text-gray-500 mb-1'>Tổng thử thách</p>
+          <p className='text-2xl font-black text-gray-800 dark:text-white'>{total}</p>
         </div>
       </div>
 
       <div className='grid grid-cols-1 xl:grid-cols-5 gap-4'>
-        <div className='xl:col-span-3 h-[260px]'>
-          {total === 0 ? (
-            <div className='flex flex-col items-center justify-center h-full text-gray-400'>
-              <span className='text-4xl mb-2'>🏆</span>
-              <p className='text-sm'>Chưa có thử thách nào trong khoảng thời gian này</p>
-            </div>
-          ) : (
-            <Line options={lineOptions} data={lineData} />
-          )}
+        <div className='xl:col-span-3 rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3'>
+          <p className='text-xs text-gray-500 mb-2'>Diễn biến tạo mới theo ngày</p>
+          <div className='h-[240px]'>
+            {total === 0 ? (
+              <div className='flex flex-col items-center justify-center h-full text-gray-400'>
+                <span className='text-4xl mb-2'>🏆</span>
+                <p className='text-sm'>Chưa có thử thách nào trong khoảng thời gian này</p>
+              </div>
+            ) : (
+              <Line options={lineOptions} data={lineData} />
+            )}
+          </div>
         </div>
 
         <div className='xl:col-span-2 flex flex-col gap-3'>
-          <div className='relative h-[150px]'>
-            {total > 0 ? (
-              <>
-                <Doughnut options={doughnutOptions} data={doughnutData} />
-                <div className='absolute inset-0 flex flex-col items-center justify-center pointer-events-none'>
-                  <span className='text-xl font-black text-gray-800 dark:text-white'>{total}</span>
-                  <span className='text-[10px] text-gray-500'>tổng thử thách</span>
-                </div>
-              </>
-            ) : (
-              <div className='flex items-center justify-center h-full text-gray-300 text-sm'>Chưa có dữ liệu</div>
-            )}
+          <div className='rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3'>
+            <p className='text-xs text-gray-500 mb-2'>Tỷ trọng theo loại thử thách</p>
+            <div className='relative h-[130px]'>
+              {total > 0 ? (
+                <>
+                  <Doughnut options={doughnutOptions} data={doughnutData} />
+                  <div className='absolute inset-0 flex flex-col items-center justify-center pointer-events-none'>
+                    <span className='text-xl font-black text-gray-800 dark:text-white'>{total}</span>
+                    <span className='text-[10px] text-gray-500'>tổng thử thách</span>
+                  </div>
+                </>
+              ) : (
+                <div className='flex items-center justify-center h-full text-gray-300 text-sm'>Chưa có dữ liệu</div>
+              )}
+            </div>
           </div>
-          <div className='relative h-[150px]'>
-            <Doughnut
-              options={{ responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' } } }}
-              data={scopeDoughnutData}
-            />
+          <div className='rounded-2xl border border-gray-200 dark:border-gray-700 px-4 py-3'>
+            <p className='text-xs text-gray-500 mb-2'>Phân bố phạm vi thử thách</p>
+            <div className='relative h-[130px]'>
+              <Doughnut
+                options={{ responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' } } }}
+                data={scopeDoughnutData}
+              />
+            </div>
           </div>
 
           {insight && (

@@ -238,7 +238,8 @@ export default function SportEventProgress({
     if (!completedActivities.length) return null
     const totalDistance = completedActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
     const totalCalories = completedActivities.reduce((sum, a) => sum + roundKcal(a.calories), 0)
-    return { totalDistance, totalCalories, totalSessions: completedActivities.length }
+    const totalDuration = completedActivities.reduce((sum, a) => sum + a.totalDuration, 0)
+    return { totalDistance, totalCalories, totalDuration, totalSessions: completedActivities.length }
   }, [completedActivities])
 
   // Calculate stats from userProgress — with NaN/zero guards
@@ -284,10 +285,6 @@ export default function SportEventProgress({
   const chartData = useMemo(() => {
     if (activeMetric !== 'progress' && event?.eventType === 'Ngoài trời') {
       // Build chart from GPS activities
-      const field = activeMetric === 'distance' ? 'totalDistance' : 'calories'
-      const divisor = activeMetric === 'distance' ? 1000 : 1
-      const precision = activeMetric === 'distance' ? 2 : 0
-
       // Hôm nay → từng hoạt động trong ngày lịch
       if (timeFilter === 'today' && !customRange) {
         const start = moment().startOf('day')
@@ -319,6 +316,48 @@ export default function SportEventProgress({
             sessions: 1,
             avgSpeed: avgSpeed,
             duration: duration
+          }
+        })
+      }
+
+      // all → group by tháng
+      if (timeFilter === 'all') {
+        const monthMap = {}
+        const start = event?.startDate ? moment(event.startDate).startOf('month') : moment().subtract(11, 'months').startOf('month')
+        const end = moment().endOf('month')
+        
+        let curr = start.clone()
+        while (curr.isSameOrBefore(end, 'month')) {
+          const key = curr.format('MM/YY')
+          monthMap[key] = { date: key, fullDate: curr.format('YYYY-MM'), distance: 0, calories: 0, sessions: 0, duration: 0 }
+          curr.add(1, 'months')
+        }
+
+        filteredActivities.forEach(a => {
+          const key = moment(a.startTime).format('MM/YY')
+          if (monthMap[key]) {
+            monthMap[key].distance += parseFloat((a.totalDistance / 1000).toFixed(2))
+            monthMap[key].calories += roundKcal(a.calories)
+            monthMap[key].sessions += 1
+            monthMap[key].duration += a.totalDuration
+          }
+        })
+
+        return Object.values(monthMap).map(m => {
+          const avgSpeed = m.duration > 0 ? Number((m.distance / (m.duration / 3600)).toFixed(2)) : 0
+          let value = 0
+          switch (activeMetric) {
+            case 'distance': value = Number(m.distance.toFixed(2)); break
+            case 'calories': value = m.calories; break
+            case 'sessions': value = m.sessions; break
+            case 'speed': value = avgSpeed; break
+            default: value = 0
+          }
+          return {
+            ...m,
+            value,
+            avgSpeed,
+            distance: Number(m.distance.toFixed(2))
           }
         })
       }
@@ -389,26 +428,13 @@ export default function SportEventProgress({
         })
       }
 
-      // all → group by tháng (≤12 cột)
-      if (timeFilter === 'all') {
-        const monthMap = {}
-        Object.keys(dayMap).forEach(fd => {
-          const key = moment(fd).format('MM/YY')
-          if (!monthMap[key]) monthMap[key] = { date: key, fullDate: moment(fd).format('YYYY-MM'), distance: 0, calories: 0, sessions: 0, duration: 0 }
-          monthMap[key].distance += dayMap[fd].distance
-          monthMap[key].calories += dayMap[fd].calories
-          monthMap[key].sessions += dayMap[fd].sessions
-          monthMap[key].duration += dayMap[fd].duration
-        })
-        return Object.values(monthMap).map(m => {
-          const avgSpd = m.duration > 0 ? Number((m.distance / (m.duration / 3600)).toFixed(2)) : 0
-          const v = activeMetric === 'distance' ? m.distance : activeMetric === 'calories' ? m.calories : activeMetric === 'sessions' ? m.sessions : avgSpd
-          return { ...m, avgSpeed: avgSpd, value: v }
-        }).slice(-12)
-      }
-
       // 1m → 5 tuần, 6m → 26 tuần, 1y → 52 tuần
-      const numWeeks = timeFilter === '6m' ? 26 : timeFilter === '1y' ? 52 : 5
+      let numWeeks = timeFilter === '6m' ? 26 : timeFilter === '1y' ? 52 : 5
+      if (event?.startDate) {
+        const daysSinceStart = moment().diff(moment(event.startDate).startOf('day'), 'days')
+        const maxEventWeeks = Math.max(1, Math.ceil((daysSinceStart + 1) / 7))
+        numWeeks = Math.min(numWeeks, maxEventWeeks)
+      }
       const gpsWeeks = []
       for (let i = numWeeks - 1; i >= 0; i--) {
         const weekStart = moment().subtract(i * 7 + 6, 'days')
@@ -498,12 +524,21 @@ export default function SportEventProgress({
 
     if (timeFilter === 'all') {
       const monthMap = {}
+      const start = event?.startDate ? moment(event.startDate).startOf('month') : moment().subtract(11, 'months').startOf('month')
+      const end = moment().endOf('month')
+      
+      let curr = start.clone()
+      while (curr.isSameOrBefore(end, 'month')) {
+        const key = curr.format('MM/YY')
+        monthMap[key] = { date: key, fullDate: curr.format('YYYY-MM'), value: 0 }
+        curr.add(1, 'months')
+      }
+
       userProgress.progressHistory.forEach(entry => {
         const key = moment(entry.date).format('MM/YY')
-        if (!monthMap[key]) monthMap[key] = { date: key, fullDate: moment(entry.date).format('YYYY-MM'), value: 0 }
-        monthMap[key].value += entry.value
+        if (monthMap[key]) monthMap[key].value += entry.value
       })
-      return Object.values(monthMap).slice(-12)
+      return Object.values(monthMap)
     }
 
     const days = getDays()
@@ -522,7 +557,12 @@ export default function SportEventProgress({
       return arr
     } else {
       // 1m → 5 tuần, 6m → 26 tuần, 1y → 52 tuần
-      const numWeeks = days <= 31 ? 5 : Math.ceil(days / 7)
+      let numWeeks = days <= 31 ? 5 : Math.ceil(days / 7)
+      if (event?.startDate) {
+        const daysSinceStart = moment().diff(moment(event.startDate).startOf('day'), 'days')
+        const maxEventWeeks = Math.max(1, Math.ceil((daysSinceStart + 1) / 7))
+        numWeeks = Math.min(numWeeks, maxEventWeeks)
+      }
       const weeks = []
       for (let i = numWeeks - 1; i >= 0; i--) {
         const weekStart = moment().subtract(i * 7 + 6, 'days')
@@ -562,8 +602,22 @@ export default function SportEventProgress({
   const isEnded = event?.endDate ? moment().isAfter(moment(event.endDate)) : false
   const isNotStarted = event?.startDate ? moment().isBefore(moment(event.startDate)) : false
   
-  // Progress overview: for outdoor events, use GPS total (matches "Quãng đường" when "Tất cả")
-  const displayProgress = isOutdoor && allTimeGpsStats ? allTimeGpsStats.totalDistance : (stats?.totalProgress || 0)
+  const getOutdoorTargetValue = useCallback(() => {
+    if (!allTimeGpsStats) return 0;
+    const unit = (event?.targetUnit || '').toLowerCase();
+    if (unit.includes('kcal') || unit.includes('calo')) {
+      return allTimeGpsStats.totalCalories;
+    } else if (unit.includes('giờ') || unit.includes('hour')) {
+      return allTimeGpsStats.totalDuration / 3600;
+    } else if (unit.includes('phút') || unit.includes('minute')) {
+      return allTimeGpsStats.totalDuration / 60;
+    } else {
+      return allTimeGpsStats.totalDistance; // Default to km
+    }
+  }, [allTimeGpsStats, event?.targetUnit]);
+
+  // Progress overview: for outdoor events, use getOutdoorTargetValue
+  const displayProgress = isOutdoor && allTimeGpsStats ? getOutdoorTargetValue() : (stats?.totalProgress || 0)
   // Stats detail: time-filtered from GPS for outdoor, otherwise from SportEventProgress
   const displayDistance = isOutdoor && gpsStats ? gpsStats.totalDistance : stats?.totalDistance
   const displayCalories = isOutdoor && gpsStats ? gpsStats.totalCalories : stats?.totalCalories
@@ -591,12 +645,6 @@ export default function SportEventProgress({
               <p className="text-sm opacity-90">Bắt đầu ghi quãng đường và tốc độ khi bạn di chuyển trong ngày</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3">
-              {gpsStats?.weeklyStreak > 0 && (
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 text-center w-full sm:w-auto mb-2 sm:mb-0">
-                  <p className="text-lg font-black">🔥 {gpsStats.weeklyStreak}</p>
-                  <p className="text-[10px] opacity-80">tuần liên tiếp</p>
-                </div>
-              )}
               <div className="flex gap-2 w-full sm:w-auto">
                 {isEnded || isNotStarted ? (
                   <div className="flex-1 sm:flex-none bg-white/20 px-4 py-3 rounded-xl font-bold text-sm text-center shadow-sm w-full flex items-center justify-center">
@@ -639,7 +687,7 @@ export default function SportEventProgress({
           <div className="relative flex-shrink-0">
             {(() => {
               const progressPercent = isOutdoor && allTimeGpsStats && stats?.perPersonTarget > 0
-                ? Math.min(Math.round((allTimeGpsStats.totalDistance / stats.perPersonTarget) * 100), 100)
+                ? Math.min(Math.round((getOutdoorTargetValue() / stats.perPersonTarget) * 100), 100)
                 : (stats?.progressPercent || 0)
               return (
                 <ProgressRing
@@ -867,14 +915,38 @@ export default function SportEventProgress({
                       cursor={{ fill: 'rgba(99, 102, 241, 0.06)', radius: 8 }}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
-                          const d = payload[0].payload
+                          const d = (payload.find(p => p?.dataKey === 'value') ?? payload[0])?.payload
+                          if (!d) return null
                           if (isOutdoor) {
                             const dayActs = completedActivities.filter(a => moment(a.startTime).format('YYYY-MM-DD') === d.fullDate)
+                            const rowFromGpsChart = Object.prototype.hasOwnProperty.call(d, 'distance')
                             const dist = d.distance != null ? d.distance : Number((dayActs.reduce((s, a) => s + a.totalDistance / 1000, 0)).toFixed(2))
                             const cal = d.calories != null ? d.calories : dayActs.reduce((s, a) => s + roundKcal(a.calories), 0)
                             const sess = d.sessions != null ? d.sessions : dayActs.length
-                            const dur = dayActs.reduce((s, a) => s + a.totalDuration, 0)
+                            const dur = rowFromGpsChart && d.duration != null
+                              ? d.duration
+                              : dayActs.reduce((s, a) => s + a.totalDuration, 0)
                             const spd = d.avgSpeed != null ? d.avgSpeed : (dur > 0 ? Number((dist / (dur / 3600)).toFixed(2)) : 0)
+
+                            // Biểu đồ tiến độ ngoài trời dùng progressHistory (không có key distance): không có GPS trùng ngày → fallback thay vì toàn 0
+                            if (activeMetric === 'progress' && dayActs.length === 0 && !rowFromGpsChart) {
+                              return (
+                                <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 shadow-2xl rounded-2xl border border-gray-100/50 dark:border-gray-700/50 text-sm min-w-[180px]">
+                                  <p className="font-bold text-gray-800 dark:text-white mb-3 pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full" style={{ background: barColor }} />
+                                    {d.dateShort || d.date}
+                                  </p>
+                                  <p className="flex justify-between items-center gap-4">
+                                    <span className="text-gray-500 dark:text-gray-400">Tiến độ ghi nhận</span>
+                                    <span className="font-bold" style={{ color: barColor }}>{Number(d.value ?? 0).toFixed(2)} {metricUnit}</span>
+                                  </p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 leading-relaxed">
+                                    Không có buổi GPS nào trong ngày này; chi tiết calories / tốc độ chỉ hiện khi có hoạt động được ghi.
+                                  </p>
+                                </div>
+                              )
+                            }
+
                             return (
                               <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 shadow-2xl rounded-2xl border border-gray-100/50 dark:border-gray-700/50 text-sm min-w-[180px]">
                                 <p className="font-bold text-gray-800 dark:text-white mb-3 pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
@@ -922,6 +994,7 @@ export default function SportEventProgress({
                       style={{ cursor: 'pointer' }}
                       animationDuration={800}
                       animationEasing="ease-out"
+                      maxBarSize={48}
                     >
                       <LabelList
                         dataKey="value"

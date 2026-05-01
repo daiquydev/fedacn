@@ -283,13 +283,15 @@ export default function EventDetail() {
                     {moment(event.startDate).format('HH:mm')}
                   </div>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Địa điểm</div>
-                  <div className="flex items-center text-gray-900 dark:text-white font-medium truncate">
-                    <FaMapMarkerAlt className="mr-2 text-green-500 flex-shrink-0" />
-                    <span className="truncate">{event.location}</span>
+                {event.eventType !== 'Trong nhà' && (
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Địa điểm</div>
+                    <div className="flex items-center text-gray-900 dark:text-white font-medium truncate">
+                      <FaMapMarkerAlt className="mr-2 text-green-500 flex-shrink-0" />
+                      <span className="truncate">{event.location}</span>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Người tham gia</div>
                   <div className="flex items-center text-gray-900 dark:text-white font-medium">
@@ -565,21 +567,21 @@ export default function EventDetail() {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Thời gian chi tiết</h3>
               <div className="space-y-3">
                 <div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Bắt đầu</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Thời gian</div>
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {moment(event.startDate).format('DD/MM/YYYY HH:mm')}
+                    {moment(event.startDate).format('HH:mm')}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Kết thúc</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Ngày bắt đầu</div>
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {moment(event.endDate).format('DD/MM/YYYY HH:mm')}
+                    {moment(event.startDate).format('DD/MM/YYYY')}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Thời lượng</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Ngày kết thúc</div>
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {moment.duration(moment(event.endDate).diff(moment(event.startDate))).asHours().toFixed(1)} giờ
+                    {moment(event.endDate).format('DD/MM/YYYY')}
                   </div>
                 </div>
               </div>

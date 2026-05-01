@@ -257,6 +257,7 @@ export default function AdminChallenge() {
     const [search, setSearch] = useState('')
     const [searchInput, setSearchInput] = useState('')
     const [filterType, setFilterType] = useState('all')
+    const [filterVisibility, setFilterVisibility] = useState('all')
     const [filterCategory, setFilterCategory] = useState('all')
     const [filterStatus, setFilterStatus] = useState('active')
     const [sortBy, setSortBy] = useState('newest')
@@ -296,10 +297,11 @@ export default function AdminChallenge() {
     // Challenge list
     const isDeletedView = filterStatus === 'deleted'
     const { data, isLoading, isError, error } = useQuery({
-        queryKey: ['admin-challenges', page, search, filterType, filterCategory, filterStatus, filterDateFrom, filterDateTo, sortBy],
+        queryKey: ['admin-challenges', page, search, filterType, filterVisibility, filterCategory, filterStatus, filterDateFrom, filterDateTo, sortBy],
         queryFn: () => adminChallengeApi.getAll({
             page, limit: LIMIT, search: search || undefined,
             challenge_type: filterType !== 'all' ? filterType : undefined,
+            visibility: filterVisibility !== 'all' ? filterVisibility : undefined,
             category: filterCategory !== 'all' ? filterCategory : undefined,
             status: !isDeletedView && filterStatus !== 'all' ? filterStatus : undefined,
             show_deleted: isDeletedView ? 'true' : undefined,
@@ -333,6 +335,7 @@ export default function AdminChallenge() {
 
     const activeFilterCount = [
         filterType !== 'all' && filterType,
+        filterVisibility !== 'all' && filterVisibility,
         filterCategory !== 'all' && filterCategory,
         filterDateFrom,
         filterDateTo,
@@ -341,6 +344,7 @@ export default function AdminChallenge() {
 
     const clearAllFilters = () => {
         setSearchInput(''); setSearch(''); setFilterType('all')
+        setFilterVisibility('all')
         setFilterCategory('all')
         setFilterStatus('active'); setFilterDateFrom(''); setFilterDateTo('')
         setSortBy('newest'); setPage(1)
@@ -549,6 +553,13 @@ export default function AdminChallenge() {
                                     <button onClick={() => { setFilterCategory('all'); setPage(1) }} className='hover:text-indigo-900 dark:hover:text-indigo-100'><FaTimes size={9} /></button>
                                 </span>
                             )}
+                            {filterVisibility !== 'all' && (
+                                <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'>
+                                    <FaUsers size={11} className='shrink-0 opacity-80' />
+                                    {filterVisibility === 'public' ? 'Công khai' : filterVisibility === 'friends' ? 'Bạn bè' : 'Cá nhân'}
+                                    <button onClick={() => { setFilterVisibility('all'); setPage(1) }} className='hover:text-cyan-900 dark:hover:text-cyan-100'><FaTimes size={9} /></button>
+                                </span>
+                            )}
                             {filterDateFrom && (
                                 <span className='inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'>
                                     <FaCalendarAlt size={11} className='shrink-0 opacity-80' /> Từ {new Date(filterDateFrom).toLocaleDateString('vi-VN')}
@@ -580,7 +591,7 @@ export default function AdminChallenge() {
                 {/* Collapsible advanced filters */}
                 {showAdvanced && (
                     <div className='px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700'>
-                        <div className='grid grid-cols-2 lg:grid-cols-5 gap-3 pt-3'>
+                        <div className='grid grid-cols-2 lg:grid-cols-6 gap-3 pt-3'>
                             <div>
                                 <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Loại thử thách</label>
                                 <select
@@ -622,6 +633,20 @@ export default function AdminChallenge() {
                                     <option value='completed'>Hoàn thành</option>
                                     <option value='cancelled'>Đã hủy</option>
                                     <option value='deleted'>Đã xóa</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className='block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5'>Quyền riêng tư</label>
+                                <select
+                                    value={filterVisibility}
+                                    onChange={e => { setFilterVisibility(e.target.value); setPage(1) }}
+                                    className='w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 transition-all'
+                                >
+                                    <option value='all'>Tất cả quyền riêng tư</option>
+                                    <option value='public'>Công khai</option>
+                                    <option value='friends'>Bạn bè</option>
+                                    <option value='private'>Cá nhân</option>
                                 </select>
                             </div>
 

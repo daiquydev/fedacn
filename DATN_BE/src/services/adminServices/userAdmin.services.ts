@@ -516,7 +516,8 @@ class UserAdminService {
       ChallengeModel.countDocuments({ is_deleted: { $ne: true } })
     ])
 
-    // Top 5 thể loại sport theo loại hình — đếm sự kiện + số người tham gia thực tế
+    // Top 5 thể loại sport theo loại hình — đếm sự kiện + số lượt người tham gia.
+    // Lượt tham gia = tổng số phần tử participants_ids của từng sự kiện trong cùng category.
     const [topOutdoorCategories, topIndoorCategories] = await Promise.all([
       SportEventModel.aggregate([
         { $match: { isDeleted: { $ne: true }, eventType: 'Ngoài trời' } },
@@ -524,12 +525,12 @@ class UserAdminService {
           $group: {
             _id: '$category',
             eventCount: { $sum: 1 },
-            totalParticipants: { $sum: { $size: { $ifNull: ['$participants_ids', []] } } }
+            totalParticipationCount: { $sum: { $size: { $ifNull: ['$participants_ids', []] } } }
           }
         },
         { $sort: { eventCount: -1 } },
         { $limit: 5 },
-        { $project: { _id: 0, category: '$_id', eventCount: 1, totalParticipants: 1 } }
+        { $project: { _id: 0, category: '$_id', eventCount: 1, totalParticipationCount: 1 } }
       ]),
       SportEventModel.aggregate([
         { $match: { isDeleted: { $ne: true }, eventType: 'Trong nhà' } },
@@ -537,12 +538,12 @@ class UserAdminService {
           $group: {
             _id: '$category',
             eventCount: { $sum: 1 },
-            totalParticipants: { $sum: { $size: { $ifNull: ['$participants_ids', []] } } }
+            totalParticipationCount: { $sum: { $size: { $ifNull: ['$participants_ids', []] } } }
           }
         },
         { $sort: { eventCount: -1 } },
         { $limit: 5 },
-        { $project: { _id: 0, category: '$_id', eventCount: 1, totalParticipants: 1 } }
+        { $project: { _id: 0, category: '$_id', eventCount: 1, totalParticipationCount: 1 } }
       ])
     ])
 

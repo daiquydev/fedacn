@@ -6,7 +6,8 @@ import {
   getParticipantsController,
   updateProgressController,
   deleteProgressController,
-  getEventOverallProgressController
+  getEventOverallProgressController,
+  getParticipantProgressHistoryForCreatorController
 } from '~/controllers/userControllers/sportEventProgress.controller'
 import { verifyToken } from '~/middlewares/authUser.middleware'
 import { wrapRequestHandler } from '~/utils/handler'
@@ -16,6 +17,11 @@ const sportEventProgressRouter = Router({ mergeParams: true })
 // Protected routes - require authentication
 sportEventProgressRouter.post('/', verifyToken, wrapRequestHandler(addProgressController))
 sportEventProgressRouter.get('/', verifyToken, wrapRequestHandler(getUserProgressController))
+sportEventProgressRouter.get(
+  '/participant/:targetUserId',
+  verifyToken,
+  wrapRequestHandler(getParticipantProgressHistoryForCreatorController)
+)
 sportEventProgressRouter.put('/:progressId', verifyToken, wrapRequestHandler(updateProgressController))
 sportEventProgressRouter.delete('/:progressId', verifyToken, wrapRequestHandler(deleteProgressController))
 

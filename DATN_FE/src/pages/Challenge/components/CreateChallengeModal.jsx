@@ -101,8 +101,8 @@ const isPastDate = (dateISO) => {
 
 const parseDateToISO = (dateISO) => {
     if (!isValidDateISO(dateISO)) return null
-    // dateISO is already YYYY-MM-DD from type="date" input
-    return `${dateISO}T00:00:00.000Z`
+    // Parse as local time (midnight) and convert to ISO (UTC)
+    return moment(dateISO, 'YYYY-MM-DD').startOf('day').toISOString()
 }
 
 const parseTime = (timeStr) => {

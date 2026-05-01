@@ -1,8 +1,7 @@
 const CATEGORIES = [
-  { key: 'posts', emoji: '👑', label: 'Bài viết', unit: 'bài', color: 'from-orange-400 to-red-500' },
+  { key: 'posts', emoji: '👑', label: 'Bài viết', unit: 'bài', prefix: 'đăng', color: 'from-orange-400 to-red-500' },
   { key: 'challenges', emoji: '🏆', label: 'Thử thách', unit: 'thử thách', prefix: 'tham gia', color: 'from-blue-400 to-cyan-500' },
-  { key: 'events', emoji: '🏅', label: 'Sự kiện', unit: 'lượt', prefix: 'điểm danh', color: 'from-green-400 to-emerald-500' },
-  { key: 'workouts', emoji: '💪', label: 'Tập luyện', unit: 'lần', color: 'from-purple-400 to-violet-500' }
+  { key: 'events', emoji: '🏅', label: 'Sự kiện', unit: 'sự kiện', prefix: 'tham gia', color: 'from-green-400 to-emerald-500' }
 ]
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -33,7 +32,7 @@ function UserRow({ rank, user, count, unit, prefix }) {
 
 export default function TopUsersPodium({ topUsers = {} }) {
   return (
-    <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3'>
+    <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3'>
       {CATEGORIES.map((cat) => {
         const users = topUsers[cat.key] || []
         return (

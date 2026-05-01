@@ -4,6 +4,7 @@ const adminSportEventApi = {
     getAll: (params) => http.get('/admin/sport-events', { params }),
     getStats: () => http.get('/admin/sport-events/stats'),
     getParticipants: (id, params) => http.get(`/admin/sport-events/${id}/participants`, { params }),
+    getParticipantProgressHistory: (eventId, targetUserId, params) => http.get(`/admin/sport-events/${eventId}/participant/${targetUserId}/progress`, { params }),
     create: (data) => http.post('/admin/sport-events', data),
     update: (id, data) => http.put(`/admin/sport-events/${id}`, data),
     softDelete: (id) => http.delete(`/admin/sport-events/${id}`),

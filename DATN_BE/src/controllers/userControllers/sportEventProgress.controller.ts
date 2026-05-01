@@ -78,12 +78,14 @@ export const getLeaderboardController = async (req: Request, res: Response) => {
 export const getParticipantsController = async (req: Request, res: Response) => {
   try {
     const { eventId } = req.params
-    const { page, limit, search } = req.query
+    const { page, limit, search, status, sort } = req.query
 
     const participantsData = await sportEventProgressService.getParticipantsService(eventId, {
       page: Number(page) || 1,
       limit: Number(limit) || 20,
-      search: search as string
+      search: search as string,
+      status: status as string,
+      sort: sort as string
     })
 
     return res.json({
@@ -147,5 +149,43 @@ export const getEventOverallProgressController = async (req: Request, res: Respo
     return res.status(500).json({
       message: (error as Error).message
     })
+  }
+}
+
+export const getParticipantProgressHistoryForCreatorController = async (req: Request, res: Response) => {
+  try {
+    const { eventId, targetUserId } = req.params
+    const creatorId = (req as any).decoded?.user_id as string | undefined
+    const { page, limit, fromDate, toDate } = req.query
+
+    if (!creatorId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const data = await sportEventProgressService.getParticipantProgressHistoryForCreatorService(
+      eventId,
+      targetUserId,
+      creatorId,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        fromDate: fromDate as string | undefined,
+        toDate: toDate as string | undefined
+      }
+    )
+
+    return res.json({
+      result: data,
+      message: 'Get participant progress history successfully'
+    })
+  } catch (error) {
+    const message = (error as Error).message
+    if (message.includes('Chỉ người tạo')) {
+      return res.status(403).json({ message })
+    }
+    if (message.includes('không thuộc')) {
+      return res.status(400).json({ message })
+    }
+    return res.status(500).json({ message })
   }
 }

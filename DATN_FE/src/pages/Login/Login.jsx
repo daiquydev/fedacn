@@ -15,6 +15,10 @@ import { queryClient } from '../../main'
 import toast from 'react-hot-toast'
 import { FcGoogle } from 'react-icons/fc'
 
+const inputClass =
+  'block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+const labelClass = 'text-gray-600 text-sm font-medium mb-1.5 text-left'
+
 export default function Login() {
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
   const navigate = useNavigate()
@@ -87,8 +91,8 @@ export default function Login() {
       <form onSubmit={onSubmit} noValidate>
         <Input
           title='Email'
-          className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
-          classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
+          className={inputClass}
+          classNameLabel={labelClass}
           placeholder='Nhập Email'
           register={register}
           errors={errors.email}
@@ -98,8 +102,8 @@ export default function Login() {
         />
         <InputPass
           title='Mật khẩu'
-          className='block bg-white w-full placeholder:text-sm px-4 py-2.5 text-gray-900 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
-          classNameLabel='text-gray-600 text-sm font-medium mb-1.5 text-left'
+          className={inputClass}
+          classNameLabel={labelClass}
           placeholder='Nhập mật khẩu của bạn'
           register={register}
           errors={errors.password}

@@ -16,9 +16,14 @@ export default function Input({
   isTextarea = false,
   isRequired = false,
   labelClassName = '',
+  /** Alias cùng ý nghĩa với labelClassName (dùng ở form đăng nhập/đăng ký) */
+  classNameLabel = '',
   wrapperClassName = ''
 }) {
-  const mergedLabelClass = labelClassName || 'text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left'
+  const mergedLabelClass =
+    labelClassName ||
+    classNameLabel ||
+    'text-gray-600 text-sm font-medium mb-1.5 text-left dark:text-gray-300'
   const mergedWrapperClass = wrapperClassName || 'flex items-center rounded-lg border border-gray-300 dark:border-gray-600 h-full'
 
   return (

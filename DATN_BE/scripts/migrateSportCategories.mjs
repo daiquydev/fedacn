@@ -31,27 +31,27 @@ const newCategories = [
     { name: 'Đạp xe', type: 'Ngoài trời', kcal_per_unit: 30, icon: 'cycling' },
     { name: 'Đi bộ', type: 'Ngoài trời', kcal_per_unit: 50, icon: 'walking' },
     { name: 'Đi bộ đường dài', type: 'Ngoài trời', kcal_per_unit: 62, icon: 'hiking' },
-    { name: 'Chạy trail', type: 'Ngoài trời', kcal_per_unit: 80, icon: 'trail' },
+    { name: 'Chạy địa hình', type: 'Ngoài trời', kcal_per_unit: 80, icon: 'trail' },
     { name: 'Trượt patin', type: 'Ngoài trời', kcal_per_unit: 40, icon: 'skating' },
     { name: 'Chạy bộ đường dài', type: 'Ngoài trời', kcal_per_unit: 70, icon: 'marathon' },
+    { name: 'Bơi lội', type: 'Ngoài trời', kcal_per_unit: 250, icon: 'swimming' },
 
     // ──── TRONG NHÀ (kcal/phút) ────
     { name: 'Yoga', type: 'Trong nhà', kcal_per_unit: 4, icon: 'yoga' },
-    { name: 'Gym / Fitness', type: 'Trong nhà', kcal_per_unit: 7, icon: 'gym' },
+    { name: 'Thể hình / Gym', type: 'Trong nhà', kcal_per_unit: 7, icon: 'gym' },
     { name: 'Pilates', type: 'Trong nhà', kcal_per_unit: 5, icon: 'pilates' },
     { name: 'Zumba', type: 'Trong nhà', kcal_per_unit: 9, icon: 'zumba' },
-    { name: 'HIIT', type: 'Trong nhà', kcal_per_unit: 12, icon: 'hiit' },
+    { name: 'HIIT (Cường độ cao)', type: 'Trong nhà', kcal_per_unit: 12, icon: 'hiit' },
     { name: 'Kickboxing', type: 'Trong nhà', kcal_per_unit: 9, icon: 'kickboxing' },
-    { name: 'Dance / Aerobics', type: 'Trong nhà', kcal_per_unit: 8, icon: 'dance' },
-    { name: 'Stretching', type: 'Trong nhà', kcal_per_unit: 3, icon: 'stretching' },
-    { name: 'Meditation', type: 'Trong nhà', kcal_per_unit: 1.5, icon: 'meditation' },
-    { name: 'Bơi lội', type: 'Trong nhà', kcal_per_unit: 7, icon: 'swimming' },
-    { name: 'Cardio', type: 'Trong nhà', kcal_per_unit: 10, icon: 'cardio' },
-    { name: 'Bodyweight', type: 'Trong nhà', kcal_per_unit: 6, icon: 'bodyweight' }
+    { name: 'Thể dục nhịp điệu', type: 'Trong nhà', kcal_per_unit: 8, icon: 'dance' },
+    { name: 'Giãn cơ', type: 'Trong nhà', kcal_per_unit: 3, icon: 'stretching' },
+    { name: 'Thiền', type: 'Trong nhà', kcal_per_unit: 1.5, icon: 'meditation' },
+    { name: 'Bài tập tim mạch (Cardio)', type: 'Trong nhà', kcal_per_unit: 10, icon: 'cardio' },
+    { name: 'Thể dục tay không', type: 'Trong nhà', kcal_per_unit: 6, icon: 'bodyweight' }
 ]
 
 // Danh mục cần xóa (team sport không phù hợp)
-const categoriesToRemove = ['Bóng rổ', 'Cầu lông', 'Bóng đá', 'Leo núi', 'Đánh tennis']
+const categoriesToRemove = ['Bóng rổ', 'Cầu lông', 'Bóng đá', 'Leo núi', 'Đánh tennis', 'Chạy trail', 'Gym / Fitness', 'HIIT', 'Dance / Aerobics', 'Stretching', 'Meditation', 'Cardio', 'Bodyweight']
 
 async function migrateSportCategories() {
     try {

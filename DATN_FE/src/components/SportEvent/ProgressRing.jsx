@@ -56,7 +56,7 @@ export default function ProgressRing({
   const centerLabel = label ?? (showPercent ? `${Math.round(safePercent)}%` : '')
 
   return (
-    <div className={`inline-flex flex-col items-center ${className}`} style={{ width: size, height: size }}>
+    <div className={`relative inline-flex flex-col items-center justify-center ${className}`} style={{ width: size, height: size }}>
       <svg
         width={size}
         height={size}

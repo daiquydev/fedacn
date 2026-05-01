@@ -14,6 +14,7 @@ export interface SportEventProgress {
   notes?: string
   source?: 'manual' | 'video_call' | 'gps'
   sessionId?: Types.ObjectId
+  activityTrackingId?: Types.ObjectId
   activeSeconds?: number
   stravaActivityId?: string
   is_deleted?: boolean
@@ -35,6 +36,7 @@ const SportEventProgressSchema = new mongoose.Schema<SportEventProgress>(
     notes: { type: String, default: '' },
     source: { type: String, enum: ['manual', 'video_call', 'gps'], default: 'manual' },
     sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'sport_event_sessions', default: null },
+    activityTrackingId: { type: mongoose.Schema.Types.ObjectId, ref: 'user_activity_tracking', default: null },
     activeSeconds: { type: Number, default: null },
     stravaActivityId: { type: String },
     is_deleted: { type: Boolean, default: false }

@@ -10,6 +10,7 @@ import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
+import moment from 'moment'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
@@ -31,8 +32,8 @@ const isValidDateISO = (val) => {
 
 const parseDateToISO = (dateISO) => {
     if (!isValidDateISO(dateISO)) return null
-    // dateISO is already YYYY-MM-DD from type="date" input
-    return `${dateISO}T00:00:00.000Z`
+    // Parse as local time (midnight) and convert to ISO (UTC)
+    return moment(dateISO, 'YYYY-MM-DD').startOf('day').toISOString()
 }
 
 // Convert ISO string from backend to YYYY-MM-DD for type="date" input value

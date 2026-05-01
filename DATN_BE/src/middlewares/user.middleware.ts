@@ -137,8 +137,8 @@ export const updateProfileValidator = validate(
         optional: true,
         isString: true,
         isIn: {
-          options: [['male', 'female', 'other']],
-          errorMessage: 'Giới tính phải là male, female hoặc other'
+          options: [['male', 'female', 'unknown']],
+          errorMessage: 'Giới tính phải là male, female hoặc unknown'
         }
       }
     },

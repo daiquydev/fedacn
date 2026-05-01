@@ -3,6 +3,7 @@ import {
     adminGetAllSportEventsController,
     adminGetEventStatsController,
     adminGetSportEventParticipantsController,
+    adminGetParticipantProgressHistoryController,
     adminCreateSportEventController,
     adminUpdateSportEventController,
     adminDeleteSportEventController,
@@ -21,6 +22,7 @@ adminSportEventRouter.use(accessTokenValidator, wrapRequestHandler(checkRole([Us
 
 adminSportEventRouter.get('/stats', wrapRequestHandler(adminGetEventStatsController))
 adminSportEventRouter.get('/:id/participants', wrapRequestHandler(adminGetSportEventParticipantsController))
+adminSportEventRouter.get('/:id/participant/:targetUserId/progress', wrapRequestHandler(adminGetParticipantProgressHistoryController))
 adminSportEventRouter.get('/', wrapRequestHandler(adminGetAllSportEventsController))
 adminSportEventRouter.post('/', wrapRequestHandler(adminCreateSportEventController))
 adminSportEventRouter.put('/:id', wrapRequestHandler(adminUpdateSportEventController))

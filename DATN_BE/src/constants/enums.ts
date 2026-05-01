@@ -109,7 +109,8 @@ export enum RecipeType {
 export const UserGender = {
   male: 'male',
   female: 'female',
-  other: 'other'
+  /** Chưa khai báo / chưa cập nhật */
+  unknown: 'unknown'
 }
 
 export const CategoryAlbum = {

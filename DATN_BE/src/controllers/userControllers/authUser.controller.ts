@@ -5,8 +5,8 @@ import { TokenPayload } from '~/models/requests/authUser.request'
 import authUserService from '~/services/userServices/authUser.services'
 
 export const registerController = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body
-  const result = await authUserService.register({ name, email, password })
+  const { name, email, password, gender } = req.body
+  const result = await authUserService.register({ name, email, password, gender })
   return res.json({
     message: AUTH_USER_MESSAGE.REGISTER_SUCCESS,
     result

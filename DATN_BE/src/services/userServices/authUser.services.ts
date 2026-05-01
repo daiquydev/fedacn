@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { omit } from 'lodash'
 import { envConfig } from '~/constants/config'
-import { TokenType } from '~/constants/enums'
+import { TokenType, UserGender } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { AUTH_USER_MESSAGE } from '~/constants/messages'
 import { UserLoginRequest, UserRegisterRequest } from '~/models/requests/authUser.request'
@@ -234,10 +234,20 @@ class AuthUserService {
     }
   }
   async register(payload: UserRegisterRequest) {
-    const { name, email, password } = payload
+    const { name, email, password, gender } = payload
     const user_name = email.split('@')[0]
     const hashedPassword = await hashPassword(password)
-    const user = await UserModel.create({ name, email, user_name, password: hashedPassword })
+    const safeGender =
+      gender === UserGender.male || gender === UserGender.female || gender === UserGender.unknown
+        ? gender
+        : UserGender.unknown
+    const user = await UserModel.create({
+      name,
+      email,
+      user_name,
+      password: hashedPassword,
+      gender: safeGender
+    })
     const newUser = omit(user.toObject(), ['password'])
     return newUser
   }

@@ -1,12 +1,39 @@
+const SIZE_CLASS = {
+  sm: 'w-4 h-4',
+  md: 'w-6 h-6',
+  lg: 'w-8 h-8',
+  xl: 'w-12 h-12'
+}
+
+const TONE_CLASS = {
+  primary: 'text-gray-200 dark:text-gray-600 fill-red-600',
+  success: 'text-emerald-100/70 dark:text-emerald-900/40 fill-emerald-600',
+  info: 'text-blue-100/70 dark:text-blue-900/40 fill-blue-600',
+  light: 'text-white/30 fill-white'
+}
+
 export default function Loading({
-  className = 'w-full flex justify-center',
-  classNameSpin = 'inline w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-red-600'
+  className = 'w-full flex justify-center items-center',
+  classNameSpin,
+  spinnerClassName,
+  size = 'lg',
+  tone = 'primary',
+  text = '',
+  textClassName = 'text-sm text-gray-500 dark:text-gray-400',
+  fullScreen = false
 }) {
+  const resolvedSize = SIZE_CLASS[size] || SIZE_CLASS.lg
+  const resolvedTone = TONE_CLASS[tone] || TONE_CLASS.primary
+  const spinClass = spinnerClassName || classNameSpin || `inline ${resolvedSize} ${resolvedTone} animate-spin`
+  const wrapperClass = fullScreen
+    ? `min-h-screen ${className}`
+    : className
+
   return (
-    <div role='' className={className}>
+    <div role='status' className={wrapperClass}>
       <svg
         aria-hidden='true'
-        className={classNameSpin}
+        className={spinClass}
         viewBox='0 0 100 101'
         fill='none'
         xmlns='http://www.w3.org/2000/svg'
@@ -20,7 +47,8 @@ export default function Loading({
           fill='currentFill'
         />
       </svg>
-      <span className='sr-only'>Loading...</span>
+      {text ? <span className={textClassName}>{text}</span> : null}
+      <span className='sr-only'>{text || 'Đang tải...'}</span>
     </div>
   )
 }

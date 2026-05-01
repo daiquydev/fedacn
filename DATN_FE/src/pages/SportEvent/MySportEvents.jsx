@@ -24,8 +24,11 @@ import {
   FaChevronLeft,
   FaFilter,
   FaChevronDown,
+  FaChevronRight,
   FaTimes,
-  FaSortAmountDown
+  FaSortAmountDown,
+  FaFire,
+  FaRobot
 } from 'react-icons/fa'
 import { MdVideocam, MdLeaderboard, MdSportsScore, MdCheckCircle, MdSportsSoccer } from 'react-icons/md'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
@@ -35,7 +38,9 @@ import { getMyEvents, getJoinedEvents, getEventStats, deleteSportEvent, getParti
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getSportIcon } from '../../utils/sportIcons'
 import { getImageUrl } from '../../utils/imageUrl'
+import { roundKcal } from '../../utils/mathUtils'
 import useravatar from '../../assets/images/useravatar.jpg'
+import ParticipantProgressModal from '../../components/SportEvent/ParticipantProgressModal'
 import toast from 'react-hot-toast'
 import moment from 'moment'
 
@@ -48,6 +53,16 @@ function rawDateToMs(raw) {
 const formatDateDisplay = (isoDate) => {
   if (!isoDate || isoDate.length !== 10) return ''
   return isoDate.split('-').reverse().join('/')
+}
+
+function formatParticipantDuration(seconds) {
+  if (seconds == null || !Number.isFinite(Number(seconds)) || Number(seconds) <= 0) return '0p 00s'
+  const s = Math.floor(Number(seconds))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (h > 0) return `${h}g ${String(m).padStart(2, '0')}p ${String(sec).padStart(2, '0')}s`
+  return `${m}p ${String(sec).padStart(2, '0')}s`
 }
 
 const toISODate = (yyyymmdd) => {
@@ -85,6 +100,8 @@ const MySportEvents = () => {
   const [joinedPage, setJoinedPage] = useState(1)
   const [participantPage, setParticipantPage] = useState(1)
   const [participantSearch, setParticipantSearch] = useState('')
+  const [participantStatus, setParticipantStatus] = useState('all') // 'all' | 'completed' | 'in_progress'
+  const [participantSort, setParticipantSort] = useState('progress_desc') // 'progress_desc' | 'name_asc'
   const ITEMS_PER_PAGE = 20
 
   // Filter state for BOTH tabs
@@ -232,8 +249,14 @@ const MySportEvents = () => {
 
   // Participants for selected event
   const { data: participantsData, isLoading: isLoadingParticipants } = useQuery({
-    queryKey: ['eventParticipants', selectedEvent?._id, participantPage, participantSearch],
-    queryFn: () => getParticipants(selectedEvent?._id, { page: participantPage, limit: 10, search: participantSearch }),
+    queryKey: ['eventParticipants', selectedEvent?._id, participantPage, participantSearch, participantStatus, participantSort],
+    queryFn: () => getParticipants(selectedEvent?._id, { 
+      page: participantPage, 
+      limit: 10, 
+      search: participantSearch,
+      status: participantStatus !== 'all' ? participantStatus : undefined,
+      sort: participantSort !== 'progress_desc' ? participantSort : undefined
+    }),
     enabled: !!selectedEvent?._id && activeSubTab === 'participants',
     keepPreviousData: true
   })
@@ -461,8 +484,12 @@ const MySportEvents = () => {
               participantsTotalPages={participantsTotalPages}
               participantPage={participantPage}
               participantSearch={participantSearch}
+              participantStatus={participantStatus}
+              participantSort={participantSort}
               onParticipantPageChange={setParticipantPage}
               onParticipantSearchChange={setParticipantSearch}
+              onParticipantStatusChange={setParticipantStatus}
+              onParticipantSortChange={setParticipantSort}
               isLoadingParticipants={isLoadingParticipants}
               onKickClick={handleKickClick}
               // Leaderboard & overall
@@ -560,7 +587,9 @@ function CreatedTabContent({
   sidebarSearch, onSidebarSearchChange,
   activeSubTab, onSubTabChange,
   participants, participantsTotal, participantsTotalPages, participantPage, participantSearch,
-  onParticipantPageChange, onParticipantSearchChange, isLoadingParticipants, onKickClick,
+  participantStatus, participantSort,
+  onParticipantPageChange, onParticipantSearchChange, onParticipantStatusChange, onParticipantSortChange,
+  isLoadingParticipants, onKickClick,
   leaderboard, overallProgress,
   onDeleteClick, navigate,
   mobileShowDetail, onMobileBack,
@@ -685,8 +714,12 @@ function CreatedTabContent({
             participantsTotalPages={participantsTotalPages}
             participantPage={participantPage}
             participantSearch={participantSearch}
+            participantStatus={participantStatus}
+            participantSort={participantSort}
             onParticipantPageChange={onParticipantPageChange}
             onParticipantSearchChange={onParticipantSearchChange}
+            onParticipantStatusChange={onParticipantStatusChange}
+            onParticipantSortChange={onParticipantSortChange}
             isLoadingParticipants={isLoadingParticipants}
             onKickClick={onKickClick}
             leaderboard={leaderboard}
@@ -717,7 +750,9 @@ function getStatusBadge(event) {
 function EventDashboard({
   event, activeSubTab, onSubTabChange,
   participants, participantsTotal, participantsTotalPages, participantPage, participantSearch,
-  onParticipantPageChange, onParticipantSearchChange, isLoadingParticipants, onKickClick,
+  participantStatus, participantSort,
+  onParticipantPageChange, onParticipantSearchChange, onParticipantStatusChange, onParticipantSortChange,
+  isLoadingParticipants, onKickClick,
   leaderboard, overallProgress,
   onDeleteClick, navigate, onMobileBack
 }) {
@@ -783,8 +818,12 @@ function EventDashboard({
             totalPages={participantsTotalPages}
             page={participantPage}
             search={participantSearch}
+            statusFilter={participantStatus}
+            sortFilter={participantSort}
             onPageChange={onParticipantPageChange}
             onSearchChange={onParticipantSearchChange}
+            onStatusChange={onParticipantStatusChange}
+            onSortChange={onParticipantSortChange}
             isLoading={isLoadingParticipants}
             onKickClick={onKickClick}
           />
@@ -898,91 +937,223 @@ function InfoCard({ icon: Icon, label, value, color, truncate }) {
 // ═══════════════════════════════════════════════════════════
 // SUB-TAB: Participants
 // ═══════════════════════════════════════════════════════════
-function ParticipantsSubTab({ event, participants, participantsTotal, totalPages, page, search, onPageChange, onSearchChange, isLoading, onKickClick }) {
+function ParticipantsSubTab({ 
+  event, participants, participantsTotal, totalPages, page, search, 
+  statusFilter, sortFilter,
+  onPageChange, onSearchChange, onStatusChange, onSortChange,
+  isLoading, onKickClick 
+}) {
+  const [progressDetailUser, setProgressDetailUser] = useState(null)
+
   return (
     <div>
-      {/* Header + Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          <BsPeopleFill className="inline mr-1.5 text-indigo-500" />
+      <ParticipantProgressModal
+        open={!!progressDetailUser}
+        event={event}
+        participant={progressDetailUser}
+        onClose={() => setProgressDetailUser(null)}
+        onKickClick={(userId, name) => {
+          onKickClick(userId, name)
+        }}
+      />
+
+      {/* Header + Filters */}
+      <div className="mb-6 space-y-4">
+        <h4 className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          <BsPeopleFill className="text-indigo-500 text-lg" />
           Người tham gia ({participantsTotal})
         </h4>
-        <div className="relative max-w-xs w-full sm:w-auto">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-          <input
-            type="text"
-            placeholder="Tìm người tham gia..."
-            value={search}
-            onChange={(e) => { onSearchChange(e.target.value); onPageChange(1) }}
-            className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
-          />
+        
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm người tham gia..."
+              value={search}
+              onChange={(e) => { onSearchChange(e.target.value); onPageChange(1) }}
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/50 dark:focus:ring-indigo-500/50 focus:border-indigo-500 dark:text-white transition-shadow shadow-sm"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <select
+                value={statusFilter}
+                onChange={(e) => { onStatusChange(e.target.value); onPageChange(1) }}
+                className="appearance-none pl-10 pr-8 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:text-white transition-shadow shadow-sm cursor-pointer outline-none"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="completed">Đã hoàn thành</option>
+                <option value="in_progress">Đang thực hiện</option>
+              </select>
+              <FaFilter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none group-focus-within:text-indigo-500 transition-colors" />
+              <FaChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+            </div>
+
+            <div className="relative group">
+              <select
+                value={sortFilter}
+                onChange={(e) => { onSortChange(e.target.value); onPageChange(1) }}
+                className="appearance-none pl-10 pr-8 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:text-white transition-shadow shadow-sm cursor-pointer outline-none"
+              >
+                <option value="progress_desc">Tiến độ cao nhất</option>
+                <option value="progress_asc">Tiến độ thấp nhất</option>
+                <option value="name_asc">Tên (A-Z)</option>
+                <option value="name_desc">Tên (Z-A)</option>
+              </select>
+              <FaSortAmountDown className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none group-focus-within:text-indigo-500 transition-colors" />
+              <FaChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Participants table/list */}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
         </div>
       ) : participants.length > 0 ? (
         <>
-          <div className="space-y-2">
-            {participants.map((p) => (
-              <div key={p.userId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {/* Rank */}
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                    {p.rank <= 3 ? (
-                      <span className="text-sm">{p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : '🥉'}</span>
+          <div className="max-h-[500px] overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+            {participants.map((p) => {
+              const speedLabel = p.avgSpeedKmh != null && Number.isFinite(Number(p.avgSpeedKmh))
+                ? `${p.avgSpeedKmh} km/h`
+                : '—'
+              const entriesCount = p.entriesCount ?? 0
+              const isIndoor = event.eventType === 'Trong nhà'
+              return (
+                <div
+                  key={String(p.userId)}
+                  className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600/50 hover:border-indigo-200 dark:hover:border-indigo-800/40 transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        {p.rank <= 3 ? (
+                          <span className="text-base">{p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : '🥉'}</span>
+                        ) : (
+                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{p.rank}</span>
+                        )}
+                      </div>
+                      <img
+                        src={p.avatar ? getImageUrl(p.avatar) : useravatar}
+                        alt=""
+                        className="w-10 h-10 rounded-full flex-shrink-0 border-2 border-white dark:border-gray-600 shadow-sm"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{p.name}</p>
+                          {String(p.userId) === String(event.createdBy?._id || event.createdBy) ? (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/25 rounded-md shrink-0" title="Người tổ chức">
+                              👑 Tổ chức
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                          <span className="inline-flex items-center gap-1 tabular-nums" title="Tổng thời gian hoạt động">
+                            <FaClock className="text-emerald-500 shrink-0" />
+                            {formatParticipantDuration(p.totalTimeSeconds)}
+                          </span>
+                          <span className="inline-flex items-center gap-1 tabular-nums" title="Tổng kcal">
+                            <FaFire className="text-orange-500 shrink-0" />
+                            {roundKcal(p.totalCalories)} kcal
+                          </span>
+                          {isIndoor && (
+                            <span
+                              className="inline-flex items-center gap-1 tabular-nums"
+                              title="Tỷ lệ thời gian được AI xác nhận (active / tổng buổi video)"
+                            >
+                              <FaRobot className="text-violet-500 shrink-0" />
+                              <span className="font-semibold text-violet-600 dark:text-violet-400">
+                                {(p.aiConfirmedPercent ?? 0)}%
+                              </span>
+                              <span className="text-gray-500 dark:text-gray-400">AI</span>
+                            </span>
+                          )}
+                          {!isIndoor && (
+                            <span className="inline-flex items-center gap-1 tabular-nums" title="Vận tốc trung bình">
+                              <MdSportsScore className="text-violet-500 shrink-0" />
+                              {speedLabel}
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1 tabular-nums" title="Số buổi tham gia">
+                            <FaChartLine className="text-indigo-500 shrink-0" />
+                            {entriesCount} {isIndoor ? 'buổi' : 'lần'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {String(p.userId) !== String(event.createdBy?._id || event.createdBy) ? (
+                      <button
+                        type="button"
+                        onClick={() => onKickClick(p.userId, p.name)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition shrink-0"
+                        title="Xóa khỏi sự kiện"
+                      >
+                        <FaUserMinus className="text-sm" />
+                      </button>
                     ) : (
-                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{p.rank}</span>
+                      <span className="w-10 shrink-0" aria-hidden />
                     )}
                   </div>
-                  {/* Avatar + name */}
-                  <img src={p.avatar ? getImageUrl(p.avatar) : useravatar} alt="" className="w-9 h-9 rounded-full flex-shrink-0 border-2 border-white dark:border-gray-600 shadow-sm" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{p.name}</p>
-                    <p className="text-[10px] text-gray-400">
-                      {p.totalProgress?.toFixed(1)} {event.targetUnit} • {p.progressPercentage}%
-                    </p>
-                  </div>
-                </div>
-                {/* Progress + Kick */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className="hidden sm:block w-24">
-                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+
+                  <button
+                    type="button"
+                    onClick={() => setProgressDetailUser(p)}
+                    className="mt-3 w-full text-left rounded-xl bg-white/70 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/80 dark:border-gray-600 px-3 py-2.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    <div className="flex justify-between items-center text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
+                      <span className="font-medium text-gray-700 dark:text-gray-200">
+                        Tiến độ mục tiêu cá nhân:{' '}
+                        <span className="tabular-nums">
+                          {Number(p.totalProgress ?? 0).toFixed(1)} {event.targetUnit || ''}
+                        </span>
+                      </span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{p.progressPercentage ?? 0}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 overflow-hidden">
                       <div
-                        className={`h-1.5 rounded-full transition-all ${p.progressPercentage >= 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
-                        style={{ width: `${Math.min(p.progressPercentage, 100)}%` }}
+                        className={`h-2.5 rounded-full transition-all duration-500 ${(p.progressPercentage ?? 0) >= 100 ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-indigo-500 to-violet-500'}`}
+                        style={{ width: `${Math.min(Number(p.progressPercentage) || 0, 100)}%` }}
                       />
                     </div>
-                  </div>
-                  {String(p.userId) === String(event.createdBy?._id || event.createdBy) ? (
-                    <span className="px-2 py-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg" title="Người tổ chức">
-                      👑
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => onKickClick(p.userId, p.name)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                      title="Xóa khỏi sự kiện"
-                    >
-                      <FaUserMinus className="text-sm" />
-                    </button>
-                  )}
+                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1.5 font-medium">
+                      Nhấn để xem nhật ký hoạt động (lọc ngày & phân trang)
+                    </p>
+                  </button>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-3 mt-5">
-              <button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-                className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition">Trước</button>
-              <span className="text-xs text-gray-500">Trang {page} / {totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-                className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-30 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition">Sau</button>
+            <div className="px-4 py-4 mt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Đang xem trang <span className="text-gray-900 dark:text-white font-bold">{page}</span> trên {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => onPageChange((prev) => Math.max(1, prev - 1))}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm"
+                  aria-label="Trang trước"
+                >
+                  <FaChevronLeft className="text-xs" />
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => onPageChange((prev) => Math.min(totalPages, prev + 1))}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm"
+                  aria-label="Trang sau"
+                >
+                  <FaChevronRight className="text-xs" />
+                </button>
+              </div>
             </div>
           )}
         </>
@@ -1025,12 +1196,16 @@ function SettingsSubTab({ event, onDeleteClick, navigate }) {
             <span className="text-gray-800 dark:text-white font-medium">{event.maxParticipants} người</span>
           </div>
           <div>
+            <span className="text-gray-400 text-xs block mb-0.5">Thời gian</span>
+            <span className="text-gray-800 dark:text-white font-medium">{moment(event.startDate).format('HH:mm')}</span>
+          </div>
+          <div>
             <span className="text-gray-400 text-xs block mb-0.5">Ngày bắt đầu</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(event.startDate).format('DD/MM/YYYY HH:mm')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{moment(event.startDate).format('DD/MM/YYYY')}</span>
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Ngày kết thúc</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(event.endDate).format('DD/MM/YYYY HH:mm')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{moment(event.endDate).format('DD/MM/YYYY')}</span>
           </div>
           {event.targetValue > 0 && (
             <div>
@@ -1038,10 +1213,12 @@ function SettingsSubTab({ event, onDeleteClick, navigate }) {
               <span className="text-gray-800 dark:text-white font-medium">{event.targetValue} {event.targetUnit}</span>
             </div>
           )}
-          <div>
-            <span className="text-gray-400 text-xs block mb-0.5">{event.eventType === 'Trong nhà' ? 'Link Video Call' : 'Địa điểm'}</span>
-            <span className="text-gray-800 dark:text-white font-medium truncate block">{event.location || '—'}</span>
-          </div>
+          {event.eventType !== 'Trong nhà' && (
+            <div>
+              <span className="text-gray-400 text-xs block mb-0.5">Địa điểm</span>
+              <span className="text-gray-800 dark:text-white font-medium truncate block">{event.location || '—'}</span>
+            </div>
+          )}
         </div>
       </div>
 

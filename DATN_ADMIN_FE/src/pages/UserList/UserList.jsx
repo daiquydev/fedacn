@@ -93,7 +93,7 @@ export default function UserList() {
             }`}
           >
             <FaUserSlash size={14} className='shrink-0 opacity-95' aria-hidden />
-            Bị khóa / đã xóa <span className='font-black tabular-nums'>({stats.inactive ?? (stats.banned ?? 0) + (stats.deleted ?? 0)})</span>
+            Tài khoản đã xóa <span className='font-black tabular-nums'>({stats.inactive ?? (stats.banned ?? 0) + (stats.deleted ?? 0)})</span>
           </button>
         </div>
 

@@ -5,7 +5,6 @@ import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.sch
 import PostModel from '~/models/schemas/post.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventAttendanceModel from '~/models/schemas/sportEventAttendance.schema'
-import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import WorkoutSessionModel from '~/models/schemas/workoutSession.schema'
 import UserModel from '~/models/schemas/user.schema'
 import CommentPostModel from '~/models/schemas/commentPost.schema'
@@ -32,47 +31,6 @@ function inclusiveCalendarDaySpan(from: Date, to: Date): number {
   return Math.max(1, diffDays + 1)
 }
 
-/** Lượt tham gia sự kiện theo điểm danh (check-in), gom theo ngày attAt. */
-function buildDailyAttendanceJoinsPipeline(eventType: 'Ngoài trời' | 'Trong nhà', from: Date | null, to: Date): PipelineStage[] {
-  const pipeline: PipelineStage[] = [
-    { $addFields: { attAt: { $ifNull: ['$checkInTime', '$createdAt'] } } },
-    { $match: { attAt: { $lte: to } } }
-  ]
-  if (from) {
-    pipeline.push({ $match: { attAt: { $gte: from } } })
-  }
-  pipeline.push(
-    { $lookup: { from: 'sport_event_sessions', localField: 'sessionId', foreignField: '_id', as: 'sess' } },
-    { $unwind: '$sess' },
-    { $lookup: { from: 'sport_events', localField: 'sess.eventId', foreignField: '_id', as: 'ev' } },
-    { $unwind: '$ev' },
-    { $match: { 'ev.isDeleted': { $ne: true }, 'ev.eventType': eventType } },
-    { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$attAt' } }, count: { $sum: 1 } } },
-    { $sort: { _id: 1 } }
-  )
-  return pipeline
-}
-
-/** Tổng lượt điểm danh (mỗi bản ghi attendance = một lượt) trong kỳ, theo loại sự kiện. */
-function buildTotalAttendanceJoinsPipeline(eventType: 'Ngoài trời' | 'Trong nhà', from: Date | null, to: Date): PipelineStage[] {
-  const pipeline: PipelineStage[] = [
-    { $addFields: { attAt: { $ifNull: ['$checkInTime', '$createdAt'] } } },
-    { $match: { attAt: { $lte: to } } }
-  ]
-  if (from) {
-    pipeline.push({ $match: { attAt: { $gte: from } } })
-  }
-  pipeline.push(
-    { $lookup: { from: 'sport_event_sessions', localField: 'sessionId', foreignField: '_id', as: 'sess' } },
-    { $unwind: '$sess' },
-    { $lookup: { from: 'sport_events', localField: 'sess.eventId', foreignField: '_id', as: 'ev' } },
-    { $unwind: '$ev' },
-    { $match: { 'ev.isDeleted': { $ne: true }, 'ev.eventType': eventType } },
-    { $count: 'total' }
-  )
-  return pipeline
-}
-
 /** $addFields attAt + lọc theo kỳ (check-in hoặc tạo bản ghi điểm danh). */
 function attendanceAttAtMatchStages(from: Date | null, to: Date): PipelineStage[] {
   const stages: PipelineStage[] = [
@@ -85,39 +43,47 @@ function attendanceAttAtMatchStages(from: Date | null, to: Date): PipelineStage[
   return stages
 }
 
-/** Top user theo lượt điểm danh sự kiện trong kỳ (mỗi attendance hợp lệ = 1 điểm). */
-function buildTopEventUsersByAttendancePipeline(from: Date | null, to: Date): PipelineStage[] {
+/**
+ * Người dùng duy nhất đã đăng ký tham gia sự kiện (theo `participants_ids`), gom theo giới tính.
+ * Không dùng điểm danh: join sự kiện chỉ thêm vào danh sách participants, thường không có bản ghi attendance.
+ * Khoảng thời gian: khi có `from`, chỉ sự kiện có khung thời gian chồng lấn [from, to]; khi `from == null` thì toàn bộ sự kiện còn hiệu lực.
+ */
+function buildEventParticipantGenderByParticipantsPipeline(from: Date | null, to: Date): PipelineStage[] {
+  const eventMatch: Record<string, unknown> = {
+    isDeleted: { $ne: true },
+    participants_ids: { $exists: true, $ne: [] }
+  }
+  if (from) {
+    eventMatch.startDate = { $lte: to }
+    eventMatch.endDate = { $gte: from }
+  }
   return [
-    ...attendanceAttAtMatchStages(from, to),
-    { $lookup: { from: 'sport_event_sessions', localField: 'sessionId', foreignField: '_id', as: 'sess' } },
-    { $unwind: '$sess' },
-    { $lookup: { from: 'sport_events', localField: 'sess.eventId', foreignField: '_id', as: 'ev' } },
-    { $unwind: '$ev' },
-    { $match: { 'ev.isDeleted': { $ne: true } } },
-    { $group: { _id: '$userId', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 3 },
+    { $match: eventMatch },
+    { $unwind: '$participants_ids' },
     {
       $lookup: {
         from: 'users',
-        let: { uid: '$_id' },
-        pipeline: [
-          { $match: { $expr: { $eq: ['$_id', '$$uid'] } } },
-          { $project: { name: 1, avatar: 1, user_name: 1 } }
-        ],
-        as: 'user'
+        localField: 'participants_ids',
+        foreignField: '_id',
+        as: 'u'
       }
     },
-    { $unwind: '$user' },
-    { $project: { _id: 0, user: 1, count: 1 } }
+    { $unwind: '$u' },
+    { $match: { 'u.role': UserRoles.user, 'u.isDeleted': { $ne: true } } },
+    { $group: { _id: { gender: '$u.gender', uid: '$participants_ids' } } },
+    { $group: { _id: '$_id.gender', count: { $sum: 1 } } }
   ]
 }
 
-/** Fallback top user theo số lần xuất hiện trong participants_ids (khi chưa có dữ liệu điểm danh). */
+/** Top user theo số sự kiện đã tham gia (theo participants_ids), không dùng điểm danh. */
 function buildTopEventUsersByParticipantsPipeline(from: Date | null, to: Date): PipelineStage[] {
-  const match: Record<string, unknown> = { isDeleted: { $ne: true } }
+  const match: Record<string, unknown> = {
+    isDeleted: { $ne: true },
+    participants_ids: { $exists: true, $ne: [] }
+  }
   if (from) {
-    match.createdAt = { $gte: from, $lte: to }
+    match.startDate = { $lte: to }
+    match.endDate = { $gte: from }
   }
 
   return [
@@ -184,8 +150,9 @@ function getDateRange(period?: string, startDate?: string, endDate?: string): { 
   }
 }
 
-function normalizeGender(value: unknown): 'male' | 'female' | 'other' | 'unknown' {
-  if (value === 'male' || value === 'female' || value === 'other') return value
+function normalizeGender(value: unknown): 'male' | 'female' | 'unknown' {
+  if (value === 'male' || value === 'female' || value === 'unknown') return value
+  // legacy `other` hoặc giá trị lạ → gom vào chưa cập nhật
   return 'unknown'
 }
 
@@ -225,19 +192,14 @@ class AnalyticsService {
         { $match: { role: UserRoles.user, isDeleted: { $ne: true }, ...createdRange } },
         { $group: { _id: '$gender', count: { $sum: 1 } } }
       ]),
-      SportEventAttendanceModel.aggregate([
-        ...attendanceAttAtMatchStages(from, to),
-        { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'u' } },
-        { $unwind: '$u' },
-        { $match: { 'u.role': UserRoles.user, 'u.isDeleted': { $ne: true } } },
-        { $group: { _id: '$u.gender', count: { $sum: 1 } } }
-      ]),
+      SportEventModel.aggregate(buildEventParticipantGenderByParticipantsPipeline(from, to)),
       ChallengeParticipantModel.aggregate([
         { $match: { status: { $ne: 'quit' }, ...challengeJoinRange } },
         { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'u' } },
         { $unwind: '$u' },
         { $match: { 'u.role': UserRoles.user, 'u.isDeleted': { $ne: true } } },
-        { $group: { _id: '$u.gender', count: { $sum: 1 } } }
+        { $group: { _id: { gender: '$u.gender', uid: '$user_id' } } },
+        { $group: { _id: '$_id.gender', count: { $sum: 1 } } }
       ]),
       WorkoutSessionModel.aggregate([
         { $match: { status: 'completed', ...workoutRange } },
@@ -255,7 +217,7 @@ class AnalyticsService {
         .lean()
     ])
 
-    const initGender = { male: 0, female: 0, other: 0, unknown: 0 }
+    const initGender = { male: 0, female: 0, unknown: 0 }
     const toGenderBreakdown = (rows: { _id: unknown; count: number }[]) => {
       const result = { ...initGender }
       for (const row of rows || []) {
@@ -488,12 +450,7 @@ class AnalyticsService {
       { $project: { _id: 0, user: 1, count: 1 } }
     ])
 
-    let topEventUsers = await SportEventAttendanceModel.aggregate(
-      buildTopEventUsersByAttendancePipeline(from, to)
-    )
-    if (!topEventUsers.length) {
-      topEventUsers = await SportEventModel.aggregate(buildTopEventUsersByParticipantsPipeline(from, to))
-    }
+    const topEventUsers = await SportEventModel.aggregate(buildTopEventUsersByParticipantsPipeline(from, to))
 
     const workoutDateMatch: any = {}
     if (from) workoutDateMatch.finished_at = { $gte: from, $lte: to }
@@ -519,21 +476,27 @@ class AnalyticsService {
     ])
 
     // ── Platform Activity daily series ──
-    // Chart 1: Posts + Likes + Comments
+    // Chart 1: Nội dung tạo mới cộng đồng
     const dailyPosts = await PostModel.aggregate([
       { $match: { is_banned: false, ...dateMatch } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
 
-    const dailyLikes = await LikePostModel.aggregate([
-      { $match: { ...dateMatch } },
+    const dailyUsers = await UserModel.aggregate([
+      { $match: { role: UserRoles.user, isDeleted: { $ne: true }, ...dateMatch } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
 
-    const dailyComments = await CommentPostModel.aggregate([
-      { $match: { is_banned: false, ...dateMatch } },
+    const dailyEvents = await SportEventModel.aggregate([
+      { $match: { isDeleted: { $ne: true }, ...dateMatch } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ])
+
+    const dailyChallenges = await ChallengeModel.aggregate([
+      { $match: { is_deleted: { $ne: true }, ...dateMatch } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
@@ -554,38 +517,14 @@ class AnalyticsService {
       { $sort: { _id: 1 } }
     ])
 
-    // Lượt tham gia theo ngày: theo thời điểm điểm danh (check-in), không theo ngày tạo sự kiện
-    const dailyOutdoorJoins = await SportEventAttendanceModel.aggregate(
-      buildDailyAttendanceJoinsPipeline('Ngoài trời', from, to)
-    )
-    const dailyIndoorJoins = await SportEventAttendanceModel.aggregate(
-      buildDailyAttendanceJoinsPipeline('Trong nhà', from, to)
-    )
-
     // Totals
-    const [totalPosts, totalLikes, totalComments, totalOutdoor, totalIndoor, completedSessions, totalSessions] = await Promise.all([
+    const [totalPosts, totalUsers, totalEvents, totalChallenges, totalOutdoor, totalIndoor] = await Promise.all([
       PostModel.countDocuments({ is_banned: false, ...dateMatch }),
-      LikePostModel.countDocuments({ ...dateMatch }),
-      CommentPostModel.countDocuments({ is_banned: false, ...dateMatch }),
+      UserModel.countDocuments({ role: UserRoles.user, isDeleted: { $ne: true }, ...dateMatch }),
+      SportEventModel.countDocuments({ isDeleted: { $ne: true }, ...dateMatch }),
+      ChallengeModel.countDocuments({ is_deleted: { $ne: true }, ...dateMatch }),
       SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Ngoài trời' }),
-      SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Trong nhà' }),
-      SportEventSessionModel.countDocuments({
-        ...(from ? { sessionDate: { $gte: from, $lte: to } } : {}),
-        isCompleted: true
-      }),
-      SportEventSessionModel.countDocuments({
-        ...(from ? { sessionDate: { $gte: from, $lte: to } } : {})
-      })
-    ])
-
-    // Tổng lượt điểm danh trong kỳ (khớp với chuỗi ngày ở trên)
-    const [totalOutdoorJoins, totalIndoorJoins] = await Promise.all([
-      SportEventAttendanceModel.aggregate(buildTotalAttendanceJoinsPipeline('Ngoài trời', from, to)).then(
-        (r: { total?: number }[]) => r[0]?.total || 0
-      ),
-      SportEventAttendanceModel.aggregate(buildTotalAttendanceJoinsPipeline('Trong nhà', from, to)).then(
-        (r: { total?: number }[]) => r[0]?.total || 0
-      )
+      SportEventModel.countDocuments({ ...sportEventDateMatch, eventType: 'Trong nhà' })
     ])
 
     return {
@@ -596,23 +535,19 @@ class AnalyticsService {
         workouts: topWorkoutUsers
       },
       communityActivity: {
-        totals: { posts: totalPosts, likes: totalLikes, comments: totalComments },
+        totals: { posts: totalPosts, users: totalUsers, events: totalEvents, challenges: totalChallenges },
         dailyPosts,
-        dailyLikes,
-        dailyComments
+        dailyUsers,
+        dailyEvents,
+        dailyChallenges
       },
       eventActivity: {
         totals: {
           outdoorEvents: totalOutdoor,
-          indoorEvents: totalIndoor,
-          outdoorJoins: totalOutdoorJoins,
-          indoorJoins: totalIndoorJoins,
-          completionRatePercent: totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 1000) / 10 : 0
+          indoorEvents: totalIndoor
         },
         dailyOutdoorEvents,
-        dailyIndoorEvents,
-        dailyOutdoorJoins,
-        dailyIndoorJoins
+        dailyIndoorEvents
       }
     }
   }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { Bar, Doughnut, Line } from 'react-chartjs-2'
+import { Bar, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,23 +8,21 @@ import {
   BarElement,
   ArcElement,
   PointElement,
-  LineElement,
   Tooltip,
   Legend
 } from 'chart.js'
-import moment from 'moment'
 import { getUsersHealthAnalytics } from '../../../../apis/adminApi'
 import TimeRangeFilter from '../TimeRangeFilter/TimeRangeFilter'
-import { CHART_BG, CHART_COLORS } from '../chartTheme'
+import { CHART_COLORS } from '../chartTheme'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, Tooltip, Legend)
 
 function genderData(gender = {}) {
-  return [gender.male ?? 0, gender.female ?? 0, gender.other ?? 0, gender.unknown ?? 0]
+  return [gender.male ?? 0, gender.female ?? 0, gender.unknown ?? 0]
 }
 
-const GENDER_LABELS = ['Nam', 'Nữ', 'Khác', 'Chưa cập nhật']
-const GENDER_COLORS = [CHART_COLORS.primary, '#ec4899', CHART_COLORS.purple, CHART_COLORS.gray]
+const GENDER_LABELS = ['Nam', 'Nữ', 'Chưa cập nhật']
+const GENDER_COLORS = [CHART_COLORS.primary, '#ec4899', CHART_COLORS.gray]
 
 export default function UsersHealthSection() {
   const [filterParams, setFilterParams] = useState({ period: '7d' })
@@ -39,10 +37,6 @@ export default function UsersHealthSection() {
   const eventGender = result.eventParticipantGender || {}
   const challengeGender = result.challengeParticipantGender || {}
   const bmi = result.bmiAsiaDistribution || {}
-  const workoutSeries = result?.participantsOverTime?.workouts || []
-
-  const workoutLabels = workoutSeries.map((i) => moment(i._id).format('DD/MM'))
-  const workoutValues = workoutSeries.map((i) => i.count || 0)
 
   return (
     <div className='px-2 my-3'>
@@ -71,7 +65,8 @@ export default function UsersHealthSection() {
         </div>
 
         <div className='bg-white rounded-2xl border border-gray-200 shadow-sm p-4 dark:bg-gray-800 dark:border-gray-700'>
-          <p className='text-xs text-gray-500 mb-2'>Tỷ lệ giới tính tham gia sự kiện / thử thách</p>
+          <p className='text-xs text-gray-500 mb-2'>Tham gia sự kiện / thử thách theo giới tính</p>
+          <p className='text-[10px] text-gray-400 mb-1'>Đếm số người duy nhất (một người nhiều thử thách / nhiều sự kiện chỉ tính một lần trong kỳ lọc).</p>
           <div className='h-[220px]'>
             <Bar
               data={{
@@ -122,36 +117,6 @@ export default function UsersHealthSection() {
         </div>
       </div>
 
-      <div className='bg-white rounded-2xl border border-gray-200 shadow-sm p-4 dark:bg-gray-800 dark:border-gray-700 mt-3'>
-        <p className='text-xs text-gray-500 mb-2'>Số người tham gia tập luyện theo thời gian</p>
-        <div className='h-[220px]'>
-          <Line
-            data={{
-              labels: workoutLabels,
-              datasets: [
-                {
-                  label: 'Người tham gia tập luyện',
-                  data: workoutValues,
-                  borderColor: CHART_COLORS.purple,
-                  backgroundColor: CHART_BG.purple,
-                  pointBackgroundColor: CHART_COLORS.purple,
-                  pointBorderColor: '#fff',
-                  pointBorderWidth: 2,
-                  pointRadius: 4,
-                  fill: true,
-                  tension: 0.35
-                }
-              ]
-            }}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { position: 'top' } },
-              scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }}
-          />
-        </div>
-      </div>
     </div>
   )
 }

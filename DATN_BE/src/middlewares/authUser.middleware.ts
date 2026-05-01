@@ -12,7 +12,7 @@ import { validate } from '~/utils/validation'
 import { Request, Response, NextFunction } from 'express'
 import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
 import { envConfig } from '~/constants/config'
-import { UserRoles } from '~/constants/enums'
+import { UserGender, UserRoles } from '~/constants/enums'
 
 // Middleware to verify token
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
@@ -113,7 +113,15 @@ export const registerValidator = validate(
           },
           errorMessage: AUTH_USER_MESSAGE.PASSWORD_MUST_BE_STRONG
         }
-      }
+      },
+      gender: {
+        notEmpty: true,
+        isString: true,
+        isIn: {
+          options: [[UserGender.male, UserGender.female, UserGender.unknown]],
+          errorMessage: 'Giới tính không hợp lệ'
+        }
+      },
     },
     ['body']
   )

@@ -6,6 +6,7 @@ import { AiOutlineSearch } from 'react-icons/ai'
 import CreateMealPlanModal from './components/CreateMealPlanModal/CreateMealPlanModal'
 import CreateRecipeModal from './components/CreateRecipeModal/CreateRecipeModal'
 import MealPlanCard from './components/MealPlanCard/MealPlanCard'
+import Loading from '../../components/GlobalComponents/Loading'
 import { useMealPlans } from '../../hooks/useMealPlans'
 import { MEAL_PLAN_CATEGORIES } from '../../constants/mealPlan'
 
@@ -279,7 +280,7 @@ export default function MealPlan() {
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <Loading size='xl' tone='success' />
           </div>
         )}
 

@@ -1,7 +1,7 @@
 export default function Input({
   title,
   placeholder,
-  classNameLabel = 'text-gray-400 lg:text-red-900 text-sm font-medium mb-1 dark:text-pink-300 text-left',
+  classNameLabel = 'text-gray-600 text-sm font-medium mb-1.5 text-left dark:text-gray-300',
   className = 'block bg-white dark:bg-slate-800 dark:border-none w-full placeholder:text-sm px-3 py-2  text-black dark:text-gray-400 text-lg border border-gray-300 rounded-lg',
   register = () => {},
   errors,

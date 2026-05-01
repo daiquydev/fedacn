@@ -3,6 +3,7 @@ import { getUserAdminById } from '../../../../apis/adminApi'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { getImageUrl } from '../../../../utils/imageUrl'
 import { useEffect } from 'react'
+import Loading from '../../../../components/GlobalComponents/Loading'
 import {
   FaTimes, FaFileAlt, FaRunning, FaDumbbell,
   FaUsers, FaHeart,
@@ -76,12 +77,13 @@ export default function UserDetailDrawer({ userId, onClose }) {
         </button>
 
         {isLoading ? (
-          <div className='flex items-center justify-center h-full'>
-            <div className='flex flex-col items-center gap-3'>
-              <div className='w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin' />
-              <span className='text-sm text-gray-400'>Đang tải thông tin...</span>
-            </div>
-          </div>
+          <Loading
+            className='h-full flex justify-center items-center gap-3'
+            size='xl'
+            tone='info'
+            text='Đang tải thông tin...'
+            textClassName='text-sm text-gray-400'
+          />
         ) : !user ? (
           <div className='flex items-center justify-center h-full'>
             <p className='text-gray-400'>Không tìm thấy người dùng</p>

@@ -253,6 +253,8 @@ export default function IndoorEventProgress({ event, userProgress }) {
         let actualTotal = 0
         if (unit.includes('kcal') || unit.includes('calo')) {
             actualTotal = allTimeStats.totalCalories
+        } else if (unit.includes('giờ') || unit.includes('hour')) {
+            actualTotal = allTimeStats.totalActiveSeconds / 3600
         } else {
             // Đổi giây → phút để so với target (đơn vị thường là phút)
             actualTotal = Math.round(allTimeStats.totalActiveSeconds / 60)
@@ -351,22 +353,44 @@ export default function IndoorEventProgress({ event, userProgress }) {
             return arr
         }
 
-        // all → group by tháng (≤12 cột)
+        // all → group by tháng
         if (timeFilter === 'all') {
             const monthMap = {}
-            endedSessions.forEach(vs => {
+            const start = event?.startDate ? moment(event.startDate).startOf('month') : moment().subtract(11, 'months').startOf('month')
+            const end = moment().endOf('month')
+            
+            let curr = start.clone()
+            while (curr.isSameOrBefore(end, 'month')) {
+                const key = curr.format('MM/YY')
+                monthMap[key] = { date: key, fullDate: curr.format('YYYY-MM'), value: 0, calories: 0, minutes: 0, sessions: 0, aiPctRaw: 0, totalSecondsRaw: 0 }
+                curr.add(1, 'months')
+            }
+
+            filteredSessions.forEach(vs => {
                 const key = moment(vs.joinedAt).format('MM/YY')
-                if (!monthMap[key]) monthMap[key] = { date: key, fullDate: moment(vs.joinedAt).format('YYYY-MM'), value: 0, calories: 0, minutes: 0, sessions: 0 }
-                monthMap[key].value += Math.round((vs[field] || 0) / divisor)
-                monthMap[key].calories += (vs.caloriesBurned || 0)
-                monthMap[key].minutes += Math.round((vs.activeSeconds || 0) / 60)
-                monthMap[key].sessions += 1
+                if (monthMap[key]) {
+                    monthMap[key].value += Math.round((vs[field] || 0) / divisor)
+                    monthMap[key].calories += (vs.caloriesBurned || 0)
+                    monthMap[key].minutes += Math.round((vs.activeSeconds || 0) / 60)
+                    monthMap[key].sessions += 1
+                    monthMap[key].aiPctRaw += (vs.activeSeconds || 0)
+                    monthMap[key].totalSecondsRaw += (vs.totalSeconds || 0)
+                }
             })
-            return Object.values(monthMap).slice(-12)
+
+            return Object.values(monthMap).map(m => ({
+                ...m,
+                aiPct: m.totalSecondsRaw > 0 ? Math.round((m.aiPctRaw / m.totalSecondsRaw) * 100) : 0
+            }))
         }
 
         // 1m → 5 tuần, 6m → 26 tuần
-        const numWeeks = timeFilter === '6m' ? 26 : 5
+        let numWeeks = timeFilter === '6m' ? 26 : 5
+        if (event?.startDate) {
+            const daysSinceStart = moment().diff(moment(event.startDate).startOf('day'), 'days')
+            const maxEventWeeks = Math.max(1, Math.ceil((daysSinceStart + 1) / 7))
+            numWeeks = Math.min(numWeeks, maxEventWeeks)
+        }
         const weeks = []
         for (let i = numWeeks - 1; i >= 0; i--) {
             const weekStart = moment().subtract(i * 7 + 6, 'days')
@@ -480,11 +504,6 @@ export default function IndoorEventProgress({ event, userProgress }) {
                         <div className="flex items-center gap-2 mb-1">
                             <MdVideocam className="text-2xl" />
                             <h3 className="text-xl font-bold">Video Call Trong nhà</h3>
-                            {indoorStats.weeklyStreak > 0 && (
-                                <span className="ml-2 bg-white/20 backdrop-blur-sm rounded-lg px-2 py-0.5 text-sm font-black">
-                                    🔥 {indoorStats.weeklyStreak} tuần
-                                </span>
-                            )}
                         </div>
 
                         {isEnded ? (
@@ -773,6 +792,7 @@ export default function IndoorEventProgress({ event, userProgress }) {
                                         style={{ cursor: 'pointer' }}
                                         animationDuration={800}
                                         animationEasing="ease-out"
+                                        maxBarSize={48}
                                     >
                                         <LabelList
                                             dataKey="value"

@@ -1,5 +1,7 @@
 import { Request, Response } from 'express'
 import adminSportEventService from '~/services/adminServices/adminSportEvent.services'
+import sportEventProgressService from '~/services/userServices/sportEventProgress.services'
+import SportEventModel from '~/models/schemas/sportEvent.schema'
 
 export const adminGetAllSportEventsController = async (req: Request, res: Response) => {
     try {
@@ -96,6 +98,38 @@ export const adminGetSportEventParticipantsController = async (req: Request, res
             search: (search as string) || ''
         })
         return res.json({ result, message: 'Lấy danh sách thành viên thành công' })
+    } catch (error) {
+        return res.status(500).json({ message: (error as Error).message })
+    }
+}
+
+export const adminGetParticipantProgressHistoryController = async (req: Request, res: Response) => {
+    try {
+        const { id: eventId, targetUserId } = req.params
+        const { page, limit, fromDate, toDate } = req.query
+
+        // Admin bypasses "creator only" check by fetching the event's real creatorId
+        const event = await SportEventModel.findById(eventId).select('createdBy')
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' })
+        }
+
+        const data = await sportEventProgressService.getParticipantProgressHistoryForCreatorService(
+            eventId,
+            targetUserId,
+            event.createdBy.toString(), // pass real creator to bypass permission check
+            {
+                page: Number(page) || 1,
+                limit: Number(limit) || 10,
+                fromDate: fromDate as string | undefined,
+                toDate: toDate as string | undefined
+            }
+        )
+
+        return res.json({
+            result: data,
+            message: 'Get participant progress history successfully'
+        })
     } catch (error) {
         return res.status(500).json({ message: (error as Error).message })
     }

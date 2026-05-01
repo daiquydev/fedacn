@@ -4,9 +4,9 @@ import ChallengeModel from '~/models/schemas/challenge.schema'
 import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.schema'
 import challengeService from '~/services/userServices/challenge.services'
 
-// GET /api/admin/challenges?page=&limit=&search=&challenge_type=&status=&show_deleted=&dateFrom=&dateTo=&sortBy=
+// GET /api/admin/challenges?page=&limit=&search=&challenge_type=&visibility=&status=&show_deleted=&dateFrom=&dateTo=&sortBy=
 export const adminGetChallengesController = async (req: Request, res: Response) => {
-    const { page, limit, search, challenge_type, status, show_deleted, dateFrom, dateTo, sortBy } = req.query
+    const { page, limit, search, challenge_type, visibility, status, show_deleted, dateFrom, dateTo, sortBy } = req.query
     const p = Number(page) || 1
     const lim = Number(limit) || 20
     const skip = (p - 1) * lim
@@ -21,6 +21,7 @@ export const adminGetChallengesController = async (req: Request, res: Response) 
 
     if (search) condition.$text = { $search: search }
     if (challenge_type && challenge_type !== 'all') condition.challenge_type = challenge_type
+    if (visibility && visibility !== 'all') condition.visibility = visibility
     if (status && status !== 'all') condition.status = status
     if (dateFrom) condition.start_date = { ...(condition.start_date || {}), $gte: new Date(dateFrom as string) }
     if (dateTo) condition.end_date = { ...(condition.end_date || {}), $lte: new Date(dateTo as string) }

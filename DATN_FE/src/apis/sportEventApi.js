@@ -85,6 +85,10 @@ export const getLeaderboard = (eventId, params) => http.get(`/sport-events/${eve
 // Get participants with progress
 export const getParticipants = (eventId, params) => http.get(`/sport-events/${eventId}/progress/participants`, { params })
 
+// Người tạo sự kiện: nhật ký tiến độ + tổng hợp của một người tham gia (lọc ngày, phân trang)
+export const getParticipantProgressHistory = (eventId, targetUserId, params) =>
+  http.get(`/sport-events/${eventId}/progress/participant/${targetUserId}`, { params })
+
 // Get event overall progress (total group progress)
 export const getEventOverallProgress = (eventId) => http.get(`/sport-events/${eventId}/progress/overall`)
 

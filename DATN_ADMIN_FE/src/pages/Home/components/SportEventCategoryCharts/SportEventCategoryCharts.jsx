@@ -25,7 +25,10 @@ function CategoryChart({
 }) {
   const labels = categories.map((c) => c.category)
   const totalEvents = categories.reduce((s, c) => s + c.eventCount, 0)
-  const totalParticipants = categories.reduce((s, c) => s + c.totalParticipants, 0)
+  const totalParticipationCount = categories.reduce(
+    (s, c) => s + (c.totalParticipationCount ?? c.totalParticipants ?? 0),
+    0
+  )
 
   const data = {
     labels,
@@ -42,8 +45,8 @@ function CategoryChart({
         yAxisID: 'y'
       },
       {
-        label: 'Số người tham gia',
-        data: categories.map((c) => c.totalParticipants),
+        label: 'Số lượt người tham gia',
+        data: categories.map((c) => c.totalParticipationCount ?? c.totalParticipants ?? 0),
         backgroundColor: participantColor,
         borderColor: participantBorderColor,
         borderWidth: 1,
@@ -79,7 +82,7 @@ function CategoryChart({
         beginAtZero: true,
         grid: { drawOnChartArea: false },
         ticks: { stepSize: 1, font: { size: 10 } },
-        title: { display: true, text: 'Người tham gia', font: { size: 10, weight: '600' }, color: 'rgba(100,100,100,0.7)' }
+        title: { display: true, text: 'Lượt người tham gia', font: { size: 10, weight: '600' }, color: 'rgba(100,100,100,0.7)' }
       }
     }
   }
@@ -90,7 +93,7 @@ function CategoryChart({
     <div className='bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-5 dark:bg-gray-800 dark:border-gray-700 h-full flex flex-col'>
       <div className='flex items-center justify-between mb-3'>
         <p className='text-sm font-bold text-gray-600 dark:text-gray-300'>{emoji} {title}</p>
-        <InfoTooltip text={`Top 5 môn thể thao ${title.toLowerCase()} được tổ chức nhiều nhất. Hai màu cột khác nhau: số sự kiện vs số người tham gia. Nếu 1 môn có nhiều sự kiện nhưng ít người → cần quảng bá. Ngược lại → cần tạo thêm sự kiện.`} />
+        <InfoTooltip text={`Top 5 môn thể thao ${title.toLowerCase()} được tổ chức nhiều nhất. Hai màu cột khác nhau: số sự kiện vs số lượt người tham gia. Nếu 1 môn có nhiều sự kiện nhưng ít lượt tham gia → cần quảng bá. Ngược lại → cần tạo thêm sự kiện.`} />
       </div>
 
       {/* Summary stats */}
@@ -100,8 +103,8 @@ function CategoryChart({
           <p className='text-2xl font-black text-gray-800 dark:text-white'>{totalEvents}</p>
         </div>
         <div className={`bg-gradient-to-br ${gradientTo} rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700`}>
-          <p className='text-xs text-gray-500 mb-0.5'>👥 Tổng người tham gia</p>
-          <p className='text-2xl font-black text-gray-800 dark:text-white'>{totalParticipants}</p>
+          <p className='text-xs text-gray-500 mb-0.5'>👥 Tổng lượt người tham gia</p>
+          <p className='text-2xl font-black text-gray-800 dark:text-white'>{totalParticipationCount}</p>
         </div>
       </div>
 

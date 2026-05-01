@@ -11,6 +11,7 @@ import {
     adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise, adminRestoreExercise
 } from '../../apis/workoutApi'
 import ConfirmBox from '../../components/GlobalComponents/ConfirmBox'
+import Loading from '../../components/GlobalComponents/Loading'
 
 // Gradient colors for cards
 const CARD_GRADIENTS = [
@@ -266,10 +267,13 @@ function EquipmentManager() {
             {/* Equipment Cards Grid */}
             {isLoading ? (
                 <div className='flex items-center justify-center py-12'>
-                    <div className='flex flex-col items-center gap-3'>
-                        <div className='w-10 h-10 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin'></div>
-                        <p className='text-sm text-slate-500'>Đang tải thiết bị...</p>
-                    </div>
+                    <Loading
+                        className='flex flex-col items-center justify-center gap-3'
+                        size='xl'
+                        tone='info'
+                        text='Đang tải thiết bị...'
+                        textClassName='text-sm text-slate-500'
+                    />
                 </div>
             ) : filteredItems.length === 0 ? (
                 <div className='text-center py-12'>
@@ -1030,7 +1034,7 @@ function ExerciseManager() {
             {/* ── Table ── */}
             {isLoading ? (
                 <div className='flex justify-center py-16'>
-                    <div className='w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin'></div>
+                    <Loading size='lg' tone='info' />
                 </div>
             ) : exercises.length === 0 ? (
                 <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700'>

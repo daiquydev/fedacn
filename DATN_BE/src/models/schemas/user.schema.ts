@@ -83,7 +83,7 @@ const UserSchema = new mongoose.Schema<User>(
     },
     gender: {
       type: String,
-      default: UserGender.other
+      default: UserGender.unknown
     },
     weight: {
       type: Number,

@@ -1,7 +1,7 @@
 import SportEventProgressModel, { SportEventProgress } from '~/models/schemas/sportEventProgress.schema'
 import SportEventVideoSessionModel from '~/models/schemas/sportEventVideoSession.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
-import { Types } from 'mongoose'
+import { Types, PipelineStage } from 'mongoose'
 
 class SportEventProgressService {
   // Add progress entry
@@ -242,8 +242,11 @@ class SportEventProgressService {
   // Get detailed participant list with progress
   async getParticipantsService(
     eventId: string,
-    { page = 1, limit = 20, search = '' }: { page?: number; limit?: number; search?: string }
+    opts: { page?: number; limit?: number; search?: string; status?: string; sort?: string }
   ) {
+    const page = opts.page || 1
+    const limit = opts.limit || 20
+    const search = opts.search || ''
     const event = await SportEventModel.findById(eventId).populate('participants_ids', 'name avatar')
 
     if (!event) {
@@ -255,11 +258,23 @@ class SportEventProgressService {
     const perPersonTarget = (event.targetValue || 0) / Math.max(event.maxParticipants || 1, 1)
     const startDate = event?.startDate ? new Date(event.startDate) : null
 
-    // Build a userId → displayValue map
-    const displayMap = new Map<string, { displayValue: number; totalDistance: number; totalCalories: number; lastUpdate?: Date }>()
+    // Build a userId → displayValue map (+ time / entries / speed helpers)
+    const displayMap = new Map<
+      string,
+      {
+        displayValue: number
+        totalDistance: number
+        totalCalories: number
+        totalSeconds: number
+        entriesCount: number
+        avgSpeedKmh: number | null
+        lastUpdate?: Date
+        aiConfirmedPercent?: number
+      }
+    >()
 
-    if (isIndoor && isKcal) {
-      // ── Indoor kcal: aggregate from VideoSession table (same source as IndoorEventProgress)
+    if (isIndoor) {
+      // ── Indoor events: aggregate from VideoSession for accurate time/calories
       const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
       const vsData = await SportEventVideoSessionModel.aggregate([
         {
@@ -275,16 +290,37 @@ class SportEventProgressService {
           $group: {
             _id: '$userId',
             totalCalories: { $sum: '$caloriesBurned' },
+            totalActiveSeconds: { $sum: '$activeSeconds' },
+            totalWallSeconds: { $sum: '$totalSeconds' },
+            entriesCount: { $sum: 1 },
             lastUpdate: { $max: '$joinedAt' }
           }
         }
       ])
+
+      // Also aggregate progress for totalProgress value matching targetUnit
+      const dateMatchP = startDate ? { date: { $gte: startDate } } : {}
+      const progressDataIndoor = await SportEventProgressModel.aggregate([
+        { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatchP } },
+        { $group: { _id: '$userId', totalProgress: { $sum: '$value' } } }
+      ])
+      const progressMapIndoor = new Map(progressDataIndoor.map(p => [p._id.toString(), p.totalProgress]))
+
       vsData.forEach((item) => {
+        const progressValue = progressMapIndoor.get(item._id.toString()) ?? (isKcal ? item.totalCalories : item.totalActiveSeconds / 3600)
+        const wall = item.totalWallSeconds || 0
+        const active = item.totalActiveSeconds || 0
+        const aiConfirmedPercent =
+          wall > 0 ? Math.min(100, Math.round((active / wall) * 100)) : 0
         displayMap.set(item._id.toString(), {
-          displayValue: item.totalCalories || 0,
+          displayValue: progressValue || 0,
           totalDistance: 0,
           totalCalories: item.totalCalories || 0,
-          lastUpdate: item.lastUpdate
+          totalSeconds: item.totalActiveSeconds || 0,
+          entriesCount: item.entriesCount || 0,
+          avgSpeedKmh: null,
+          lastUpdate: item.lastUpdate,
+          aiConfirmedPercent
         })
       })
     } else {
@@ -293,22 +329,56 @@ class SportEventProgressService {
       const progressData = await SportEventProgressModel.aggregate([
         { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
         {
+          $addFields: {
+            _effSec: {
+              $cond: [
+                { $gt: [{ $ifNull: ['$activeSeconds', 0] }, 0] },
+                '$activeSeconds',
+                {
+                  $multiply: [
+                    {
+                      $convert: {
+                        input: {
+                          $arrayElemAt: [{ $split: [{ $toString: { $ifNull: ['$time', ''] } }, ' '] }, 0]
+                        },
+                        to: 'double',
+                        onError: 0,
+                        onNull: 0
+                      }
+                    },
+                    60
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
           $group: {
             _id: '$userId',
             totalProgress: { $sum: '$value' },
             totalDistance: { $sum: '$distance' },
             totalCalories: { $sum: '$calories' },
+            totalSeconds: { $sum: '$_effSec' },
+            entriesCount: { $sum: 1 },
             lastUpdate: { $max: '$date' }
           }
         }
       ])
       progressData.forEach((item) => {
-        // For outdoor events: value is always saved in targetUnit (km, phút, kcal, etc.)
-        // So totalProgress ($sum of value) is always the correct display metric
+        const totalSeconds = item.totalSeconds || 0
+        const totalDistance = item.totalDistance || 0
+        const avgSpeedKmh =
+          totalSeconds > 0 && totalDistance > 0
+            ? Math.round((totalDistance / (totalSeconds / 3600)) * 100) / 100
+            : null
         displayMap.set(item._id.toString(), {
           displayValue: item.totalProgress,
-          totalDistance: item.totalDistance || 0,
+          totalDistance,
           totalCalories: item.totalCalories || 0,
+          totalSeconds,
+          entriesCount: item.entriesCount || 0,
+          avgSpeedKmh,
           lastUpdate: item.lastUpdate
         })
       })
@@ -316,7 +386,15 @@ class SportEventProgressService {
 
     // Combine participant list with display values
     let participants = (event.participants_ids as any[])?.map((user) => {
-      const data = displayMap.get(user._id.toString()) || { displayValue: 0, totalDistance: 0, totalCalories: 0 }
+      const data = displayMap.get(user._id.toString()) || {
+        displayValue: 0,
+        totalDistance: 0,
+        totalCalories: 0,
+        totalSeconds: 0,
+        entriesCount: 0,
+        avgSpeedKmh: null as number | null,
+        aiConfirmedPercent: isIndoor ? 0 : undefined
+      }
       const progressPercentage = perPersonTarget > 0
         ? Math.min(Math.round((data.displayValue / perPersonTarget) * 100), 100)
         : 0
@@ -325,11 +403,15 @@ class SportEventProgressService {
         userId: user._id,
         name: user.name,
         avatar: user.avatar,
-        totalProgress: data.displayValue,   // always the value matching targetUnit
+        totalProgress: data.displayValue, // always the value matching targetUnit
         totalDistance: data.totalDistance,
         totalCalories: data.totalCalories,
+        totalTimeSeconds: data.totalSeconds,
+        entriesCount: data.entriesCount,
+        avgSpeedKmh: data.avgSpeedKmh,
         progressPercentage,
-        lastUpdate: data.lastUpdate
+        lastUpdate: data.lastUpdate,
+        ...(isIndoor ? { aiConfirmedPercent: data.aiConfirmedPercent ?? 0 } : {})
       }
     }) || []
 
@@ -338,10 +420,26 @@ class SportEventProgressService {
       participants = participants.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     }
 
-    // Sort by display value (desc)
-    participants.sort((a, b) => b.totalProgress - a.totalProgress)
+    // Filter by status
+    if (opts.status === 'completed') {
+      participants = participants.filter((p) => (p.progressPercentage ?? 0) >= 100)
+    } else if (opts.status === 'in_progress') {
+      participants = participants.filter((p) => (p.progressPercentage ?? 0) < 100)
+    }
 
-    // Add rank
+    // Sort
+    if (opts.sort === 'name_asc') {
+      participants.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (opts.sort === 'name_desc') {
+      participants.sort((a, b) => b.name.localeCompare(a.name))
+    } else if (opts.sort === 'progress_asc') {
+      participants.sort((a, b) => a.totalProgress - b.totalProgress)
+    } else {
+      // Default: progress_desc
+      participants.sort((a, b) => b.totalProgress - a.totalProgress)
+    }
+
+    // Add rank (only makes sense if sorted by progress, but we assign rank based on current sort)
     participants = participants.map((p, index) => ({ rank: index + 1, ...p }))
 
     const skip = (page - 1) * limit
@@ -462,6 +560,305 @@ class SportEventProgressService {
       totalDistance: 0,
       participantCount: 0,
       entriesCount: 0
+    }
+  }
+
+  private buildParticipantProgressHistoryMatch(
+    eventId: string,
+    targetUserId: string,
+    event: { startDate?: Date | null; endDate?: Date | null },
+    fromDate?: string,
+    toDate?: string
+  ) {
+    const match: Record<string, unknown> = {
+      eventId: new Types.ObjectId(eventId),
+      userId: new Types.ObjectId(targetUserId),
+      is_deleted: { $ne: true }
+    }
+    const dateClause: Record<string, Date> = {}
+    if (event.startDate) dateClause.$gte = new Date(event.startDate)
+    if (event.endDate) dateClause.$lte = new Date(event.endDate)
+    if (fromDate) {
+      const f = new Date(fromDate)
+      f.setHours(0, 0, 0, 0)
+      if (!dateClause.$gte || f > dateClause.$gte) dateClause.$gte = f
+    }
+    if (toDate) {
+      const t = new Date(toDate)
+      t.setHours(23, 59, 59, 999)
+      if (!dateClause.$lte || t < dateClause.$lte) dateClause.$lte = t
+    }
+    if (Object.keys(dateClause).length > 0) {
+      match.date = dateClause
+    }
+    return match
+  }
+
+  /** Buổi video trong nhà: lọc theo cùng khoảng ngày với nhật ký tiến độ (theo endedAt hoặc joinedAt). */
+  private buildParticipantVideoSessionHistoryPipeline(
+    eventId: string,
+    targetUserId: string,
+    event: { startDate?: Date | null; endDate?: Date | null },
+    fromDate?: string,
+    toDate?: string
+  ) {
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          eventId: new Types.ObjectId(eventId),
+          userId: new Types.ObjectId(targetUserId),
+          status: 'ended',
+          is_deleted: { $ne: true },
+          $or: [{ totalSeconds: { $gt: 0 } }, { activeSeconds: { $gt: 0 } }]
+        }
+      },
+      { $addFields: { _refEnd: { $ifNull: ['$endedAt', '$joinedAt'] } } }
+    ]
+    const dateClause: Record<string, Date> = {}
+    if (event.startDate) dateClause.$gte = new Date(event.startDate)
+    if (event.endDate) dateClause.$lte = new Date(event.endDate)
+    if (fromDate) {
+      const f = new Date(fromDate)
+      f.setHours(0, 0, 0, 0)
+      if (!dateClause.$gte || f > dateClause.$gte) dateClause.$gte = f
+    }
+    if (toDate) {
+      const t = new Date(toDate)
+      t.setHours(23, 59, 59, 999)
+      if (!dateClause.$lte || t < dateClause.$lte) dateClause.$lte = t
+    }
+    if (Object.keys(dateClause).length > 0) {
+      pipeline.push({ $match: { _refEnd: dateClause } })
+    }
+    pipeline.push({
+      $group: {
+        _id: null,
+        totalSessionSeconds: { $sum: '$totalSeconds' },
+        totalAiConfirmedSeconds: { $sum: '$activeSeconds' }
+      }
+    })
+    return pipeline
+  }
+
+  /** Người tạo sự kiện: xem nhật ký tiến độ + tổng hợp của một người tham gia (phân trang, lọc ngày) */
+  async getParticipantProgressHistoryForCreatorService(
+    eventId: string,
+    targetUserId: string,
+    creatorId: string,
+    opts: { page?: number; limit?: number; fromDate?: string; toDate?: string }
+  ) {
+    const page = Math.max(1, opts.page || 1)
+    const limit = Math.min(50, Math.max(1, opts.limit || 10))
+
+    const event = await SportEventModel.findById(eventId).select('createdBy participants_ids startDate endDate eventType')
+    if (!event) {
+      throw new Error('Event not found')
+    }
+    if (event.createdBy.toString() !== creatorId) {
+      throw new Error('Chỉ người tạo sự kiện mới xem được chi tiết tiến độ của người tham gia')
+    }
+    const participantIds = (event.participants_ids || []).map((id: Types.ObjectId) => id.toString())
+    if (!participantIds.includes(targetUserId)) {
+      throw new Error('Người dùng không thuộc sự kiện này')
+    }
+
+    const match = this.buildParticipantProgressHistoryMatch(eventId, targetUserId, event, opts.fromDate, opts.toDate)
+    const matchOverall = this.buildParticipantProgressHistoryMatch(eventId, targetUserId, event)
+
+    const addEffSecStage = {
+      $addFields: {
+        _effSec: {
+          $cond: [
+            { $gt: [{ $ifNull: ['$activeSeconds', 0] }, 0] },
+            '$activeSeconds',
+            {
+              $multiply: [
+                {
+                  $convert: {
+                    input: {
+                      $arrayElemAt: [{ $split: [{ $toString: { $ifNull: ['$time', ''] } }, ' '] }, 0]
+                    },
+                    to: 'double',
+                    onError: 0,
+                    onNull: 0
+                  }
+                },
+                60
+              ]
+            }
+          ]
+        }
+      }
+    }
+
+    const [summaryAgg, overallAgg, total, rawRows] = await Promise.all([
+      SportEventProgressModel.aggregate([
+        { $match: match },
+        addEffSecStage,
+        {
+          $group: {
+            _id: null,
+            totalEntries: { $sum: 1 },
+            totalProgress: { $sum: '$value' },
+            totalDistance: { $sum: { $ifNull: ['$distance', 0] } },
+            totalCalories: { $sum: { $ifNull: ['$calories', 0] } },
+            totalSeconds: { $sum: '$_effSec' }
+          }
+        }
+      ]),
+      SportEventProgressModel.aggregate([
+        { $match: matchOverall },
+        { $group: { _id: null, totalProgress: { $sum: '$value' } } }
+      ]),
+      SportEventProgressModel.countDocuments(match),
+      SportEventProgressModel.find(match)
+        .sort({ date: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec()
+    ])
+
+    const s = summaryAgg[0] || {
+      totalEntries: 0,
+      totalProgress: 0,
+      totalDistance: 0,
+      totalCalories: 0,
+      totalSeconds: 0
+    }
+    const avgSpeedKmh =
+      s.totalSeconds > 0 && s.totalDistance > 0
+        ? Math.round((s.totalDistance / (s.totalSeconds / 3600)) * 100) / 100
+        : null
+
+    const videoProgressIds = rawRows
+      .filter((d: Record<string, unknown>) => d.source === 'video_call')
+      .map((d: Record<string, unknown>) => d._id as Types.ObjectId)
+
+    const vsByProgressId = new Map<string, { totalSeconds: number; activeSeconds: number }>()
+    if (videoProgressIds.length > 0) {
+      const sessions = await SportEventVideoSessionModel.find({
+        progressId: { $in: videoProgressIds },
+        is_deleted: { $ne: true }
+      })
+        .select('progressId totalSeconds activeSeconds')
+        .lean()
+      for (const sess of sessions as { progressId?: Types.ObjectId; totalSeconds?: number; activeSeconds?: number }[]) {
+        const pid = sess.progressId?.toString()
+        if (pid) {
+          vsByProgressId.set(pid, {
+            totalSeconds: sess.totalSeconds || 0,
+            activeSeconds: sess.activeSeconds || 0
+          })
+        }
+      }
+    }
+
+    const entries = rawRows.map((doc: Record<string, unknown>) => {
+      const activeSeconds = doc.activeSeconds as number | undefined
+      const effectiveSeconds =
+        activeSeconds && activeSeconds > 0
+          ? activeSeconds
+          : (() => {
+              const first = String(doc.time || '')
+                .trim()
+                .split(/\s+/)[0]
+              const n = parseFloat(first)
+              return Number.isFinite(n) ? Math.round(n * 60) : 0
+            })()
+
+      let sessionTotalSeconds: number | null = null
+      let sessionActiveSeconds: number | null = null
+      let aiConfirmedPercentEntry: number | null = null
+      if (doc.source === 'video_call') {
+        const vsMeta = vsByProgressId.get(String(doc._id))
+        const wall = vsMeta?.totalSeconds
+        const act =
+          vsMeta != null && vsMeta.activeSeconds != null
+            ? vsMeta.activeSeconds
+            : activeSeconds && activeSeconds > 0
+              ? activeSeconds
+              : null
+        sessionTotalSeconds = wall != null ? wall : null
+        sessionActiveSeconds = act != null ? act : null
+        if (wall != null && wall > 0 && act != null) {
+          aiConfirmedPercentEntry = Math.min(100, Math.round((act / wall) * 100))
+        } else if (wall === 0) {
+          aiConfirmedPercentEntry = 0
+        }
+      }
+
+      return {
+        _id: doc._id,
+        date: doc.date,
+        value: doc.value,
+        unit: doc.unit,
+        distance: doc.distance,
+        time: doc.time,
+        calories: doc.calories,
+        source: doc.source,
+        notes: doc.notes,
+        proofImage: doc.proofImage,
+        activeSeconds: doc.activeSeconds,
+        effectiveSeconds,
+        activityTrackingId: doc.activityTrackingId,
+        sessionTotalSeconds,
+        sessionActiveSeconds,
+        aiConfirmedPercent: aiConfirmedPercentEntry
+      }
+    })
+
+    const overallTotalProgress = overallAgg[0]?.totalProgress || 0
+
+    let indoorVsSummary: {
+      totalSessionSeconds: number
+      totalAiConfirmedSeconds: number
+      aiConfirmedPercent: number
+    } | null = null
+    if (event.eventType === 'Trong nhà') {
+      const vsPipeline = this.buildParticipantVideoSessionHistoryPipeline(
+        eventId,
+        targetUserId,
+        event,
+        opts.fromDate,
+        opts.toDate
+      )
+      const vsAgg = await SportEventVideoSessionModel.aggregate(vsPipeline)
+      const row = vsAgg[0]
+      const totalSessionSeconds = row?.totalSessionSeconds || 0
+      const totalAiConfirmedSeconds = row?.totalAiConfirmedSeconds || 0
+      indoorVsSummary = {
+        totalSessionSeconds,
+        totalAiConfirmedSeconds,
+        aiConfirmedPercent:
+          totalSessionSeconds > 0
+            ? Math.min(100, Math.round((totalAiConfirmedSeconds / totalSessionSeconds) * 100))
+            : 0
+      }
+    }
+
+    return {
+      entries,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      summary: {
+        totalEntries: s.totalEntries || 0,
+        totalProgress: s.totalProgress || 0,
+        totalDistance: s.totalDistance || 0,
+        totalCalories: s.totalCalories || 0,
+        totalSeconds: s.totalSeconds || 0,
+        avgSpeedKmh,
+        ...(indoorVsSummary
+          ? {
+              totalSessionSeconds: indoorVsSummary.totalSessionSeconds,
+              totalAiConfirmedSeconds: indoorVsSummary.totalAiConfirmedSeconds,
+              aiConfirmedPercent: indoorVsSummary.aiConfirmedPercent
+            }
+          : {})
+      },
+      overallPersonalProgress: overallTotalProgress
     }
   }
 }
