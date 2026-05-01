@@ -573,7 +573,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 consecutiveFaceRef.current = 0
                 setFace(false)
                 absenceRef.current += AI_INTERVAL / 1000
-                setAbsenceSecs(absenceRef.current)
+                setAbsenceSecs(Math.ceil(absenceRef.current))
                 if (absenceRef.current >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
             }
 
