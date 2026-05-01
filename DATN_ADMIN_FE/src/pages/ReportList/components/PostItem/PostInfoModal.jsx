@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom'
 import { FaTimes, FaUser, FaFlag, FaCalendarAlt } from 'react-icons/fa'
 import { getImageUrl } from '../../../../utils/imageUrl'
 import { formatPostContentForAdmin } from '../../../../utils/formatPostContentForAdmin'
+import { parsePostEmbeddedContent, cleanAllMarkers } from '../../../../utils/parsePostEmbeddedContent'
+import EmbeddedContentPreview from './EmbeddedContentPreview'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 
 function reportCountBadgeClass(count) {
@@ -26,11 +28,16 @@ export default function PostInfoModal({ post, onClose, reportCount, reportDetail
   const user = post.user
   const images = Array.isArray(post.images) ? post.images : []
   const thumb = images[0] ? getImageUrl(images[0]) : null
-  const displayContent = formatPostContentForAdmin(post.content?.trim() ? post.content : '')
+  const rawContent = post.content?.trim() ? post.content : ''
+  const embeddedMarkers = parsePostEmbeddedContent(rawContent)
+  const cleanedContent = cleanAllMarkers(rawContent)
+  const displayContent = formatPostContentForAdmin(cleanedContent)
   const titleText =
     displayContent.length > 0
       ? displayContent.slice(0, 120) + (displayContent.length > 120 ? '…' : '')
-      : 'Bài viết không có nội dung'
+      : embeddedMarkers.length > 0
+        ? 'Bài chia sẻ nội dung đính kèm'
+        : 'Bài viết không có nội dung'
 
   const node = (
     <div
@@ -140,9 +147,11 @@ export default function PostInfoModal({ post, onClose, reportCount, reportDetail
           <div className='bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4'>
             <h4 className='text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2'>Nội dung bài viết</h4>
             <p className='text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words'>
-              {displayContent.length > 0 ? displayContent : 'Không có nội dung.'}
+              {displayContent.length > 0 ? displayContent : (embeddedMarkers.length > 0 ? '(Bài viết chia sẻ nội dung bên dưới)' : 'Không có nội dung.')}
             </p>
           </div>
+
+          {embeddedMarkers.length > 0 && <EmbeddedContentPreview markers={embeddedMarkers} />}
 
           {images.length > 0 ? (
             <div className='bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4'>
