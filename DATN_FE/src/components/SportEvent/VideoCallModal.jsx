@@ -55,14 +55,15 @@ function buildRtcConfiguration() {
     return { iceServers }
 }
 
-const ABSENCE_THRESHOLD = 3    // seconds of no face before pausing
-const AI_INTERVAL = 3000        // ms between face checks
-const FACE_STABLE_DETECTIONS = 2 // require N consecutive detections before confirming presence
+const ABSENCE_THRESHOLD = 2     // seconds of no face before pausing
+const AI_INTERVAL = 1200        // ms between face checks
+const FACE_STABLE_DETECTIONS = 1 // confirm presence immediately when a valid face appears
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
 const UPLOAD_PRESET = 'fedacn_unsigned'
-const LOW_TEXTURE_VARIANCE_THRESHOLD = 40 // very low variance => likely covered/blank camera frame
+const BLACK_FRAME_MEAN_THRESHOLD = 20 // very dark frame (covered lens) guard
+const BLACK_FRAME_VARIANCE_THRESHOLD = 15
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0') }
@@ -236,7 +237,10 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         if (count === 0) return false
         const mean = sum / count
         const variance = sumSq / count - mean * mean
-        return variance >= LOW_TEXTURE_VARIANCE_THRESHOLD
+        // Only reject near-black + low-detail frames (common when lens is covered).
+        // Do not reject low-texture but valid scenes to avoid false "vắng mặt".
+        const likelyCoveredLens = mean < BLACK_FRAME_MEAN_THRESHOLD && variance < BLACK_FRAME_VARIANCE_THRESHOLD
+        return !likelyCoveredLens
     }, [])
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -589,8 +593,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             const videoTrack = localStreamRef.current?.getVideoTracks?.()[0]
             const trackUsable = !!videoTrack &&
                 videoTrack.readyState === 'live' &&
-                videoTrack.enabled &&
-                !videoTrack.muted
+                videoTrack.enabled
             if (!trackUsable) {
                 markAbsent()
                 return
@@ -613,7 +616,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 const faceapi = faceApiRef.current
                 // Use a stricter detector threshold to reduce false positives
                 // (e.g., hand/skin blobs when camera is covered)
-                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.7 })
+                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.55 })
                 const rawFaces = await faceapi.detectAllFaces(vid, opts)
 
                 // Filter out detections where the bounding box occupies more than 65%
@@ -628,11 +631,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                           const aspect = b.height > 0 ? b.width / b.height : 0
                           const score = Number(det.score || 0)
                           return (
-                              score >= 0.8 &&
-                              ratio >= 0.03 &&
-                              ratio <= 0.55 &&
-                              aspect >= 0.6 &&
-                              aspect <= 1.7
+                              score >= 0.65 &&
+                              ratio >= 0.015 &&
+                              ratio <= 0.7 &&
+                              aspect >= 0.45 &&
+                              aspect <= 2.1
                           )
                       })
                     : rawFaces
