@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import moment from 'moment'
 import {
   FaRunning, FaRoad, FaClock, FaFire, FaBolt, FaTrophy, FaRoute,
@@ -8,6 +9,10 @@ import {
 import { MdVideocam } from 'react-icons/md'
 import { getSportEvent, getActivity, getChallenge, getChallengeActivity, getChallengeProgressEntry } from '../../../../apis/embeddedContentApi'
 import { getImageUrl } from '../../../../utils/imageUrl'
+import goongjs from '@goongmaps/goong-js'
+import '@goongmaps/goong-js/dist/goong-js.css'
+
+goongjs.accessToken = import.meta.env.VITE_GOONG_MAPTILES_KEY
 
 function roundKcal(v) { return Math.round(v * 10) / 10 }
 function fmtDur(sec) {
@@ -59,6 +64,54 @@ function StatBox({ icon, label, value }) {
       <div className='min-w-0'>
         <div className='text-[10px] text-gray-500 dark:text-gray-400 uppercase font-medium'>{label}</div>
         <div className='text-sm font-bold text-gray-800 dark:text-gray-100 truncate'>{value}</div>
+      </div>
+    </div>
+  )
+}
+
+// ── Goong Map for GPS routes ──
+function GoongRouteMap({ gpsRoute, lineColor = '#06b6d4' }) {
+  const containerRef = useRef(null)
+  const mapRef = useRef(null)
+  const hasRoute = gpsRoute?.length > 1
+
+  useEffect(() => {
+    if (!hasRoute || !containerRef.current || mapRef.current) return
+    const positions = gpsRoute.map(p => [p.lng, p.lat])
+    const lngs = positions.map(p => p[0])
+    const lats = positions.map(p => p[1])
+    const center = [(Math.min(...lngs) + Math.max(...lngs)) / 2, (Math.min(...lats) + Math.max(...lats)) / 2]
+
+    const map = new goongjs.Map({
+      container: containerRef.current,
+      style: 'https://tiles.goong.io/assets/goong_map_web.json',
+      center, zoom: 14, attributionControl: false, interactive: false
+    })
+    map.on('load', () => {
+      map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: positions } } })
+      map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': lineColor, 'line-width': 4, 'line-opacity': 0.9 } })
+      const bounds = positions.reduce((b, c) => b.extend(c), new goongjs.LngLatBounds(positions[0], positions[0]))
+      map.fitBounds(bounds, { padding: 30 })
+      const startEl = document.createElement('div')
+      startEl.style.cssText = 'width:12px;height:12px;border-radius:50%;background:#4caf50;border:2px solid #fff;box-shadow:0 0 6px rgba(76,175,80,0.5);'
+      new goongjs.Marker(startEl).setLngLat(positions[0]).addTo(map)
+      const endEl = document.createElement('div')
+      endEl.style.cssText = 'width:12px;height:12px;border-radius:50%;background:#e74c3c;border:2px solid #fff;box-shadow:0 0 6px rgba(231,76,60,0.5);'
+      new goongjs.Marker(endEl).setLngLat(positions[positions.length - 1]).addTo(map)
+    })
+    mapRef.current = map
+    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null } }
+  }, [hasRoute, gpsRoute, lineColor])
+
+  if (!hasRoute) return null
+  return (
+    <div className='mx-3 mb-3'>
+      <div className='flex items-center gap-1.5 mb-1.5'>
+        <FaRoute className='text-red-500' size={10} />
+        <span className='text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase'>Lộ trình đã ghi</span>
+      </div>
+      <div className='rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700' style={{ height: '160px' }}>
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       </div>
     </div>
   )
@@ -138,12 +191,7 @@ function EventActivityCard({ activityId, eventId }) {
       <div className='grid grid-cols-2 gap-2 p-3'>
         {stats.map((s, i) => <StatBox key={i} {...s} />)}
       </div>
-      {act.gpsRoute?.length > 1 && (
-        <div className='mx-3 mb-2 flex items-center gap-1.5'>
-          <FaRoute className='text-red-500' size={10} />
-          <span className='text-[10px] font-semibold text-gray-500 uppercase'>Lộ trình GPS ({act.gpsRoute.length} điểm)</span>
-        </div>
-      )}
+      <GoongRouteMap gpsRoute={act.gpsRoute} lineColor='#ef4444' />
       {ev && (
         <div className='mx-3 mb-3 bg-red-50 dark:bg-red-900/10 rounded-lg px-3 py-2 border border-red-200 dark:border-red-900/30'>
           <div className='flex items-center gap-2'>
@@ -222,6 +270,12 @@ function ChallengeActivityCard({ activityId, challengeId }) {
     stats.push({ icon: <FaRoad className='text-blue-500' />, label: 'Quãng đường', value: `${km} km` })
     if (act.totalDuration) stats.push({ icon: <FaClock className='text-cyan-500' />, label: 'Thời gian', value: fmtMin(Math.round(act.totalDuration / 60)) })
     if (act.calories) stats.push({ icon: <FaFire className='text-orange-500' />, label: 'Calo', value: `${roundKcal(act.calories)} kcal` })
+    // Speed
+    let spd = null
+    if (act.avgSpeed > 0) spd = (act.avgSpeed * 3.6).toFixed(1)
+    else if (act.avg_speed > 0) spd = Number(act.avg_speed).toFixed(1)
+    else if (act.totalDistance > 0 && act.totalDuration > 0) spd = ((act.totalDistance / 1000) / (act.totalDuration / 3600)).toFixed(1)
+    if (spd) stats.push({ icon: <FaBolt className='text-yellow-500' />, label: 'Tốc độ TB', value: `${spd} km/h` })
   } else if (cType === 'nutrition') {
     stats.push({ icon: <FaUtensils className='text-emerald-500' />, label: ch?.goal_unit || 'kcal', value: `${act.value || 0} ${act.unit || ch?.goal_unit || 'kcal'}` })
     if (act.calories) stats.push({ icon: <FaFire className='text-orange-500' />, label: 'Calo', value: `${roundKcal(act.calories)} kcal` })
@@ -256,12 +310,7 @@ function ChallengeActivityCard({ activityId, challengeId }) {
       <div className='grid grid-cols-2 gap-2 p-3'>
         {stats.map((s, i) => <StatBox key={i} {...s} />)}
       </div>
-      {act.gpsRoute?.length > 1 && (
-        <div className='mx-3 mb-2 flex items-center gap-1.5'>
-          <FaRoute className='text-cyan-500' size={10} />
-          <span className='text-[10px] font-semibold text-gray-500 uppercase'>Lộ trình GPS ({act.gpsRoute.length} điểm)</span>
-        </div>
-      )}
+      <GoongRouteMap gpsRoute={act.gpsRoute} lineColor='#06b6d4' />
       {ch && (
         <div className='mx-3 mb-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600'>
           <div className='flex items-center gap-2'>
