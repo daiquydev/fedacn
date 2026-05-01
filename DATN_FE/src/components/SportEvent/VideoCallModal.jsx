@@ -57,6 +57,7 @@ function buildRtcConfiguration() {
 
 const ABSENCE_THRESHOLD = 10   // seconds of no face before pausing
 const AI_INTERVAL = 3000        // ms between face checks
+const FACE_STABLE_DETECTIONS = 2 // require N consecutive detections before confirming presence
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
@@ -173,7 +174,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const [totalSecs, setTotal] = useState(0)
     const [activeSecs, setActive] = useState(0)
     const [isPaused, setPaused] = useState(false)
-    const [faceDetected, setFace] = useState(true)
+    const [faceDetected, setFace] = useState(false)
     const [aiReady, setAiReady] = useState(false)
     const [aiError, setAiError] = useState(null)
     const [absenceSecs, setAbsenceSecs] = useState(0)
@@ -196,6 +197,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
+    const consecutiveFaceRef = useRef(0)     // Anti-false-positive guard
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -438,7 +440,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         if (next) {
             absenceRef.current = 0
             setAbsenceSecs(0)
-            setFace(true)   // optimistically mark as present so badge clears instantly
+            consecutiveFaceRef.current = 0
+            setFace(false) // wait until AI actually confirms a face
         }
         setCamOn(next)
     }, [camOn])
@@ -525,6 +528,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         aiTimerRef.current = setInterval(async () => {
             // ── Bug 1 fix: unified absence handler used in ALL absence paths ──
             const markAbsent = () => {
+                consecutiveFaceRef.current = 0
+                setFace(false)
                 absenceRef.current += AI_INTERVAL / 1000
                 setAbsenceSecs(absenceRef.current)
                 if (absenceRef.current >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
@@ -532,7 +537,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
             // ── Camera OFF → face detection impossible, treat as absent ──────
             if (!camOnRef.current) {
-                setFace(false)
                 markAbsent()
                 return
             }
@@ -550,9 +554,9 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
             try {
                 const faceapi = faceApiRef.current
-                // Keep scoreThreshold at 0.5 — lowering it increases false positives
-                // (e.g., a palm covering the camera gets detected as a face at 0.4)
-                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+                // Use a stricter detector threshold to reduce false positives
+                // (e.g., hand/skin blobs when camera is covered)
+                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.7 })
                 const rawFaces = await faceapi.detectAllFaces(vid, opts)
 
                 // Filter out detections where the bounding box occupies more than 65%
@@ -564,17 +568,29 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     ? rawFaces.filter(det => {
                           const b = det.box
                           const ratio = (b.width * b.height) / frameArea
-                          return ratio >= 0.02 && ratio <= 0.65
+                          const aspect = b.height > 0 ? b.width / b.height : 0
+                          const score = Number(det.score || 0)
+                          return (
+                              score >= 0.8 &&
+                              ratio >= 0.03 &&
+                              ratio <= 0.55 &&
+                              aspect >= 0.6 &&
+                              aspect <= 1.7
+                          )
                       })
                     : rawFaces
 
                 const detected = validFaces.length > 0
-                setFace(detected)
 
                 if (!detected) {
                     // Face not found (or blob was too large → hand covering camera)
                     markAbsent()
                 } else {
+                    consecutiveFaceRef.current += 1
+                    const stableDetected = consecutiveFaceRef.current >= FACE_STABLE_DETECTIONS
+                    setFace(stableDetected)
+                    if (!stableDetected) return
+
                     // Face confirmed → reset absence counter and unpause
                     absenceRef.current = 0
                     setAbsenceSecs(0)
