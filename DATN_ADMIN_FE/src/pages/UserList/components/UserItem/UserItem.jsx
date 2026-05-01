@@ -44,7 +44,7 @@ export default function UserItem({ user, tab, onViewDetail, onMutationSuccess })
             <div>
               <div className={`text-sm font-semibold ${isUserDeleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-white'}`}>{user.name}</div>
               <div className='text-xs text-gray-400'>@{user.user_name}</div>
-              {tab === 'deleted' && isUserDeleted && (
+              {tab === 'inactive' && isUserDeleted && (
                 <div className='mt-1'>
                   <span className='inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'>Đã xóa</span>
                 </div>

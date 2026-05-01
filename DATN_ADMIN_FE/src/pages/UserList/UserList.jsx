@@ -30,7 +30,7 @@ export default function UserList() {
     const params = { page, limit: LIMIT, sort, role: 0 }
     if (search) params.search = search
     if (tab === 'active') { params.status = 1 }
-    else if (tab === 'inactive') { params.inactive = 'true' }
+    else if (tab === 'inactive') { params.isDeleted = 'true' }
     return params
   })()
 
