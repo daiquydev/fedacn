@@ -55,13 +55,14 @@ function buildRtcConfiguration() {
     return { iceServers }
 }
 
-const ABSENCE_THRESHOLD = 10   // seconds of no face before pausing
+const ABSENCE_THRESHOLD = 3    // seconds of no face before pausing
 const AI_INTERVAL = 3000        // ms between face checks
 const FACE_STABLE_DETECTIONS = 2 // require N consecutive detections before confirming presence
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
 const UPLOAD_PRESET = 'fedacn_unsigned'
+const LOW_TEXTURE_VARIANCE_THRESHOLD = 40 // very low variance => likely covered/blank camera frame
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0') }
@@ -198,6 +199,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
     const consecutiveFaceRef = useRef(0)     // Anti-false-positive guard
+    const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -207,6 +209,34 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         screenshotsRef.current = [...screenshotsRef.current, value]
         console.log(`[Screenshot] Captured ${screenshotsRef.current.length}/${MAX_SCREENSHOTS}`)
         return true
+    }, [])
+
+    const hasUsableCameraFrame = useCallback((videoEl) => {
+        if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) return false
+        let canvas = frameCheckCanvasRef.current
+        if (!canvas) {
+            canvas = document.createElement('canvas')
+            canvas.width = 48
+            canvas.height = 36
+            frameCheckCanvasRef.current = canvas
+        }
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        if (!ctx) return false
+        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
+        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        let sum = 0
+        let sumSq = 0
+        let count = 0
+        for (let i = 0; i < data.length; i += 4) {
+            const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+            sum += lum
+            sumSq += lum * lum
+            count += 1
+        }
+        if (count === 0) return false
+        const mean = sum / count
+        const variance = sumSq / count - mean * mean
+        return variance >= LOW_TEXTURE_VARIANCE_THRESHOLD
     }, [])
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -517,9 +547,9 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     const delay = Math.pow(2, attempt - 1) * 1000
                     await new Promise(r => setTimeout(r, delay))
                 } else {
-                    const msg = 'AI không khả dụng — thời gian sẽ được tính trọn (không phát hiện vắng mặt)'
+                    const msg = 'AI không khả dụng — chỉ ghi nhận thời gian khi AI nhận diện được khuôn mặt'
                     setAiError(msg)
-                    console.error(`[AI] All ${MAX_RETRIES} attempts failed. Falling back to full-time counting.`)
+                    console.error(`[AI] All ${MAX_RETRIES} attempts failed. Face-confirmed tracking unavailable.`)
                     toast.error(msg, { duration: 5000, icon: '🤖' })
                 }
             }
@@ -543,19 +573,38 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 if (absenceRef.current >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
             }
 
-            // ── Camera OFF → face detection impossible, treat as absent ──────
+            // ── Camera OFF (UI state) → face detection impossible ─────────────
             if (!camOnRef.current) {
                 markAbsent()
                 return
             }
 
             // ── AI model or video element not ready yet ───────────────────────
-            if (!faceApiRef.current || !localVideoRef.current) return
+            if (!faceApiRef.current || !localVideoRef.current) {
+                markAbsent()
+                return
+            }
+
+            // ── Camera track real state (covers browser-level/hardware off cases)
+            const videoTrack = localStreamRef.current?.getVideoTracks?.()[0]
+            const trackUsable = !!videoTrack &&
+                videoTrack.readyState === 'live' &&
+                videoTrack.enabled &&
+                !videoTrack.muted
+            if (!trackUsable) {
+                markAbsent()
+                return
+            }
 
             // ── Check if video has actual frame data ──────────────────────────
             const vid = localVideoRef.current
             if (vid.readyState < 2 || vid.videoWidth === 0) {
                 // Video not decoded yet — count as absent to handle covered-camera edge case
+                markAbsent()
+                return
+            }
+            if (!hasUsableCameraFrame(vid)) {
+                // Frame is too uniform/blank (often covered lens or black frame)
                 markAbsent()
                 return
             }
