@@ -201,6 +201,14 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
+    const pushScreenshot = useCallback((value) => {
+        if (!value) return false
+        if (screenshotsRef.current.length >= MAX_SCREENSHOTS) return false
+        screenshotsRef.current = [...screenshotsRef.current, value]
+        console.log(`[Screenshot] Captured ${screenshotsRef.current.length}/${MAX_SCREENSHOTS}`)
+        return true
+    }, [])
+
     // ─────────────────────────────────────────────────────────────────────────
     // INIT
     // ─────────────────────────────────────────────────────────────────────────
@@ -699,6 +707,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             const uploadPromise = new Promise((resolve) => {
                 canvas.toBlob(async (blob) => {
                     if (!blob || screenshotsRef.current.length >= MAX_SCREENSHOTS) { resolve(); return }
+
+                    // Fallback proof image in case Cloudinary upload fails.
+                    // Keep quality lower to avoid large payloads in DB.
+                    const fallbackDataUrl = canvas.toDataURL('image/jpeg', 0.6)
+
                     try {
                         const formData = new FormData()
                         formData.append('file', blob, `call_screenshot_${Date.now()}.jpg`)
@@ -710,10 +723,14 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                         )
                         if (res.ok) {
                             const data = await res.json()
-                            screenshotsRef.current = [...screenshotsRef.current, data.secure_url]
-                            console.log(`[Screenshot] Captured ${screenshotsRef.current.length}/${MAX_SCREENSHOTS}`)
+                            pushScreenshot(data.secure_url)
+                        } else {
+                            // Upload failed (preset/network/CORS...). Keep local proof image instead.
+                            pushScreenshot(fallbackDataUrl)
+                            console.warn('[Screenshot] Cloudinary upload failed, fallback image is used')
                         }
                     } catch (err) {
+                        pushScreenshot(fallbackDataUrl)
                         console.warn('[Screenshot] Upload failed:', err)
                     } finally {
                         resolve()  // always resolve so Promise.allSettled doesn't hang
