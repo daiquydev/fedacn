@@ -323,12 +323,6 @@ class ChallengeService {
             throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
         }
         if (challenge.is_deleted) {
-            if (challenge.deleted_from_report_moderation) {
-                throw new ErrorWithStatus({
-                    message: 'Thử thách đã bị gỡ do vi phạm nội dung',
-                    status: HTTP_STATUS.GONE
-                })
-            }
             const canArchiveView = await this.isArchivedStakeholder(challengeId, challenge, userId)
             if (!canArchiveView) {
                 throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
@@ -341,7 +335,7 @@ class ChallengeService {
 
         const result: any = challenge.toObject()
         result.participants_count = await this.reconcileStoredParticipantsCount(challengeId)
-        result.is_archived_read_only = !!(challenge.is_deleted && !challenge.deleted_from_report_moderation)
+        result.is_archived_read_only = !!(challenge.is_deleted)
 
         // Calculate time remaining
         const now = new Date()
@@ -689,12 +683,6 @@ class ChallengeService {
             throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })
         }
         if (challenge.is_deleted) {
-            if (challenge.deleted_from_report_moderation) {
-                throw new ErrorWithStatus({
-                    message: 'Thử thách đã bị gỡ do vi phạm nội dung',
-                    status: HTTP_STATUS.GONE
-                })
-            }
             const can = await this.isArchivedStakeholder(challengeId, challenge, viewerId)
             if (!can) {
                 throw new ErrorWithStatus({ message: 'Thử thách không tồn tại', status: HTTP_STATUS.NOT_FOUND })

@@ -13,9 +13,6 @@ class ChallengeDayCommentService {
       throw new ErrorWithStatus({ message: 'Challenge not found', status: HTTP_STATUS.NOT_FOUND })
     }
     if ((challenge as any).is_deleted) {
-      if ((challenge as any).deleted_from_report_moderation) {
-        throw new ErrorWithStatus({ message: 'Challenge has been removed due to moderation', status: HTTP_STATUS.GONE })
-      }
       throw new ErrorWithStatus({ message: 'Challenge not found', status: HTTP_STATUS.NOT_FOUND })
     }
 
