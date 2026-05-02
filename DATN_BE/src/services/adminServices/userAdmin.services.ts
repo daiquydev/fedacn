@@ -55,8 +55,9 @@ class UserAdminService {
       condition.isDeleted = { $ne: true }
     }
 
-    if (search) {
-      condition.$text = { $search: search }
+    const normalizedSearch = typeof search === 'string' ? search.trim() : ''
+    if (normalizedSearch) {
+      condition.$text = { $search: normalizedSearch }
     }
 
     const users = await UserModel.find(condition)
@@ -343,8 +344,9 @@ class UserAdminService {
     }
     condition['upgrade_request.type'] = type
     console.log('condition', condition)
-    if (search) {
-      condition.$text = { $search: search }
+    const normalizedSearch = typeof search === 'string' ? search.trim() : ''
+    if (normalizedSearch) {
+      condition.$text = { $search: normalizedSearch }
     }
 
     const users = await UserModel.find(condition)

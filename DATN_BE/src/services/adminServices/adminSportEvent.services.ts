@@ -2,7 +2,6 @@ import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import sportEventProgressService from '~/services/userServices/sportEventProgress.services'
-import { sportEventHasStartedForDelete } from '~/utils/sportEventDeleteGuard.utils'
 import { Types } from 'mongoose'
 
 class AdminSportEventService {
@@ -29,6 +28,8 @@ class AdminSportEventService {
         dateTo?: string
     }) {
         const condition: any = {}
+        const normalizedSearch = typeof search === 'string' ? search.trim() : ''
+        const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
         // Status filter
         if (status === 'deleted') {
@@ -46,12 +47,13 @@ class AdminSportEventService {
             condition.startDate = { ...condition.startDate, $lte: new Date(`${dateTo}T23:59:59.999`) }
         }
 
-        if (search) {
+        if (escapedSearch) {
             condition.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { category: { $regex: search, $options: 'i' } },
-                { location: { $regex: search, $options: 'i' } }
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { description: { $regex: escapedSearch, $options: 'i' } },
+                { category: { $regex: escapedSearch, $options: 'i' } },
+                { location: { $regex: escapedSearch, $options: 'i' } },
+                { address: { $regex: escapedSearch, $options: 'i' } }
             ]
         }
 
@@ -285,9 +287,7 @@ class AdminSportEventService {
     async deleteEventAdmin(eventId: string) {
         const existing = await SportEventModel.findById(eventId)
         if (!existing) throw new Error('Không tìm thấy sự kiện')
-        if (sportEventHasStartedForDelete(existing)) {
-            throw new Error('Sự kiện đã bắt đầu, không thể xóa')
-        }
+
         const event = await SportEventModel.findByIdAndUpdate(
             eventId,
             { isDeleted: true, deletedAt: new Date(), deletedFromReportModeration: false },
@@ -312,9 +312,6 @@ class AdminSportEventService {
     async hardDeleteEventAdmin(eventId: string) {
         const existing = await SportEventModel.findById(eventId)
         if (!existing) throw new Error('Không tìm thấy sự kiện')
-        if (sportEventHasStartedForDelete(existing)) {
-            throw new Error('Sự kiện đã bắt đầu, không thể xóa')
-        }
         await SportEventModel.deleteOne({ _id: existing._id })
         await SportEventSessionModel.deleteMany({ eventId: existing._id })
         return existing

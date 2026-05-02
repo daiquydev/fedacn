@@ -88,7 +88,7 @@ const StatCard = ({ icon, label, value, subValue, colorClass, isActive, onClick 
 )
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function IndoorEventProgress({ event, userProgress }) {
+export default function IndoorEventProgress({ event, userProgress, isArchivedReadOnly }) {
     const { id: eventId } = useParams()
     const queryClient = useQueryClient()
 
@@ -524,7 +524,11 @@ export default function IndoorEventProgress({ event, userProgress }) {
                         )}
                     </div>
 
-                    {isEnded ? (
+                    {isArchivedReadOnly ? (
+                        <div className="flex-shrink-0 bg-white/20 px-6 py-3 rounded-xl font-bold text-sm text-center shadow-sm flex items-center justify-center">
+                            Sự kiện đã gỡ bỏ
+                        </div>
+                    ) : isEnded ? (
                         <div className="flex-shrink-0 bg-white/20 px-6 py-3 rounded-xl font-bold text-sm text-center shadow-sm flex items-center justify-center">
                             Sự kiện đã kết thúc
                         </div>

@@ -21,6 +21,9 @@ import ChallengeModel from '~/models/schemas/challenge.schema'
 import adminSportEventService from '~/services/adminServices/adminSportEvent.services'
 import challengeService from '~/services/userServices/challenge.services'
 
+const normalizeSearchKeyword = (value?: string) => (typeof value === 'string' ? value.trim() : '')
+const escapeRegexSearch = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 class InspectorService {
   /** +1 banned_count (chủ nội dung bị gỡ do kiểm duyệt). Bỏ qua nếu user_id không hợp lệ. */
   private async incrementModerationViolationCount(userId: string | undefined | null) {
@@ -48,8 +51,9 @@ class InspectorService {
       // lấy tất cả bài viết bị report
       report_post: { $ne: [] }
     }
-    if (search) {
-      condition.$text = { $search: search }
+    const normalizedSearch = normalizeSearchKeyword(search)
+    if (normalizedSearch) {
+      condition.$text = { $search: normalizedSearch }
     }
 
     const posts = await PostModel.aggregate([
@@ -412,8 +416,9 @@ class InspectorService {
     const condition: any = {
       is_banned: true
     }
-    if (search) {
-      condition.$text = { $search: search }
+    const normalizedSearch = normalizeSearchKeyword(search)
+    if (normalizedSearch) {
+      condition.$text = { $search: normalizedSearch }
     }
 
     const posts = await PostModel.aggregate([
@@ -1068,15 +1073,18 @@ class InspectorService {
   }
 
   async getSportEventReportsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const normalizedSearch = normalizeSearchKeyword(search)
+    const escapedSearch = normalizedSearch ? escapeRegexSearch(normalizedSearch) : ''
     const matchStage = {
       $match: {
         isDeleted: { $ne: true },
-        ...(search
+        ...(escapedSearch
           ? {
               $or: [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { location: { $regex: search, $options: 'i' } }
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { description: { $regex: escapedSearch, $options: 'i' } },
+                { location: { $regex: escapedSearch, $options: 'i' } },
+                { address: { $regex: escapedSearch, $options: 'i' } }
               ]
             }
           : {}),
@@ -1165,16 +1173,19 @@ class InspectorService {
   }
 
   async getDeletedSportEventsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const normalizedSearch = normalizeSearchKeyword(search)
+    const escapedSearch = normalizedSearch ? escapeRegexSearch(normalizedSearch) : ''
     const matchStage = {
       $match: {
         isDeleted: true,
         deletedFromReportModeration: true,
-        ...(search
+        ...(escapedSearch
           ? {
               $or: [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { location: { $regex: search, $options: 'i' } }
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { description: { $regex: escapedSearch, $options: 'i' } },
+                { location: { $regex: escapedSearch, $options: 'i' } },
+                { address: { $regex: escapedSearch, $options: 'i' } }
               ]
             }
           : {})
@@ -1290,7 +1301,7 @@ class InspectorService {
       (creator_user_id && ObjectId.isValid(creator_user_id) ? creator_user_id : null) ??
       (existing?.createdBy ? String(existing.createdBy) : null)
 
-    await sportEventService.deleteSportEventService(event_id, { deletedFromReportModeration: true })
+    await sportEventService.softDeleteSportEventFromModeration(event_id)
 
     await this.incrementModerationViolationCount(ownerId)
 
@@ -1306,14 +1317,16 @@ class InspectorService {
   }
 
   async getChallengeReportsService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const normalizedSearch = normalizeSearchKeyword(search)
+    const escapedSearch = normalizedSearch ? escapeRegexSearch(normalizedSearch) : ''
     const matchStage = {
       $match: {
         is_deleted: { $ne: true },
-        ...(search
+        ...(escapedSearch
           ? {
               $or: [
-                { title: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
+                { title: { $regex: escapedSearch, $options: 'i' } },
+                { description: { $regex: escapedSearch, $options: 'i' } }
               ]
             }
           : {}),
@@ -1402,15 +1415,17 @@ class InspectorService {
   }
 
   async getDeletedChallengesService({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string }) {
+    const normalizedSearch = normalizeSearchKeyword(search)
+    const escapedSearch = normalizedSearch ? escapeRegexSearch(normalizedSearch) : ''
     const matchStage = {
       $match: {
         is_deleted: true,
         deleted_from_report_moderation: true,
-        ...(search
+        ...(escapedSearch
           ? {
               $or: [
-                { title: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
+                { title: { $regex: escapedSearch, $options: 'i' } },
+                { description: { $regex: escapedSearch, $options: 'i' } }
               ]
             }
           : {})

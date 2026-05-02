@@ -1912,7 +1912,7 @@ class ChallengeService {
         }
 
         // ────────── Build query ──────────
-        const condition: any = { is_deleted: { $ne: true } }
+        const condition: any = {}
 
         if (status === 'ongoing') {
             condition.start_date = { $lte: new Date() }
@@ -1973,7 +1973,41 @@ class ChallengeService {
             condition.$and = [...(condition.$and || []), searchCond]
         }
 
-        const total = await ChallengeModel.countDocuments(condition)
+        const activeCondition: any = { ...condition, is_deleted: { $ne: true } }
+        let finalCondition: any = activeCondition
+
+        // Khi có tìm kiếm, vẫn trả về thử thách đã gỡ ở chế độ chỉ đọc cho stakeholder (người tạo/đang tham gia)
+        if (userId && searchCond) {
+            const userOid = new Types.ObjectId(userId)
+            const myActiveParticipations = await ChallengeParticipantModel.find({
+                user_id: userOid,
+                status: { $ne: 'quit' }
+            })
+                .select('challenge_id')
+                .lean()
+            const joinedChallengeIds = [...new Set(myActiveParticipations.map((p: any) => p.challenge_id.toString()))]
+                .map((id) => new Types.ObjectId(id))
+
+            const archivedReadableCondition: any = { ...condition, is_deleted: true }
+            // Tránh status mặc định "active" làm mất item đã gỡ trong danh sách search.
+            delete archivedReadableCondition.status
+            delete archivedReadableCondition.start_date
+            delete archivedReadableCondition.end_date
+            // Item đã gỡ được xem theo quyền stakeholder, không phụ thuộc visibility hiện tại.
+            delete archivedReadableCondition.$or
+            archivedReadableCondition.$and = [
+                ...(Array.isArray(condition.$and) ? condition.$and : []),
+                {
+                    $or: [
+                        { creator_id: userOid },
+                        ...(joinedChallengeIds.length > 0 ? [{ _id: { $in: joinedChallengeIds } }] : [])
+                    ]
+                }
+            ]
+            finalCondition = { $or: [activeCondition, archivedReadableCondition] }
+        }
+
+        const total = await ChallengeModel.countDocuments(finalCondition)
         const totalPage = Math.ceil(total / limit) || 0
 
         // For popular/default: sort by status priority (ongoing → upcoming → ended) via aggregation
@@ -1981,7 +2015,7 @@ class ChallengeService {
             const now = new Date()
 
             const rawChallenges = await ChallengeModel.aggregate([
-                { $match: condition },
+                { $match: finalCondition },
                 {
                     $addFields: {
                         statusOrder: {
@@ -2077,11 +2111,17 @@ class ChallengeService {
                     const base = previewMap.get(c._id.toString()) || []
                     return {
                         ...c,
+                        is_archived_read_only: !!c.is_deleted,
                         participants_count: participantCountMap.get(c._id.toString()) ?? c.participants_count ?? 0,
                         participants_preview: this.mergeCreatorIntoParticipantsPreview(c, base)
                     }
                 })
             }
+
+            resultChallenges = resultChallenges.map((c: any) => ({
+                ...c,
+                is_archived_read_only: !!c.is_deleted
+            }))
 
             return { challenges: resultChallenges, totalPage, page, limit, total }
         }
@@ -2096,7 +2136,7 @@ class ChallengeService {
             default: sortOption = { createdAt: -1 }; break;
         }
 
-        const challenges = await ChallengeModel.find(condition)
+        const challenges = await ChallengeModel.find(finalCondition)
             .populate('creator_id', 'name avatar email')
             .skip(skip)
             .limit(limit)
@@ -2160,11 +2200,17 @@ class ChallengeService {
                 const base = previewMap.get(c._id.toString()) || []
                 return {
                     ...c,
+                    is_archived_read_only: !!c.is_deleted,
                     participants_count: participantCountMap.get(c._id.toString()) ?? c.participants_count ?? 0,
                     participants_preview: this.mergeCreatorIntoParticipantsPreview(c, base)
                 }
             })
         }
+
+        resultChallenges = resultChallenges.map((c: any) => ({
+            ...c,
+            is_archived_read_only: !!c.is_deleted
+        }))
 
         return { challenges: resultChallenges, totalPage, page, limit, total }
     }

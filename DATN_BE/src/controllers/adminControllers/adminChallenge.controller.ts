@@ -20,7 +20,8 @@ export const adminGetChallengesController = async (req: Request, res: Response) 
         condition.is_deleted = { $ne: true }
     }
 
-    if (search) condition.$text = { $search: search }
+    const normalizedSearch = typeof search === 'string' ? search.trim() : ''
+    if (normalizedSearch) condition.$text = { $search: normalizedSearch }
     if (challenge_type && challenge_type !== 'all') condition.challenge_type = challenge_type
     if (visibility && visibility !== 'all') condition.visibility = visibility
     if (status && status !== 'all') condition.status = status

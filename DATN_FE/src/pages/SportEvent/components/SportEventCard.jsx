@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus, FaEyeSlash } from 'react-icons/fa';
 import { MdVideocam, MdCheckCircle, MdSportsScore } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs';
@@ -44,10 +44,11 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
   const eventDate = moment(event.startDate);
   const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'));
   const isNotStarted = event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'));
+  const isArchivedReadOnly = !!(event.is_archived_read_only || event.isDeleted);
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full"
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 flex flex-col h-full ${isArchivedReadOnly ? 'opacity-80' : ''}`}
       onClick={handleClick}
     >
       {/* Event Image */}
@@ -72,13 +73,17 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
 
         {/* Status Badge */}
         <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
-          isEnded
+          isArchivedReadOnly
+            ? 'bg-gray-800/75 text-gray-200'
+            : isEnded
             ? 'bg-gray-800/70 text-gray-300'
             : isNotStarted
               ? 'bg-amber-500/80 text-white'
               : 'bg-emerald-500/80 text-white'
         }`}>
-          {isEnded ? (
+          {isArchivedReadOnly ? (
+            <><FaEyeSlash className="text-[10px]" /> Chỉ đọc (đã gỡ)</>
+          ) : isEnded ? (
             <><BsClockHistory className="text-[10px]" /> Đã kết thúc</>
           ) : isNotStarted ? (
             <><BsCalendarCheck className="text-[10px]" /> Sắp diễn ra</>
@@ -151,7 +156,11 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
 
           {/* Join Button */}
           <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-            {isEnded ? (
+            {isArchivedReadOnly ? (
+              <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-slate-200 text-slate-600 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-slate-700 dark:text-slate-300 gap-2">
+                <FaEyeSlash /> Chỉ đọc
+              </button>
+            ) : isEnded ? (
               <button onClick={(e) => e.stopPropagation()} className="w-full py-2 bg-gray-200 text-gray-500 rounded-md text-sm font-bold flex justify-center items-center cursor-default dark:bg-gray-700 dark:text-gray-400 gap-2">
                 <BsClockHistory /> Sự kiện đã kết thúc
               </button>

@@ -18,6 +18,24 @@ function isKcalUnit(targetUnit: string): boolean {
 }
 
 class SportEventService {
+  private async cleanupSportEventPostMarkers(eventId: string) {
+    const markerRegex = `\\[sport-event:${eventId}\\]|\\[activity:[a-f0-9]{24}:${eventId}\\]|\\[indoor-session:[a-f0-9]{24}:${eventId}\\]`
+    try {
+      const postsWithMarker = await PostModel.find({ content: { $regex: markerRegex, $options: 'i' } })
+      for (const post of postsWithMarker) {
+        post.content = (post.content || '')
+          .replace(new RegExp(`\\n?\\[sport-event:${eventId}\\]`, 'gi'), '')
+          .replace(new RegExp(`\\n?\\[activity:[a-f0-9]{24}:${eventId}\\]`, 'gi'), '')
+          .replace(new RegExp(`\\n?\\[indoor-session:[a-f0-9]{24}:${eventId}\\]`, 'gi'), '')
+          .trim()
+        await post.save()
+      }
+    } catch (err) {
+      // Non-critical: don't break delete if cleanup fails
+      console.error('Failed to clean post markers for sport event:', eventId, err)
+    }
+  }
+
   // Get all sport events
   async getAllSportEventsService({
     page = 1,
@@ -44,46 +62,63 @@ class SportEventService {
     dateTo?: string
     joined?: string
   }) {
-    const condition: any = { isDeleted: { $ne: true } }
+    const baseCondition: any = {}
+    const normalizedSearch = typeof search === 'string' ? search.trim() : ''
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-    if (search) {
-      condition.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } }
+    if (escapedSearch) {
+      baseCondition.$or = [
+        { name: { $regex: escapedSearch, $options: 'i' } },
+        { description: { $regex: escapedSearch, $options: 'i' } },
+        { location: { $regex: escapedSearch, $options: 'i' } },
+        { address: { $regex: escapedSearch, $options: 'i' } }
       ]
     }
 
     if (category && category !== 'all') {
-      condition.category = category
+      baseCondition.category = category
     }
 
     if (eventType && eventType !== 'all') {
-      condition.eventType = eventType
+      baseCondition.eventType = eventType
     }
 
     // Status filter: ongoing, ended, upcoming
     const now = new Date()
     if (status === 'ongoing') {
-      condition.startDate = { $lte: now }
-      condition.endDate = { $gte: now }
+      baseCondition.startDate = { $lte: now }
+      baseCondition.endDate = { $gte: now }
     } else if (status === 'ended') {
-      condition.endDate = { $lt: now }
+      baseCondition.endDate = { $lt: now }
     } else if (status === 'upcoming') {
-      condition.startDate = { $gt: now }
+      baseCondition.startDate = { $gt: now }
     }
 
     // Date range filter
     if (dateFrom) {
-      condition.startDate = { ...condition.startDate, $gte: new Date(dateFrom) }
+      baseCondition.startDate = { ...baseCondition.startDate, $gte: new Date(dateFrom) }
     }
     if (dateTo) {
-      condition.startDate = { ...condition.startDate, $lte: new Date(dateTo + 'T23:59:59') }
+      baseCondition.startDate = { ...baseCondition.startDate, $lte: new Date(dateTo + 'T23:59:59') }
     }
 
     // Joined filter
     if (joined === 'true' && userId) {
-      condition.participants_ids = new Types.ObjectId(userId)
+      baseCondition.participants_ids = new Types.ObjectId(userId)
+    }
+
+    const activeCondition: any = { ...baseCondition, isDeleted: { $ne: true } }
+    let condition: any = activeCondition
+
+    // Khi user tìm kiếm, vẫn hiển thị sự kiện đã gỡ ở chế độ chỉ đọc cho stakeholder (người tạo/đã tham gia)
+    if (userId && escapedSearch) {
+      const userOid = new Types.ObjectId(userId)
+      const archivedReadableCondition: any = { ...baseCondition, isDeleted: true }
+      archivedReadableCondition.$and = [
+        ...(Array.isArray(baseCondition.$and) ? baseCondition.$and : []),
+        { $or: [{ createdBy: userOid }, { participants_ids: userOid }] }
+      ]
+      condition = { $or: [activeCondition, archivedReadableCondition] }
     }
 
     const skip = (page - 1) * limit
@@ -161,6 +196,7 @@ class SportEventService {
         } else {
           eventObj.isJoined = false
         }
+        eventObj.is_archived_read_only = !!eventObj.isDeleted
         return eventObj
       })
 
@@ -264,6 +300,7 @@ class SportEventService {
       } else {
         eventObj.isJoined = false
       }
+      eventObj.is_archived_read_only = !!eventObj.isDeleted
       return eventObj
     })
 
@@ -341,6 +378,20 @@ class SportEventService {
     return { events: resultEvents, totalPage, page, limit, total }
   }
 
+  /** Người tạo hoặc thành viên — được xem sự kiện đã gỡ (lưu trữ). */
+  private isEventStakeholder(event: any, userId?: string): boolean {
+    if (!userId) return false
+    const creatorId = event.createdBy?._id?.toString?.() ?? event.createdBy?.toString?.()
+    if (creatorId === userId) return true
+    if (Array.isArray(event.participants_ids)) {
+      return event.participants_ids.some((p: any) => {
+        const id = p?._id?.toString?.() ?? p?.toString?.()
+        return id === userId
+      })
+    }
+    return false
+  }
+
   // Get single sport event
   async getSportEventService(eventId: string, userId?: string) {
     const event = await SportEventModel.findById(eventId)
@@ -352,10 +403,15 @@ class SportEventService {
     }
 
     if (event.isDeleted) {
-      throw new ErrorWithStatus({ message: 'Sự kiện thể thao đã bị xóa', status: HTTP_STATUS.NOT_FOUND })
+      const canView = this.isEventStakeholder(event, userId)
+      if (!canView) {
+        throw new ErrorWithStatus({ message: 'Sự kiện thể thao không tồn tại', status: HTTP_STATUS.NOT_FOUND })
+      }
     }
 
-    const eventObj = event.toObject() as SportEvent
+    const eventObj = event.toObject() as any
+    eventObj.is_archived_read_only = !!event.isDeleted
+
     if (userId && eventObj.participants_ids) {
       eventObj.isJoined = eventObj.participants_ids.some((participant: any) => {
         const id = participant._id ? participant._id.toString() : participant.toString()
@@ -524,7 +580,7 @@ class SportEventService {
     options?: { deletedFromReportModeration?: boolean }
   ) {
     const deletedFromReportModeration = options?.deletedFromReportModeration === true
-    const existing = await SportEventModel.findById(eventId)
+    const existing = await SportEventModel.findOne({ _id: eventId, isDeleted: { $ne: true } })
     if (!existing) {
       throw new Error('Sport event not found')
     }
@@ -544,21 +600,24 @@ class SportEventService {
 
     // Clean up all post markers referencing this event
     // Markers: [sport-event:ID], [activity:*:ID], [indoor-session:*:ID]
-    const markerRegex = `\\[sport-event:${eventId}\\]|\\[activity:[a-f0-9]{24}:${eventId}\\]|\\[indoor-session:[a-f0-9]{24}:${eventId}\\]`
-    try {
-      const postsWithMarker = await PostModel.find({ content: { $regex: markerRegex, $options: 'i' } })
-      for (const post of postsWithMarker) {
-        post.content = (post.content || '')
-          .replace(new RegExp(`\\n?\\[sport-event:${eventId}\\]`, 'gi'), '')
-          .replace(new RegExp(`\\n?\\[activity:[a-f0-9]{24}:${eventId}\\]`, 'gi'), '')
-          .replace(new RegExp(`\\n?\\[indoor-session:[a-f0-9]{24}:${eventId}\\]`, 'gi'), '')
-          .trim()
-        await post.save()
-      }
-    } catch (err) {
-      // Non-critical: don't break delete if cleanup fails
-      console.error('Failed to clean post markers for sport event:', eventId, err)
+    await this.cleanupSportEventPostMarkers(eventId)
+
+    return event
+  }
+
+  /** Gỡ sự kiện khi kiểm duyệt từ chối báo cáo (không kiểm tra quyền người tạo) */
+  async softDeleteSportEventFromModeration(eventId: string) {
+    const event = await SportEventModel.findOne({ _id: eventId, isDeleted: { $ne: true } })
+    if (!event) {
+      throw new Error('Sport event not found')
     }
+
+    event.isDeleted = true
+    event.deletedAt = new Date()
+    event.deletedFromReportModeration = true
+    await event.save()
+
+    await this.cleanupSportEventPostMarkers(eventId)
 
     return event
   }

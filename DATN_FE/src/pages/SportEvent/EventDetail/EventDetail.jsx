@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaClock, FaInfoCircle, FaCheck,
   FaArrowLeft, FaMedal, FaTrophy, FaStar, FaChartLine, FaChevronDown, FaChevronUp, FaStopwatch,
-  FaExclamationTriangle, FaBiking, FaSwimmer, FaDumbbell, FaAward, FaBullseye
+  FaExclamationTriangle, FaBiking, FaSwimmer, FaDumbbell, FaAward, FaBullseye, FaArchive
 } from 'react-icons/fa'
 import { MdSportsSoccer, MdLeaderboard } from 'react-icons/md'
 import moment from 'moment'
@@ -201,6 +201,7 @@ export default function EventDetail() {
   const userId = getProfileFromLS()?._id || localStorage.getItem('user_id')
   const isParticipant = event.participants_ids?.some(p => String(p._id || p) === String(userId)) || false
   const isCreator = String(event.createdBy?._id || event.createdBy) === String(userId)
+  const isArchivedReadOnly = Boolean(event?.is_archived_read_only)
   const isEventInPast = new Date(event.endDate) < new Date()
   const isEventStarted = new Date(event.startDate) <= new Date()
   const isOngoing = isEventStarted && !isEventInPast
@@ -229,6 +230,21 @@ export default function EventDetail() {
         <FaArrowLeft className="mr-2" />
         Quay lại
       </button>
+
+      {/* Archived Read-Only Banner */}
+      {isArchivedReadOnly && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-5 py-3.5">
+          <FaArchive className="text-amber-500 text-lg shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+              Sự kiện đã bị gỡ khỏi hệ thống
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              Bạn đang xem bản lưu trữ chỉ đọc. Không thể tham gia hoặc thực hiện thao tác.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main Content */}
@@ -304,7 +320,11 @@ export default function EventDetail() {
 
             {/* Join/Leave Button */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              {isEventInPast ? (
+              {isArchivedReadOnly ? (
+                <div className="w-full px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg font-medium text-center border border-gray-200 dark:border-gray-600">
+                  📦 Sự kiện đã được lưu trữ — chỉ xem
+                </div>
+              ) : isEventInPast ? (
                 <div className="text-center py-4">
                   <p className="text-gray-500 dark:text-gray-400">Sự kiện này đã kết thúc</p>
                 </div>

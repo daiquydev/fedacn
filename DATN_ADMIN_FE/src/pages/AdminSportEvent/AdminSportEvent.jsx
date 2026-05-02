@@ -31,21 +31,6 @@ const fmtNum = (n) => {
     return x % 1 === 0 ? String(x) : x.toFixed(1)
 }
 
-const rawDateToMs = (raw) => {
-    if (raw == null || raw === '') return null
-    const t = new Date(raw).getTime()
-    return Number.isFinite(t) ? t : null
-}
-
-/** Đồng bộ với BE `sportEventHasStartedForDelete` */
-const isSportEventStartedForDelete = (ev) => {
-    const startMs = rawDateToMs(ev?.startDate ?? ev?.start_date)
-    if (startMs != null) return startMs <= Date.now()
-    const endMs = rawDateToMs(ev?.endDate ?? ev?.end_date)
-    if (endMs != null) return endMs < Date.now()
-    return false
-}
-
 const EVENT_TYPE_CONFIG = {
     'Ngoài trời': { label: 'Ngoài trời', icon: FaRunning, badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
     'Trong nhà': { label: 'Trong nhà', icon: FaHome, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }
@@ -262,11 +247,6 @@ export default function AdminSportEvent() {
     const handleConfirm = () => {
         if (!confirmAction) return
         if (confirmAction.type === 'delete') {
-            if (isSportEventStartedForDelete(confirmAction.event)) {
-                toast.error('Sự kiện đã bắt đầu, không thể xóa')
-                setConfirmAction(null)
-                return
-            }
             softDeleteMutation.mutate(confirmAction.event._id)
         } else if (confirmAction.type === 'restore') restoreMutation.mutate(confirmAction.event._id)
         setConfirmAction(null)
@@ -754,16 +734,14 @@ export default function AdminSportEvent() {
                                                             <span className='text-xs font-semibold'>Khôi phục</span>
                                                         </button>
                                                     ) : (
-                                                        !isSportEventStartedForDelete(ev) ? (
-                                                            <button
-                                                                type='button'
-                                                                onClick={() => setConfirmAction({ type: 'delete', event: ev })}
-                                                                title='Xóa'
-                                                                className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-200'
-                                                            >
-                                                                <FaTrash size={15} />
-                                                            </button>
-                                                        ) : null
+                                                        <button
+                                                            type='button'
+                                                            onClick={() => setConfirmAction({ type: 'delete', event: ev })}
+                                                            title='Xóa'
+                                                            className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-200'
+                                                        >
+                                                            <FaTrash size={15} />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>

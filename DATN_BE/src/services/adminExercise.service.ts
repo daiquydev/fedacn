@@ -15,6 +15,8 @@ function stripExerciseMeta(data: Record<string, unknown>) {
 class AdminExerciseService {
     async getAll(query: any = {}) {
         const filter: any = {}
+        const normalizedSearch = typeof query.search === 'string' ? query.search.trim() : ''
+        const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
         // status filter: 'active' (default) | 'deleted' | 'all'
         const status = query.status || 'active'
@@ -22,10 +24,10 @@ class AdminExerciseService {
         else if (status === 'deleted') filter.isDeleted = true
         // 'all' → no isDeleted filter
 
-        if (query.search) {
+        if (escapedSearch) {
             filter.$or = [
-                { name: { $regex: query.search, $options: 'i' } },
-                { name_vi: { $regex: query.search, $options: 'i' } }
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { name_vi: { $regex: escapedSearch, $options: 'i' } }
             ]
         }
 

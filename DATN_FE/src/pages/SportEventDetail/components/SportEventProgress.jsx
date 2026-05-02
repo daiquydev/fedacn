@@ -98,7 +98,8 @@ function formatPace(totalSeconds, distanceKm) {
 
 export default function SportEventProgress({
   event,
-  userProgress
+  userProgress,
+  isArchivedReadOnly
 }) {
   const [timeFilter, setTimeFilter] = useState('7d')
   const [customRange, setCustomRange] = useState(null) // { startDate, endDate }
@@ -646,7 +647,11 @@ export default function SportEventProgress({
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <div className="flex gap-2 w-full sm:w-auto">
-                {isEnded || isNotStarted ? (
+                {isArchivedReadOnly ? (
+                  <div className="flex-1 sm:flex-none bg-white/20 px-4 py-3 rounded-xl font-bold text-sm text-center shadow-sm w-full flex items-center justify-center">
+                    Sự kiện đã gỡ bỏ
+                  </div>
+                ) : isEnded || isNotStarted ? (
                   <div className="flex-1 sm:flex-none bg-white/20 px-4 py-3 rounded-xl font-bold text-sm text-center shadow-sm w-full flex items-center justify-center">
                     {isEnded ? 'Sự kiện đã kết thúc' : 'Sự kiện chưa bắt đầu'}
                   </div>

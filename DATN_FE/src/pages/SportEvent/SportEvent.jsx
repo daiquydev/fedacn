@@ -284,7 +284,7 @@ const SportEvent = () => {
       {(() => {
         // Use current page events for banner if available (lightweight approach)
         const featuredEvents = [...sportEvents]
-          .filter(e => new Date(e.endDate) > new Date())
+          .filter(e => new Date(e.endDate) > new Date() && !e.is_archived_read_only && !e.isDeleted)
           .sort((a, b) => (b.participants || 0) - (a.participants || 0))
           .slice(0, 3)
 

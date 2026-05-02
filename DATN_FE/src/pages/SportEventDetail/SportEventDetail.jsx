@@ -19,12 +19,14 @@ import {
   FaUserFriends as FaInvite,
   FaCheck,
   FaBell,
-  FaFlag
+  FaFlag,
+  FaArchive
 } from 'react-icons/fa'
 import {
   MdVideocam,
   MdErrorOutline,
-  MdCheckCircle
+  MdCheckCircle,
+  MdInfoOutline
 } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import moment from 'moment'
@@ -135,6 +137,7 @@ export default function SportEventDetail() {
   }, [myFriends, friendSearch])
 
   const event = eventData?.data?.result || eventData?.result
+  const isArchivedReadOnly = Boolean(event?.is_archived_read_only)
   const isCreator = me?._id && event?.createdBy && (me._id === String(event.createdBy?._id || event.createdBy))
 
   // Fetch Sessions (for Trong nhà events)
@@ -513,6 +516,8 @@ export default function SportEventDetail() {
         </div>
       )}
 
+
+
       {/* Hero Section with Event Banner */}
       <div className="relative h-96 bg-gradient-to-b from-gray-900 to-gray-800">
         <img
@@ -626,7 +631,12 @@ export default function SportEventDetail() {
 
             {/* Action Buttons */}
             <div className="mt-6 flex flex-wrap items-center gap-2.5">
-              {!event.isJoined ? (
+              {isArchivedReadOnly && (
+                <div className="w-full max-w-xl px-4 py-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-50 text-sm leading-relaxed mb-2">
+                  <strong className="text-amber-100">Lưu trữ:</strong> Sự kiện đã được gỡ khỏi danh sách công khai. Bạn vẫn xem được lịch sử và bảng xếp hạng; không thể tham gia mới, check-in hay báo cáo.
+                </div>
+              )}
+              {!isArchivedReadOnly && !event.isJoined ? (
                 (event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))) ? (
                   <button
                     onClick={() => { }}
@@ -660,7 +670,7 @@ export default function SportEventDetail() {
                     Tham gia ngay
                   </button>
                 )
-              ) : (
+              ) : !isArchivedReadOnly ? (
                 <>
                   <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
                     <MdCheckCircle className="text-base" />
@@ -690,7 +700,12 @@ export default function SportEventDetail() {
                     </button>
                   )}
                 </>
-              )}
+              ) : event.isJoined ? (
+                <div className="px-5 py-2.5 bg-green-500/20 text-green-300 border border-green-400/30 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default backdrop-blur-sm">
+                  <MdCheckCircle className="text-base" />
+                  Đã tham gia (chỉ xem)
+                </div>
+              ) : null}
               {/* Share Event Button */}
               <button
                 onClick={handleShareEvent}
@@ -699,7 +714,7 @@ export default function SportEventDetail() {
                 <FaShare className="text-sm" />
                 Chia sẻ
               </button>
-              {me?._id && !isCreator && (
+              {!isArchivedReadOnly && me?._id && !isCreator && (
                 <button
                   type="button"
                   onClick={() => setShowReportModal(true)}
@@ -759,7 +774,7 @@ export default function SportEventDetail() {
                 {/* Requirements */}
                 {event.requirements && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 shadow-sm">
-                    <h2 className="text-xl font-bold mb-3 text-blue-900 dark:text-blue-300 flex items-center gap-2">
+                    <h2 className="text-xl font-bold mb-3 text-blue-900 dark:blue-300 flex items-center gap-2">
                       📋 Yêu cầu tham gia
                     </h2>
                     <p className="text-blue-800 dark:text-blue-200 whitespace-pre-line">
@@ -770,7 +785,7 @@ export default function SportEventDetail() {
                 {/* Benefits */}
                 {event.benefits && (
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 shadow-sm">
-                    <h2 className="text-xl font-bold mb-3 text-green-900 dark:text-green-300 flex items-center gap-2">
+                    <h2 className="text-xl font-bold mb-3 text-green-900 dark:green-300 flex items-center gap-2">
                       🎁 Lợi ích khi tham gia
                     </h2>
                     <p className="text-green-800 dark:text-green-200 whitespace-pre-line">
@@ -1095,8 +1110,8 @@ export default function SportEventDetail() {
         {/* TIẾN ĐỘ TAB */}
         {activeTab === 'progress' && event.isJoined && (
           event.eventType === 'Trong nhà'
-            ? <IndoorEventProgress event={event} userProgress={userProgress} />
-            : <SportEventProgress event={event} userProgress={userProgress} />
+            ? <IndoorEventProgress event={event} userProgress={userProgress} isArchivedReadOnly={isArchivedReadOnly} />
+            : <SportEventProgress event={event} userProgress={userProgress} isArchivedReadOnly={isArchivedReadOnly} />
         )}
 
 
