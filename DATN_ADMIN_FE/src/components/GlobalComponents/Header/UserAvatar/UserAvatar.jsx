@@ -4,10 +4,12 @@ import { Link } from 'react-router-dom'
 import { HiOutlineArrowRightOnRectangle } from 'react-icons/hi2'
 import useravatar from '../../../../assets/images/useravatar.jpg'
 import { logoutAccount } from '../../../../apis/authApi'
+import { getImageUrl } from '../../../../utils/imageUrl'
 
 import { AppContext } from '../../../../contexts/app.context'
 import { toast } from 'react-hot-toast'
 import { useSafeMutation } from '../../../../hooks/useSafeMutation'
+
 export default function UserAvatar() {
   const [isMenu, setIsMenu] = useState(false)
   const ref = useRef()
@@ -51,15 +53,15 @@ export default function UserAvatar() {
         <div className='w-8  h-8 md:w-10 object-cover md:h-10 rounded-full'>
           <img
             className='w-8 h-8 md:w-10 object-cover md:h-10 rounded-full'
-            src={profile.avatar === '' ? useravatar : profile.avatar}
+            src={!profile?.avatar || profile.avatar === '' ? useravatar : getImageUrl(profile.avatar)}
             alt='user photo'
           />
         </div>
         <div className=' flex flex-col justify-start text-sm'>
           <div className='capitalize flex flex-col justify-start text-gray-600 dark:text-gray-300 text-sm hover:underline'>
-            {profile.name}
+            {profile?.name}
           </div>
-          <p className='text-xs flex text-gray-500 dark:text-gray-400 justify-start'>@{profile.user_name}</p>
+          <p className='text-xs flex text-gray-500 dark:text-gray-400 justify-start'>@{profile?.user_name}</p>
         </div>
       </button>
       <AnimatePresence>
@@ -72,7 +74,7 @@ export default function UserAvatar() {
             className='z-50 absolute top-[4rem] right-1 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-color-primary dark:divide-gray-600'
           >
             <div className='z-50 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-color-primary dark:divide-gray-600'>
-              {profile.role === 2 && (
+              {profile?.role === 2 && (
                 <div className='py-2 text-gray-700 dark:text-gray-200'>
                   <div>
                     <Link

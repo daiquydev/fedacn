@@ -8,7 +8,7 @@ export default function Header() {
   const location = useLocation()
 
   return (
-    <div className='fixed left-0 right-0 top-0 z-50 flex w-full items-center justify-between bg-white py-3 pl-8 pr-4 shadow-sm transition-all duration-500 dark:bg-color-primary-dark dark:shadow-yellow-800 md:left-64'>
+    <div className='fixed left-0 right-0 top-0 z-50 flex items-center justify-between bg-white py-3 pl-8 pr-4 shadow-sm transition-all duration-500 dark:bg-color-primary-dark dark:shadow-yellow-800 md:left-64'>
       {
         // tìm những url có chứa '/chef/edit-blog/'
         location.pathname.includes('/recipes-writter/create') || location.pathname.includes('/recipes-writter/edit') ? (
