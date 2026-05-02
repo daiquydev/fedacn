@@ -3,11 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaCalendarAlt, FaTrash, FaUndo, FaSearch,
     FaFilter, FaUsers, FaMapMarkerAlt, FaRunning, FaHome,
-    FaTimes, FaChevronDown, FaChevronLeft, FaChevronRight, FaSortAmountDown, FaEye, FaBullseye, FaClock, FaCheck,
-    FaChartBar, FaFolderOpen, FaCircle, FaExclamationTriangle, FaThList, FaCheckCircle,
-    FaFire, FaChartLine, FaRoute, FaRoad
+    FaTimes, FaChevronDown, FaSortAmountDown, FaEye, FaBullseye, FaClock, FaCheck,
+    FaChartBar, FaFolderOpen, FaCircle, FaExclamationTriangle, FaThList, FaCheckCircle
 } from 'react-icons/fa'
-import { MdVideocam, MdGpsFixed, MdEdit } from 'react-icons/md'
+import { MdVideocam } from 'react-icons/md'
 import toast from 'react-hot-toast'
 import adminSportEventApi from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
@@ -52,32 +51,13 @@ const EVENT_TYPE_CONFIG = {
     'Trong nhà': { label: 'Trong nhà', icon: FaHome, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }
 }
 
-// ─── Chi tiết / Thành viên (theo mẫu Admin Thử thách) ─────────────────────────
+// ─── Chi tiết sự kiện (phân tích) ─────────────────────────────────────────────
 function EventDetailModal({ event, onClose }) {
-    const [activeTab, setActiveTab] = useState('overview')
-    const [progressDetailUser, setProgressDetailUser] = useState(null)
     const typeCfg = EVENT_TYPE_CONFIG[event?.eventType] || EVENT_TYPE_CONFIG['Ngoài trời']
     const TypeIcon = typeCfg.icon || FaRunning
     const participantsListFallback = Array.isArray(event?.participants_ids) ? event.participants_ids : []
     const memberCountFallback = typeof event?.participants === 'number' ? event.participants : participantsListFallback.length
     const creator = event?.createdBy
-
-    const { data: participantsRes, isLoading: participantsLoading } = useQuery({
-        queryKey: ['admin-sport-event-participants', event?._id],
-        queryFn: () => adminSportEventApi.getParticipants(event._id, { page: 1, limit: 200 }),
-        enabled: !!event?._id && activeTab === 'participants',
-        staleTime: 5000
-    })
-    const participantsRows = participantsRes?.data?.result?.participants || []
-    const totalFromApi = participantsRes?.data?.result?.total
-    const memberCount =
-        activeTab === 'participants' && typeof totalFromApi === 'number'
-            ? totalFromApi
-            : memberCountFallback
-
-    const maxP = Math.max(event?.maxParticipants || 1, 1)
-    const perPersonTarget = (event?.targetValue || 0) > 0 ? (event.targetValue / maxP) : 0
-    const targetUnit = event?.targetUnit || ''
 
     const renderOverview = () => (
         <div className='p-6 space-y-6'>
@@ -162,95 +142,10 @@ function EventDetailModal({ event, onClose }) {
         </div>
     )
 
-    const isIndoor = event?.eventType === 'Trong nhà'
-
-    const formatDuration = (seconds) => {
-        if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return '0p 00s'
-        const s = Math.floor(seconds)
-        const h = Math.floor(s / 3600)
-        const m = Math.floor((s % 3600) / 60)
-        const sec = s % 60
-        if (h > 0) return `${h}g ${String(m).padStart(2, '0')}p ${String(sec).padStart(2, '0')}s`
-        return `${m}p ${String(sec).padStart(2, '0')}s`
-    }
-
-    const renderParticipants = () => (
-        <div className='p-4'>
-            {participantsLoading ? (
-                <div className='space-y-3'>{[...Array(5)].map((_, i) => <div key={i} className='h-20 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse' />)}</div>
-            ) : participantsRows.length === 0 ? (
-                <div className='py-14 text-center text-gray-400'>
-                    <FaUsers size={32} className='mx-auto mb-3 opacity-30' />
-                    <p className='text-sm'>Chưa có thành viên đăng ký</p>
-                </div>
-            ) : (
-                <div className='max-h-[55vh] overflow-y-auto space-y-3 pr-1'>
-                    {participantsRows.map((p) => {
-                        const pct = p.progressPercentage ?? 0
-                        const speedLabel = p.avgSpeedKmh != null && Number.isFinite(Number(p.avgSpeedKmh)) ? `${p.avgSpeedKmh} km/h` : null
-                        const entriesCount = p.entriesCount ?? 0
-                        return (
-                            <div key={String(p.userId)} className='p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600/50 hover:border-teal-200 dark:hover:border-teal-800/40 transition'>
-                                <div className='flex items-start gap-3'>
-                                    <div className='w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0 mt-0.5'>
-                                        {p.rank <= 3 ? (
-                                            <span className='text-sm'>{p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : '🥉'}</span>
-                                        ) : (
-                                            <span className='text-[10px] font-bold text-teal-600 dark:text-teal-400'>{p.rank}</span>
-                                        )}
-                                    </div>
-                                    {p.avatar ? (
-                                        <img src={p.avatar} className='w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0' alt='' />
-                                    ) : (
-                                        <div className='w-9 h-9 rounded-full bg-teal-200 dark:bg-teal-800 flex items-center justify-center text-xs font-bold text-teal-700 dark:text-teal-300 flex-shrink-0'>
-                                            {(p.name || '?')[0]?.toUpperCase()}
-                                        </div>
-                                    )}
-                                    <div className='flex-1 min-w-0'>
-                                        <div className='flex items-center gap-2 flex-wrap'>
-                                            <span className='text-sm font-semibold text-gray-800 dark:text-white truncate'>{p.name || '—'}</span>
-                                            {String(p.userId) === String(event?.createdBy?._id || event?.createdBy) && (
-                                                <span className='px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/25 rounded-md'>👑 Tổ chức</span>
-                                            )}
-                                        </div>
-                                        <div className='mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-600 dark:text-gray-300'>
-                                            <span className='inline-flex items-center gap-1 tabular-nums'><FaClock className='text-emerald-500 shrink-0' size={10} />{formatDuration(p.totalTimeSeconds)}</span>
-                                            <span className='inline-flex items-center gap-1 tabular-nums'><FaFire className='text-orange-500 shrink-0' size={10} />{fmtNum(p.totalCalories)} kcal</span>
-                                            {!isIndoor && speedLabel && (
-                                                <span className='inline-flex items-center gap-1 tabular-nums'><FaRunning className='text-violet-500 shrink-0' size={10} />{speedLabel}</span>
-                                            )}
-                                            <span className='inline-flex items-center gap-1 tabular-nums'><FaChartLine className='text-blue-500 shrink-0' size={10} />{entriesCount} {isIndoor ? 'buổi' : 'lần'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    type='button'
-                                    onClick={() => setProgressDetailUser(p)}
-                                    className='mt-2.5 w-full text-left rounded-xl bg-white/70 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/80 dark:border-gray-600 px-3 py-2 transition'
-                                >
-                                    <div className='flex justify-between items-center text-[11px] text-gray-500 dark:text-gray-400 mb-1'>
-                                        <span className='font-medium text-gray-700 dark:text-gray-200'>
-                                            Tiến độ: <span className='tabular-nums'>{fmtNum(p.totalProgress)} / {fmtNum(perPersonTarget)} {targetUnit}</span>
-                                        </span>
-                                        <span className='font-bold text-teal-600 dark:text-teal-400 tabular-nums'>{pct}%</span>
-                                    </div>
-                                    <div className='w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden'>
-                                        <div className={`h-2 rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-teal-400 to-emerald-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                                    </div>
-                                    <p className='text-[10px] text-teal-600 dark:text-teal-400 mt-1 font-medium'>Nhấn để xem nhật ký hoạt động</p>
-                                </button>
-                            </div>
-                        )
-                    })}
-                </div>
-            )}
-        </div>
-    )
-
     return (
         <div className='fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4' onClick={e => e.target === e.currentTarget && onClose()}>
             <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col'>
-                <div className='bg-gradient-to-r from-teal-500 to-emerald-600 px-6 pt-4 rounded-t-2xl flex flex-col shrink-0'>
+                <div className='bg-gradient-to-r from-teal-500 to-emerald-600 px-6 py-4 rounded-t-2xl flex flex-col shrink-0'>
                     <div className='flex items-center justify-between'>
                         <h3 className='font-bold text-white flex items-center gap-2 text-base'>
                             <FaEye size={15} /> Phân tích Sự kiện
@@ -259,217 +154,10 @@ function EventDetailModal({ event, onClose }) {
                             <FaTimes className='text-white' size={14} />
                         </button>
                     </div>
-                    <div className='flex gap-6 mt-4'>
-                        <button
-                            type='button'
-                            onClick={() => setActiveTab('overview')}
-                            className={`pb-3 font-semibold text-sm transition-all border-b-2 ${activeTab === 'overview' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
-                        >
-                            Tổng quan
-                        </button>
-                        <button
-                            type='button'
-                            onClick={() => setActiveTab('participants')}
-                            className={`pb-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-1.5 ${activeTab === 'participants' ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}
-                        >
-                            <FaUsers size={14} /> Thành viên ({memberCount})
-                        </button>
-                    </div>
                 </div>
 
-                <div className='overflow-y-auto flex-1 bg-white dark:bg-gray-800 rounded-b-2xl' style={{ maxHeight: 'calc(85vh - 100px)' }}>
-                    {activeTab === 'overview' ? renderOverview() : renderParticipants()}
-                </div>
-            </div>
-
-            {progressDetailUser && (
-                <AdminParticipantProgressModal
-                    event={event}
-                    participant={progressDetailUser}
-                    onClose={() => setProgressDetailUser(null)}
-                />
-            )}
-        </div>
-    )
-}
-
-// ─── Admin Participant Progress Modal ──────────────────────────────────────────
-const SOURCE_META = {
-    gps: { label: 'GPS', Icon: MdGpsFixed, className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200' },
-    video_call: { label: 'Video', Icon: MdVideocam, className: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 border-violet-200' },
-    manual: { label: 'Thủ công', Icon: MdEdit, className: 'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300 border-slate-200' }
-}
-
-function AdminParticipantProgressModal({ event, participant, onClose }) {
-    const [page, setPage] = useState(1)
-    const [fromDate, setFromDate] = useState('')
-    const [toDate, setToDate] = useState('')
-
-    const eventId = event?._id
-    const userId = participant?.userId != null ? String(participant.userId) : ''
-    const isIndoor = event?.eventType === 'Trong nhà'
-    const PAGE_SIZE = 10
-
-    const { data, isLoading } = useQuery({
-        queryKey: ['admin-participant-progress', eventId, userId, page, fromDate, toDate],
-        queryFn: async () => {
-            const res = await adminSportEventApi.getParticipantProgressHistory(eventId, userId, {
-                page, limit: PAGE_SIZE,
-                ...(fromDate ? { fromDate } : {}),
-                ...(toDate ? { toDate } : {})
-            })
-            return res.data?.result
-        },
-        enabled: !!eventId && !!userId,
-        staleTime: 30000
-    })
-
-    const summary = data?.summary
-    const entries = data?.entries || []
-    const totalPages = Math.max(1, data?.totalPages || 1)
-
-    const fmtDur = (seconds) => {
-        if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return '0p 00s'
-        const s = Math.floor(seconds)
-        const h = Math.floor(s / 3600)
-        const m = Math.floor((s % 3600) / 60)
-        const sec = s % 60
-        if (h > 0) return `${h}g ${String(m).padStart(2, '0')}p ${String(sec).padStart(2, '0')}s`
-        return `${m}p ${String(sec).padStart(2, '0')}s`
-    }
-
-    const clearFilters = () => { setFromDate(''); setToDate(''); setPage(1) }
-
-    return (
-        <div className='fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4' onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col'>
-                {/* Header */}
-                <div className='bg-gradient-to-r from-teal-500 to-emerald-600 px-6 py-4 rounded-t-2xl flex items-center justify-between shrink-0'>
-                    <div className='min-w-0'>
-                        <h3 className='font-bold text-white text-base truncate'>
-                            Hoạt động của <span className='text-emerald-100'>{participant?.name || 'Người tham gia'}</span>
-                        </h3>
-                        <p className='text-sm text-white/70 truncate mt-0.5'>{event?.name}</p>
-                    </div>
-                    <button type='button' onClick={onClose} className='p-1.5 bg-black/10 hover:bg-black/20 rounded-lg transition-colors'>
-                        <FaTimes className='text-white' size={14} />
-                    </button>
-                </div>
-
-                <div className='overflow-y-auto flex-1 p-5 space-y-4' style={{ maxHeight: 'calc(90vh - 80px)' }}>
-                    {/* Summary Stats */}
-                    {summary && (
-                        <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
-                            <div className='flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600'>
-                                <div className='w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center'><FaClock className='text-emerald-600' /></div>
-                                <div><p className='text-[10px] font-semibold text-gray-400 uppercase'>Thời gian</p><p className='text-sm font-bold text-gray-800 dark:text-white'>{fmtDur(summary.totalTimeSeconds)}</p></div>
-                            </div>
-                            <div className='flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600'>
-                                <div className='w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center'><FaFire className='text-orange-600' /></div>
-                                <div><p className='text-[10px] font-semibold text-gray-400 uppercase'>Calories</p><p className='text-sm font-bold text-gray-800 dark:text-white'>{fmtNum(summary.totalCalories)} kcal</p></div>
-                            </div>
-                            {!isIndoor && (
-                                <div className='flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600'>
-                                    <div className='w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center'><FaRoad className='text-blue-600' /></div>
-                                    <div><p className='text-[10px] font-semibold text-gray-400 uppercase'>Quãng đường</p><p className='text-sm font-bold text-gray-800 dark:text-white'>{fmtNum(summary.totalDistance)} km</p></div>
-                                </div>
-                            )}
-                            <div className='flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600'>
-                                <div className='w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center'><FaChartLine className='text-indigo-600' /></div>
-                                <div><p className='text-[10px] font-semibold text-gray-400 uppercase'>Số {isIndoor ? 'buổi' : 'lần'}</p><p className='text-sm font-bold text-gray-800 dark:text-white'>{summary.count ?? entries.length}</p></div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Date Filter */}
-                    <div className='flex flex-wrap items-end gap-3'>
-                        <div>
-                            <label className='block text-[10px] font-semibold text-gray-400 uppercase mb-1'>Từ ngày</label>
-                            <input type='date' value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1) }}
-                                className='px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-teal-500' />
-                        </div>
-                        <div>
-                            <label className='block text-[10px] font-semibold text-gray-400 uppercase mb-1'>Đến ngày</label>
-                            <input type='date' value={toDate} onChange={e => { setToDate(e.target.value); setPage(1) }}
-                                className='px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-teal-500' />
-                        </div>
-                        {(fromDate || toDate) && (
-                            <button onClick={clearFilters} className='px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition'>
-                                <FaTimes size={10} className='inline mr-1' />Xóa bộ lọc
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Activity List */}
-                    {isLoading ? (
-                        <div className='space-y-3'>{[...Array(3)].map((_, i) => <div key={i} className='h-24 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse' />)}</div>
-                    ) : entries.length === 0 ? (
-                        <div className='py-10 text-center text-gray-400'>
-                            <FaChartLine size={28} className='mx-auto mb-2 opacity-30' />
-                            <p className='text-sm'>Chưa có hoạt động nào</p>
-                        </div>
-                    ) : (
-                        <div className='space-y-3'>
-                            {entries.map((entry, idx) => {
-                                const srcMeta = SOURCE_META[entry.source] || SOURCE_META.manual
-                                const SrcIcon = srcMeta.Icon
-                                const entryDate = entry.createdAt || entry.date
-                                return (
-                                    <div key={entry._id || idx} className='p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600/50'>
-                                        <div className='flex items-center justify-between mb-2'>
-                                            <div className='flex items-center gap-2'>
-                                                <span className='text-xs font-semibold text-gray-500 dark:text-gray-400'>
-                                                    {entryDate ? new Date(entryDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                                                </span>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${srcMeta.className}`}>
-                                                    <SrcIcon className='text-xs shrink-0' />{srcMeta.label}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className='flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
-                                            {entry.activeSeconds > 0 && (
-                                                <span className='inline-flex items-center gap-1'><FaClock className='text-emerald-500' size={10} />{fmtDur(entry.activeSeconds)}</span>
-                                            )}
-                                            {entry.calories > 0 && (
-                                                <span className='inline-flex items-center gap-1'><FaFire className='text-orange-500' size={10} />{fmtNum(entry.calories)} kcal</span>
-                                            )}
-                                            {!isIndoor && entry.distance > 0 && (
-                                                <span className='inline-flex items-center gap-1'><FaRoad className='text-blue-500' size={10} />{fmtNum(entry.distance)} km</span>
-                                            )}
-                                            {entry.value > 0 && (
-                                                <span className='inline-flex items-center gap-1'><FaBullseye className='text-teal-500' size={10} />{fmtNum(entry.value)} {entry.unit || ''}</span>
-                                            )}
-                                        </div>
-                                        {/* Indoor proof images */}
-                                        {isIndoor && entry.proofScreenshots && entry.proofScreenshots.length > 0 && (
-                                            <div className='mt-2 flex gap-2 overflow-x-auto'>
-                                                {entry.proofScreenshots.map((img, i) => (
-                                                    <img key={i} src={img} alt={`Proof ${i + 1}`} className='w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0' />
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className='flex items-center justify-between pt-2'>
-                            <span className='text-sm text-gray-500'>Trang <span className='font-bold text-gray-800 dark:text-white'>{page}</span> / {totalPages}</span>
-                            <div className='flex gap-2'>
-                                <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    className='w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition'>
-                                    <FaChevronLeft size={10} />
-                                </button>
-                                <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    className='w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition'>
-                                    <FaChevronRight size={10} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                <div className='overflow-y-auto flex-1 bg-white dark:bg-gray-800 rounded-b-2xl' style={{ maxHeight: 'calc(85vh - 72px)' }}>
+                    {renderOverview()}
                 </div>
             </div>
         </div>
@@ -529,7 +217,6 @@ export default function AdminSportEvent() {
 
     const events = data?.data?.result?.events || []
     const totalPage = data?.data?.result?.totalPage || 1
-    const listTotal = data?.data?.result?.total ?? 0
 
     // Sport categories for the form dropdown — only active (non-deleted)
     const { data: catData } = useQuery({
@@ -651,29 +338,19 @@ export default function AdminSportEvent() {
                 <div className='absolute right-20 -bottom-8 w-32 h-32 rounded-full bg-white/10' />
             </div>
 
-            {/* ── Event Analytics — compact strip above search ── */}
-            {events.length > 0 && (() => {
-                const now = new Date()
-                const outdoorCount = events.filter(e => e.eventType === 'Ngoài trời' && !e.isDeleted).length
-                const indoorCount = events.filter(e => e.eventType === 'Trong nhà' && !e.isDeleted).length
-                const activeEvents = events.filter(e => !e.isDeleted)
-                const avgParticipants = activeEvents.length > 0
-                    ? Math.round(activeEvents.reduce((s, e) => s + (e.participants || 0), 0) / activeEvents.length)
-                    : 0
-                const ongoingCount = activeEvents.filter(e => new Date(e.startDate) <= now && new Date(e.endDate) > now).length
-
-                const monthData = []
-                for (let i = 5; i >= 0; i--) {
+            {/* ── Event Analytics — toàn hệ thống (API /admin/sport-events/stats) ── */}
+            {(() => {
+                const createdSeries = Array.isArray(stats.createdCountsLast6Months) && stats.createdCountsLast6Months.length === 6
+                    ? stats.createdCountsLast6Months
+                    : [0, 0, 0, 0, 0, 0]
+                const monthData = createdSeries.map((count, idx) => {
                     const d = new Date()
-                    d.setMonth(d.getMonth() - i)
-                    const m = d.getMonth(); const y = d.getFullYear()
-                    const count = activeEvents.filter(e => {
-                        const cd = new Date(e.createdAt)
-                        return cd.getMonth() === m && cd.getFullYear() === y
-                    }).length
-                    monthData.push({ label: `T${m + 1}`, count })
-                }
+                    d.setMonth(d.getMonth() - (5 - idx))
+                    return { label: `T${d.getMonth() + 1}`, count }
+                })
                 const maxCount = Math.max(...monthData.map(m => m.count), 1)
+                const outdoorCount = stats.outdoor ?? 0
+                const indoorCount = stats.indoor ?? 0
 
                 return (
                     <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-2 overflow-hidden'>
@@ -681,19 +358,19 @@ export default function AdminSportEvent() {
                             {/* Label */}
                             <span className='flex flex-col gap-0.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide shrink-0 border-r border-gray-200 dark:border-gray-600 pr-3'>
                                 <span className='flex items-center gap-1.5'><FaChartBar size={12} className='shrink-0' /> Thống kê</span>
-                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Theo danh sách hiện tại (không phải tổng toàn hệ thống)</span>
+                                <span className='text-[9px] font-semibold normal-case text-gray-500 dark:text-gray-400 tracking-normal'>Tổng hợp trên toàn hệ thống</span>
                             </span>
 
                             {/* 4 stat pills */}
                             {[
-                                { label: 'Tổng (lọc) / hiển thị', value: `${listTotal} / ${activeEvents.length}`, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                { label: 'Đang diễn ra', value: ongoingCount, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                { label: 'Trung bình thành viên', value: avgParticipants, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                                { label: 'Sự kiện', value: stats.total ?? 0, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                { label: 'Đang diễn ra', value: stats.ongoing ?? 0, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                { label: 'Trung bình thành viên', value: stats.avgParticipantsPerEvent ?? 0, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
                                 { label: 'Ngoài trời / Trong nhà', value: `${outdoorCount}/${indoorCount}`, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                             ].map(s => (
                                 <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
                                     <span className={`text-base font-black leading-none ${s.color}`}>{s.value}</span>
-                                    <span className='text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase leading-tight'>{s.label}</span>
+                                    <span className='text-[10px] text-gray-400 dark:text-gray-500 font-semibold normal-case leading-tight'>{s.label}</span>
                                 </div>
                             ))}
 

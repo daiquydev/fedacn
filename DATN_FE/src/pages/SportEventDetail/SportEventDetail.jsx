@@ -43,7 +43,8 @@ import {
   checkInSession,
   checkOutSession,
   inviteFriendToEvent,
-  getEventOverallProgress
+  getEventOverallProgress,
+  getVideoSessions
 } from '../../apis/sportEventApi'
 import { currentAccount } from '../../apis/userApi'
 
@@ -193,6 +194,47 @@ export default function SportEventDetail() {
   })
 
   const overallProgress = overallProgressData?.data?.result || { totalGroupProgress: 0, participantCount: 0 }
+
+  // Trong nhà: cùng nguồn với tab Tiến độ (tổng activeSeconds / calories từ video), tránh lệch với tổng value đã làm tròn từng buổi trong DB
+  const indoorVsEnabled = !!id && !!event?.isJoined && event?.eventType === 'Trong nhà'
+  const {
+    data: indoorVsData,
+    isPending: indoorVsPending
+  } = useQuery({
+    queryKey: ['videoSessions', id],
+    queryFn: () => getVideoSessions(id),
+    enabled: indoorVsEnabled
+  })
+
+  const indoorPersonalFromVideo = useMemo(() => {
+    if (!indoorVsEnabled || indoorVsPending) return null
+    const videoSessions = indoorVsData?.data?.result || indoorVsData?.result || []
+    const eventStart = event?.startDate ? moment(event.startDate).startOf('day') : null
+    const endedSessions = videoSessions.filter((s) =>
+      s.status === 'ended' &&
+      (s.totalSeconds > 0 || s.activeSeconds > 0) &&
+      (!eventStart || moment(s.joinedAt).isSameOrAfter(eventStart))
+    )
+    const totalActiveSeconds = endedSessions.reduce((acc, v) => acc + (v.activeSeconds || 0), 0)
+    const totalCalories = endedSessions.reduce((acc, v) => acc + (v.caloriesBurned || 0), 0)
+    if (!event?.targetValue || event.targetValue <= 0) return null
+    const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
+    const perPersonTarget = event.targetValue / maxParticipants
+    if (perPersonTarget <= 0) return null
+    const unit = (event.targetUnit || '').toLowerCase()
+    let actualTotal = 0
+    if (unit.includes('kcal') || unit.includes('calo') || unit.includes('cal') || unit.includes('calories')) {
+      actualTotal = totalCalories
+    } else if (unit.includes('giờ') || unit.includes('hour')) {
+      actualTotal = totalActiveSeconds / 3600
+    } else {
+      actualTotal = Math.round(totalActiveSeconds / 60)
+    }
+    const rawPct = Math.round((actualTotal / perPersonTarget) * 100)
+    const pct = Number.isNaN(rawPct) ? 0 : Math.min(rawPct, 100)
+    const displayTotal = Math.round((actualTotal || 0) * 100) / 100
+    return { displayTotal, pct }
+  }, [indoorVsEnabled, indoorVsPending, indoorVsData, event?.targetValue, event?.targetUnit, event?.maxParticipants, event?.startDate])
 
   // Removed: Fetch Posts (community posts moved to /home page)
 
@@ -346,10 +388,12 @@ export default function SportEventDetail() {
   // For kcal events: compare totalCalories vs per-person target
   // For other events: compare totalProgress (native unit) vs per-person target
   const calculateProgress = () => {
-    if (!userProgress || !event?.targetValue || event.targetValue <= 0) return 0
+    if (!event?.targetValue || event.targetValue <= 0) return 0
     const maxParticipants = event?.maxParticipants > 0 ? event.maxParticipants : 1
     const perPersonTarget = event.targetValue / maxParticipants
     if (perPersonTarget <= 0) return 0
+    if (indoorPersonalFromVideo) return indoorPersonalFromVideo.pct
+    if (!userProgress) return 0
     const myTotal = isKcalUnit(event.targetUnit)
       ? (userProgress.totalCalories || 0)
       : (userProgress.totalProgress || 0)
@@ -876,11 +920,15 @@ export default function SportEventDetail() {
                 : (overallProgress.totalGroupProgress || 0)
               const groupPercent = effectiveTarget > 0 ? Math.min(Math.round((groupTotal / effectiveTarget) * 100), 100) : 0
               const perPersonTarget = effectiveTarget > 0 ? effectiveTarget / (event.maxParticipants || 1) : 0
-              // For kcal events, personal progress is totalCalories; otherwise totalProgress (native unit)
-              const myTotal = kcal
-                ? (userProgress?.totalCalories || 0)
-                : (userProgress?.totalProgress || 0)
-              const myPercent = perPersonTarget > 0 ? Math.min(Math.round((myTotal / perPersonTarget) * 100), 100) : 0
+              // Trong nhà: đồng bộ với IndoorEventProgress (tổng giây/kcal từ video); các loại khác: API userProgress
+              const myTotal = indoorPersonalFromVideo
+                ? indoorPersonalFromVideo.displayTotal
+                : (kcal
+                  ? (userProgress?.totalCalories || 0)
+                  : (userProgress?.totalProgress || 0))
+              const myPercent = indoorPersonalFromVideo
+                ? indoorPersonalFromVideo.pct
+                : (perPersonTarget > 0 ? Math.min(Math.round((myTotal / perPersonTarget) * 100), 100) : 0)
               const hasTarget = effectiveTarget > 0
 
               return (

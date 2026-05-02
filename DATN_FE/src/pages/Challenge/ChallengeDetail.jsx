@@ -71,7 +71,9 @@ export default function ChallengeDetail() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['challenge', id],
     queryFn: () => getChallenge(id),
-    staleTime: 1000
+    staleTime: 1000,
+    // Sau khi admin khôi phục trên BE, cache lỗi 404/410 cũ vẫn có thể giữ — luôn refetch khi vào lại trang
+    refetchOnMount: 'always'
   })
   const challenge = data?.data?.result
   const isArchivedReadOnly = Boolean(challenge?.is_archived_read_only)

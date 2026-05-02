@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { Types } from 'mongoose'
 import ChallengeModel from '~/models/schemas/challenge.schema'
 import ChallengeParticipantModel from '~/models/schemas/challengeParticipant.schema'
+import UserModel from '~/models/schemas/user.schema'
 import challengeService from '~/services/userServices/challenge.services'
 
 // GET /api/admin/challenges?page=&limit=&search=&challenge_type=&visibility=&status=&show_deleted=&dateFrom=&dateTo=&sortBy=
@@ -94,15 +95,21 @@ export const adminGetChallengesController = async (req: Request, res: Response) 
 export const adminGetChallengeStatsController = async (_req: Request, res: Response) => {
     // Chỉ đếm các challenges KHÔNG bị xóa mềm
     const notDeleted = { is_deleted: { $ne: true } }
+    const now = new Date()
 
-    const [total, active, completed, cancelled, nutrition, outdoor, fitness] = await Promise.all([
+    const [total, active, completed, cancelled, nutrition, outdoor, fitness, ongoing] = await Promise.all([
         ChallengeModel.countDocuments(notDeleted),
         ChallengeModel.countDocuments({ ...notDeleted, status: 'active' }),
         ChallengeModel.countDocuments({ ...notDeleted, status: 'completed' }),
         ChallengeModel.countDocuments({ ...notDeleted, status: 'cancelled' }),
         ChallengeModel.countDocuments({ ...notDeleted, challenge_type: 'nutrition' }),
         ChallengeModel.countDocuments({ ...notDeleted, challenge_type: 'outdoor_activity' }),
-        ChallengeModel.countDocuments({ ...notDeleted, challenge_type: 'fitness' })
+        ChallengeModel.countDocuments({ ...notDeleted, challenge_type: 'fitness' }),
+        ChallengeModel.countDocuments({
+            ...notDeleted,
+            start_date: { $lte: now },
+            end_date: { $gt: now }
+        })
     ])
 
     const activeChallengeIds = await ChallengeModel.find(notDeleted).distinct('_id')
@@ -116,13 +123,35 @@ export const adminGetChallengeStatsController = async (_req: Request, res: Respo
     // Tổng số Đã xóa (để admin biết)
     const deletedCount = await ChallengeModel.countDocuments({ is_deleted: true })
 
+    const avgParticipantsPerChallenge = total > 0 ? Math.round(totalParticipants / total) : 0
+
+    const monthRanges = Array.from({ length: 6 }, (_, idx) => {
+        const offset = 5 - idx
+        const d = new Date(now.getFullYear(), now.getMonth() - offset, 1)
+        return {
+            start: new Date(d.getFullYear(), d.getMonth(), 1),
+            end: new Date(d.getFullYear(), d.getMonth() + 1, 1)
+        }
+    })
+    const createdCountsLast6Months = await Promise.all(
+        monthRanges.map(({ start, end }) =>
+            ChallengeModel.countDocuments({
+                ...notDeleted,
+                createdAt: { $gte: start, $lt: end }
+            })
+        )
+    )
+
     return res.json({
         message: 'Lấy thống kê thử thách thành công',
         result: {
             total, active, completed, cancelled,
             byType: { nutrition, outdoor_activity: outdoor, fitness },
             totalParticipants,
-            deleted: deletedCount
+            deleted: deletedCount,
+            ongoing,
+            avgParticipantsPerChallenge,
+            createdCountsLast6Months
         }
     })
 }
@@ -133,7 +162,12 @@ export const adminDeleteChallengeController = async (req: Request, res: Response
 
     const challenge = await ChallengeModel.findOneAndUpdate(
         { _id: new Types.ObjectId(id), is_deleted: { $ne: true } },
-        { status: 'cancelled', is_deleted: true },
+        {
+            status: 'cancelled',
+            is_deleted: true,
+            deleted_from_report_moderation: false,
+            deleted_at: new Date()
+        },
         { new: true }
     )
 
@@ -148,14 +182,38 @@ export const adminDeleteChallengeController = async (req: Request, res: Response
 export const adminRestoreChallengeController = async (req: Request, res: Response) => {
     const { id } = req.params
 
+    const existing = await ChallengeModel.findById(id)
+        .select('is_deleted deleted_from_report_moderation creator_id')
+        .lean()
+    if (!existing?.is_deleted) {
+        return res.status(404).json({ message: 'Thử thách không tồn tại hoặc chưa bị xóa' })
+    }
+
+    const shouldDecrementViolations =
+        existing.deleted_from_report_moderation === true && Boolean(existing.creator_id)
+
     const challenge = await ChallengeModel.findOneAndUpdate(
         { _id: new Types.ObjectId(id), is_deleted: true },
-        { status: 'active', is_deleted: false },
+        {
+            $set: {
+                status: 'active',
+                is_deleted: false,
+                deleted_from_report_moderation: false,
+                deleted_at: null
+            }
+        },
         { new: true }
     )
 
     if (!challenge) {
         return res.status(404).json({ message: 'Thử thách không tồn tại hoặc chưa bị xóa' })
+    }
+
+    if (shouldDecrementViolations && existing.creator_id) {
+        await UserModel.updateOne(
+            { _id: new Types.ObjectId(String(existing.creator_id)) },
+            [{ $set: { banned_count: { $max: [0, { $subtract: [{ $ifNull: ['$banned_count', 0] }, 1] }] } } }]
+        )
     }
 
     return res.json({ message: 'Đã khôi phục thử thách thành công', result: challenge })

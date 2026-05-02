@@ -22,6 +22,21 @@ import adminSportEventService from '~/services/adminServices/adminSportEvent.ser
 import challengeService from '~/services/userServices/challenge.services'
 
 class InspectorService {
+  /** +1 banned_count (chủ nội dung bị gỡ do kiểm duyệt). Bỏ qua nếu user_id không hợp lệ. */
+  private async incrementModerationViolationCount(userId: string | undefined | null) {
+    if (!userId || !ObjectId.isValid(userId)) return
+    await UserModel.updateOne({ _id: new ObjectId(userId) }, { $inc: { banned_count: 1 } })
+  }
+
+  /** -1 banned_count, không nhỏ hơn 0 — dùng khi admin khôi phục nội dung đã gỡ do moderation. */
+  private async decrementModerationViolationCount(userId: string | undefined | null) {
+    if (!userId || !ObjectId.isValid(userId)) return
+    await UserModel.updateOne(
+      { _id: new ObjectId(userId) },
+      [{ $set: { banned_count: { $max: [0, { $subtract: [{ $ifNull: ['$banned_count', 0] }, 1] }] } } }]
+    )
+  }
+
   async getAllPostReportService({ page, limit, search }: { page: number; limit: number; search: string }) {
     if (!page) {
       page = 1
@@ -377,18 +392,10 @@ class InspectorService {
       { $set: { is_banned: false } }
     )
 
-    // tăng banned_count của user  = banned_count + 1
-    const user = await UserModel.findById(user_id)
+    await this.incrementModerationViolationCount(user_id)
 
+    const user = await UserModel.findById(user_id).select('_id').lean()
     if (user) {
-      await UserModel.updateOne(
-        { _id: user_id },
-        {
-          $set: {
-            banned_count: (user.banned_count ?? 0) + 1
-          }
-        }
-      )
       await NotificationModel.create({
         receiver_id: user_id,
         content: 'Một bài viết của bạn đã bị xóa do vi phạm quy định của hệ thống',
@@ -485,10 +492,18 @@ class InspectorService {
     return { posts, totalPage, totalPosts: total, page, limit }
   }
   async restorePostService({ post_id }: { post_id: string }) {
+    const post = await PostModel.findOne({ _id: new ObjectId(post_id) }).select('is_banned user_id').lean()
+    const wasBanned = Boolean(post?.is_banned)
+    const authorId = post?.user_id ? String(post.user_id) : null
+
     await PostModel.findOneAndUpdate(
       { _id: new ObjectId(post_id) },
       { $set: { is_banned: false } }
     )
+
+    if (wasBanned && authorId) {
+      await this.decrementModerationViolationCount(authorId)
+    }
     return true
   }
   async getListBlogForInspectorService({ page, limit, sort, search, category_blog_id }: GetListBlogForInspectorQuery) {
@@ -1243,7 +1258,21 @@ class InspectorService {
   }
 
   async restoreSportEventService({ event_id }: { event_id: string }) {
-    return adminSportEventService.restoreEventAdmin(event_id)
+    const existing = await SportEventModel.findById(event_id)
+      .select('isDeleted deletedFromReportModeration createdBy')
+      .lean()
+    const shouldDecrementViolations =
+      existing &&
+      existing.isDeleted === true &&
+      existing.deletedFromReportModeration === true &&
+      existing.createdBy
+
+    const event = await adminSportEventService.restoreEventAdmin(event_id)
+
+    if (shouldDecrementViolations && existing.createdBy) {
+      await this.decrementModerationViolationCount(String(existing.createdBy))
+    }
+    return event
   }
 
   async acceptSportEventReportService({ event_id }: { event_id: string }) {
@@ -1256,11 +1285,18 @@ class InspectorService {
   }
 
   async rejectSportEventReportService({ event_id, creator_user_id }: { event_id: string; creator_user_id: string }) {
+    const existing = await SportEventModel.findById(event_id).select('createdBy').lean()
+    const ownerId =
+      (creator_user_id && ObjectId.isValid(creator_user_id) ? creator_user_id : null) ??
+      (existing?.createdBy ? String(existing.createdBy) : null)
+
     await sportEventService.deleteSportEventService(event_id, { deletedFromReportModeration: true })
 
-    if (creator_user_id) {
+    await this.incrementModerationViolationCount(ownerId)
+
+    if (ownerId) {
       await NotificationModel.create({
-        receiver_id: creator_user_id,
+        receiver_id: ownerId,
         content: 'Một sự kiện của bạn đã bị gỡ bỏ do vi phạm quy định của hệ thống',
         link_id: event_id,
         type: NotificationTypes.system
@@ -1458,6 +1494,15 @@ class InspectorService {
   }
 
   async restoreChallengeService({ challenge_id }: { challenge_id: string }) {
+    const existing = await ChallengeModel.findById(challenge_id)
+      .select('is_deleted deleted_from_report_moderation creator_id')
+      .lean()
+    const shouldDecrementViolations =
+      existing &&
+      existing.is_deleted === true &&
+      existing.deleted_from_report_moderation === true &&
+      existing.creator_id
+
     const ch = await ChallengeModel.findByIdAndUpdate(
       new ObjectId(challenge_id),
       {
@@ -1471,6 +1516,10 @@ class InspectorService {
       },
       { new: true }
     )
+
+    if (shouldDecrementViolations && existing.creator_id) {
+      await this.decrementModerationViolationCount(String(existing.creator_id))
+    }
     return ch
   }
 
@@ -1484,11 +1533,18 @@ class InspectorService {
   }
 
   async rejectChallengeReportService({ challenge_id, creator_user_id }: { challenge_id: string; creator_user_id: string }) {
+    const existing = await ChallengeModel.findById(challenge_id).select('creator_id').lean()
+    const ownerId =
+      (creator_user_id && ObjectId.isValid(creator_user_id) ? creator_user_id : null) ??
+      (existing?.creator_id ? String(existing.creator_id) : null)
+
     await challengeService.softDeleteChallengeFromModeration(challenge_id)
 
-    if (creator_user_id) {
+    await this.incrementModerationViolationCount(ownerId)
+
+    if (ownerId) {
       await NotificationModel.create({
-        receiver_id: creator_user_id,
+        receiver_id: ownerId,
         content: 'Một thử thách của bạn đã bị gỡ bỏ do vi phạm quy định của hệ thống',
         link_id: challenge_id,
         type: NotificationTypes.system

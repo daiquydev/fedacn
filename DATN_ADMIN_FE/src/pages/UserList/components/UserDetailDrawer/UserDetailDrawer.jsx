@@ -5,16 +5,10 @@ import { getImageUrl } from '../../../../utils/imageUrl'
 import { useEffect } from 'react'
 import Loading from '../../../../components/GlobalComponents/Loading'
 import {
-  FaTimes, FaFileAlt, FaRunning, FaDumbbell,
-  FaUsers, FaHeart,
+  FaTimes, FaFileAlt, FaRunning,
+  FaUsers,
   FaCalendarAlt, FaEnvelope, FaTrophy
 } from 'react-icons/fa'
-
-const VIOLATION_KIND_LABEL = {
-  post: 'Bài viết bị gỡ (vi phạm / báo cáo)',
-  sport_event: 'Sự kiện bị gỡ sau kiểm duyệt báo cáo',
-  challenge: 'Thử thách bị gỡ sau kiểm duyệt báo cáo'
-}
 
 function MetricCard({ icon: Icon, label, value, subtitle, iconBg, className = '' }) {
   return (
@@ -52,9 +46,6 @@ export default function UserDetailDrawer({ userId, onClose }) {
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onClose])
-
-  const violations = Array.isArray(user?.moderation_violations) ? user.moderation_violations : []
-  const showViolationSection = (user?.banned_count ?? 0) > 0 || violations.length > 0
 
   return (
     <>
@@ -144,19 +135,11 @@ export default function UserDetailDrawer({ userId, onClose }) {
                       iconBg='bg-gradient-to-br from-blue-400 to-blue-600'
                     />
                     <MetricCard
-                      icon={FaHeart}
-                      label='Lượt thích'
-                      value={user.likes_count}
-                      subtitle='đã thích bài viết'
-                      iconBg='bg-gradient-to-br from-pink-400 to-rose-500'
-                    />
-                    <MetricCard
                       icon={FaUsers}
                       label='Người theo dõi'
                       value={user.followers_count}
                       subtitle='theo dõi tài khoản này'
                       iconBg='bg-gradient-to-br from-cyan-400 to-teal-500'
-                      className='col-span-2'
                     />
                   </div>
                 </div>
@@ -176,69 +159,11 @@ export default function UserDetailDrawer({ userId, onClose }) {
                       icon={FaTrophy}
                       label='Thử thách tham gia'
                       value={user.challenges_joined ?? 0}
-                      subtitle={`${user.challenges_completed ?? 0} đã hoàn thành · không tính đã bỏ cuộc`}
                       iconBg='bg-gradient-to-br from-violet-400 to-purple-600'
                     />
                   </div>
                 </div>
-
-                <div>
-                  <p className='text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2'>
-                    Tập luyện
-                  </p>
-                  <div className='grid grid-cols-2 gap-3'>
-                    <MetricCard
-                      icon={FaDumbbell}
-                      label='Buổi tập hoàn thành'
-                      value={user.workouts_completed}
-                      subtitle={`${(user.total_workout_kcal ?? 0).toLocaleString('vi-VN')} kcal đốt`}
-                      iconBg='bg-gradient-to-br from-orange-400 to-red-500'
-                      className='col-span-2'
-                    />
-                  </div>
-                </div>
               </div>
-
-              {/* Violation / moderation history */}
-              {showViolationSection && (
-                <div className='rounded-2xl p-4 mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'>
-                  <p className='text-sm font-bold text-red-700 dark:text-red-400 mb-2'>
-                    ⚠️ Lịch sử vi phạm và nội dung đã gỡ
-                  </p>
-                  <p className='text-xs text-red-600/90 dark:text-red-300/90 mb-3'>
-                    Điểm cảnh báo (banned_count): <span className='font-semibold'>{user.banned_count ?? 0}</span>
-                    {violations.length > 0 && (
-                      <> · Đã gỡ <span className='font-semibold'>{violations.length}</span> nội dung có thể truy vết</>
-                    )}
-                  </p>
-                  {violations.length > 0 ? (
-                    <ul className='space-y-2.5 max-h-64 overflow-y-auto pr-1'>
-                      {violations.map((v, idx) => (
-                        <li
-                          key={`${v.kind}-${v.ref_id}-${idx}`}
-                          className='text-xs rounded-xl bg-white/80 dark:bg-slate-900/50 border border-red-100 dark:border-red-900/40 p-3'
-                        >
-                          <p className='font-semibold text-red-800 dark:text-red-300'>
-                            {VIOLATION_KIND_LABEL[v.kind] || v.kind}
-                          </p>
-                          <p className='text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-wrap break-words'>
-                            {v.summary}
-                          </p>
-                          {v.occurred_at && (
-                            <p className='text-[10px] text-gray-400 mt-1.5'>
-                              {new Date(v.occurred_at).toLocaleString('vi-VN')}
-                            </p>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className='text-xs text-red-700/80 dark:text-red-400/80'>
-                      Có {user.banned_count ?? 0} lần ghi nhận trên tài khoản nhưng không còn bản ghi chi tiết (dữ liệu cũ hoặc đã dọn).
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           </>
         )}

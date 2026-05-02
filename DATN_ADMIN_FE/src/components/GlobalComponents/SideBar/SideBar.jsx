@@ -95,17 +95,17 @@ export default function SideBar() {
   // ]
 
   return (
-    <div className='fixed top-0 left-0 h-screen z-[100]'>
+    <div className='fixed top-0 left-0 z-40 h-screen'>
       <div
         onClick={() => setOpen(false)}
-        className={`md:hidden fixed inset-0 max-h-screen z-[80] bg-black/50 ${open ? 'block' : 'hidden'} `}
+        className={`fixed inset-0 z-10 max-h-screen bg-black/50 md:hidden ${open ? 'block' : 'hidden'} `}
       ></div>
       <motion.div
         ref={sidebarRef}
         variants={Nav_animation}
         initial={{ x: isTabletMid ? -250 : 0 }}
         animate={open ? 'open' : 'closed'}
-        className=' bg-white dark:bg-color-primary-dark dark:text-gray-300 text-gray shadow-md dark:shadow-yellow-800 max-w-[16rem] w-[16rem] overflow-hidden z-[999] h-screen relative'
+        className='relative z-20 h-screen w-[16rem] max-w-[16rem] overflow-hidden bg-white text-gray shadow-md dark:bg-color-primary-dark dark:text-gray-300 dark:shadow-yellow-800'
       >
         <Logo className='flex items-center gap-2.5 font-medium pb-2.5 pt-2.5 mx-3' />
 

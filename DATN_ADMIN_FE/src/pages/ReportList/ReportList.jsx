@@ -168,14 +168,6 @@ export default function ReportList() {
   const deletedChallengesTotalPage = deletedChallengesPagination?.total_page || 1
   const challengesDeletedTotal = challengesDeletedMeta ?? deletedChallengesPagination?.total ?? deletedChallengesList.length
 
-  // Severity counts
-  const highRisk = posts.filter(p => (p.report_count ?? 0) >= 5).length
-  const moderate = posts.filter(p => (p.report_count ?? 0) >= 2 && (p.report_count ?? 0) < 5).length
-  const eventsHighRisk = sportEvents.filter(e => (e.report_count ?? 0) >= 5).length
-  const eventsModerate = sportEvents.filter(e => (e.report_count ?? 0) >= 2 && (e.report_count ?? 0) < 5).length
-  const challengesHighRisk = reportedChallenges.filter(c => (c.report_count ?? 0) >= 5).length
-  const challengesModerate = reportedChallenges.filter(c => (c.report_count ?? 0) >= 2 && (c.report_count ?? 0) < 5).length
-
   const goPostsReported = () => setSearchParams({}, { replace: true })
   const goPostsDeleted = () => setSearchParams({ tab: 'deleted' }, { replace: true })
   const goEventsReported = () => setSearchParams({}, { replace: true })
@@ -253,7 +245,7 @@ export default function ReportList() {
         </div>
 
         {/* Tabs + contextual stat chips */}
-        <div className='relative z-10 flex items-center justify-between mt-3 flex-wrap gap-2'>
+        <div className='relative z-10 flex items-center mt-3 flex-wrap gap-2'>
           <div className='flex gap-2 flex-wrap'>
             {mode === 'posts' ? (
               <>
@@ -326,42 +318,6 @@ export default function ReportList() {
               </>
             )}
           </div>
-          {mode === 'posts' && postTab === 'reported' && (
-            <div className='flex gap-2 flex-wrap'>
-              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
-                <span className='text-sm font-black text-red-200'>{highRisk}</span>
-                <span className='text-white/70 text-xs'>Nguy cơ cao</span>
-              </div>
-              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
-                <span className='text-sm font-black text-orange-200'>{moderate}</span>
-                <span className='text-white/70 text-xs'>Báo cáo vừa</span>
-              </div>
-            </div>
-          )}
-          {mode === 'events' && eventTab === 'reported' && (
-            <div className='flex gap-2 flex-wrap'>
-              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
-                <span className='text-sm font-black text-red-200'>{eventsHighRisk}</span>
-                <span className='text-white/70 text-xs'>Nguy cơ cao</span>
-              </div>
-              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
-                <span className='text-sm font-black text-orange-200'>{eventsModerate}</span>
-                <span className='text-white/70 text-xs'>Báo cáo vừa</span>
-              </div>
-            </div>
-          )}
-          {mode === 'challenges' && challengeTab === 'reported' && (
-            <div className='flex gap-2 flex-wrap'>
-              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
-                <span className='text-sm font-black text-red-200'>{challengesHighRisk}</span>
-                <span className='text-white/70 text-xs'>Nguy cơ cao</span>
-              </div>
-              <div className='flex items-center gap-1 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-xl'>
-                <span className='text-sm font-black text-orange-200'>{challengesModerate}</span>
-                <span className='text-white/70 text-xs'>Báo cáo vừa</span>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className='absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10' />

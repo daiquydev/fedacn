@@ -383,7 +383,8 @@ export default function FriendManagement() {
     return filtered.filter((p) => {
       const name = (p.name || '').toLowerCase()
       const username = (p.user_name || '').toLowerCase()
-      return name.includes(kw) || username.includes(kw)
+      const email = (p.email || '').toLowerCase()
+      return name.includes(kw) || username.includes(kw) || email.includes(kw)
     })
   }, [recommendedData, followerIds, followingIds, exploreFilter])
 
@@ -574,7 +575,7 @@ export default function FriendManagement() {
                 <FaUserFriends className='text-emerald-500' />
                 Khám phá bạn bè
               </h2>
-              <p className='text-xs text-gray-500 dark:text-gray-400'>Gợi ý người dùng bạn có thể quen.</p>
+              <p className='text-xs text-gray-500 dark:text-gray-400'>Mọi tài khoản bạn chưa theo dõi (trừ vai trò quản trị). Dùng ô tìm để lọc theo tên, username hoặc email.</p>
             </div>
             <div className='relative w-full md:w-64'>
               <FaSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={12} />
@@ -582,7 +583,7 @@ export default function FriendManagement() {
                 type='text'
                 value={exploreFilter}
                 onChange={(e) => setExploreFilter(e.target.value)}
-                placeholder='Tìm kiếm người dùng'
+                placeholder='Tên, @username hoặc email'
                 className='w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-400 outline-none'
               />
             </div>
@@ -593,6 +594,7 @@ export default function FriendManagement() {
           ) : !recommendedPeople.length ? (
             <EmptyState message='Hiện chưa có gợi ý mới. Hãy mở rộng mạng lưới bằng cách kết bạn thêm.' />
           ) : (
+            <div className='max-h-[min(70vh,56rem)] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent'>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
               {recommendedPeople.map((person) => (
                 <div
@@ -644,6 +646,7 @@ export default function FriendManagement() {
                   />
                 </div>
               ))}
+            </div>
             </div>
           )}
         </section>

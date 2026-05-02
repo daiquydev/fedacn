@@ -524,7 +524,7 @@ class UsersService {
     return user
   }
   async recommendUsersService({ user_id }: { user_id: string }) {
-    // lấy ra 5 người ngẫu nhiên mà user_id chưa follow
+    // Tất cả user hợp lệ mà user_id chưa follow (trừ admin/inspector/writter, đã xóa mềm)
     const recommendUsers = await UserModel.aggregate([
       {
         $match: {
@@ -551,14 +551,13 @@ class UsersService {
       {
         $match: { is_following: false }
       },
-      // ưu tiên người mới tạo tài khoản gần nhất, lấy 6 người
       { $sort: { createdAt: -1 } },
-      { $limit: 6 },
       {
         $project: {
           _id: 1,
           name: 1,
           user_name: 1,
+          email: 1,
           avatar: 1,
           role: 1,
           createdAt: 1

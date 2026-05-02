@@ -107,23 +107,69 @@ class AdminSportEventService {
 
     // Get stats for admin dashboard
     async getEventStatsAdmin() {
-        const [total, active, deleted, outdoor, indoor] = await Promise.all([
-            SportEventModel.countDocuments({}),
-            SportEventModel.countDocuments({ isDeleted: { $ne: true } }),
-            SportEventModel.countDocuments({ isDeleted: true }),
-            SportEventModel.countDocuments({ eventType: 'Ngoài trời', isDeleted: { $ne: true } }),
-            SportEventModel.countDocuments({ eventType: 'Trong nhà', isDeleted: { $ne: true } })
-        ])
+        const notDel = { isDeleted: { $ne: true } as const }
+        const now = new Date()
 
-        // Get events created in the last 30 days
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-        const recentCount = await SportEventModel.countDocuments({
-            createdAt: { $gte: thirtyDaysAgo },
-            isDeleted: { $ne: true }
+
+        const monthRanges = Array.from({ length: 6 }, (_, idx) => {
+            const offset = 5 - idx
+            const d = new Date(now.getFullYear(), now.getMonth() - offset, 1)
+            return {
+                start: new Date(d.getFullYear(), d.getMonth(), 1),
+                end: new Date(d.getFullYear(), d.getMonth() + 1, 1)
+            }
         })
 
-        return { total, active, deleted, outdoor, indoor, recentCount }
+        const [
+            total,
+            active,
+            deleted,
+            outdoor,
+            indoor,
+            recentCount,
+            ongoing,
+            avgAgg,
+            ...createdMonthCounts
+        ] = await Promise.all([
+            SportEventModel.countDocuments({}),
+            SportEventModel.countDocuments(notDel),
+            SportEventModel.countDocuments({ isDeleted: true }),
+            SportEventModel.countDocuments({ eventType: 'Ngoài trời', ...notDel }),
+            SportEventModel.countDocuments({ eventType: 'Trong nhà', ...notDel }),
+            SportEventModel.countDocuments({
+                createdAt: { $gte: thirtyDaysAgo },
+                ...notDel
+            }),
+            SportEventModel.countDocuments({
+                ...notDel,
+                startDate: { $lte: now },
+                endDate: { $gt: now }
+            }),
+            SportEventModel.aggregate([{ $match: notDel }, { $group: { _id: null, avgP: { $avg: '$participants' } } }]),
+            ...monthRanges.map(({ start, end }) =>
+                SportEventModel.countDocuments({
+                    ...notDel,
+                    createdAt: { $gte: start, $lt: end }
+                })
+            )
+        ])
+
+        const avgParticipantsPerEvent = Math.round(Number((avgAgg as { avgP?: number }[])[0]?.avgP ?? 0))
+        const createdCountsLast6Months = createdMonthCounts as number[]
+
+        return {
+            total,
+            active,
+            deleted,
+            outdoor,
+            indoor,
+            recentCount,
+            ongoing,
+            avgParticipantsPerEvent,
+            createdCountsLast6Months
+        }
     }
 
     // Admin create event (bypass date validation)
