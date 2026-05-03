@@ -1,0 +1,438 @@
+Trường Đại Học Bách Khoa Tp.Hồ Chí Minh
+Khoa Khoa Học & Kỹ Thuật Máy Tính
+CHƯƠNG 7
+KIỂMTHỬHỆTHỐNG
+Chương này trình bày chi tiết về quá trình kiểm thử hệ thống mạng xã hội dinh dưỡng, bao gồm các phương
+phápkiểmthử,kếtquảkiểmthửvàđánhgiáchấtlượnghệthống.Việckiểmthửđượcthựchiệnởnhiềumứcđộ
+khácnhauđểđảmbảohệthốnghoạtđộngđúngchứcnăng,ổnđịnhvàđápứngyêucầungườidùng.
+7.1 Mục tiêu kiểm thử
+7.1.1 Mục tiêu chính
+Kiểm thử là giai đoạn quan trọng để đảm bảo chất lượng hệ thống trước khi triển khai cho người dùng. Qua
+quátrìnhkiểmthử,nhómpháttriểncóthểpháthiệnvàkhắcphụccáclỗi,đánhgiáhiệunăngvàxácminhrằnghệ
+thốnghoạtđộngđúngnhưmongđợi.Điềunàyđặcbiệtquantrọngđốivớihệthốngquảnlýdinhdưỡng,nơitính
+chínhxáccủathôngtinvàsựtincậycủahệthốnglàtốiquantrọng.
+•Kiểm tra tính đúng đắn: Đảmbảocácchứcnănghoạtđộngtheođúngyêucầuđãđặtra
+•Phát hiện lỗi: Tìmvàkhắcphụccáclỗi,bugtrướckhitriểnkhaiproduction
+•Đánh giá hiệu năng: Đolườngthờigianphảnhồi,khảnăngchịutảicủahệthống
+•Kiểm tra tính tương thích: Đảmbảohoạtđộngtốttrênnhiềutrìnhduyệtvàthiếtbị
+•Bảo mật:Xácminhcáccơchếbảomật,xácthựcvàphânquyền
+•Trải nghiệm người dùng: Đánhgiágiaodiện,tínhdễsửdụngvàlogicnghiệpvụ
+7.1.2 Phạm vi kiểm thử
+Phạm vi kiểm thử bao phủ tất cả các lớp của hệ thống, từ các đơn vị nhỏ nhất (unit) đến toàn bộ hệ thống
+(end-to-end).Việckiểmthửởnhiềumứcđộkhácnhaugiúpđảmbảokhôngchỉtừngchứcnăngriểnglẻhoạtđộng
+tốtmàcònđảmbảocácchứcnăngtíchhợpvớinhaumộtcáchmượtmà.ĐặcbiệtchútrọngkiểmthửcácAPIvà
+tínhnăngliênquanđếntínhtoándinhdưỡngđểđảmbảotínhchínhxác.
+•Kiểm thử Unit: Cáchàm,componentriênglẻ
+•Kiểm thử Integration: TíchhợpgiữaFrontend-Backend-Database
+•Kiểm thử API: CácendpointRESTfulAPI
+•Kiểm thử chức năng: Cácusecasechínhcủahệthống
+•Kiểm thử hiệu năng: Loadtesting,stresstesting
+•Kiểm thử bảo mật: Authentication,Authorization,Inputvalidation
+•Kiểm thử giao diện: UI/UXtesting,Responsivetesting
+Đồ án Tốt Nghiệp ‐ Học kỳ 251 Trang 80/ 957.2 Phương pháp kiểm thử
+7.2.1 Chiến lược kiểm thử
+Hệthốngđượckiểmthửtheomôhìnhkimtựtháp(TestingPyramid),mộtchiếnlượckiểmthửđượccôngnhận
+rộngrãitrongngành.Môhìnhnàynhấnmạnhviệccónhiềuunittestởnềntảng(70
+Hệthốngđượckiểmthửtheomôhìnhkimtựtháp(TestingPyramid):
+Unit TestsIntegration TestsE2E Tests
+70%20%10%
+Hình 7.1: Môhìnhkimtựthápkiểmthử
+7.2.2 Công cụ kiểm thử
+Lựachọncôngcụkiểmthửphùhợpgiúptănghiệuquảvàchấtlượngkiểmthử.Dựánsửdụngkếthợpnhiều
+côngcụkhácnhautươngứngvớitừngloạikiểmthử:Jestchounitvàintegrationtestingvớikhảnăngđođộbaophủ
+code, Postman cho API testing với giao diện trực quan, Cypress cho end-to-end testing mô phỏng hành vi người
+dùngthựctế,vàcáccôngcụperformancetestingđểkiểmtrakhảnăngchịutải.
+extbfCôngcụkiểmthửsửdụngtrongdựán
+•Unit Testing: Jest—kiểmthửhàmvàcomponentReact
+•Integration Testing: Jest,Supertest—kiểmthửtíchhợpmodulevàAPIendpoints
+•API Testing: Postman,ThunderClient—kiểmthửchứcnăngvàtàiliệuAPI
+•E2E Testing: Cypress—kiểmthửtoànbộluồngnghiệpvụngườidùng
+•Performance Testing: Artillery,K6—load/stresstesting
+•Code Coverage: JestCoverage—đođộbaophủtest
+•Manual Testing: BrowserDevTools—gỡlỗivàkiểmthửthủcông
+7.3 Kiểm thử Unit
+7.3.1 Backend Unit Tests
+Kiểm thử đơn vị (unit test) cho backend tập trung vào việc kiểm tra từng hàm, module riêng lẻ để đảm bảo
+chúnghoạtđộngchínhxác.Đặcbiệtquantrọnglàcáchàmtínhtoándinhdưỡng(BMI,BMR,TDEE),middleware
+xác thực và các utility function. Việc kiểm thử kỹ lưỡng các hàm này giúp đảm bảo tính chính xác của thông tin
+dinhdưỡngcungcấpchongườidùng.
+Kiểmthửcácfunctionxửlýnghiệpvụ,utilityfunctionsvàmiddleware.
+Ví dụ: Kiểm thử hàm tính toán BMI
+// Test file: calculateBMI.test.js
+describe('BMI Calculator', () => {
+test('should calculate BMI correctly for normal weight', () => {
+const weight = 70; // kg
+const height = 175; // cm
+const bmi = calculateBMI(weight, height);
+expect(bmi).toBeCloseTo(22.86, 2);
+});
+test('should return correct category for BMI', () => {
+81expect(getBMICategory(18.5)).toBe('Normal');
+expect(getBMICategory(17.0)).toBe('Underweight');
+expect(getBMICategory(26.0)).toBe('Overweight');
+expect(getBMICategory(31.0)).toBe('Obese');
+});
+test('should throw error for invalid inputs', () => {
+expect(() => calculateBMI(‐70, 175)).toThrow();
+expect(() => calculateBMI(70, 0)).toThrow();
+});
+});
+Ví dụ: Kiểm thử JWT Authentication Middleware
+// Test file: authMiddleware.test.js
+describe('Auth Middleware', () => {
+test('should verify valid JWT token', async () => {
+const token = generateToken({ userId: '123' });
+const req = { headers: { authorization: `Bearer ${token}` } };
+const res = {};
+const next = jest.fn();
+await authMiddleware(req, res, next);
+expect(req.user.userId).toBe('123');
+expect(next).toHaveBeenCalled();
+});
+test('should reject invalid token', async () => {
+const req = { headers: { authorization: 'Bearer invalid' } };
+const res = { status: jest.fn().mockReturnThis(),
+json: jest.fn() };
+const next = jest.fn();
+await authMiddleware(req, res, next);
+expect(res.status).toHaveBeenCalledWith(401);
+expect(next).not.toHaveBeenCalled();
+});
+});
+7.3.2 Frontend Unit Tests
+KiểmthửReactcomponents,hooksvàutilityfunctions.
+Ví dụ: Kiểm thử RecipeCard Component
+// Test file: RecipeCard.test.jsx
+import { render, screen } from '@testing‐library/react';
+import RecipeCard from './RecipeCard';
+describe('RecipeCard Component', () => {
+const mockRecipe = {
+title: 'Healthy Salad',
+calories: 250,
+cookTime: 15,
+difficulty: 'Easy'
+};
+test('renders recipe information correctly', () => {
+render(<RecipeCard recipe={mockRecipe} />);
+82expect(screen.getByText('Healthy Salad')).toBeInTheDocument();
+expect(screen.getByText('250 cal')).toBeInTheDocument();
+expect(screen.getByText('15 min')).toBeInTheDocument();
+});
+test('displays difficulty badge with correct color', () => {
+render(<RecipeCard recipe={mockRecipe} />);
+const badge = screen.getByText('Easy');
+expect(badge).toHaveClass('badge‐success');
+});
+});
+7.3.3 Kết quả kiểm thử Unit
+Bảng 7.1: KếtquảkiểmthửUnit
+Module Tests Passed Failed Coverage
+AuthUtils 1515 095%
+CalculationUtils 1212 0100%
+RecipeServices 1818 088%
+MealPlanServices 2019 185%
+ReactComponents 2524 178%
+CustomHooks 1010 092%
+Tổng 100 98 2 87%
+7.4 Kiểm thử Integration và API
+7.4.1 Kiểm thử API Endpoints
+SửdụngSupertestđểkiểmthửcácAPIendpoints.
+Ví dụ: Kiểm thử Recipe API
+// Test file: recipeAPI.test.js
+describe('Recipe API', () => {
+let authToken;
+beforeAll(async () => {
+// Login to get auth token
+const res = await request(app)
+.post('/api/auth/login')
+.send({ email: 'test@example.com', password: 'test123' });
+authToken = res.body.token;
+});
+describe('POST /api/recipes', () => {
+test('should create new recipe with valid data', async () => {
+const recipeData = {
+title: 'Test Recipe',
+ingredients: [
+{ name: 'Rice', quantity: 200, unit: 'g' }
+],
+instructions: ['Step 1', 'Step 2'],
+calories: 300
+83};
+const res = await request(app)
+.post('/api/recipes')
+.set('Authorization', `Bearer ${authToken}`)
+.send(recipeData)
+.expect(201);
+expect(res.body.recipe).toHaveProperty('_id');
+expect(res.body.recipe.title).toBe('Test Recipe');
+});
+test('should return 400 for invalid data', async () => {
+const res = await request(app)
+.post('/api/recipes')
+.set('Authorization', `Bearer ${authToken}`)
+.send({ title: '' })
+.expect(400);
+expect(res.body).toHaveProperty('errors');
+});
+test('should return 401 without auth token', async () => {
+await request(app)
+.post('/api/recipes')
+.send({ title: 'Test' })
+.expect(401);
+});
+});
+describe('GET /api/recipes', () => {
+test('should return paginated recipes', async () => {
+const res = await request(app)
+.get('/api/recipes?page=1&limit=10')
+.expect(200);
+expect(res.body).toHaveProperty('recipes');
+expect(res.body).toHaveProperty('totalPages');
+expect(Array.isArray(res.body.recipes)).toBe(true);
+});
+test('should filter recipes by category', async () => {
+const res = await request(app)
+.get('/api/recipes?category=breakfast')
+.expect(200);
+res.body.recipes.forEach(recipe => {
+expect(recipe.category).toBe('breakfast');
+});
+});
+});
+});
+7.4.2 Kiểm thử với Postman
+TạocollectionPostmanđểtestvàdocumentAPI:
+84•Authentication Collection: Testđăngký,đăngnhập,refreshtoken
+•Recipe Collection: CRUDoperationschorecipes
+•Meal Plan Collection: Tạo,cậpnhật,xóamealplans
+•Social Collection: Posts,comments,likes,follows
+•Search Collection: Testtìmkiếmvàfilter
+7.4.3 Kết quả kiểm thử API
+Bảng 7.2: KếtquảkiểmthửAPIEndpoints
+API Group Endpoints Passed Failed
+Authentication 550
+UserManagement 880
+Recipes 1212 0
+MealPlans 10 91
+SocialFeatures 1514 1
+Search 660
+NutritionTracking 770
+Tổng 63 61 2
+7.5 Kiểm thử chức năng
+7.5.1 Kịch bản kiểm thử
+7.5.1.1 TC-001: Đăng ký tài khoản
+7.5.1.1.1 Tóm tắt: Đăngkýtàikhoảnmớikhingườidùngchưacótàikhoản.
+extbfThôngtintestcase
+•Test Case ID: TC-001
+•Chức năng: Đăngkýtàikhoảnmới
+•Điều kiện tiên quyết: Ngườidùngchưacótàikhoản
+•Dữ liệu đầu vào: Email:test@example.com;Password:Test@123;Họtên:NguyễnVănA
+•Các bước thực hiện:
+1.Truycậptrangđăngký
+2.Nhậpemailhợplệ
+3.Nhậpmậtkhẩu(ítnhất6kýtự)
+4.Nhậphọtên
+5.Clicknút”Đăngký”
+•Kết quả mong đợi:
+–Tàikhoảnđượctạothànhcông,hiểnthịthôngbáo”Đăngkýthànhcông”
+–Tựđộngđăngnhậpvàchuyểnđếntrangchủ
+–JWTtokenđượclưuvàolocalStorage
+•Kết quả thực tế: ✓Passed
+857.5.1.2 TC-002: Tạo công thức món ăn
+7.5.1.2.1 Tóm tắt: Tạocôngthứcmónănmớikhingườidùngđãđăngnhập.
+extbfThôngtintestcase
+•Test Case ID: TC-002
+•Chức năng: Tạocôngthứcmónănmới
+•Điều kiện tiên quyết: Ngườidùngđãđăngnhập
+•Dữ liệu đầu vào: Tênmón:Saladraucủ;Danhmục:Bữatrưa;Nguyênliệu:Rauxàlách(100g),Càchua
+(50g);Thờigian:15phút;Độkhó:Dễ
+•Các bước thực hiện:
+1.Click”Tạocôngthức”
+2.Nhậpthôngtinmónăn
+3.Thêmnguyênliệu
+4.Thêmcácbướcthựchiện
+5.Uploadhìnhảnh
+6.Click”Lưucôngthức”
+•Kết quả mong đợi:
+–Côngthứcđượclưuvàodatabase
+–Hiểnthịtrangchitiếtcôngthức
+–Tínhtoántựđộngthôngtindinhdưỡng
+–HìnhảnhđượcuploadlênCloudinary
+•Kết quả thực tế: ✓Passed
+7.5.1.3 TC-003: Tạo và áp dụng thực đơn
+7.5.1.3.1 Tóm tắt: Tạothựcđơn7ngàyvàápdụngvàolịchcánhân.
+extbfThôngtintestcase
+•Test Case ID: TC-003
+•Chức năng: Tạothựcđơn7ngàyvàápdụngvàolịchcánhân
+•Điều kiện tiên quyết: Ngườidùngđãđăngnhập;cósẵncôngthứcmónăntronghệthống
+•Dữ liệu đầu vào: Tênthựcđơn:Giảmcân7ngày;Mụctiêu:1500calories/ngày;Thờigian:7ngày
+•Các bước thực hiện:
+1.Tạothựcđơnmới
+2.Chọnmónănchotừngbữatrong7ngày
+3.Kiểmtratổngcaloriesmỗingày
+4.Lưuthựcđơn
+5.Click”Ápdụngthựcđơn”
+6.Chọnngàybắtđầu
+•Kết quả mong đợi:
+–Thựcđơnđượctạovàlưu
+–Hiểnthịtrênlịchcánhân
+–Tínhtoánchínhxáctổngcalories
+•Kết quả thực tế: ✓Passed
+867.5.1.4 TC-004: Tương tác mạng xã hội
+7.5.1.4.1 Tóm tắt: Likevàcommentbàiviếttrênnewsfeed.
+extbfThôngtintestcase
+•Test Case ID: TC-004
+•Chức năng: Likebàiviếtvàviếtcomment
+•Điều kiện tiên quyết: Ngườidùngđãđăngnhập;cóbàiviếttrênnewsfeed
+•Các bước thực hiện:
+1.Xemnewsfeed
+2.Clicknút”Like”trênbàiviết
+3.Viếtcomment”Côngthứchayquá!”
+4.Click”Gửicomment”
+5.Click”Like”lạiđểunlike
+•Kết quả mong đợi:
+–Sốlượngliketăng/giảmreal-time
+–Commenthiểnthịngaydướibàiviết
+–Ngườiđăngnhậnđượcnotification
+–UIcậpnhậtmàunútlike
+•Kết quả thực tế: ✓Passed
+7.5.2 Tổng hợp kết quả kiểm thử chức năng
+Bảng 7.3: Tổnghợpkếtquảkiểmthửchứcnăng
+Nhóm chức năng Total Passed Failed Rate
+Xácthực 880100%
+Quảnlýngườidùng 660100%
+Côngthứcmónăn 1211 192%
+Thựcđơn 10 9190%
+Tươngtácxãhội 1515 0100%
+Tínhtoándinhdưỡng 880100%
+Tìmkiếm 660100%
+Tổng 65 63 2 97%
+7.6 Kiểm thử hiệu năng
+7.6.1 Mục tiêu hiệu năng
+•Thời gian phản hồi API: <200mscho95%requests
+•Thời gian tải trang: <3giâychoFirstContentfulPaint
+•Concurrent users: Hỗtrợtốithiểu500usersđồngthời
+•Throughput: Xửlýtốithiểu1000requests/giây
+•Error rate: <1%trongđiềukiệnbìnhthường
+877.6.2 Load Testing
+SửdụngArtilleryđểtestvớitảităngdần:
+Cấu hình test:
+config:
+target: 'https://api.nutritionapp.com'
+phases:
+‐ duration: 60
+arrivalRate: 10 # 10 users/second
+‐ duration: 120
+arrivalRate: 50 # 50 users/second
+‐ duration: 180
+arrivalRate: 100 # 100 users/second
+scenarios:
+‐ name: "Browse recipes"
+flow:
+‐ get:
+url: "/api/recipes?page=1&limit=20"
+‐ think: 3
+‐ get:
+url: "/api/recipes/{{ $randomString() }}"
+7.6.3 Kết quả kiểm thử hiệu năng
+Bảng 7.4: KếtquảLoadTesting
+Metric 10 users/s 50 users/s 100 users/s
+AvgResponseTime 85ms 142ms 189ms
+95thPercentile 125ms 198ms 276ms
+99thPercentile 156ms 245ms 342ms
+SuccessRate 100% 99.8% 99.2%
+Throughput 595req/s 2980req/s 5890req/s
+ErrorRate 0% 0.2% 0.8%
+0 20 40 60 80 1000100200300400
+ConcurrentUsersResponseTime(ms)Average
+95thPercentile
+99thPercentile
+Hình 7.2: Biểuđồthờigianphảnhồitheosốlượngngườidùng
+887.6.4 Database Query Performance
+extbfHiệunăngcácqueryphổbiến
+•Getrecipeswithpagination—45ms—20records
+•Searchrecipesbyingredients—78ms—50records
+•Getuser’smealplans—32ms—10records
+•Getnewsfeedposts—125ms—50records
+•Calculatenutritionformealplan—156ms—1record
+•Getrecipewithfulldetails—28ms—1record
+7.7 Kiểm thử bảo mật
+7.7.1 Authentication & Authorization
+Các test case bảo mật:
+1.JWT Token Validation
+•Testvớitokenhếthạn: ✓Rejected(401)
+•Testvớitokenkhônghợplệ: ✓Rejected(401)
+•Testvớitokenbịsửađổi: ✓Rejected(401)
+•Testkhôngcótoken: ✓Rejected(401)
+2.Password Security
+•Passwordđượchashvớibcrypt: ✓Passed
+•Saltrounds=10: ✓Passed
+•Khôngtrảvềpasswordtrongresponse: ✓Passed
+•Validateđộmạnhpassword: ✓Passed
+3.Authorization Check
+•Userchỉsửa/xóađượcrecipecủamình: ✓Passed
+•Userchỉxemđượcmealplancủamình: ✓Passed
+•Admincóquyềnxóabấtkỳcontent: ✓Passed
+7.7.2 Input Validation
+extbfKếtquảkiểmthửInputValidation
+•SQLInjection—’OR1=1–: ✓Blocked
+•XSSAttack—<script>alert(1)</script>: ✓Sanitized
+•NoSQLInjection—{$ne:null}: ✓Blocked
+•PathTraversal—../../etc/passwd: ✓Blocked
+•Emailformat—invalid-email: ✓Rejected
+•Longstringattack—10000+chars: ✓Truncated
+897.7.3 HTTPS và CORS
+•HTTPS:SSLcertificatevalid,alltrafficencrypted ✓
+•CORS:Onlywhitelistedoriginsallowed ✓
+•Rate Limiting: Max100requests/15minperIP ✓
+•Helmet.js: Securityheadersconfigured ✓
+7.8 Kiểm thử tương thích
+7.8.1 Browser Compatibility
+extbfKiểmthửtươngthíchtrìnhduyệt
+•Chrome120+: ✓Passed—Fullsupport
+•Firefox115+: ✓Passed—Fullsupport
+•Safari16+: ✓Passed—Fullsupport
+•Edge120+: ✓Passed—Fullsupport
+•Opera100+: ✓Passed—Fullsupport
+7.8.2 Responsive Testing
+Bảng 7.5: Kiểmthửresponsivedesign
+Device Resolution Result
+Desktop 1920x1080 ✓Passed
+Laptop 1366x768 ✓Passed
+Tablet(iPad) 768x1024 ✓Passed
+Mobile(iPhone) 375x667 ✓Passed
+Mobile(Android) 360x640 ✓Passed
+7.9 Phát hiện và xử lý lỗi
+7.9.1 Các lỗi phát hiện và trạng thái
+extbfCáclỗipháthiệnvàtrạngthái
+•BUG-001—Mealplankhônglưukhichọnngàytrongquákhứ—Medium—Fixed
+•BUG-002—Commentkhônghiểnthịreal-timekhicónestedreply—Low—Fixed
+•BUG-003—Uploadảnh>10MBgâytimeout—High—Fixed
+•BUG-004—Tínhtoáncaloriessaikhiscalerecipe—High—Fixed
+•BUG-005—SearchkhônghoạtđộngvớikýtựtiếngViệt—Medium—Fixed
+•BUG-006—UIbịvỡtrênmobile<320pxwidth—Low—InProgress
+907.10 Kết luận
+7.10.1 Tổng kết kết quả kiểm thử
+Sauquátrìnhkiểmthửtoàndiện,hệthốngđạtđượccáckếtquả:
+•Unit Tests: 98/100passed(98%),codecoverage87%
+•Integration Tests: 61/63APIendpointspassed(97%)
+•Functional Tests: 63/65testcasespassed(97%)
+•Performance: Đápứngmụctiêu<200mscho95%requests
+•Security:Vượtquatấtcảtestcasesbảomậtquantrọng
+•Compatibility: Hoạtđộngtốttrêntấtcảtrìnhduyệtvàthiếtbịchính
+7.10.2 Đánh giá chất lượng
+•Độ ổn định: Hệthốnghoạtđộngổnđịnhvớierrorrate<1%
+•Hiệu năng: Đápứngtốtyêucầuvềthờigianphảnhồivàthroughput
+•Bảo mật:Cáccơchếbảomậtđượctriểnkhaiđúngvàhiệuquả
+•Trải nghiệm: Giaodiệnthânthiện,responsivetốttrênnhiềuthiếtbị
+7.10.3 Khuyến nghị
+Đểtiếptụccảithiệnchấtlượnghệthống:
+1.Tăngcodecoveragelên90%+bằngcáchbổsungtestschocácedgecases
+2.TriểnkhaiautomatedE2EtestingvớiCypresschocácuserflowquantrọng
+3.ThiếtlậpCI/CDpipelineđểchạyteststựđộngmỗikhicommitcode
+4.Monitoringproductionvớirealusermetrics(RUM)đểpháthiệnissuessớm
+5.Thựchiệnregressiontestingtrướcmỗilầnrelease
+6.Bổsungperformancetestingđịnhkỳkhicótínhnăngmới
+Vớikếtquảkiểmthửđạt>97%passratevàcácvấnđềcriticalđãđượckhắcphục,hệthốngđãsẵnsàngcho
+giaiđoạntriểnkhaiproduction.
+91
