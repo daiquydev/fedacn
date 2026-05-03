@@ -69,7 +69,7 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
     const mapRef = useRef(null)
 
     // Fetch event info (for banner label)
-    const { data: eventData } = useQuery({
+    const { data: eventData, isError: isEventError, isLoading: isEventLoading } = useQuery({
         queryKey: ['sportEvent-preview', eventId],
         queryFn: () => getSportEvent(eventId),
         enabled: Boolean(eventId),
@@ -78,6 +78,7 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
     })
 
     const event = eventData?.data?.result || eventData?.result
+    const isEventUnavailable = (isEventError || (!isEventLoading && !event))
 
     // Fetch activity detail (distance, duration, gpsRoute)
     const { data: activityDetailData, isLoading, isError } = useQuery({
@@ -170,7 +171,7 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
     }
 
     // Error / deleted state
-    if (isError || !activity) {
+    if (isError || !activity || isEventUnavailable) {
         return (
             <div className="mt-3 mx-4 md:mx-0 rounded-xl overflow-hidden border border-red-200 dark:border-red-900 bg-white dark:bg-gray-800/50">
                 <div className="bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2 opacity-50 flex items-center gap-2">
@@ -184,7 +185,7 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
                             Hoạt động này hoặc sự kiện thể thao đã không còn tồn tại
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                            Sự kiện có thể đã bị xóa hoặc hoạt động không còn khả dụng
+                            Bài chia sẻ vẫn được lưu lại nhưng sự kiện không còn khả dụng
                         </p>
                     </div>
                 </div>
@@ -210,7 +211,7 @@ export default function ActivityPreviewCard({ activityId, eventId }) {
 
     return (
         <div
-            onClick={() => navigate(`/sport-event/${eventId}`)}
+            onClick={() => event && navigate(`/sport-event/${eventId}`)}
             className="mt-3 mx-4 md:mx-0 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-red-400 dark:hover:border-red-600 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800 group hover:shadow-lg hover:shadow-red-100 dark:hover:shadow-red-900/20"
             title="Nhấn để xem chi tiết sự kiện"
         >
