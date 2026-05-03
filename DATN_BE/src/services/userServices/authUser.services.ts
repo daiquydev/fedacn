@@ -14,6 +14,21 @@ import { ErrorWithStatus } from '~/utils/error'
 import { signToken, verifyToken } from '~/utils/jwt'
 
 class AuthUserService {
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase()
+  }
+
+  private escapeRegex(value: string) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  private buildCaseInsensitiveEmailQuery(email: string) {
+    const normalizedEmail = this.normalizeEmail(email)
+    return {
+      $regex: new RegExp(`^${this.escapeRegex(normalizedEmail)}$`, 'i')
+    }
+  }
+
   private signAccessToken(payload: {
     user_id: string
     role: number
@@ -90,7 +105,7 @@ class AuthUserService {
     })
   }
   async checkEmailExist(email: string) {
-    const user = await UserModel.findOne({ email })
+    const user = await UserModel.findOne({ email: this.buildCaseInsensitiveEmailQuery(email) })
     return Boolean(user)
   }
   private async getOauthGoogleToken(code: string) {
@@ -143,7 +158,8 @@ class AuthUserService {
         status: HTTP_STATUS.BAD_REQUEST
       })
     }
-    const user = await UserModel.findOne({ email: userInfo.email })
+    const normalizedGoogleEmail = this.normalizeEmail(userInfo.email)
+    const user = await UserModel.findOne({ email: this.buildCaseInsensitiveEmailQuery(normalizedGoogleEmail) })
     if (user && user.isDeleted === true) {
       return {
         message: AUTH_USER_MESSAGE.ACCOUNT_DELETED,
@@ -192,8 +208,8 @@ class AuthUserService {
           userInfo.family_name && userInfo.given_name
             ? `${userInfo.family_name} ${userInfo.given_name}`
             : userInfo.name,
-        email: userInfo.email,
-        user_name: userInfo.email.split('@')[0],
+        email: normalizedGoogleEmail,
+        user_name: normalizedGoogleEmail.split('@')[0],
         avatar: userInfo.picture,
         password: hashedPassword,
         auth_provider: 'google'
@@ -235,7 +251,8 @@ class AuthUserService {
   }
   async register(payload: UserRegisterRequest) {
     const { name, email, password, gender } = payload
-    const user_name = email.split('@')[0]
+    const normalizedEmail = this.normalizeEmail(email)
+    const user_name = normalizedEmail.split('@')[0]
     const hashedPassword = await hashPassword(password)
     const safeGender =
       gender === UserGender.male || gender === UserGender.female || gender === UserGender.unknown
@@ -243,7 +260,7 @@ class AuthUserService {
         : UserGender.unknown
     const user = await UserModel.create({
       name,
-      email,
+      email: normalizedEmail,
       user_name,
       password: hashedPassword,
       gender: safeGender
@@ -253,8 +270,9 @@ class AuthUserService {
   }
   async login(payload: UserLoginRequest) {
     const { email } = payload
+    const normalizedEmail = this.normalizeEmail(email)
     //check
-    const user = await UserModel.findOne({ email })
+    const user = await UserModel.findOne({ email: this.buildCaseInsensitiveEmailQuery(normalizedEmail) })
     if (user) {
       // Defense-in-depth: double-check even though validator should block
       if (user.isDeleted === true) {
@@ -390,7 +408,8 @@ class AuthUserService {
     }
   }
   async sendOtp(email: string) {
-    const user = await UserModel.findOne({ email })
+    const normalizedEmail = this.normalizeEmail(email)
+    const user = await UserModel.findOne({ email: this.buildCaseInsensitiveEmailQuery(normalizedEmail) })
     if (!user) {
       throw new ErrorWithStatus({
         message: AUTH_USER_MESSAGE.EMAIL_NOT_EXIST,
@@ -399,12 +418,13 @@ class AuthUserService {
     }
 
     const otp_code = this.genarateOtpCode()
-    await UserModel.updateOne({ email }, { otp_code })
-    await sendForgotPasswordEmailNodeMailer(email, otp_code)
+    await UserModel.updateOne({ email: this.buildCaseInsensitiveEmailQuery(normalizedEmail) }, { otp_code })
+    await sendForgotPasswordEmailNodeMailer(normalizedEmail, otp_code)
     return user.email
   }
   async verifyOtp({ email, otp_code }: { email: string; otp_code: string }) {
-    const user = await UserModel.findOne({ email, otp_code })
+    const normalizedEmail = this.normalizeEmail(email)
+    const user = await UserModel.findOne({ email: this.buildCaseInsensitiveEmailQuery(normalizedEmail), otp_code })
     if (!user) {
       throw new ErrorWithStatus({
         message: AUTH_USER_MESSAGE.OTP_CODE_INVALID,
@@ -417,7 +437,8 @@ class AuthUserService {
     }
   }
   async resetPassword({ email, new_password, otp_code }: { otp_code: string; new_password: string; email: string }) {
-    const user = await UserModel.findOne({ email, otp_code })
+    const normalizedEmail = this.normalizeEmail(email)
+    const user = await UserModel.findOne({ email: this.buildCaseInsensitiveEmailQuery(normalizedEmail), otp_code })
     // check xem new_password có trùng với password cũ không
     if (!user) {
       throw new ErrorWithStatus({
@@ -433,7 +454,10 @@ class AuthUserService {
       })
     }
     const hashedPassword = await hashPassword(new_password)
-    await UserModel.updateOne({ email }, { password: hashedPassword, otp_code: '' })
+    await UserModel.updateOne(
+      { email: this.buildCaseInsensitiveEmailQuery(normalizedEmail) },
+      { password: hashedPassword, otp_code: '' }
+    )
     return true
   }
 }

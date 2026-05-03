@@ -14,6 +14,15 @@ import RefreshTokenModel from '~/models/schemas/refreshToken.schema'
 import { envConfig } from '~/constants/config'
 import { UserGender, UserRoles } from '~/constants/enums'
 
+const normalizeEmail = (email: string) => email.trim().toLowerCase()
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const buildCaseInsensitiveEmailQuery = (email: string) => {
+  const normalizedEmail = normalizeEmail(email)
+  return {
+    $regex: new RegExp(`^${escapeRegex(normalizedEmail)}$`, 'i')
+  }
+}
+
 // Middleware to verify token
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
@@ -135,7 +144,7 @@ export const loginValidator = validate(
         trim: true,
         custom: {
           options: async (value, { req }) => {
-            const user = await UserModel.findOne({ email: value })
+            const user = await UserModel.findOne({ email: buildCaseInsensitiveEmailQuery(value) })
             if (user === null) {
               throw new Error(AUTH_USER_MESSAGE.EMAIL_OR_PASSWORD_INCORRECT)
             }

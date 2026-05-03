@@ -17,6 +17,7 @@ import { FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { getMyChallenges, getMyCreatedChallenges, getPublicUserChallenges } from '../../../../apis/challengeApi'
 import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../../../utils/challengeProgress'
+import { getImageUrl } from '../../../../utils/imageUrl'
 import Loading from '../../../../components/GlobalComponents/Loading'
 
 const LIMIT = 9
@@ -56,7 +57,7 @@ const TYPE_CONFIG = {
 }
 
 function ChallengeCard({ participation }) {
-  const challenge = participation.challenge_id
+  const challenge = participation.challenge_id || participation.challenge
   if (!challenge) return null
 
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
@@ -83,7 +84,7 @@ function ChallengeCard({ participation }) {
         <div className={`relative h-36 bg-gradient-to-br ${config.gradient} flex items-center justify-center overflow-hidden`}>
           {challenge.image ? (
             <img
-              src={challenge.image}
+              src={getImageUrl(challenge.image)}
               alt={challenge.title}
               className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500'
             />
@@ -198,20 +199,41 @@ export default function MeChallenges({ isOwner = true, userId }) {
   })
 
   const activeQuery = activeTab === 'created' ? createdQuery : joinedQuery
-  const result = activeQuery?.data?.data?.result
-  const sourceParticipations = result?.participations || []
-  const sourceCreatedChallenges = result?.challenges || []
+  const normalizeParticipations = (payload) => {
+    if (Array.isArray(payload?.participations)) return payload.participations
+    if (Array.isArray(payload?.items)) return payload.items
+    if (Array.isArray(payload)) {
+      return payload.filter((item) => item?.challenge_id || item?.challenge)
+    }
+    return []
+  }
+
+  const normalizeChallenges = (payload) => {
+    if (Array.isArray(payload?.challenges)) return payload.challenges
+    if (Array.isArray(payload)) {
+      return payload.filter((item) => item?._id && item?.title && item?.start_date && item?.end_date)
+    }
+    return []
+  }
+
+  const isChallengeRemoved = (challenge) =>
+    !challenge || Boolean(challenge.is_deleted || challenge.is_archived_read_only || challenge.status === 'cancelled')
+
+  const createdPayload = createdQuery?.data?.data?.result || createdQuery?.data?.result || {}
+  const joinedPayload = joinedQuery?.data?.data?.result || joinedQuery?.data?.result || {}
+  const sourceParticipations = normalizeParticipations(joinedPayload)
+  const sourceCreatedChallenges = normalizeChallenges(createdPayload)
   const participations = useMemo(() => {
     if (!isPublic) {
       return activeTab === 'created'
         ? sourceCreatedChallenges.map((challenge) => ({
-          _id: challenge._id,
+          _id: `created-${challenge._id}`,
           challenge_id: challenge,
           current_value: challenge.current_value || 0,
           is_completed: false,
           streak_count: challenge.streak_count || 0
         }))
-        : sourceParticipations
+        : sourceParticipations.filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
     }
     const normalizeCreator = (item) =>
       String(
@@ -222,22 +244,30 @@ export default function MeChallenges({ isOwner = true, userId }) {
         ''
       )
     if (activeTab === 'created') {
-      return sourceParticipations.filter((item) => normalizeCreator(item) === String(userId))
+      const publicParticipations = normalizeParticipations(createdPayload)
+      return publicParticipations
+        .filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
+        .filter((item) => normalizeCreator(item) === String(userId))
     }
-    return sourceParticipations.filter((item) => normalizeCreator(item) !== String(userId))
-  }, [activeTab, isPublic, sourceCreatedChallenges, sourceParticipations, userId])
+    return sourceParticipations
+      .filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
+      .filter((item) => normalizeCreator(item) !== String(userId))
+  }, [activeTab, createdPayload, isPublic, sourceCreatedChallenges, sourceParticipations, userId])
 
   const filteredParticipations = participations.filter((item) => {
     const normalized = keyword.trim().toLowerCase()
     if (!normalized) return true
-    const challenge = item?.challenge_id
+    const challenge = item?.challenge_id || item?.challenge
     const searchable = [challenge?.title, challenge?.challenge_type, challenge?.badge_emoji]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
     return searchable.includes(normalized)
   })
-  const totalPage = result?.totalPage || 1
+  const totalPage =
+    activeTab === 'created'
+      ? (createdPayload?.totalPage || 1)
+      : (joinedPayload?.totalPage || 1)
 
   if (activeQuery.isLoading) {
     return <Loading className='flex justify-center py-20' />
