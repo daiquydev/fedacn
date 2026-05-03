@@ -1610,7 +1610,7 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
                               </div>
                             </td>
                             <td className="px-3 py-2 text-center">
-                              <span className="font-bold text-orange-600">{kcal.toFixed(0)}</span>
+                              <span className="font-bold text-orange-600">{kcal.toFixed(2)}</span>
                               <span className="text-[10px] text-orange-400 ml-0.5">kcal</span>
                             </td>
                             <td className="px-2 py-2 text-center">
@@ -1625,7 +1625,7 @@ const SetupStep = ({ selectedExercises, onStartWorkout, onBack, onSave }) => {
                 {/* Total + Add */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-orange-600 font-semibold">
-                    &#128293; T&#7893;ng: {ex.sets.reduce((a, s) => a + (s.reps || 0) * (s.weight || 0) * (s.calories_per_unit ?? 10), 0).toFixed(0)} kcal
+                    &#128293; T&#7893;ng: {ex.sets.reduce((a, s) => a + (s.reps || 0) * (s.weight || 0) * (s.calories_per_unit ?? 10), 0).toFixed(2)} kcal
                   </span>
                   <button onClick={() => addSet(exIdx)} className="px-3 py-1.5 border border-dashed border-blue-300 rounded-lg text-blue-600 text-xs flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
                     <FaPlus /> Th&#234;m set

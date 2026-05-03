@@ -3,6 +3,8 @@ import http from '../utils/http'
 export const currentAccount = () => http.get('/users/me')
 export const followUser = (body) => http.post('/users/follow', body)
 export const unfollowUser = (body) => http.post('/users/unfollow', body)
+export const declineFriendRequest = (body) => http.post('/users/decline-friend-request', body)
+export const unfriendUser = (body) => http.post('/users/unfriend', body)
 export const getProfile = (id) => http.get(`/users/get-user/${id}`)
 
 export const updateAvatar = (body) =>

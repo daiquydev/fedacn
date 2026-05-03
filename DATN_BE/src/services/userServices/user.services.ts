@@ -138,6 +138,51 @@ class UsersService {
     const unfollow = FollowModel.findOneAndDelete({ user_id, follow_id })
     return unfollow
   }
+  async declineFriendRequestService({ user_id, follow_id }: { user_id: string; follow_id: string }) {
+    const [declineResult] = await Promise.all([
+      FollowModel.findOneAndDelete({
+        user_id: new ObjectId(follow_id),
+        follow_id: new ObjectId(user_id)
+      }),
+      NotificationModel.deleteMany({
+        sender_id: new ObjectId(follow_id),
+        receiver_id: new ObjectId(user_id),
+        type: NotificationTypes.follow
+      })
+    ])
+
+    return declineResult
+  }
+  async unfriendUserService({ user_id, follow_id }: { user_id: string; follow_id: string }) {
+    const [unfriendResult] = await Promise.all([
+      FollowModel.deleteMany({
+        $or: [
+          {
+            user_id: new ObjectId(user_id),
+            follow_id: new ObjectId(follow_id)
+          },
+          {
+            user_id: new ObjectId(follow_id),
+            follow_id: new ObjectId(user_id)
+          }
+        ]
+      }),
+      NotificationModel.deleteMany({
+        type: NotificationTypes.follow,
+        $or: [
+          {
+            sender_id: new ObjectId(user_id),
+            receiver_id: new ObjectId(follow_id)
+          },
+          {
+            sender_id: new ObjectId(follow_id),
+            receiver_id: new ObjectId(user_id)
+          }
+        ]
+      })
+    ])
+    return unfriendResult
+  }
   async getMe({ user_id }: { user_id: string }) {
     const me = await UserModel.aggregate([
       { $match: { _id: new ObjectId(user_id), isDeleted: { $ne: true } } },
@@ -397,6 +442,22 @@ class UsersService {
           }
         }
       },
+      // kiểm tra người này có follow lại người xem hay không
+      {
+        $lookup: {
+          from: 'follows',
+          localField: '_id',
+          foreignField: 'user_id',
+          as: 'following_relations'
+        }
+      },
+      {
+        $addFields: {
+          is_following_me: {
+            $in: [new ObjectId(user_id), '$following_relations.follow_id']
+          }
+        }
+      },
       // đếm số người follow mình
       {
         $addFields: {
@@ -517,7 +578,8 @@ class UsersService {
       // bỏ password
       {
         $project: {
-          password: 0
+          password: 0,
+          following_relations: 0
         }
       }
     ])

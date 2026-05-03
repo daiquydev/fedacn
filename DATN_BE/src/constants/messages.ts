@@ -80,6 +80,8 @@ export const USER_MESSAGE = {
   CANNOT_FOLLOW_YOURSELF: 'Không thể theo dõi chính mình',
   GET_ME_SUCCESS: 'Lấy thông tin cá nhân thành công',
   UNFOLLOW_USER_SUCCESS: 'Bỏ theo dõi người dùng thành công',
+  DECLINE_FRIEND_REQUEST_SUCCESS: 'Từ chối lời mời kết bạn thành công',
+  UNFRIEND_USER_SUCCESS: 'Hủy kết bạn thành công',
   USER_NOT_FOUND: 'Không tìm thấy người dùng',
   USER_NAME_ALREADY_EXISTS: 'Tên người dùng đã tồn tại',
   OLD_PASSWORD_INCORRECT: 'Mật khẩu cũ không chính xác',

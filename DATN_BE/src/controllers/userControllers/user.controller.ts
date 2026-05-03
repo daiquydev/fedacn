@@ -61,6 +61,32 @@ export const unfollowUserController = async (req: Request, res: Response) => {
   })
 }
 
+export const declineFriendRequestController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+  const { follow_id } = req.body
+  const result = await usersService.declineFriendRequestService({
+    user_id: user.user_id,
+    follow_id
+  })
+  return res.json({
+    message: USER_MESSAGE.DECLINE_FRIEND_REQUEST_SUCCESS,
+    result
+  })
+}
+
+export const unfriendUserController = async (req: Request, res: Response) => {
+  const user = req.decoded_authorization as TokenPayload
+  const { follow_id } = req.body
+  const result = await usersService.unfriendUserService({
+    user_id: user.user_id,
+    follow_id
+  })
+  return res.json({
+    message: USER_MESSAGE.UNFRIEND_USER_SUCCESS,
+    result
+  })
+}
+
 export const updateAvatarUserController = async (req: Request, res: Response) => {
   const user = req.decoded_authorization as TokenPayload
   const file = req.file

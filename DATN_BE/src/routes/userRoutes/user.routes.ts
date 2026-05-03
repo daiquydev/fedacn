@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  declineFriendRequestController,
   followUserController,
   getBookmarkedUserController,
   getMeController,
@@ -8,6 +9,7 @@ import {
   getUserController,
   recommendUsersController,
   requestUpgradeToChefController,
+  unfriendUserController,
   unfollowUserController,
   updateAvatarUserController,
   updateCoverAvatarUserController,
@@ -36,6 +38,13 @@ usersRouter.get(
 usersRouter.get('/get-user/:id', accessTokenValidator, wrapRequestHandler(getUserController))
 usersRouter.post('/follow', accessTokenValidator, followValidator, wrapRequestHandler(followUserController))
 usersRouter.post('/unfollow', accessTokenValidator, followValidator, wrapRequestHandler(unfollowUserController))
+usersRouter.post(
+  '/decline-friend-request',
+  accessTokenValidator,
+  followValidator,
+  wrapRequestHandler(declineFriendRequestController)
+)
+usersRouter.post('/unfriend', accessTokenValidator, followValidator, wrapRequestHandler(unfriendUserController))
 
 usersRouter.put(
   '/update-avatar',

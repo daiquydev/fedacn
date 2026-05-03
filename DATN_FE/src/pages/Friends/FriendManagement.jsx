@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FaSearch, FaUserFriends, FaUserMinus, FaUserPlus, FaUser, FaHeart, FaSortAmountDown } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
-import { currentAccount, followUser, recommendUser, unfollowUser } from '../../apis/userApi'
+import { currentAccount, declineFriendRequest, followUser, recommendUser, unfriendUser, unfollowUser } from '../../apis/userApi'
 import defaultAvatar from '../../assets/images/useravatar.jpg'
 import { getImageUrl } from '../../utils/imageUrl'
 
@@ -229,10 +229,6 @@ export default function FriendManagement() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  // Track IDs locally: declined requests or unfriended people (so they don't re-appear in "Lời mời")
-  // This is per-session state — does NOT affect the follow data in DB.
-  const [hiddenFromRequests, setHiddenFromRequests] = useState(new Set())
-
   // Per-user pending state: only disable the button of the user being processed
   const [pendingIds, setPendingIds] = useState(new Set())
   const addPending = useCallback((id) => setPendingIds((prev) => new Set([...prev, String(id)])))
@@ -270,9 +266,9 @@ export default function FriendManagement() {
   const incomingRequests = useMemo(
     () =>
       followers.filter(
-        (p) => !followingIds.has(String(p._id)) && !hiddenFromRequests.has(String(p._id))
+        (p) => !followingIds.has(String(p._id))
       ),
-    [followers, followingIds, hiddenFromRequests]
+    [followers, followingIds]
   )
 
   // Người theo dõi bạn = TẤT CẢ người follow mình (bao gồm bạn bè, đã từ chối, v.v.)
@@ -305,6 +301,24 @@ export default function FriendManagement() {
     onError: () => toast.error('Có lỗi xảy ra, vui lòng thử lại')
   })
 
+  const declineRequestMutation = useSafeMutation({
+    mutationFn: declineFriendRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: ['friend-recommendations'] })
+    },
+    onError: () => toast.error('Có lỗi xảy ra, vui lòng thử lại')
+  })
+
+  const unfriendMutation = useSafeMutation({
+    mutationFn: unfriendUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: ['friend-recommendations'] })
+    },
+    onError: () => toast.error('Có lỗi xảy ra, vui lòng thử lại')
+  })
+
   // Chấp nhận lời mời = follow lại họ
   const handleAccept = (userId) => {
     addPending(userId)
@@ -317,23 +331,25 @@ export default function FriendManagement() {
     )
   }
 
-  // Từ chối lời mời = KHÔNG gọi API (họ vẫn follow mình, chỉ ẩn khỏi "Lời mời kết bạn")
-  // Họ sẽ vẫn xuất hiện trong "Người theo dõi bạn"
+  // Từ chối lời mời = xóa chiều follow từ họ sang mình
   const handleDecline = (userId) => {
-    setHiddenFromRequests((prev) => new Set([...prev, String(userId)]))
-    toast('Đã từ chối lời mời kết bạn', { icon: '🚫' })
-  }
-
-  // Hủy kết bạn = bỏ follow họ (họ vẫn follow mình) + ẩn khỏi "Lời mời kết bạn"
-  const handleUnfriend = (userId) => {
     addPending(userId)
-    unfollowMutation.mutate(
+    declineRequestMutation.mutate(
       { follow_id: userId },
       {
-        onSuccess: () => {
-          setHiddenFromRequests((prev) => new Set([...prev, String(userId)]))
-          toast.success('Đã hủy kết bạn')
-        },
+        onSuccess: () => toast.success('Đã từ chối lời mời kết bạn'),
+        onSettled: () => removePending(userId)
+      }
+    )
+  }
+
+  // Hủy kết bạn = bỏ follow cả hai chiều
+  const handleUnfriend = (userId) => {
+    addPending(userId)
+    unfriendMutation.mutate(
+      { follow_id: userId },
+      {
+        onSuccess: () => toast.success('Đã hủy kết bạn'),
         onSettled: () => removePending(userId)
       }
     )
@@ -460,7 +476,7 @@ export default function FriendManagement() {
             )}
           />
 
-          {/* Lời mời kết bạn đến (họ follow mình, chưa từ chối/hủy) */}
+          {/* Lời mời kết bạn đến (họ follow mình, mình chưa follow lại) */}
           <PeopleSection
             title='Lời mời kết bạn'
             subtitle='Người gửi lời mời, chưa được xử lý'
@@ -480,7 +496,6 @@ export default function FriendManagement() {
                   icon={FaUserPlus}
                   onClick={() => handleAccept(person._id)}
                 />
-                {/* Từ chối: chỉ ẩn khỏi section này, họ vẫn follow bạn */}
                 <ActionButton
                   label='Từ chối'
                   variant='secondary'

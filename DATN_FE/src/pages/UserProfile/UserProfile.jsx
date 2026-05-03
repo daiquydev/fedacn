@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 import useravatar from '../../assets/images/useravatar.jpg'
 import avatarbg from '../../assets/images/avatarbg.jpg'
 import { getImageUrl } from '../../utils/imageUrl'
-import { followUser, getProfile, unfollowUser } from '../../apis/userApi'
+import { followUser, getProfile, unfriendUser, unfollowUser } from '../../apis/userApi'
 import { queryClient } from '../../main'
 import { AppContext } from '../../contexts/app.context'
 import { SocketContext } from '../../contexts/socket.context'
@@ -75,13 +75,11 @@ export default function UserProfile() {
 
   const profileOwner = useMemo(() => userData?.data?.result?.[0], [userData])
   const isFollowing = Boolean(profileOwner?.is_following)
+  const isFollowingMe = Boolean(profileOwner?.is_following_me)
   const isSelf = profile?.user_id === id
 
-  const isMutual = useMemo(() => {
-    if (!profileOwner || !profile) return false
-    const theirFollowers = profileOwner?.followers || []
-    return theirFollowers.some((f) => String(f._id) === String(profile?.user_id))
-  }, [profileOwner, profile])
+  const isMutual = isFollowing && isFollowingMe
+  const isIncomingRequest = !isFollowing && isFollowingMe
 
   const followMutation = useSafeMutation({
     mutationFn: (body) => followUser(body)
@@ -91,30 +89,39 @@ export default function UserProfile() {
     mutationFn: (body) => unfollowUser(body)
   })
 
+  const unfriendMutation = useSafeMutation({
+    mutationFn: (body) => unfriendUser(body)
+  })
+
   const handleFollow = () => {
     if (profileOwner?.is_following) {
-      unfollowMutation.mutate(
+      const mutation = isMutual ? unfriendMutation : unfollowMutation
+      const successMessage = isMutual ? 'Đã hủy kết bạn' : 'Đã hủy lời mời kết bạn'
+      mutation.mutate(
         { follow_id: id },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user-profile'] })
-            toast.success('Đã hủy kết bạn')
+            queryClient.invalidateQueries({ queryKey: ['me'] })
+            toast.success(successMessage)
           }
         }
       )
     } else {
+      const isAcceptingRequest = isIncomingRequest
       followMutation.mutate(
         { follow_id: id },
         {
           onSuccess: () => {
             newSocket.emit('follow', {
-              content: isMutual ? 'Đã chấp nhận lời mời kết bạn' : 'Đã gửi lời mời kết bạn với bạn',
+              content: isAcceptingRequest ? 'Đã chấp nhận lời mời kết bạn của bạn' : 'Đã gửi lời mời kết bạn với bạn',
               to: id,
               name: profile.name,
               avatar: profile.avatar
             })
             queryClient.invalidateQueries({ queryKey: ['user-profile'] })
-            toast.success(isMutual ? 'Đã trở thành bạn bè!' : 'Đã gửi lời mời kết bạn')
+            queryClient.invalidateQueries({ queryKey: ['me'] })
+            toast.success(isAcceptingRequest ? 'Đã chấp nhận lời mời kết bạn' : 'Đã gửi lời mời kết bạn')
           }
         }
       )
@@ -140,6 +147,20 @@ export default function UserProfile() {
 
   const renderFollowButton = () => {
     if (isSelf) return null
+
+    if (isIncomingRequest) {
+      return (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleFollow}
+          className='flex items-center gap-1.5 px-4 py-2 bg-emerald-500/80 hover:bg-emerald-600/80 backdrop-blur-md text-white rounded-full font-semibold text-sm transition-all duration-300 shadow-lg border border-emerald-400/30'
+        >
+          <FaUserCheck className='text-sm' />
+          <span>Chấp nhận lời mời</span>
+        </motion.button>
+      )
+    }
 
     if (!isFollowing) {
       return (
