@@ -35,6 +35,8 @@ const EQUIPMENT_LABELS = {
   'pull-up-bar': 'Xà đơn', 'bench': 'Ghế tập'
 }
 
+const formatKcal2 = (value) => roundKcal(value).toFixed(2)
+
 // Expandable exercise card with set details
 function ExerciseDetailCard({ exercise, index }) {
   const [expanded, setExpanded] = useState(false)
@@ -65,7 +67,7 @@ function ExerciseDetailCard({ exercise, index }) {
             {skippedSets.length > 0 && (
               <span className="text-[10px] text-red-400">• {skippedSets.length} bỏ</span>
             )}
-            <span className="text-[10px] text-orange-500 font-medium">• {roundKcal(totalKcal)} kcal</span>
+            <span className="text-[10px] text-orange-500 font-medium">• {formatKcal2(totalKcal)} kcal</span>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -113,7 +115,7 @@ function ExerciseDetailCard({ exercise, index }) {
                       <span className="text-gray-400 ml-0.5">kg</span>
                     </span>
                     <span className="text-gray-300 dark:text-gray-600 text-[10px]">=</span>
-                    <span className="text-xs font-bold text-orange-600">{roundKcal(kcal)} kcal</span>
+                    <span className="text-xs font-bold text-orange-600">{formatKcal2(kcal)} kcal</span>
                   </div>
 
                   {/* Status badge */}
@@ -139,7 +141,7 @@ function ExerciseDetailCard({ exercise, index }) {
                 {totalReps} reps
               </span>
               <span className="text-orange-600 font-semibold">
-                🔥 {roundKcal(totalKcal)} kcal
+                🔥 {formatKcal2(totalKcal)} kcal
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -225,7 +227,7 @@ function SessionCard({ session }) {
         <div className="flex flex-col items-center py-3 gap-0.5">
           <div className="flex items-center gap-1 text-orange-500">
             <FaFire className="text-xs" />
-            <span className="font-bold text-gray-800 dark:text-gray-100 text-base">{(session.total_calories || 0).toLocaleString()}</span>
+            <span className="font-bold text-gray-800 dark:text-gray-100 text-base">{formatKcal2(session.total_calories || 0)}</span>
           </div>
           <span className="text-[10px] text-gray-400 uppercase tracking-wide">Kcal</span>
         </div>
@@ -359,7 +361,7 @@ function PersonalActivityCard({ activity }) {
           </span>
           <span className="flex items-center gap-1">
             <FaFire className="text-[10px] text-orange-400" />
-            {roundKcal(activity.calories || 0)} kcal
+            {formatKcal2(activity.calories || 0)} kcal
           </span>
           <span className="flex items-center gap-1">
             <FaClock className="text-[10px] text-emerald-400" />
