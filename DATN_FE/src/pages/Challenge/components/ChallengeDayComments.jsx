@@ -9,7 +9,7 @@ import { queryClient } from '../../../main'
 import { AppContext } from '../../../contexts/app.context'
 import { FaComments } from 'react-icons/fa'
 
-export default function ChallengeDayComments({ challengeId, targetUserId, date }) {
+export default function ChallengeDayComments({ challengeId, targetUserId, date, canComment = true }) {
   const [content, setContent] = useState('')
   const { profile } = useContext(AppContext)
 
@@ -87,7 +87,7 @@ export default function ChallengeDayComments({ challengeId, targetUserId, date }
       </div>
 
       {/* Input */}
-      {profile && (
+      {profile && canComment && (
         <div className='mb-4'>
           <InputEmoji content={content} setContent={setContent} handleCreateComment={handleCreateComment} />
         </div>

@@ -286,7 +286,9 @@ export default function ParticipantProgressModal({
   participant,
   challenge,
   onClose,
-  layout = 'modal' // 'modal' | 'page'
+  layout = 'modal', // 'modal' | 'page'
+  canComment = true,
+  allowExpand = true
 }) {
   const navigate = useNavigate()
   const isPage = layout === 'page'
@@ -470,7 +472,7 @@ export default function ParticipantProgressModal({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {!isPage && (
+            {!isPage && allowExpand && (
               <button
                 type="button"
                 onClick={openFullPage}
@@ -676,6 +678,7 @@ export default function ParticipantProgressModal({
                     challengeId={challenge._id}
                     targetUserId={userId}
                     date={selectedDay}
+                    canComment={canComment}
                   />
                 </div>
               )}

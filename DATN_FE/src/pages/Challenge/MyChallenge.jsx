@@ -26,6 +26,7 @@ import moment from 'moment'
 import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../utils/challengeProgress'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getSportIcon } from '../../utils/sportIcons'
+import ParticipantProgressModal from './components/ParticipantProgressModal'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -70,6 +71,7 @@ export default function MyChallenge() {
   const [participantPage, setParticipantPage] = useState(1)
   const [participantSearch, setParticipantSearch] = useState('')
   const [kickTarget, setKickTarget] = useState(null)
+  const [selectedParticipant, setSelectedParticipant] = useState(null)
   
   // Filter state for BOTH tabs
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'ongoing' | 'upcoming' | 'ended'
@@ -169,6 +171,7 @@ export default function MyChallenge() {
     setActiveTab(tab)
     setStatusFilter('all')
     setMobileShowDetail(false)
+    setSelectedParticipant(null)
   }
 
   // ─── DATA FETCHING ───────────────────────────────────────
@@ -313,6 +316,7 @@ export default function MyChallenge() {
     setParticipantPage(1)
     setParticipantSearch('')
     setMobileShowDetail(true)
+    setSelectedParticipant(null)
   }
 
   const handleKickClick = (userId, userName) => {
@@ -460,6 +464,7 @@ export default function MyChallenge() {
               onParticipantSearchChange={setParticipantSearch}
               isLoadingParticipants={isLoadingParticipants}
               onKickClick={handleKickClick}
+              onViewParticipantProgress={setSelectedParticipant}
               leaderboard={leaderboard}
               onDeleteClick={handleDeleteClick}
               onEditClick={(c) => navigate(`/challenge/edit/${c._id}`, { state: { from: '/challenge/my-challenges' } })}
@@ -546,6 +551,16 @@ export default function MyChallenge() {
         </div>
       )}
 
+      {selectedParticipant && selectedChallenge && (
+        <ParticipantProgressModal
+          participant={selectedParticipant}
+          challenge={selectedChallenge}
+          canComment={false}
+          allowExpand={false}
+          onClose={() => setSelectedParticipant(null)}
+        />
+      )}
+
     </div>
   )
 }
@@ -559,6 +574,7 @@ function CreatedTabContent({
   activeSubTab, onSubTabChange,
   participants, participantsTotal, participantsTotalPages, participantPage, participantSearch,
   onParticipantPageChange, onParticipantSearchChange, isLoadingParticipants, onKickClick,
+  onViewParticipantProgress,
   leaderboard,
   onDeleteClick, onEditClick, navigate,
   mobileShowDetail, onMobileBack,
@@ -687,6 +703,7 @@ function CreatedTabContent({
             onParticipantSearchChange={onParticipantSearchChange}
             isLoadingParticipants={isLoadingParticipants}
             onKickClick={onKickClick}
+            onViewParticipantProgress={onViewParticipantProgress}
             leaderboard={leaderboard}
             onDeleteClick={onDeleteClick}
             onEditClick={onEditClick}
@@ -716,7 +733,7 @@ function getStatusBadge(challenge) {
 function ChallengeDashboard({
   challenge, activeSubTab, onSubTabChange,
   participants, participantsTotal, participantsTotalPages, participantPage, participantSearch,
-  onParticipantPageChange, onParticipantSearchChange, isLoadingParticipants, onKickClick,
+  onParticipantPageChange, onParticipantSearchChange, isLoadingParticipants, onKickClick, onViewParticipantProgress,
   leaderboard,
   onDeleteClick, onEditClick, navigate, onMobileBack
 }) {
@@ -796,6 +813,7 @@ function ChallengeDashboard({
             onSearchChange={onParticipantSearchChange}
             isLoading={isLoadingParticipants}
             onKickClick={onKickClick}
+            onViewProgress={onViewParticipantProgress}
           />
         )}
         {activeSubTab === 'settings' && (
@@ -925,7 +943,7 @@ function InfoCard({ icon: Icon, label, value, color, truncate }) {
 // ═══════════════════════════════════════════════════════════
 function ParticipantsSubTab({
   challenge, participants, participantsTotal, totalPages, page, search,
-  onPageChange, onSearchChange, isLoading, onKickClick
+  onPageChange, onSearchChange, isLoading, onKickClick, onViewProgress
 }) {
   const creatorId =
     challenge?.creator_id?._id != null
@@ -964,7 +982,11 @@ function ParticipantsSubTab({
               const rowPct = getChallengePersonalProgressPercent(challenge, p)
               const uid = p.user?._id != null ? String(p.user._id) : ''
               return (
-                <div key={p.user?._id || p.rank} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div
+                  key={p.user?._id || p.rank}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
+                  onClick={() => onViewProgress?.(p)}
+                >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                       {p.rank <= 3 ? (
@@ -1003,7 +1025,10 @@ function ParticipantsSubTab({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => onKickClick(uid, p.user?.name || 'Người dùng')}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onKickClick(uid, p.user?.name || 'Người dùng')
+                        }}
                         className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                         title="Xóa khỏi thử thách"
                       >
