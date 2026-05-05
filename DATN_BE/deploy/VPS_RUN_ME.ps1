@@ -16,13 +16,13 @@ if (-not (Test-Path $APP_DIR)) {
 }
 
 # 2. Check and Upgrade Node.js (Yeu cau ban cao hon de fix EBADENGINE)
-$requiredNode = "22.12.0"
+$requiredNode = "25.9.0"
 $currentNode = node -v 2>$null
 if ($null -eq $currentNode -or $currentNode -lt "v$requiredNode") {
     Write-Host "[>>] Dang tai/Nang cap Node.js v$requiredNode..." -ForegroundColor Yellow
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $nodeMsi = "$env:TEMP\node.msi"
-    Invoke-WebRequest -Uri "https://nodejs.org/dist/v22.12.0/node-v22.12.0-x64.msi" -OutFile $nodeMsi
+    Invoke-WebRequest -Uri "https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi" -OutFile $nodeMsi
     
     Write-Host "[>>] Dang cai dat Node.js (vui long cho)..." -ForegroundColor Yellow
     Start-Process msiexec.exe -ArgumentList "/i $nodeMsi /qn" -Wait
