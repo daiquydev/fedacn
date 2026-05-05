@@ -200,8 +200,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
-    const lastFaceSeenAtRef = useRef(Date.now()) // Last confirmed face timestamp
-    const hasEverDetectedFaceRef = useRef(false) // Avoid harsh early false-absent before first hit
+    const lastFaceSeenAtRef = useRef(Date.now()) // Last confirmed (or grace) presence timestamp
     const aiBootStartedAtRef = useRef(Date.now()) // AI/timer warmup marker
     const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
 
@@ -486,8 +485,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             absenceRef.current = 0
             setAbsenceSecs(0)
             lastFaceSeenAtRef.current = Date.now()
-            hasEverDetectedFaceRef.current = false
-            setFace(false) // wait until AI actually confirms a face
+            // Show present immediately while detector re-locks (grace window).
+            setFace(true)
         }
         setCamOn(next)
     }, [camOn])
@@ -577,7 +576,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             const markPresent = () => {
                 const now = Date.now()
                 lastFaceSeenAtRef.current = now
-                hasEverDetectedFaceRef.current = true
                 absenceRef.current = 0
                 setAbsenceSecs(0)
                 setFace(true)
@@ -593,7 +591,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     : Math.max(0, rawMissingSecs)
 
                 // Keep current "present" state in the short miss window.
-                if (missingSecs <= 0 && hasEverDetectedFaceRef.current) {
+                if (missingSecs <= 0) {
                     setFace(true)
                     setAbsenceSecs(0)
                     absenceRef.current = 0
