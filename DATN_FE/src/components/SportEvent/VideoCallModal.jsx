@@ -55,9 +55,10 @@ function buildRtcConfiguration() {
     return { iceServers }
 }
 
-const ABSENCE_THRESHOLD = 2     // seconds of no face before pausing
+const ABSENCE_THRESHOLD = 10    // seconds of no face before pausing
 const AI_INTERVAL = 1200        // ms between face checks
 const FACE_STABLE_DETECTIONS = 1 // confirm presence immediately when a valid face appears
+const ABSENCE_CONFIRM_MISSES = 2 // tolerate brief detector misses before marking absent
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
@@ -200,6 +201,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
     const consecutiveFaceRef = useRef(0)     // Anti-false-positive guard
+    const consecutiveMissRef = useRef(0)     // Ignore short AI false negatives
+    const absenceStartedAtRef = useRef(null) // Track continuous absence duration
     const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
@@ -569,23 +572,32 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
         aiTimerRef.current = setInterval(async () => {
             // ── Bug 1 fix: unified absence handler used in ALL absence paths ──
-            const markAbsent = () => {
+            const markAbsent = (forceImmediate = false) => {
                 consecutiveFaceRef.current = 0
+                consecutiveMissRef.current += 1
+                if (!forceImmediate && consecutiveMissRef.current < ABSENCE_CONFIRM_MISSES) return
+
+                if (!absenceStartedAtRef.current) absenceStartedAtRef.current = Date.now()
+                const elapsedSecs = Math.max(
+                    1,
+                    Math.ceil((Date.now() - absenceStartedAtRef.current) / 1000)
+                )
+
                 setFace(false)
-                absenceRef.current += AI_INTERVAL / 1000
-                setAbsenceSecs(Math.ceil(absenceRef.current))
-                if (absenceRef.current >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
+                absenceRef.current = elapsedSecs
+                setAbsenceSecs(elapsedSecs)
+                if (elapsedSecs >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
             }
 
             // ── Camera OFF (UI state) → face detection impossible ─────────────
             if (!camOnRef.current) {
-                markAbsent()
+                markAbsent(true)
                 return
             }
 
             // ── AI model or video element not ready yet ───────────────────────
             if (!faceApiRef.current || !localVideoRef.current) {
-                markAbsent()
+                markAbsent(true)
                 return
             }
 
@@ -595,7 +607,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 videoTrack.readyState === 'live' &&
                 videoTrack.enabled
             if (!trackUsable) {
-                markAbsent()
+                markAbsent(true)
                 return
             }
 
@@ -603,12 +615,12 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             const vid = localVideoRef.current
             if (vid.readyState < 2 || vid.videoWidth === 0) {
                 // Video not decoded yet — count as absent to handle covered-camera edge case
-                markAbsent()
+                markAbsent(true)
                 return
             }
             if (!hasUsableCameraFrame(vid)) {
                 // Frame is too uniform/blank (often covered lens or black frame)
-                markAbsent()
+                markAbsent(true)
                 return
             }
 
@@ -652,6 +664,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     if (!stableDetected) return
 
                     // Face confirmed → reset absence counter and unpause
+                    consecutiveMissRef.current = 0
+                    absenceStartedAtRef.current = null
                     absenceRef.current = 0
                     setAbsenceSecs(0)
                     if (pausedRef.current) syncPause(false)
@@ -670,7 +684,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             } catch {
                 // Bug 1 fix: if AI throws (model error, canvas read error, etc.)
                 // we still penalise absence rather than silently ignoring it
-                markAbsent()
+                markAbsent(true)
             }
         }, AI_INTERVAL)
     }
