@@ -47,7 +47,7 @@ class AuthUserService {
       },
       privateKey: envConfig.JWT_SECRET_ACCESS_TOKEN,
       options: {
-        expiresIn: envConfig.ACCESS_TOKEN_EXPIRES_IN
+        expiresIn: envConfig.ACCESS_TOKEN_EXPIRES_IN as any
       }
     })
   }
@@ -88,7 +88,7 @@ class AuthUserService {
       },
       privateKey: envConfig.JWT_SECRET_REFRESH_TOKEN,
       options: {
-        expiresIn: envConfig.REFRESH_TOKEN_EXPIRES_IN
+        expiresIn: envConfig.REFRESH_TOKEN_EXPIRES_IN as any
       }
     })
   }

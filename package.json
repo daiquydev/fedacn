@@ -19,7 +19,7 @@
     "seed:outdoor-event-activities:selftest": "node DATN_BE/scripts/seed_all_outdoor_events.js --selftest",
     "seed:outdoor-progress": "npm run seed:outdoor-progress --prefix DATN_BE",
     "seed:outdoor-progress:fast": "npm run seed:outdoor-progress:fast --prefix DATN_BE",
-    "report:fast": "cd BAOCAO_LATEX && latexmk -f -xelatex -interaction=nonstopmode main.tex"
+    "report:fast": "cd BAOCAO_LATEX && latexmk -c && latexmk -f -xelatex -interaction=nonstopmode -silent main.tex"
   },
   "eslintConfig": {
     "extends": [

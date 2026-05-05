@@ -62,7 +62,7 @@ const MealPlanMealSchema = new mongoose.Schema<MealPlanMeal>(
     name: {
       type: String,
       maxlength: 255,
-      required: function() {
+      required: function(this: any): boolean {
         return !this.recipe_id; // Bắt buộc nếu không có recipe_id
       }
     },
