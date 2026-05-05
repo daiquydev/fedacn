@@ -63,8 +63,8 @@ const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detecte
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
 const UPLOAD_PRESET = 'fedacn_unsigned'
-const BLACK_FRAME_MEAN_THRESHOLD = 20 // very dark frame (covered lens) guard
-const BLACK_FRAME_VARIANCE_THRESHOLD = 15
+const BLACK_FRAME_MEAN_THRESHOLD = 8 // only reject near-total black frames
+const BLACK_FRAME_VARIANCE_THRESHOLD = 8
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0') }
@@ -614,13 +614,13 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             // ── Check if video has actual frame data ──────────────────────────
             const vid = localVideoRef.current
             if (vid.readyState < 2 || vid.videoWidth === 0) {
-                // Video not decoded yet — count as absent to handle covered-camera edge case
-                markAbsent(true)
+                // Decoder hiccup can happen briefly; treat as soft miss (not immediate absent)
+                markAbsent()
                 return
             }
             if (!hasUsableCameraFrame(vid)) {
-                // Frame is too uniform/blank (often covered lens or black frame)
-                markAbsent(true)
+                // Low-light/low-detail frames are common; avoid immediate harsh penalty
+                markAbsent()
                 return
             }
 
@@ -628,7 +628,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 const faceapi = faceApiRef.current
                 // Use a stricter detector threshold to reduce false positives
                 // (e.g., hand/skin blobs when camera is covered)
-                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.55 })
+                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.35 })
                 const rawFaces = await faceapi.detectAllFaces(vid, opts)
 
                 // Filter out detections where the bounding box occupies more than 65%
@@ -643,16 +643,16 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                           const aspect = b.height > 0 ? b.width / b.height : 0
                           const score = Number(det.score || 0)
                           return (
-                              score >= 0.65 &&
-                              ratio >= 0.015 &&
-                              ratio <= 0.7 &&
-                              aspect >= 0.45 &&
-                              aspect <= 2.1
+                              score >= 0.4 &&
+                              ratio >= 0.005 &&
+                              ratio <= 0.85 &&
+                              aspect >= 0.3 &&
+                              aspect <= 3
                           )
                       })
                     : rawFaces
 
-                const detected = validFaces.length > 0
+                const detected = validFaces.length > 0 || rawFaces.some((det) => Number(det?.score || 0) >= 0.45)
 
                 if (!detected) {
                     // Face not found (or blob was too large → hand covering camera)
