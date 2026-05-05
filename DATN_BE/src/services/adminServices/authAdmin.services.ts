@@ -25,7 +25,7 @@ class AuthAdminService {
       },
       privateKey: envConfig.JWT_SECRET_ACCESS_TOKEN,
       options: {
-        expiresIn: envConfig.ACCESS_TOKEN_ADMIN_EXPIRES_IN
+        expiresIn: envConfig.ACCESS_TOKEN_ADMIN_EXPIRES_IN as any
       }
     })
   }
