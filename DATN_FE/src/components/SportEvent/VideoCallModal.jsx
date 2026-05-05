@@ -57,8 +57,8 @@ function buildRtcConfiguration() {
 
 const ABSENCE_THRESHOLD = 10    // seconds of no face before pausing
 const AI_INTERVAL = 1200        // ms between face checks
-const FACE_STABLE_DETECTIONS = 1 // confirm presence immediately when a valid face appears
-const ABSENCE_CONFIRM_MISSES = 2 // tolerate brief detector misses before marking absent
+const FACE_MISS_GRACE_SECONDS = 3 // keep "present" for brief detector misses
+const AI_BOOT_GRACE_SECONDS = 8   // warmup time before penalizing while AI/loading starts
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
@@ -200,9 +200,9 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
-    const consecutiveFaceRef = useRef(0)     // Anti-false-positive guard
-    const consecutiveMissRef = useRef(0)     // Ignore short AI false negatives
-    const absenceStartedAtRef = useRef(null) // Track continuous absence duration
+    const lastFaceSeenAtRef = useRef(Date.now()) // Last confirmed face timestamp
+    const hasEverDetectedFaceRef = useRef(false) // Avoid harsh early false-absent before first hit
+    const aiBootStartedAtRef = useRef(Date.now()) // AI/timer warmup marker
     const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
@@ -485,7 +485,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         if (next) {
             absenceRef.current = 0
             setAbsenceSecs(0)
-            consecutiveFaceRef.current = 0
+            lastFaceSeenAtRef.current = Date.now()
+            hasEverDetectedFaceRef.current = false
             setFace(false) // wait until AI actually confirms a face
         }
         setCamOn(next)
@@ -564,6 +565,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     }
 
     function startTimers() {
+        aiBootStartedAtRef.current = Date.now()
+
         timerRef.current = setInterval(() => {
             totalRef.current += 1
             setTotal(totalRef.current)
@@ -571,33 +574,49 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         }, 1000)
 
         aiTimerRef.current = setInterval(async () => {
-            // ── Bug 1 fix: unified absence handler used in ALL absence paths ──
-            const markAbsent = (forceImmediate = false) => {
-                consecutiveFaceRef.current = 0
-                consecutiveMissRef.current += 1
-                if (!forceImmediate && consecutiveMissRef.current < ABSENCE_CONFIRM_MISSES) return
+            const markPresent = () => {
+                const now = Date.now()
+                lastFaceSeenAtRef.current = now
+                hasEverDetectedFaceRef.current = true
+                absenceRef.current = 0
+                setAbsenceSecs(0)
+                setFace(true)
+                if (pausedRef.current) syncPause(false)
+            }
 
-                if (!absenceStartedAtRef.current) absenceStartedAtRef.current = Date.now()
-                const elapsedSecs = Math.max(
-                    1,
-                    Math.ceil((Date.now() - absenceStartedAtRef.current) / 1000)
-                )
+            const markAbsent = (useGrace = true) => {
+                const now = Date.now()
+                const lastSeenAt = lastFaceSeenAtRef.current || now
+                const rawMissingSecs = Math.ceil((now - lastSeenAt) / 1000)
+                const missingSecs = useGrace
+                    ? Math.max(0, rawMissingSecs - FACE_MISS_GRACE_SECONDS)
+                    : Math.max(0, rawMissingSecs)
+
+                // Keep current "present" state in the short miss window.
+                if (missingSecs <= 0 && hasEverDetectedFaceRef.current) {
+                    setFace(true)
+                    setAbsenceSecs(0)
+                    absenceRef.current = 0
+                    return
+                }
 
                 setFace(false)
-                absenceRef.current = elapsedSecs
-                setAbsenceSecs(elapsedSecs)
-                if (elapsedSecs >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
+                absenceRef.current = missingSecs
+                setAbsenceSecs(missingSecs)
+                if (missingSecs >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
             }
 
             // ── Camera OFF (UI state) → face detection impossible ─────────────
             if (!camOnRef.current) {
-                markAbsent(true)
+                markAbsent(false)
                 return
             }
 
             // ── AI model or video element not ready yet ───────────────────────
             if (!faceApiRef.current || !localVideoRef.current) {
-                markAbsent(true)
+                const bootSecs = Math.ceil((Date.now() - aiBootStartedAtRef.current) / 1000)
+                if (bootSecs <= AI_BOOT_GRACE_SECONDS) return
+                markAbsent(false)
                 return
             }
 
@@ -607,7 +626,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 videoTrack.readyState === 'live' &&
                 videoTrack.enabled
             if (!trackUsable) {
-                markAbsent(true)
+                markAbsent(false)
                 return
             }
 
@@ -615,12 +634,12 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             const vid = localVideoRef.current
             if (vid.readyState < 2 || vid.videoWidth === 0) {
                 // Decoder hiccup can happen briefly; treat as soft miss (not immediate absent)
-                markAbsent()
+                markAbsent(true)
                 return
             }
             if (!hasUsableCameraFrame(vid)) {
                 // Low-light/low-detail frames are common; avoid immediate harsh penalty
-                markAbsent()
+                markAbsent(true)
                 return
             }
 
@@ -656,19 +675,10 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
                 if (!detected) {
                     // Face not found (or blob was too large → hand covering camera)
-                    markAbsent()
+                    markAbsent(true)
                 } else {
-                    consecutiveFaceRef.current += 1
-                    const stableDetected = consecutiveFaceRef.current >= FACE_STABLE_DETECTIONS
-                    setFace(stableDetected)
-                    if (!stableDetected) return
-
                     // Face confirmed → reset absence counter and unpause
-                    consecutiveMissRef.current = 0
-                    absenceStartedAtRef.current = null
-                    absenceRef.current = 0
-                    setAbsenceSecs(0)
-                    if (pausedRef.current) syncPause(false)
+                    markPresent()
 
                     // ── Screenshot: capture composite frame when face is present ──
                     const now = Date.now()
@@ -1019,7 +1029,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                                 ${faceDetected ? 'bg-emerald-500/80 text-white' : 'bg-red-500/80 text-white'}`}>
                                 {faceDetected
                                     ? <><FaEye className="text-[9px]" /> Có mặt</>
-                                    : <><FaEyeSlash className="text-[9px]" /> Vắng {absenceSecs > 0 ? `(${absenceSecs}s)` : ''}</>
+                                    : <><FaEyeSlash className="text-[9px]" /> {absenceSecs > 0 ? `Vắng (${absenceSecs}s)` : 'Đang kiểm tra...'}</>
                                 }
                             </div>
                             {/* AI Status badge */}
