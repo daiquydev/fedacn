@@ -59,7 +59,10 @@ const ABSENCE_THRESHOLD = 10    // seconds of no face before pausing
 const AI_INTERVAL = 1200        // ms between face checks
 const FACE_MISS_GRACE_SECONDS = 3 // keep "present" for brief detector misses
 const AI_BOOT_GRACE_SECONDS = 8   // warmup time before penalizing while AI/loading starts
+const CHECKING_TIMEOUT_SECONDS = 6 // max "Đang kiểm tra..." before switching to absent counter
+const CAMERA_RECOVERY_SECONDS = 2  // short grace after turning camera back on
 const FACE_MODEL_CDN_FALLBACK = 'https://justadudewhohacks.github.io/face-api.js/models'
+const AI_DEBUG_BADGE_ENABLED = String(import.meta.env.VITE_AI_DEBUG_BADGE || '').toLowerCase() === 'true'
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
@@ -182,6 +185,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const [aiReady, setAiReady] = useState(false)
     const [aiError, setAiError] = useState(null)
     const [absenceSecs, setAbsenceSecs] = useState(0)
+    const [aiDebugReason, setAiDebugReason] = useState('init')
 
     // ── Refs
     const localStreamRef = useRef(null)
@@ -201,8 +205,10 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
-    const lastFaceSeenAtRef = useRef(Date.now()) // Last confirmed (or grace) presence timestamp
+    const lastFaceSeenAtRef = useRef(null) // Last confirmed (or grace) presence timestamp
     const aiBootStartedAtRef = useRef(Date.now()) // AI/timer warmup marker
+    const callStartedAtRef = useRef(Date.now()) // Session status timing baseline
+    const cameraRecoveryUntilRef = useRef(0) // avoid stale "vắng" right after cam resumes
     const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
@@ -483,9 +489,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         // Bug 2 fix: reset absence counter immediately when turning cam back ON
         // avoids the frozen 9s badge because the counter was never cleared
         if (next) {
+            const now = Date.now()
             absenceRef.current = 0
             setAbsenceSecs(0)
-            lastFaceSeenAtRef.current = Date.now()
+            lastFaceSeenAtRef.current = now
+            cameraRecoveryUntilRef.current = now + CAMERA_RECOVERY_SECONDS * 1000
             // Show present immediately while detector re-locks (grace window).
             setFace(true)
         }
@@ -572,6 +580,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
                 setAiReady(true)
                 setAiError(null)
+                setAiDebugReason('model-ready')
                 console.log('[AI] Face detection model loaded successfully')
                 return
             } catch (err) {
@@ -583,6 +592,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 } else {
                     const msg = 'AI không khả dụng (không tải được model nhận diện khuôn mặt)'
                     setAiError(msg)
+                    setAiDebugReason('model-load-failed')
                     console.error(`[AI] All ${MAX_RETRIES} attempts failed. Face-confirmed tracking unavailable.`)
                     toast.error(msg, { duration: 5000, icon: '🤖' })
                 }
@@ -591,6 +601,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     }
 
     function startTimers() {
+        callStartedAtRef.current = Date.now()
         aiBootStartedAtRef.current = Date.now()
 
         timerRef.current = setInterval(() => {
@@ -606,13 +617,33 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 absenceRef.current = 0
                 setAbsenceSecs(0)
                 setFace(true)
+                setAiDebugReason('present')
                 if (pausedRef.current) syncPause(false)
             }
 
-            const markAbsent = (useGrace = true) => {
+            const markAbsent = (useGrace = true, reason = 'no-face') => {
                 const now = Date.now()
-                const lastSeenAt = lastFaceSeenAtRef.current || now
-                const rawMissingSecs = Math.ceil((now - lastSeenAt) / 1000)
+                if (now < cameraRecoveryUntilRef.current) {
+                    setFace(true)
+                    setAbsenceSecs(0)
+                    absenceRef.current = 0
+                    setAiDebugReason('camera-recovery')
+                    return
+                }
+
+                const lastSeenAt = lastFaceSeenAtRef.current
+                if (!lastSeenAt) {
+                    const checkingSecs = Math.ceil((now - callStartedAtRef.current) / 1000)
+                    if (checkingSecs <= CHECKING_TIMEOUT_SECONDS) {
+                        setFace(false)
+                        setAbsenceSecs(0)
+                        absenceRef.current = 0
+                        setAiDebugReason('checking')
+                        return
+                    }
+                }
+                const baseTs = lastSeenAt || callStartedAtRef.current
+                const rawMissingSecs = Math.ceil((now - baseTs) / 1000)
                 const missingSecs = useGrace
                     ? Math.max(0, rawMissingSecs - FACE_MISS_GRACE_SECONDS)
                     : Math.max(0, rawMissingSecs)
@@ -622,26 +653,31 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     setFace(true)
                     setAbsenceSecs(0)
                     absenceRef.current = 0
+                    setAiDebugReason('grace')
                     return
                 }
 
                 setFace(false)
                 absenceRef.current = missingSecs
                 setAbsenceSecs(missingSecs)
+                setAiDebugReason(reason)
                 if (missingSecs >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
             }
 
             // ── Camera OFF (UI state) → face detection impossible ─────────────
             if (!camOnRef.current) {
-                markAbsent(false)
+                markAbsent(false, 'camera-off')
                 return
             }
 
             // ── AI model or video element not ready yet ───────────────────────
             if (!faceApiRef.current || !localVideoRef.current) {
                 const bootSecs = Math.ceil((Date.now() - aiBootStartedAtRef.current) / 1000)
-                if (bootSecs <= AI_BOOT_GRACE_SECONDS) return
-                markAbsent(false)
+                if (bootSecs <= AI_BOOT_GRACE_SECONDS) {
+                    setAiDebugReason('ai-boot')
+                    return
+                }
+                markAbsent(false, 'ai-not-ready')
                 return
             }
 
@@ -651,7 +687,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 videoTrack.readyState === 'live' &&
                 videoTrack.enabled
             if (!trackUsable) {
-                markAbsent(false)
+                markAbsent(false, 'track-not-usable')
                 return
             }
 
@@ -659,12 +695,12 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             const vid = localVideoRef.current
             if (vid.readyState < 2 || vid.videoWidth === 0) {
                 // Decoder hiccup can happen briefly; treat as soft miss (not immediate absent)
-                markAbsent(true)
+                markAbsent(true, 'no-frame')
                 return
             }
             if (!hasUsableCameraFrame(vid)) {
                 // Low-light/low-detail frames are common; avoid immediate harsh penalty
-                markAbsent(true)
+                markAbsent(true, 'frame-too-dark')
                 return
             }
 
@@ -700,7 +736,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
                 if (!detected) {
                     // Face not found (or blob was too large → hand covering camera)
-                    markAbsent(true)
+                    markAbsent(true, 'no-face')
                 } else {
                     // Face confirmed → reset absence counter and unpause
                     markPresent()
@@ -719,7 +755,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             } catch {
                 // Bug 1 fix: if AI throws (model error, canvas read error, etc.)
                 // we still penalise absence rather than silently ignoring it
-                markAbsent(true)
+                markAbsent(true, 'detect-error')
             }
         }, AI_INTERVAL)
     }
@@ -1071,6 +1107,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                                     <><AiOutlineLoading3Quarters className="animate-spin text-[7px]" /> AI</>
                                 )}
                             </div>
+                            {AI_DEBUG_BADGE_ENABLED && (
+                                <div className="absolute top-6 right-1 text-[8px] px-1.5 py-0.5 rounded bg-black/65 text-white font-mono">
+                                    {aiDebugReason}
+                                </div>
+                            )}
                         </div>
                         {aiError && (
                             <div className="flex items-center gap-1 text-yellow-400/70 text-[9px] bg-yellow-500/10 rounded-lg px-2 py-1 mt-1.5">
