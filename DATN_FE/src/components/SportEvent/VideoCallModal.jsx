@@ -12,7 +12,7 @@ import {
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash, FaCrown } from 'react-icons/fa'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
-import { joinVideoSession, endVideoSession, reportPresence } from '../../apis/sportEventApi'
+import { joinVideoSession, endVideoSession, reportPresence, getActiveVideoSession } from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getAccessTokenFromLS, getProfileFromLS } from '../../utils/auth'
 import { getAvatarSrc } from '../../utils/imageUrl'
@@ -63,6 +63,25 @@ const UPLOAD_PRESET = 'fedacn_unsigned'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0') }
+
+/** Lấy _id phiên video từ body join (tương thích nhiều dạng response). */
+function pickVideoSessionIdFromJoinResponse(res) {
+    const body = res?.data
+    const r = body?.result ?? body?.data?.result ?? body?.data
+    if (!r || typeof r !== 'object') return null
+    const id = r._id ?? r.id
+    if (id == null) return null
+    return typeof id === 'object' && typeof id.toString === 'function' ? String(id) : String(id)
+}
+
+function pickVideoSessionIdFromActiveResponse(res) {
+    const body = res?.data
+    const r = body?.result ?? body?.data?.result ?? body?.data
+    if (!r || typeof r !== 'object') return null
+    const id = r._id ?? r.id
+    if (id == null) return null
+    return typeof id === 'object' && typeof id.toString === 'function' ? String(id) : String(id)
+}
 function fmtTime(s) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60
     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`
@@ -124,8 +143,9 @@ function SelfPreviewVideo({ stream, camOn, isMain = false }) {
 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function VideoCallModal({ event, sessionId: scheduleSessionId, onClose, onCallEnded }) {
-    const { id: eventId } = useParams()
+export default function VideoCallModal({ event, sessionId: scheduleSessionId, eventId: eventIdProp, onClose, onCallEnded }) {
+    const { id: routeEventId } = useParams()
+    const eventId = (eventIdProp || routeEventId || (event?._id != null ? String(event._id) : '') || '').trim()
 
     // ── Who is the event creator?
     // event.createdBy can be:
@@ -218,11 +238,27 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         let cancelled = false
 
         async function init() {
+            if (!eventId) {
+                toast.error('Thiếu mã sự kiện — không thể vào phòng video')
+                return
+            }
             // 1. Join API
             try {
                 const joinBody = scheduleSessionId ? { sessionId: scheduleSessionId } : {}
                 const res = await joinVideoSession(eventId, joinBody)
-                if (!cancelled) vsIdRef.current = res?.data?.result?._id
+                if (cancelled) return
+                let vsId = pickVideoSessionIdFromJoinResponse(res)
+                if (!vsId) {
+                    try {
+                        const activeRes = await getActiveVideoSession(eventId)
+                        vsId = pickVideoSessionIdFromActiveResponse(activeRes)
+                    } catch { /* ignore */ }
+                }
+                vsIdRef.current = vsId
+                if (!vsIdRef.current) {
+                    console.error('[VideoCall] Join OK nhưng không có vsId — kiểm tra response API và deploy backend heartbeat')
+                    toast.error('Không nhận được mã phiên video. Đồng hồ AI có thể không đồng bộ — hãy thoát và thử lại.', { duration: 5000 })
+                }
             } catch (err) {
                 toast.error('Không thể tham gia: ' + (err?.response?.data?.message || err.message))
             }

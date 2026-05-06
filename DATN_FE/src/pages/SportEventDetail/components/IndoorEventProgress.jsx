@@ -444,6 +444,7 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
             {showVideoCall && (
                 <VideoCallModal
                     event={event}
+                    eventId={eventId}
                     sessionId={scheduleSessionIdForCall}
                     onClose={() => setShowVideoCall(false)}
                     onCallEnded={handleCallEnded}
