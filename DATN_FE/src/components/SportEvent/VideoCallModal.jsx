@@ -59,6 +59,7 @@ const ABSENCE_THRESHOLD = 10    // seconds of no face before pausing
 const AI_INTERVAL = 1200        // ms between face checks
 const FACE_MISS_GRACE_SECONDS = 3 // keep "present" for brief detector misses
 const AI_BOOT_GRACE_SECONDS = 8   // warmup time before penalizing while AI/loading starts
+const FACE_MODEL_CDN_FALLBACK = 'https://justadudewhohacks.github.io/face-api.js/models'
 const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
@@ -537,12 +538,38 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     // ─────────────────────────────────────────────────────────────────────────
     async function loadFaceApi() {
         const MAX_RETRIES = 3
+        const modelUrls = [
+            import.meta.env.VITE_FACE_API_MODEL_URL,
+            '/models',
+            FACE_MODEL_CDN_FALLBACK
+        ]
+            .map((u) => (u || '').trim())
+            .filter(Boolean)
+
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
                 console.log(`[AI] Loading face-api model (attempt ${attempt}/${MAX_RETRIES})...`)
                 const faceapi = await import('face-api.js')
                 faceApiRef.current = faceapi
-                await faceapi.nets.tinyFaceDetector.loadFromUri('/models')
+                let loaded = false
+                let lastErr = null
+
+                for (const modelUrl of modelUrls) {
+                    try {
+                        await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl)
+                        loaded = true
+                        console.log(`[AI] Face model loaded from: ${modelUrl}`)
+                        break
+                    } catch (err) {
+                        lastErr = err
+                        console.warn(`[AI] Failed loading model from ${modelUrl}:`, err?.message || err)
+                    }
+                }
+
+                if (!loaded) {
+                    throw lastErr || new Error('Không tải được face model từ mọi nguồn cấu hình')
+                }
+
                 setAiReady(true)
                 setAiError(null)
                 console.log('[AI] Face detection model loaded successfully')
@@ -554,7 +581,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     const delay = Math.pow(2, attempt - 1) * 1000
                     await new Promise(r => setTimeout(r, delay))
                 } else {
-                    const msg = 'AI không khả dụng — chỉ ghi nhận thời gian khi AI nhận diện được khuôn mặt'
+                    const msg = 'AI không khả dụng (không tải được model nhận diện khuôn mặt)'
                     setAiError(msg)
                     console.error(`[AI] All ${MAX_RETRIES} attempts failed. Face-confirmed tracking unavailable.`)
                     toast.error(msg, { duration: 5000, icon: '🤖' })
