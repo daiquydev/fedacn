@@ -186,6 +186,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const [aiError, setAiError] = useState(null)
     const [absenceSecs, setAbsenceSecs] = useState(0)
     const [aiDebugReason, setAiDebugReason] = useState('init')
+    const [aiDebugMeta, setAiDebugMeta] = useState('')
 
     // ── Refs
     const localStreamRef = useRef(null)
@@ -611,6 +612,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         }, 1000)
 
         aiTimerRef.current = setInterval(async () => {
+            setAiDebugReason('tick')
             const markPresent = () => {
                 const now = Date.now()
                 lastFaceSeenAtRef.current = now
@@ -666,6 +668,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
             // ── Camera OFF (UI state) → face detection impossible ─────────────
             if (!camOnRef.current) {
+                setAiDebugMeta('cam=off')
                 markAbsent(false, 'camera-off')
                 return
             }
@@ -674,9 +677,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             if (!faceApiRef.current || !localVideoRef.current) {
                 const bootSecs = Math.ceil((Date.now() - aiBootStartedAtRef.current) / 1000)
                 if (bootSecs <= AI_BOOT_GRACE_SECONDS) {
+                    setAiDebugMeta(`boot=${bootSecs}s`)
                     setAiDebugReason('ai-boot')
                     return
                 }
+                setAiDebugMeta('faceapi-or-video=missing')
                 markAbsent(false, 'ai-not-ready')
                 return
             }
@@ -687,6 +692,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 videoTrack.readyState === 'live' &&
                 videoTrack.enabled
             if (!trackUsable) {
+                setAiDebugMeta(`track=${videoTrack?.readyState || 'none'}/${videoTrack?.enabled ? 'on' : 'off'}`)
                 markAbsent(false, 'track-not-usable')
                 return
             }
@@ -694,11 +700,13 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             // ── Check if video has actual frame data ──────────────────────────
             const vid = localVideoRef.current
             if (vid.readyState < 2 || vid.videoWidth === 0) {
+                setAiDebugMeta(`video=rs${vid.readyState},w${vid.videoWidth},h${vid.videoHeight}`)
                 // Decoder hiccup can happen briefly; treat as soft miss (not immediate absent)
                 markAbsent(true, 'no-frame')
                 return
             }
             if (!hasUsableCameraFrame(vid)) {
+                setAiDebugMeta(`video=rs${vid.readyState},w${vid.videoWidth},h${vid.videoHeight}`)
                 // Low-light/low-detail frames are common; avoid immediate harsh penalty
                 markAbsent(true, 'frame-too-dark')
                 return
@@ -708,7 +716,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 const faceapi = faceApiRef.current
                 // Use a stricter detector threshold to reduce false positives
                 // (e.g., hand/skin blobs when camera is covered)
-                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.35 })
+                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 })
                 const rawFaces = await faceapi.detectAllFaces(vid, opts)
 
                 // Filter out detections where the bounding box occupies more than 65%
@@ -723,7 +731,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                           const aspect = b.height > 0 ? b.width / b.height : 0
                           const score = Number(det.score || 0)
                           return (
-                              score >= 0.4 &&
+                              score >= 0.25 &&
                               ratio >= 0.005 &&
                               ratio <= 0.85 &&
                               aspect >= 0.3 &&
@@ -732,7 +740,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                       })
                     : rawFaces
 
-                const detected = validFaces.length > 0 || rawFaces.some((det) => Number(det?.score || 0) >= 0.45)
+                const detected = validFaces.length > 0 || rawFaces.some((det) => Number(det?.score || 0) >= 0.25)
+                setAiDebugMeta(`video=rs${vid.readyState},w${vid.videoWidth},h${vid.videoHeight},raw=${rawFaces.length},valid=${validFaces.length}`)
 
                 if (!detected) {
                     // Face not found (or blob was too large → hand covering camera)
@@ -1108,8 +1117,9 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                                 )}
                             </div>
                             {AI_DEBUG_BADGE_ENABLED && (
-                                <div className="absolute top-6 right-1 text-[8px] px-1.5 py-0.5 rounded bg-black/65 text-white font-mono">
-                                    {aiDebugReason}
+                                <div className="absolute top-6 right-1 text-[8px] px-1.5 py-0.5 rounded bg-black/65 text-white font-mono max-w-[180px]">
+                                    <div>{aiDebugReason}</div>
+                                    {aiDebugMeta ? <div className="opacity-80 break-all">{aiDebugMeta}</div> : null}
                                 </div>
                             )}
                         </div>
