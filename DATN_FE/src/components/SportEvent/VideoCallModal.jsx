@@ -206,10 +206,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
-    const lastFaceSeenAtRef = useRef(null) // Last confirmed (or grace) presence timestamp
+    const lastFaceSeenAtRef = useRef(Date.now()) // Last confirmed (or grace) presence timestamp
     const aiBootStartedAtRef = useRef(Date.now()) // AI/timer warmup marker
     const callStartedAtRef = useRef(Date.now()) // Session status timing baseline
     const cameraRecoveryUntilRef = useRef(0) // avoid stale "vắng" right after cam resumes
+    const aiLoopBusyRef = useRef(false) // Prevent overlapping async detector loops
     const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
@@ -612,7 +613,9 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         }, 1000)
 
         aiTimerRef.current = setInterval(async () => {
-            setAiDebugReason('tick')
+            if (aiLoopBusyRef.current) return
+            aiLoopBusyRef.current = true
+            try {
             const markPresent = () => {
                 const now = Date.now()
                 lastFaceSeenAtRef.current = now
@@ -765,6 +768,9 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 // Bug 1 fix: if AI throws (model error, canvas read error, etc.)
                 // we still penalise absence rather than silently ignoring it
                 markAbsent(true, 'detect-error')
+            }
+            } finally {
+                aiLoopBusyRef.current = false
             }
         }, AI_INTERVAL)
     }
