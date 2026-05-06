@@ -192,3 +192,7 @@ export const softDeleteActivity = (eventId, activityId) =>
 // Soft-delete video session (indoor)
 export const softDeleteVideoSession = (eventId, vsId) =>
     http.patch(`/sport-events/${eventId}/video-sessions/${vsId}/soft-delete`)
+
+// Report presence heartbeat every 1 second (face detection result)
+export const reportPresence = (eventId, vsId, data) =>
+    http.post(`/sport-events/${eventId}/video-sessions/${vsId}/heartbeat`, data)

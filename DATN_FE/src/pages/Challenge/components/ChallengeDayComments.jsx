@@ -28,7 +28,7 @@ export default function ChallengeDayComments({ challengeId, targetUserId, date, 
   })
 
   const handleCreateComment = async (e) => {
-    if (content.trim() === '') return
+    if (content.trim() === '' || commentMutation.isPending) return
     e.preventDefault()
     commentMutation.mutate(
       {
@@ -89,7 +89,7 @@ export default function ChallengeDayComments({ challengeId, targetUserId, date, 
       {/* Input */}
       {profile && canComment && (
         <div className='mb-4'>
-          <InputEmoji content={content} setContent={setContent} handleCreateComment={handleCreateComment} />
+          <InputEmoji content={content} setContent={setContent} handleCreateComment={handleCreateComment} isPending={commentMutation.isPending} />
         </div>
       )}
 

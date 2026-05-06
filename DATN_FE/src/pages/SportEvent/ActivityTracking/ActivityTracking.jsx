@@ -1,5 +1,5 @@
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -24,6 +24,7 @@ export default function ActivityTracking() {
     const autoSaveTimerRef = useRef(null)
     const startedRef = useRef(false)
     const activityIdRef = useRef(null)
+    const getCurrentActivityId = useCallback(() => activityIdRef.current || activityId, [activityId])
 
     // Goong Map refs
     const mapContainerRef = useRef(null)
@@ -71,15 +72,24 @@ export default function ActivityTracking() {
 
     // Update activity mutation (auto-save)
     const updateMutation = useSafeMutation({
-        mutationFn: (data) => updateActivity(eventId, activityId, data)
+        mutationFn: (data) => {
+            const currentActivityId = getCurrentActivityId()
+            return updateActivity(eventId, currentActivityId, data)
+        }
     })
 
     // Complete mutation
     const completeMutation = useSafeMutation({
-        mutationFn: (data) => completeActivity(eventId, activityId, data),
+        mutationFn: (data) => {
+            const currentActivityId = getCurrentActivityId()
+            return completeActivity(eventId, currentActivityId, data)
+        },
         onSuccess: () => {
+            const completedActivityId = activityIdRef.current
             toast.success('Hoàn thành hoạt động! Tiến độ đã được ghi nhận.')
-            navigate(`/sport-event/${eventId}?tab=progress&completed=${activityId}`)
+            navigate(`/sport-event/${eventId}`, {
+                state: { completedActivityId, openProgressTab: true }
+            })
         },
         onError: (err) => {
             toast.error(err.response?.data?.message || 'Lỗi khi hoàn thành')
@@ -88,7 +98,10 @@ export default function ActivityTracking() {
 
     // Discard mutation
     const discardMutation = useSafeMutation({
-        mutationFn: () => discardActivity(eventId, activityId),
+        mutationFn: () => {
+            const currentActivityId = getCurrentActivityId()
+            return discardActivity(eventId, currentActivityId)
+        },
         onSuccess: () => {
             toast.success('Đã huỷ hoạt động')
             navigate(`/sport-event/${eventId}`)

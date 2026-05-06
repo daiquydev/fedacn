@@ -6,6 +6,14 @@ import { Types } from 'mongoose'
 import { roundKcal } from '~/utils/math.utils'
 import { capVideoSessionSeconds, resolveIndoorSessionIdForJoin } from './sportEventVideoSession.helpers'
 
+// ─── In-memory presence tracker ─────────────────────────────────────────────
+// Tracks face-detection state per active video session (vsId → state)
+const presenceState = new Map<string, {
+    lastPresentAt: number
+    absenceSince: number | null
+}>()
+const ABSENCE_PAUSE_THRESHOLD_SECONDS = 5
+
 // ==================== CALORIE CALCULATION ====================
 // Lấy kcal_per_unit từ SportCategory (kcal/phút cho Trong nhà)
 // Fallback 4 kcal/phút nếu không tìm thấy danh mục
@@ -105,6 +113,47 @@ class SportEventVideoSessionService {
         return videoSession
     }
 
+    // ─── Presence Heartbeat ─────────────────────────────────────────────────────
+    // Called by frontend every 1 second with face-detection result.
+    // Returns whether timer should be paused and current absence duration.
+    async presenceHeartbeatService(vsId: string, userId: string, isPresent: boolean) {
+        const session = await SportEventVideoSessionModel.findOne({
+            _id: vsId,
+            userId,
+            status: 'active'
+        })
+
+        // Session ended or not found — tell frontend to stop heartbeat
+        if (!session) return { isPaused: false, absenceSeconds: 0, sessionEnded: true }
+
+        const now = Date.now()
+        let state = presenceState.get(vsId)
+
+        if (!state) {
+            // First heartbeat for this session
+            state = { lastPresentAt: now, absenceSince: isPresent ? null : now }
+            presenceState.set(vsId, state)
+        }
+
+        if (isPresent) {
+            state.lastPresentAt = now
+            state.absenceSince = null
+        } else if (state.absenceSince === null) {
+            // Started being absent right now
+            state.absenceSince = now
+        }
+
+        const absenceSeconds = state.absenceSince !== null
+            ? Math.floor((now - state.absenceSince) / 1000)
+            : 0
+
+        return {
+            isPaused: absenceSeconds >= ABSENCE_PAUSE_THRESHOLD_SECONDS,
+            absenceSeconds,
+            sessionEnded: false
+        }
+    }
+
     // ─── End Video Session ──────────────────────────────────────────────────────
     async endVideoSessionService(
         eventId: string,
@@ -158,6 +207,9 @@ class SportEventVideoSessionService {
             activeSeconds: safeActiveSeconds,
             notes: `Video call — ${Math.round(safeActiveSeconds / 60)} phút tham gia tích cực`
         })
+
+        // Clean up in-memory presence tracker
+        presenceState.delete(vsId)
 
         // 5. Finalize: cập nhật session về 'ended' với đầy đủ thông tin
         const updatedVS = await SportEventVideoSessionModel.findByIdAndUpdate(

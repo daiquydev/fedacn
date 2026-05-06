@@ -146,6 +146,25 @@ export const getVideoSessionStatsController = async (req: Request, res: Response
     }
 }
 
+// ─── Presence Heartbeat ───────────────────────────────────────────────────────
+export const presenceHeartbeatController = async (req: Request, res: Response) => {
+    try {
+        const { eventId, vsId } = req.params
+        const userId = (req as any).decoded?.user_id
+        const { isPresent } = req.body
+
+        const result = await sportEventVideoSessionService.presenceHeartbeatService(
+            vsId,
+            userId,
+            Boolean(isPresent)
+        )
+
+        return res.json({ result })
+    } catch (error) {
+        return res.status(400).json({ message: (error as Error).message })
+    }
+}
+
 // ─── Soft-delete Video Session ────────────────────────────────────────────────
 export const softDeleteVideoSessionController = async (req: Request, res: Response) => {
     try {

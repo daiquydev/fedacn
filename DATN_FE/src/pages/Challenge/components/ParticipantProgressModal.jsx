@@ -1,4 +1,5 @@
 import { roundKcal } from '../../../utils/mathUtils'
+import { getEntryCalories, getEntryDurationMinutes } from '../../../utils/challengeProgressEntryDisplay'
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -633,7 +634,9 @@ export default function ParticipantProgressModal({
                         const isLate = entry.validation_status === 'invalid_time'
                         const isInvalidAI = entry.ai_review_valid === false
                         const isInvalid = isLate || isInvalidAI
-                        
+                        const entryDurMin = getEntryDurationMinutes(entry)
+                        const entryKcal = getEntryCalories(entry)
+
                         return (
                         <button
                           key={entry._id}
@@ -663,8 +666,8 @@ export default function ParticipantProgressModal({
                           <div className="flex items-center gap-2">
                             <div className="flex gap-1.5 text-[9px] text-gray-400">
                               {entry.distance && <span>📍{entry.distance}km</span>}
-                              {entry.duration_minutes && <span>⏱{entry.duration_minutes}p</span>}
-                              {entry.calories && <span>🔥{roundKcal(entry.calories)}</span>}
+                              {entryDurMin > 0 && <span>⏱{entryDurMin}p</span>}
+                              {entryKcal > 0 && <span>🔥{roundKcal(entryKcal)}</span>}
                             </div>
                             <FaChevronRight className="text-[10px] text-gray-300 group-hover:text-orange-400 transition" />
                           </div>

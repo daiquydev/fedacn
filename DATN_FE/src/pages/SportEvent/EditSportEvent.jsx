@@ -384,16 +384,18 @@ const EditSportEvent = () => {
                   </select>
                 </div>
 
-                {/* Hình thức tổ chức */}
+                {/* Hình thức tổ chức — khóa khi chỉnh sửa */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Hình thức tổ chức</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Hình thức tổ chức</label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Không thể thay đổi sau khi sự kiện đã được tạo.</p>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Ngoài trời' }))}
-                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Ngoài trời'
+                      disabled
+                      aria-disabled="true"
+                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all cursor-not-allowed disabled:opacity-90 ${newEvent.eventType === 'Ngoài trời'
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 shadow-md shadow-green-100'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-green-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500'
                         }`}
                     >
                       <div className={`text-3xl ${newEvent.eventType === 'Ngoài trời' ? 'text-green-500' : 'text-gray-400'}`}>🌿</div>
@@ -402,10 +404,11 @@ const EditSportEvent = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Trong nhà', targetUnit: p.targetUnit === 'km' ? 'kcal' : p.targetUnit }))}
-                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Trong nhà'
+                      disabled
+                      aria-disabled="true"
+                      className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all cursor-not-allowed disabled:opacity-90 ${newEvent.eventType === 'Trong nhà'
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 shadow-md shadow-blue-100'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-blue-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500'
                         }`}
                     >
                       <div className={`text-3xl ${newEvent.eventType === 'Trong nhà' ? 'text-blue-500' : 'text-gray-400'}`}>🏠</div>

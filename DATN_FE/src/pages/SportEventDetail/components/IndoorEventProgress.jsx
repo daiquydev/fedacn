@@ -20,7 +20,6 @@ import {
     softDeleteVideoSession
 } from '../../../apis/sportEventApi'
 import VideoCallModal from '../../../components/SportEvent/VideoCallModal'
-import VideoCallResult from '../../../components/SportEvent/VideoCallResult'
 import IndoorDetailModal from '../../../components/SportEvent/IndoorDetailModal'
 import IndoorShareModal from '../../../components/SportEvent/IndoorShareModal'
 import ProgressRing from '../../../components/SportEvent/ProgressRing'
@@ -448,15 +447,6 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
                     sessionId={scheduleSessionIdForCall}
                     onClose={() => setShowVideoCall(false)}
                     onCallEnded={handleCallEnded}
-                />
-            )}
-
-            {/* ── Result Modal ── */}
-            {callResult && (
-                <VideoCallResult
-                    result={callResult}
-                    event={event}
-                    onClose={() => setCallResult(null)}
                 />
             )}
 

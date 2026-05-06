@@ -22,7 +22,7 @@ export default function SportEventComments({ post }) {
   })
 
   const handleCreateComment = async (e) => {
-    if (content.trim() === '') return
+    if (content.trim() === '' || commentMutation.isPending) return
     e.preventDefault()
     commentMutation.mutate(
       {
@@ -77,7 +77,7 @@ export default function SportEventComments({ post }) {
 
   return (
     <div className='pt-4 px-4 md:px-0'>
-      <InputEmoji content={content} setContent={setContent} handleCreateComment={handleCreateComment} />
+      <InputEmoji content={content} setContent={setContent} handleCreateComment={handleCreateComment} isPending={commentMutation.isPending} />
       <div className='pt-6'>
         {contentComment}
         <div className='w-full'>

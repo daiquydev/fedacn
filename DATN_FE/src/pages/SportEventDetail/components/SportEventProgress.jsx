@@ -1,6 +1,6 @@
 import { roundKcal } from '../../../utils/mathUtils'
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart,
@@ -99,7 +99,8 @@ function formatPace(totalSeconds, distanceKm) {
 export default function SportEventProgress({
   event,
   userProgress,
-  isArchivedReadOnly
+  isArchivedReadOnly,
+  autoOpenActivityId = null
 }) {
   const [timeFilter, setTimeFilter] = useState('7d')
   const [customRange, setCustomRange] = useState(null) // { startDate, endDate }
@@ -112,7 +113,7 @@ export default function SportEventProgress({
   const [isDeleting, setIsDeleting] = useState(false)
   const navigate = useNavigate()
   const { id } = useParams()
-  const [searchParams, setSearchParams] = useSearchParams()
+
   const queryClient = useQueryClient()
   const activityListRef = useRef(null)
   const activityItemRefs = useRef({})
@@ -130,18 +131,13 @@ export default function SportEventProgress({
   }, [categoriesData, event?.category])
   const CategoryIcon = getSportIcon(categoryIconKey)
 
-  // Auto-open modal when redirected from GPS tracking completion
+  // Auto-open modal when navigated back from GPS tracking completion
   useEffect(() => {
-    const completedId = searchParams.get('completed')
-    if (completedId) {
-      setSelectedActivityId(completedId)
+    if (autoOpenActivityId) {
+      setSelectedActivityId(autoOpenActivityId)
       setIsCompletionModal(true)
-      // Clean up the URL param without causing navigation
-      searchParams.delete('completed')
-      searchParams.delete('tab')
-      setSearchParams(searchParams, { replace: true })
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoOpenActivityId])
 
   // Fetch user's GPS activities for this event
   const { data: activitiesData } = useQuery({
@@ -603,7 +599,7 @@ export default function SportEventProgress({
   const isEnded = event?.endDate ? moment().isAfter(moment(event.endDate)) : false
   const isNotStarted = event?.startDate ? moment().isBefore(moment(event.startDate)) : false
   
-  const getOutdoorTargetValue = useCallback(() => {
+  const getOutdoorTargetValue = () => {
     if (!allTimeGpsStats) return 0;
     const unit = (event?.targetUnit || '').toLowerCase();
     if (unit.includes('kcal') || unit.includes('calo')) {
@@ -615,7 +611,7 @@ export default function SportEventProgress({
     } else {
       return allTimeGpsStats.totalDistance; // Default to km
     }
-  }, [allTimeGpsStats, event?.targetUnit]);
+  };
 
   // Progress overview: for outdoor events, use getOutdoorTargetValue
   const displayProgress = isOutdoor && allTimeGpsStats ? getOutdoorTargetValue() : (stats?.totalProgress || 0)

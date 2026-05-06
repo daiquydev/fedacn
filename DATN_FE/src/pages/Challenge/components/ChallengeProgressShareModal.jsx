@@ -1,4 +1,5 @@
 import { roundKcal } from '../../../utils/mathUtils'
+import { getEntryCalories, getEntryDurationMinutes } from '../../../utils/challengeProgressEntryDisplay'
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -391,17 +392,19 @@ function FitnessPreview({ entry, challenge, config }) {
     value: `${entry.value} ${entry.unit || goalUnit}`
   })
 
-  if (entry.duration_minutes) {
-    const h = Math.floor(entry.duration_minutes / 60)
-    const m = entry.duration_minutes % 60
+  const durMin = getEntryDurationMinutes(entry)
+  if (durMin > 0) {
+    const h = Math.floor(durMin / 60)
+    const m = durMin % 60
     const dur = h > 0 ? `${h}g ${m}p` : `${m} phút`
     stats.push({ icon: <FaClock className="text-amber-500" />, label: 'Thời gian', value: dur })
   }
   if (entry.exercises_count) {
     stats.push({ icon: <MdFitnessCenter className="text-orange-500" />, label: 'Bài tập', value: `${entry.exercises_count} bài` })
   }
-  if (entry.calories) {
-    stats.push({ icon: <FaFire className="text-red-500" />, label: 'Calo', value: `${roundKcal(entry.calories)} kcal` })
+  const shareCal = getEntryCalories(entry)
+  if (shareCal > 0) {
+    stats.push({ icon: <FaFire className="text-red-500" />, label: 'Calo', value: `${roundKcal(shareCal)} kcal` })
   }
 
   const displayStats = stats.slice(0, 4)

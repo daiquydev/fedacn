@@ -1,6 +1,6 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AiOutlineLoading3Quarters
@@ -65,11 +65,17 @@ export default function SportEventDetail() {
 
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
+
+  // Detect navigation from GPS tracking completion
+  const locationState = location.state || {}
+  const completedActivityId = locationState.completedActivityId || null
 
   // UI State
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(() => {
+    if (locationState.openProgressTab || locationState.completedActivityId) return 'progress'
     const tabParam = searchParams.get('tab')
     return tabParam === 'progress' ? 'progress' : 'details'
   })
@@ -1111,7 +1117,7 @@ export default function SportEventDetail() {
         {activeTab === 'progress' && event.isJoined && (
           event.eventType === 'Trong nhà'
             ? <IndoorEventProgress event={event} userProgress={userProgress} isArchivedReadOnly={isArchivedReadOnly} />
-            : <SportEventProgress event={event} userProgress={userProgress} isArchivedReadOnly={isArchivedReadOnly} />
+            : <SportEventProgress event={event} userProgress={userProgress} isArchivedReadOnly={isArchivedReadOnly} autoOpenActivityId={completedActivityId} />
         )}
 
 

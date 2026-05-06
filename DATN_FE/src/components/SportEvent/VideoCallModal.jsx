@@ -8,12 +8,11 @@ import { io } from 'socket.io-client'
 import {
     MdVideocam, MdVideocamOff, MdMic, MdMicOff,
     MdScreenShare, MdStopScreenShare, MdCallEnd,
-    MdFiberManualRecord, MdPerson, MdWarning,
-    MdFaceRetouchingNatural
+    MdFiberManualRecord, MdPerson, MdWarning
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash, FaCrown } from 'react-icons/fa'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
-import { joinVideoSession, endVideoSession } from '../../apis/sportEventApi'
+import { joinVideoSession, endVideoSession, reportPresence } from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getAccessTokenFromLS, getProfileFromLS } from '../../utils/auth'
 import { getAvatarSrc } from '../../utils/imageUrl'
@@ -55,20 +54,12 @@ function buildRtcConfiguration() {
     return { iceServers }
 }
 
-const ABSENCE_THRESHOLD = 10    // seconds of no face before pausing
-const AI_INTERVAL = 1200        // ms between face checks
-const FACE_MISS_GRACE_SECONDS = 3 // keep "present" for brief detector misses
-const AI_BOOT_GRACE_SECONDS = 8   // warmup time before penalizing while AI/loading starts
-const CHECKING_TIMEOUT_SECONDS = 6 // max "Đang kiểm tra..." before switching to absent counter
-const CAMERA_RECOVERY_SECONDS = 2  // short grace after turning camera back on
-const FACE_MODEL_CDN_FALLBACK = 'https://justadudewhohacks.github.io/face-api.js/models'
-const AI_DEBUG_BADGE_ENABLED = String(import.meta.env.VITE_AI_DEBUG_BADGE || '').toLowerCase() === 'true'
-const SCREENSHOT_INTERVAL = 10  // seconds between screenshots when face detected
+const HEARTBEAT_INTERVAL_MS = 1000   // call backend every 1 second
+const MODEL_BOOT_GRACE_MS = 12000    // assume present while model loads (12s)
+const SCREENSHOT_INTERVAL = 10       // seconds between screenshots when face detected
 const MAX_SCREENSHOTS = 5
 const CLOUD_NAME = 'da9cghklv'
 const UPLOAD_PRESET = 'fedacn_unsigned'
-const BLACK_FRAME_MEAN_THRESHOLD = 8 // only reject near-total black frames
-const BLACK_FRAME_VARIANCE_THRESHOLD = 8
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0') }
@@ -185,8 +176,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const [aiReady, setAiReady] = useState(false)
     const [aiError, setAiError] = useState(null)
     const [absenceSecs, setAbsenceSecs] = useState(0)
-    const [aiDebugReason, setAiDebugReason] = useState('init')
-    const [aiDebugMeta, setAiDebugMeta] = useState('')
 
     // ── Refs
     const localStreamRef = useRef(null)
@@ -199,19 +188,16 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const pausedRef = useRef(false)
     const absenceRef = useRef(0)
     const timerRef = useRef(null)
-    const aiTimerRef = useRef(null)
+    const heartbeatRef = useRef(null)        // setInterval for 1-second heartbeat loop
+    const heartbeatBusyRef = useRef(false)   // prevent overlapping async heartbeat calls
+    const heartbeatBootAtRef = useRef(0)     // timestamp when heartbeat loop started
+    const aiReadyRef = useRef(false)         // sync mirror of aiReady state (avoids stale closure)
     const faceApiRef = useRef(null)
-    const localVideoRef = useRef(null)      // For AI detection (always shows local cam)
+    const localVideoRef = useRef(null)       // For AI detection (always shows local cam)
     const camOnRef = useRef(true)            // Synchronous cam state for AI interval
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
-    const uploadPromisesRef = useRef([])     // Bug 3: track in-flight screenshot uploads
-    const lastFaceSeenAtRef = useRef(Date.now()) // Last confirmed (or grace) presence timestamp
-    const aiBootStartedAtRef = useRef(Date.now()) // AI/timer warmup marker
-    const callStartedAtRef = useRef(Date.now()) // Session status timing baseline
-    const cameraRecoveryUntilRef = useRef(0) // avoid stale "vắng" right after cam resumes
-    const aiLoopBusyRef = useRef(false) // Prevent overlapping async detector loops
-    const frameCheckCanvasRef = useRef(null) // Reuse small canvas for frame quality checks
+    const uploadPromisesRef = useRef([])     // track in-flight screenshot uploads
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -223,36 +209,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         return true
     }, [])
 
-    const hasUsableCameraFrame = useCallback((videoEl) => {
-        if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) return false
-        let canvas = frameCheckCanvasRef.current
-        if (!canvas) {
-            canvas = document.createElement('canvas')
-            canvas.width = 48
-            canvas.height = 36
-            frameCheckCanvasRef.current = canvas
-        }
-        const ctx = canvas.getContext('2d', { willReadFrequently: true })
-        if (!ctx) return false
-        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
-        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        let sum = 0
-        let sumSq = 0
-        let count = 0
-        for (let i = 0; i < data.length; i += 4) {
-            const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
-            sum += lum
-            sumSq += lum * lum
-            count += 1
-        }
-        if (count === 0) return false
-        const mean = sum / count
-        const variance = sumSq / count - mean * mean
-        // Only reject near-black + low-detail frames (common when lens is covered).
-        // Do not reject low-texture but valid scenes to avoid false "vắng mặt".
-        const likelyCoveredLens = mean < BLACK_FRAME_MEAN_THRESHOLD && variance < BLACK_FRAME_VARIANCE_THRESHOLD
-        return !likelyCoveredLens
-    }, [])
 
     // ─────────────────────────────────────────────────────────────────────────
     // INIT
@@ -285,11 +241,11 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
             // 3. Socket + WebRTC
             setupSocket()
 
-            // 4. AI (non-blocking)
-            loadFaceApi().catch(() => { })
-
-            // 5. Timers
+            // 4. Timers
             startTimers()
+
+            // 5. AI heartbeat loop (non-blocking model load + 1s detection loop)
+            startHeartbeatLoop()
 
             if (!cancelled) setIsReady(true)
         }
@@ -488,17 +444,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
         const next = !camOn
         localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = next })
         camOnRef.current = next
-        // Bug 2 fix: reset absence counter immediately when turning cam back ON
-        // avoids the frozen 9s badge because the counter was never cleared
-        if (next) {
-            const now = Date.now()
-            absenceRef.current = 0
-            setAbsenceSecs(0)
-            lastFaceSeenAtRef.current = now
-            cameraRecoveryUntilRef.current = now + CAMERA_RECOVERY_SECONDS * 1000
-            // Show present immediately while detector re-locks (grace window).
-            setFace(true)
-        }
         setCamOn(next)
     }, [camOn])
 
@@ -546,233 +491,110 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     // ─────────────────────────────────────────────────────────────────────────
     // AI + TIMERS
     // ─────────────────────────────────────────────────────────────────────────
-    async function loadFaceApi() {
-        const MAX_RETRIES = 3
-        const modelUrls = [
-            import.meta.env.VITE_FACE_API_MODEL_URL,
-            '/models',
-            FACE_MODEL_CDN_FALLBACK
-        ]
-            .map((u) => (u || '').trim())
-            .filter(Boolean)
-
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            try {
-                console.log(`[AI] Loading face-api model (attempt ${attempt}/${MAX_RETRIES})...`)
-                const faceapi = await import('face-api.js')
-                faceApiRef.current = faceapi
-                let loaded = false
-                let lastErr = null
-
-                for (const modelUrl of modelUrls) {
-                    try {
-                        await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl)
-                        loaded = true
-                        console.log(`[AI] Face model loaded from: ${modelUrl}`)
-                        break
-                    } catch (err) {
-                        lastErr = err
-                        console.warn(`[AI] Failed loading model from ${modelUrl}:`, err?.message || err)
-                    }
-                }
-
-                if (!loaded) {
-                    throw lastErr || new Error('Không tải được face model từ mọi nguồn cấu hình')
-                }
-
-                setAiReady(true)
-                setAiError(null)
-                setAiDebugReason('model-ready')
-                console.log('[AI] Face detection model loaded successfully')
-                return
-            } catch (err) {
-                console.warn(`[AI] Attempt ${attempt} failed:`, err?.message || err)
-                if (attempt < MAX_RETRIES) {
-                    // Exponential backoff: 1s, 2s, 4s
-                    const delay = Math.pow(2, attempt - 1) * 1000
-                    await new Promise(r => setTimeout(r, delay))
-                } else {
-                    const msg = 'AI không khả dụng (không tải được model nhận diện khuôn mặt)'
-                    setAiError(msg)
-                    setAiDebugReason('model-load-failed')
-                    console.error(`[AI] All ${MAX_RETRIES} attempts failed. Face-confirmed tracking unavailable.`)
-                    toast.error(msg, { duration: 5000, icon: '🤖' })
-                }
-            }
-        }
-    }
 
     function startTimers() {
-        callStartedAtRef.current = Date.now()
-        aiBootStartedAtRef.current = Date.now()
-
         timerRef.current = setInterval(() => {
             totalRef.current += 1
             setTotal(totalRef.current)
             if (!pausedRef.current) { activeRef.current += 1; setActive(activeRef.current) }
         }, 1000)
+    }
 
-        aiTimerRef.current = setInterval(async () => {
-            if (aiLoopBusyRef.current) return
-            aiLoopBusyRef.current = true
+    // ── Load face-api.js model from local /models first ───────────────────────
+    async function loadFaceModel() {
+        try {
+            const faceapi = await import('face-api.js')
+            faceApiRef.current = faceapi
+            // Try local first, then CDN fallback
+            const modelUrls = [
+                '/models',
+                import.meta.env.VITE_FACE_API_MODEL_URL,
+                'https://justadudewhohacks.github.io/face-api.js/models'
+            ].map(u => (u || '').trim()).filter(Boolean)
+
+            let loaded = false
+            for (const url of modelUrls) {
+                try {
+                    await faceapi.nets.tinyFaceDetector.loadFromUri(url)
+                    loaded = true
+                    console.log('[AI] Face model loaded from:', url)
+                    break
+                } catch { /* try next */ }
+            }
+            if (!loaded) throw new Error('Không tải được face model')
+            aiReadyRef.current = true
+            setAiReady(true)
+            setAiError(null)
+        } catch (err) {
+            const msg = 'AI nhận diện không khả dụng'
+            setAiError(msg)
+            console.error('[AI] Model load failed:', err?.message)
+        }
+    }
+
+    // ── Detect face from local video element ─────────────────────────────────
+    async function detectFace() {
+        const faceapi = faceApiRef.current
+        const vid = localVideoRef.current
+        if (!faceapi || !vid) return false
+        if (!camOnRef.current) return false
+        if (vid.readyState < 2 || vid.videoWidth === 0) return false
+        const videoTrack = localStreamRef.current?.getVideoTracks?.()[0]
+        if (!videoTrack || videoTrack.readyState !== 'live' || !videoTrack.enabled) return false
+        try {
+            const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+            const faces = await faceapi.detectAllFaces(vid, opts)
+            return faces.length > 0
+        } catch {
+            return false
+        }
+    }
+
+    // ── 1-second heartbeat: detect face → report to backend ─────────────────
+    function startHeartbeatLoop() {
+        heartbeatBootAtRef.current = Date.now()
+
+        // Load model in background; heartbeat optimistically assumes present during boot
+        loadFaceModel()
+
+        heartbeatRef.current = setInterval(async () => {
+            if (heartbeatBusyRef.current) return
+            heartbeatBusyRef.current = true
             try {
-            const markPresent = () => {
-                const now = Date.now()
-                lastFaceSeenAtRef.current = now
-                absenceRef.current = 0
-                setAbsenceSecs(0)
-                setFace(true)
-                setAiDebugReason('present')
-                if (pausedRef.current) syncPause(false)
-            }
+                const modelReady = aiReadyRef.current
+                const inBootGrace = Date.now() - heartbeatBootAtRef.current < MODEL_BOOT_GRACE_MS
 
-            const markAbsent = (useGrace = true, reason = 'no-face') => {
-                const now = Date.now()
-                if (now < cameraRecoveryUntilRef.current) {
-                    setFace(true)
-                    setAbsenceSecs(0)
-                    absenceRef.current = 0
-                    setAiDebugReason('camera-recovery')
-                    return
-                }
+                // During model boot grace → report present, show loading badge
+                if (!modelReady && inBootGrace) return
 
-                const lastSeenAt = lastFaceSeenAtRef.current
-                if (!lastSeenAt) {
-                    const checkingSecs = Math.ceil((now - callStartedAtRef.current) / 1000)
-                    if (checkingSecs <= CHECKING_TIMEOUT_SECONDS) {
-                        setFace(false)
-                        setAbsenceSecs(0)
-                        absenceRef.current = 0
-                        setAiDebugReason('checking')
-                        return
-                    }
-                }
-                const baseTs = lastSeenAt || callStartedAtRef.current
-                const rawMissingSecs = Math.ceil((now - baseTs) / 1000)
-                const missingSecs = useGrace
-                    ? Math.max(0, rawMissingSecs - FACE_MISS_GRACE_SECONDS)
-                    : Math.max(0, rawMissingSecs)
+                const isPresent = modelReady ? await detectFace() : false
+                setFace(isPresent)
 
-                // Keep current "present" state in the short miss window.
-                if (missingSecs <= 0) {
-                    setFace(true)
-                    setAbsenceSecs(0)
-                    absenceRef.current = 0
-                    setAiDebugReason('grace')
-                    return
-                }
-
-                setFace(false)
-                absenceRef.current = missingSecs
-                setAbsenceSecs(missingSecs)
-                setAiDebugReason(reason)
-                if (missingSecs >= ABSENCE_THRESHOLD && !pausedRef.current) syncPause(true)
-            }
-
-            // ── Camera OFF (UI state) → face detection impossible ─────────────
-            if (!camOnRef.current) {
-                setAiDebugMeta('cam=off')
-                markAbsent(false, 'camera-off')
-                return
-            }
-
-            // ── AI model or video element not ready yet ───────────────────────
-            if (!faceApiRef.current || !localVideoRef.current) {
-                const bootSecs = Math.ceil((Date.now() - aiBootStartedAtRef.current) / 1000)
-                if (bootSecs <= AI_BOOT_GRACE_SECONDS) {
-                    setAiDebugMeta(`boot=${bootSecs}s`)
-                    setAiDebugReason('ai-boot')
-                    return
-                }
-                setAiDebugMeta('faceapi-or-video=missing')
-                markAbsent(false, 'ai-not-ready')
-                return
-            }
-
-            // ── Camera track real state (covers browser-level/hardware off cases)
-            const videoTrack = localStreamRef.current?.getVideoTracks?.()[0]
-            const trackUsable = !!videoTrack &&
-                videoTrack.readyState === 'live' &&
-                videoTrack.enabled
-            if (!trackUsable) {
-                setAiDebugMeta(`track=${videoTrack?.readyState || 'none'}/${videoTrack?.enabled ? 'on' : 'off'}`)
-                markAbsent(false, 'track-not-usable')
-                return
-            }
-
-            // ── Check if video has actual frame data ──────────────────────────
-            const vid = localVideoRef.current
-            if (vid.readyState < 2 || vid.videoWidth === 0) {
-                setAiDebugMeta(`video=rs${vid.readyState},w${vid.videoWidth},h${vid.videoHeight}`)
-                // Decoder hiccup can happen briefly; treat as soft miss (not immediate absent)
-                markAbsent(true, 'no-frame')
-                return
-            }
-            if (!hasUsableCameraFrame(vid)) {
-                setAiDebugMeta(`video=rs${vid.readyState},w${vid.videoWidth},h${vid.videoHeight}`)
-                // Low-light/low-detail frames are common; avoid immediate harsh penalty
-                markAbsent(true, 'frame-too-dark')
-                return
-            }
-
-            try {
-                const faceapi = faceApiRef.current
-                // Use a stricter detector threshold to reduce false positives
-                // (e.g., hand/skin blobs when camera is covered)
-                const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 })
-                const rawFaces = await faceapi.detectAllFaces(vid, opts)
-
-                // Filter out detections where the bounding box occupies more than 65%
-                // of the video frame area. When a hand covers the camera close-up,
-                // the skin blob fills ~80-100% of the frame and would score as a "face".
-                // A real face in a webcam call typically takes 5%-65% of the frame.
-                const frameArea = vid.videoWidth * vid.videoHeight
-                const validFaces = frameArea > 0
-                    ? rawFaces.filter(det => {
-                          const b = det.box
-                          const ratio = (b.width * b.height) / frameArea
-                          const aspect = b.height > 0 ? b.width / b.height : 0
-                          const score = Number(det.score || 0)
-                          return (
-                              score >= 0.25 &&
-                              ratio >= 0.005 &&
-                              ratio <= 0.85 &&
-                              aspect >= 0.3 &&
-                              aspect <= 3
-                          )
-                      })
-                    : rawFaces
-
-                const detected = validFaces.length > 0 || rawFaces.some((det) => Number(det?.score || 0) >= 0.25)
-                setAiDebugMeta(`video=rs${vid.readyState},w${vid.videoWidth},h${vid.videoHeight},raw=${rawFaces.length},valid=${validFaces.length}`)
-
-                if (!detected) {
-                    // Face not found (or blob was too large → hand covering camera)
-                    markAbsent(true, 'no-face')
-                } else {
-                    // Face confirmed → reset absence counter and unpause
-                    markPresent()
-
-                    // ── Screenshot: capture composite frame when face is present ──
+                // Capture screenshot periodically when face confirmed
+                if (isPresent && camOnRef.current) {
                     const now = Date.now()
-                    if (
-                        screenshotsRef.current.length < MAX_SCREENSHOTS &&
-                        now - lastScreenshotRef.current >= SCREENSHOT_INTERVAL * 1000 &&
-                        camOnRef.current
-                    ) {
+                    if (screenshotsRef.current.length < MAX_SCREENSHOTS &&
+                        now - lastScreenshotRef.current >= SCREENSHOT_INTERVAL * 1000) {
                         lastScreenshotRef.current = now
-                        captureScreenshot()  // non-blocking; promise tracked for Bug 3
+                        captureScreenshot()
                     }
                 }
+
+                if (!vsIdRef.current) return
+
+                const res = await reportPresence(eventId, vsIdRef.current, { isPresent })
+                const data = res?.data?.result
+                if (!data) return
+
+                setAbsenceSecs(data.absenceSeconds ?? 0)
+                const shouldPause = data.isPaused ?? false
+                if (shouldPause !== pausedRef.current) syncPause(shouldPause)
             } catch {
-                // Bug 1 fix: if AI throws (model error, canvas read error, etc.)
-                // we still penalise absence rather than silently ignoring it
-                markAbsent(true, 'detect-error')
-            }
+                // Network error — don't crash, retry next second
             } finally {
-                aiLoopBusyRef.current = false
+                heartbeatBusyRef.current = false
             }
-        }, AI_INTERVAL)
+        }, HEARTBEAT_INTERVAL_MS)
     }
 
     // ── Screenshot helper — extracted so it can be awaited or fire-and-forget ─
@@ -900,7 +722,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     // ─────────────────────────────────────────────────────────────────────────
     function cleanup() {
         clearInterval(timerRef.current)
-        clearInterval(aiTimerRef.current)
+        clearInterval(heartbeatRef.current)
         localStreamRef.current?.getTracks().forEach(t => t.stop())
         screenStreamRef.current?.getTracks().forEach(t => t.stop())
         Object.values(peerConnsRef.current).forEach(pc => pc.close())
@@ -917,7 +739,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
 
         // Stop timers first so activeRef / totalRef are frozen at final values
         clearInterval(timerRef.current)
-        clearInterval(aiTimerRef.current)
+        clearInterval(heartbeatRef.current)
 
         // Bug 3 fix: wait for any in-flight screenshot uploads to finish
         // before reading screenshotsRef.current — gives Cloudinary time to respond
@@ -1110,7 +932,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                             </div>
                             {/* AI Status badge */}
                             <div className={`absolute top-1 right-1 flex items-center gap-1 text-[8px] font-semibold px-1.5 py-0.5 rounded-full backdrop-blur-sm ${
-                                aiReady ? 'bg-emerald-600/80 text-white' 
+                                aiReady ? 'bg-emerald-600/80 text-white'
                                 : aiError ? 'bg-red-600/80 text-white'
                                 : 'bg-amber-500/80 text-white'
                             }`}>
@@ -1122,12 +944,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                                     <><AiOutlineLoading3Quarters className="animate-spin text-[7px]" /> AI</>
                                 )}
                             </div>
-                            {AI_DEBUG_BADGE_ENABLED && (
-                                <div className="absolute top-6 right-1 text-[8px] px-1.5 py-0.5 rounded bg-black/65 text-white font-mono max-w-[180px]">
-                                    <div>{aiDebugReason}</div>
-                                    {aiDebugMeta ? <div className="opacity-80 break-all">{aiDebugMeta}</div> : null}
-                                </div>
-                            )}
                         </div>
                         {aiError && (
                             <div className="flex items-center gap-1 text-yellow-400/70 text-[9px] bg-yellow-500/10 rounded-lg px-2 py-1 mt-1.5">
@@ -1302,22 +1118,30 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                         </div>
                     )}
 
-                    {/* ═══ OVERLAY HUD — Only AI status (timer/kcal moved to top bar) ═══ */}
-                    {/* Top-right: AI Status overlay */}
-                    <div className="absolute top-5 right-5 z-10">
+                    {/* ═══ OVERLAY HUD — AI status + absence warning ═══ */}
+                    <div className="absolute top-5 right-5 z-10 flex flex-col items-end gap-2">
                         <div className={`flex items-center gap-2 text-xs font-semibold rounded-full px-4 py-2 border ${
                             aiReady ? 'text-emerald-700 border-emerald-200 bg-emerald-50/80'
                             : aiError ? 'text-red-700 border-red-200 bg-red-50/80'
                             : 'text-amber-700 border-amber-200 bg-amber-50/80'
                         }`} style={{ backdropFilter: 'blur(8px)' }}>
                             {aiReady ? (
-                                <><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> ✅ AI đang theo dõi</>
+                                <><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> AI đang theo dõi</>
                             ) : aiError ? (
-                                <><MdWarning /> ❌ AI lỗi</>
+                                <><MdWarning /> AI lỗi</>
                             ) : (
-                                <><AiOutlineLoading3Quarters className="animate-spin" /> ⏳ AI đang tải...</>
+                                <><AiOutlineLoading3Quarters className="animate-spin" /> AI đang tải...</>
                             )}
                         </div>
+                        {absenceSecs > 0 && (
+                            <div className="flex items-center gap-2 text-xs font-semibold rounded-full px-4 py-2 border
+                                text-orange-700 border-orange-200 bg-orange-50/90"
+                                style={{ backdropFilter: 'blur(8px)' }}>
+                                <MdWarning className="text-orange-500" />
+                                Không phát hiện khuôn mặt ({absenceSecs}s)
+                                {absenceSecs >= 5 && ' — Đã tạm dừng'}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

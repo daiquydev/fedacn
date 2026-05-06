@@ -37,6 +37,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   const [showEmoji, setShowEmoji] = useState(false)
   const [content, setContent] = useState(initialContent)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const handleImageClick = () => inputRef.current.click()
   const handleImageChange = (e) => setImage((prev) => [...prev, ...e.target.files])
@@ -105,9 +106,9 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
   }
 
   const handleUpload = async () => {
-    // Prevent duplicate submissions
     if (isSubmittingRef.current || uploadMutation.isPending || isSuccess) return
     isSubmittingRef.current = true
+    setIsProcessing(true)
 
     if (image.length > 0) {
       const result = await classifyImages(image)
@@ -123,12 +124,14 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
 
       if (flagged) {
         isSubmittingRef.current = false
+        setIsProcessing(false)
         return toast.error('Ảnh của bạn có chứa nội dung nhạy cảm')
       }
     }
 
     if (content === '' && image.length === 0) {
       isSubmittingRef.current = false
+      setIsProcessing(false)
       return toast.error('Nội dung hoặc ảnh không được để trống')
     }
 
@@ -140,6 +143,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
     uploadMutation.mutate(formData, {
       onSuccess: () => {
         setIsSuccess(true)
+        setIsProcessing(false)
         queryClient.invalidateQueries({ queryKey: ['newFeeds'] })
         toast.success('Đăng bài viết thành công')
         setContent('')
@@ -149,11 +153,11 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
         isSubmittingRef.current = false
       },
       onError: (err) => {
-        // Interceptor (utils/http.js) đã toast cho hầu hết lỗi; riêng 422 bị bỏ qua ở interceptor
         if (err?.response?.status === 422) {
           toast.error(err?.response?.data?.message || 'Dữ liệu không hợp lệ')
         }
         isSubmittingRef.current = false
+        setIsProcessing(false)
       }
     })
   }
@@ -340,7 +344,7 @@ export default function ModalUploadPost({ closeModalPost, profile, initialConten
 
         {/* ── Footer / Submit ── */}
         <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-          {uploadMutation.isPending || isSuccess ? (
+          {uploadMutation.isPending || isSuccess || isProcessing ? (
             <button
               disabled
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm bg-gray-400 cursor-not-allowed"

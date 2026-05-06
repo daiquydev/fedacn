@@ -9,6 +9,8 @@ import { getAvatarSrc } from '../../../../../utils/imageUrl'
 export default function Comments({ mealPlanId }) {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isReplying, setIsReplying] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [replyTo, setReplyTo] = useState(null)
   const [replyContent, setReplyContent] = useState('')
@@ -47,32 +49,36 @@ export default function Comments({ mealPlanId }) {
 
   const handleSubmitComment = async (e) => {
     e.preventDefault()
-    if (!newComment.trim()) return
+    if (!newComment.trim() || isSubmitting) return
 
+    setIsSubmitting(true)
     try {
       await mealPlanApi.commentMealPlan(mealPlanId, newComment.trim())
       setNewComment('')
       toast.success('Đã thêm bình luận!')
-      // Refresh comments
       fetchComments(1)
     } catch (err) {
       toast.error('Không thể thêm bình luận')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleSubmitReply = async (e, parentId) => {
     e.preventDefault()
-    if (!replyContent.trim()) return
+    if (!replyContent.trim() || isReplying) return
 
+    setIsReplying(true)
     try {
       await mealPlanApi.commentMealPlan(mealPlanId, replyContent.trim(), parentId)
       setReplyContent('')
       setReplyTo(null)
       toast.success('Đã thêm phản hồi!')
-      // Refresh comments
       fetchComments(1)
     } catch (err) {
       toast.error('Không thể thêm phản hồi')
+    } finally {
+      setIsReplying(false)
     }
   }
 
@@ -118,11 +124,11 @@ export default function Comments({ mealPlanId }) {
             <div className="flex justify-end mt-2">
               <button
                 type="submit"
-                disabled={!newComment.trim()}
+                disabled={!newComment.trim() || isSubmitting}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg flex items-center transition-colors"
               >
                 <MdSend className="mr-1" />
-                Gửi
+                {isSubmitting ? 'Đang gửi...' : 'Gửi'}
               </button>
             </div>
           </div>
@@ -184,10 +190,10 @@ export default function Comments({ mealPlanId }) {
                       />
                       <button
                         type="submit"
-                        disabled={!replyContent.trim()}
+                        disabled={!replyContent.trim() || isReplying}
                         className="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg text-sm"
                       >
-                        Gửi
+                        {isReplying ? 'Đang gửi...' : 'Gửi'}
                       </button>
                     </div>
                   </form>

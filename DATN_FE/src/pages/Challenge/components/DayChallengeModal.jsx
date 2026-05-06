@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaTimes, FaRunning, FaDumbbell, FaCamera, FaLocationArrow, FaCheck,
-  FaClock, FaFire, FaBolt, FaChartLine, FaRoad, FaLock, FaHourglassHalf,
+  FaClock, FaFire, FaBolt, FaLock, FaHourglassHalf,
   FaShareAlt, FaWalking, FaBicycle, FaChevronRight, FaMapMarkerAlt, FaRedo, FaTrash
 } from 'react-icons/fa'
 import { format, isBefore, isAfter, startOfDay } from 'date-fns'
@@ -16,6 +16,7 @@ import NutritionDetailView from './NutritionDetailView'
 import FitnessDetailView from './FitnessDetailView'
 import toast from 'react-hot-toast'
 import { deleteChallengeProgress } from '../../../apis/challengeApi'
+import { getEntryCalories, getEntryDurationMinutes } from '../../../utils/challengeProgressEntryDisplay'
 
 /**
  * Returns display name for an activity entry based on challenge type.
@@ -78,13 +79,6 @@ function fmtDuration(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function fmtPace(seconds, distKm) {
-  if (!distKm || distKm <= 0 || !seconds) return null
-  const paceS = seconds / distKm
-  const pm = Math.floor(paceS / 60)
-  const ps = Math.floor(paceS % 60)
-  return `${pm}'${String(ps).padStart(2, '0')}"/km`
-}
 
 /**
  * SVG Circular Progress Ring
@@ -169,17 +163,25 @@ export default function DayChallengeModal({
   // Aggregate stats for the day
   const dayStats = useMemo(() => {
     let totalDuration = 0, totalCalories = 0, totalDistance = 0
+    let speedWeightedSum = 0, speedDistSum = 0
     dayEntries.forEach(e => {
       const isValid = e.validation_status !== 'invalid_time' && e.ai_review_valid !== false;
       if (isValid) {
-        totalDuration += (e.duration_minutes || 0) * 60
-        totalCalories += (e.calories || 0)
+        totalDuration += getEntryDurationMinutes(e) * 60
+        totalCalories += getEntryCalories(e)
         totalDistance += (e.distance || 0)
+        if (e.avg_speed && e.distance) {
+          speedWeightedSum += Number(e.avg_speed) * Number(e.distance)
+          speedDistSum += Number(e.distance)
+        }
       }
     })
-    const avgSpeed = totalDuration > 0 && totalDistance > 0
-      ? (totalDistance / (totalDuration / 3600)).toFixed(1)
-      : null
+    let avgSpeed = null
+    if (speedDistSum > 0) {
+      avgSpeed = (speedWeightedSum / speedDistSum).toFixed(2)
+    } else if (totalDuration > 0 && totalDistance > 0) {
+      avgSpeed = (totalDistance / (totalDuration / 3600)).toFixed(2)
+    }
     return { totalDuration, totalCalories, totalDistance, avgSpeed }
   }, [dayEntries])
 
@@ -396,9 +398,9 @@ export default function DayChallengeModal({
                       // Fallback: entry.distance (từ bản ghi có lộ trình)
                       const progressValue = entry.value || entry.distance || 0
                       const distKm = entry.distance ? Number(entry.distance) : 0
-                      const durationSec = (entry.duration_minutes || 0) * 60
-                      const speedKmh = entry.avg_speed ? Number(entry.avg_speed).toFixed(1) : null
-                      const pace = fmtPace(durationSec, distKm)
+                      const durationSec = getEntryDurationMinutes(entry) * 60
+                      const entryCalories = getEntryCalories(entry)
+                      const speedKmh = entry.avg_speed ? Number(entry.avg_speed).toFixed(2) : null
                       const barPercent = goalValue > 0 ? Math.min((progressValue / goalValue) * 100, 100) : 0
                       const hasActivityLink = !!entry.activity_id
                       const EntryIcon = ACTIVITY_ICONS[challenge?.category] || config.icon
@@ -475,21 +477,13 @@ export default function DayChallengeModal({
                               </span>
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-900/20 text-[10px] font-medium text-orange-600 dark:text-orange-400">
                                 <FaFire className="text-[8px]" />
-                                {entry.calories ? roundKcal(entry.calories) : 0} kcal
+                                {entryCalories ? roundKcal(entryCalories) : 0} kcal
                               </span>
-                              {type === 'outdoor_activity' && (
-                                <>
-                                  {pace && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-[10px] font-medium text-green-600 dark:text-green-400">
-                                      <FaChartLine className="text-[8px]" />
-                                      {pace}
-                                    </span>
-                                  )}
-                                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/20 text-[10px] font-medium text-purple-600 dark:text-purple-400">
-                                    <FaBolt className="text-[8px]" />
-                                    {speedKmh || '0.0'} km/h
-                                  </span>
-                                </>
+                              {type === 'outdoor_activity' && speedKmh && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/20 text-[10px] font-medium text-purple-600 dark:text-purple-400">
+                                  <FaBolt className="text-[8px]" />
+                                  {speedKmh} km/h
+                                </span>
                               )}
                               {hasActivityLink && (
                                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
