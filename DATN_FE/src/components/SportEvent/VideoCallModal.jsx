@@ -186,7 +186,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
     const totalRef = useRef(0)
     const activeRef = useRef(0)
     const pausedRef = useRef(false)
-    const absenceRef = useRef(0)
+    const localAbsenceStreakRef = useRef(0) // đếm giây liên tiếp không có mặt (khi API lỗi vẫn hiển thị)
+    const heartbeatWarnLoggedRef = useRef(false)
     const timerRef = useRef(null)
     const heartbeatRef = useRef(null)        // setInterval for 1-second heartbeat loop
     const heartbeatBusyRef = useRef(false)   // prevent overlapping async heartbeat calls
@@ -564,11 +565,23 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                 const modelReady = aiReadyRef.current
                 const inBootGrace = Date.now() - heartbeatBootAtRef.current < MODEL_BOOT_GRACE_MS
 
-                // During model boot grace → report present, show loading badge
-                if (!modelReady && inBootGrace) return
+                // Boot grace: coi như có mặt + vẫn gửi heartbeat (tránh return sớm làm UI/API đứng)
+                let isPresent
+                if (!modelReady && inBootGrace) {
+                    isPresent = true
+                } else if (!modelReady) {
+                    isPresent = false
+                } else {
+                    isPresent = await detectFace()
+                }
 
-                const isPresent = modelReady ? await detectFace() : false
                 setFace(isPresent)
+
+                if (isPresent) {
+                    localAbsenceStreakRef.current = 0
+                } else {
+                    localAbsenceStreakRef.current += 1
+                }
 
                 // Capture screenshot periodically when face confirmed
                 if (isPresent && camOnRef.current) {
@@ -580,17 +593,33 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                     }
                 }
 
-                if (!vsIdRef.current) return
+                let absenceDisplay = localAbsenceStreakRef.current
+                let shouldPause = localAbsenceStreakRef.current >= 5
 
-                const res = await reportPresence(eventId, vsIdRef.current, { isPresent })
-                const data = res?.data?.result
-                if (!data) return
+                if (vsIdRef.current) {
+                    try {
+                        const res = await reportPresence(eventId, vsIdRef.current, { isPresent })
+                        const data = res?.data?.result
+                        if (data) {
+                            const serverAbs = data.absenceSeconds ?? 0
+                            absenceDisplay = serverAbs
+                            localAbsenceStreakRef.current = serverAbs
+                            shouldPause = Boolean(data.isPaused)
+                            if (data.sessionEnded) {
+                                console.warn('[VC] Heartbeat: session đã kết thúc phía server')
+                            }
+                        }
+                    } catch (err) {
+                        if (!heartbeatWarnLoggedRef.current) {
+                            heartbeatWarnLoggedRef.current = true
+                            console.warn('[VC] API heartbeat lỗi — dùng đếm vắng cục bộ:', err?.message || err)
+                        }
+                        // Giữ absenceDisplay / shouldPause từ localAbsenceStreakRef (đã set ở trên)
+                    }
+                }
 
-                setAbsenceSecs(data.absenceSeconds ?? 0)
-                const shouldPause = data.isPaused ?? false
+                setAbsenceSecs(absenceDisplay)
                 if (shouldPause !== pausedRef.current) syncPause(shouldPause)
-            } catch {
-                // Network error — don't crash, retry next second
             } finally {
                 heartbeatBusyRef.current = false
             }
@@ -874,6 +903,16 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                             <span className="truncate max-w-[180px]">{socketError}</span>
                         </div>
                     )}
+                    {absenceSecs > 0 && (
+                        <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200
+                                        text-orange-800 text-[11px] font-semibold px-2.5 py-1 rounded-full max-w-[220px]">
+                            <MdWarning className="text-orange-500 flex-shrink-0 text-sm" />
+                            <span className="tabular-nums">
+                                Không thấy mặt: {absenceSecs}s
+                                {absenceSecs >= 5 ? ' · Thực tế đang dừng' : ''}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex items-center gap-3 bg-white/60 rounded-full px-4 py-1.5 border border-gray-200">
                         <div className="text-center">
                             <p className="font-mono text-gray-800 text-sm font-bold tabular-nums">{fmtTime(totalSecs)}</p>
@@ -1118,8 +1157,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, on
                         </div>
                     )}
 
-                    {/* ═══ OVERLAY HUD — AI status + absence warning ═══ */}
-                    <div className="absolute top-5 right-5 z-10 flex flex-col items-end gap-2">
+                    {/* ═══ OVERLAY HUD — AI status + absence warning (z-30 để luôn nổi trên video) ═══ */}
+                    <div className="absolute top-5 right-5 z-30 flex flex-col items-end gap-2 pointer-events-none">
                         <div className={`flex items-center gap-2 text-xs font-semibold rounded-full px-4 py-2 border ${
                             aiReady ? 'text-emerald-700 border-emerald-200 bg-emerald-50/80'
                             : aiError ? 'text-red-700 border-red-200 bg-red-50/80'
