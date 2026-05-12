@@ -1,5 +1,6 @@
-# Báo cáo LaTeX: giữ mã nguồn / hình; bỏ qua artifact build & đầu ra nặng
+# Báo cáo LaTeX + ảnh: chỉ local, không đẩy lên GitHub (tránh repo nặng)
 BAOCAO_LATEX/
+BAOCAO_LATEX.zip
 *.zip
 *.pdf
 node_modules/
