@@ -1,902 +1,134 @@
-﻿% !TeX root = main.tex
+% !TeX root = main.tex
 \label{chap:analysis_requirements}
 
-Chương này đi sâu vào việc phân tích và đặc tả chi tiết các yêu cầu mà hệ thống ``Mạng xã hội rèn luyện thể dục thể thao cộng đồng FitConnect'' cần đáp ứng. Hệ thống tập trung vào việc quản lý các sự kiện thể thao, thử thách cá nhân, hỗ trợ lịch trình tập luyện và chia sẻ trải nghiệm rèn luyện qua mạng xã hội. Nội dung bao gồm các yêu cầu chức năng (những gì hệ thống phải làm), yêu cầu phi chức năng (các tiêu chí về chất lượng, hiệu suất, bảo mật...), mô hình hóa tương tác người dùng thông qua biểu đồ Use Case và đặc tả chi tiết cho các trường hợp sử dụng quan trọng.
-
-\section{Yêu cầu chức năng (Functional Requirements)}
-Dựa trên mục tiêu và phạm vi đã xác định, hệ thống cần cung cấp các nhóm chức năng chính sau:
+\section{Yêu cầu chức năng }
+Dựa trên mục tiêu và phạm vi, hệ thống FitConnect cần đáp ứng các yêu cầu chức năng chính sau:
 
 \subsection{Quản lý tài khoản và hồ sơ người dùng}
+Nhóm tính năng này đảm bảo người dùng tham gia nền tảng và quản lý thông tin cá nhân một cách an toàn và thuận tiện.
 \begin{itemize}
-    \item \textbf{Đăng ký và Xác thực (FR-01):} Đăng ký tài khoản hệ thống thông qua tài khoản cá nhân Email hoặc hệ sinh thái Google. Đi kèm chức năng hỗ trợ tự động khôi phục mật khẩu trực tiếp qua Email.
-    \item \textbf{Quản lý hồ sơ cá nhân (FR-02):} Xem và cập nhật thông tin cá nhân (tên, ảnh đại diện, tiểu sử,...). Chủ động quản lý được thông tin kho bài viết đã đăng, kiểm soát các dự án sự kiện, thử thách và lộ trình lịch trình tập luyện mà mình đã tham gia.
+    \item \textbf{Đăng ký và Xác thực (FR-01):} Đăng ký tài khoản thông qua Email hoặc Google. Hỗ trợ khôi phục mật khẩu qua Email.
+    \item \textbf{Quản lý hồ sơ cá nhân (FR-02):} Xem và cập nhật thông tin cá nhân; quản lý các bài viết đã đăng, sự kiện, thử thách đã tham gia, tập luyện đã tạo,...
 \end{itemize}
 
-\subsection{Quản lý nội dung cộng đồng và tương tác mạng xã hội}
+\subsection{Mạng xã hội cộng đồng}
+Nhóm tính năng cộng đồng tạo ra không gian tương tác chuyên biệt cho người yêu thể thao, nơi người dùng có thể trao đổi, chia sẻ các hoạt động, sự kiện, thử thách và tương tác với nhau.
 \begin{itemize}
-    \item \textbf{Quản lý bài viết (FR-03):} Chức năng này trao cho người dùng quyền lưu giữ và chia sẻ hành trình bằng cách tạo mới, chỉnh sửa hoặc xóa các bài viết cá nhân trên không gian cộng đồng. Nền tảng đảm bảo một môi trường mạng xã hội văn minh và sạch sẽ thông qua sự can thiệp của hệ thống Trí tuệ nhân tạo (AI). AI sẽ đóng vai trò như một màng lọc, tự động quét để nhận diện và phát hiện tức thời các hình ảnh hay nội dung độc hại, không đúng với tiêu chuẩn thuần phong mỹ tục.
-    \item \textbf{Tương tác xã hội (FR-04):} Để tăng cường sự gắn kết, hệ sinh thái cung cấp công cụ cho phép người dùng bày tỏ cảm xúc và để lại bình luận động viên trên dòng trạng thái của bạn bè. Hơn thế nữa, chức năng tạo và chia sẻ những bài viết chất lượng, các sự kiện thể thao lớn hay các thử thách rèn luyện hữu ích mà mình tham gia sẽ kích thích bạn bè và mọi người cùng tham gia. Việc tương tác này giúp tinh thần thể thao và kiến thức dinh dưỡng được cộng hưởng và lan tỏa nhanh hơn.
-    \item \textbf{Báo cáo nội dung vi phạm (FR-05):} Giám sát cộng đồng có sự đóng góp lớn từ phía người dùng. Bất kỳ thành viên nào khi quan sát thấy các bài viết chứa thông tin lừa đảo, tiêu cực hoặc có biểu hiện vi phạm tiêu chuẩn cộng đồng đều có thể sử dụng tính năng Báo cáo (Report). Dữ liệu này lập tức được gửi đến Quản trị viên xử lý, góp phần duy trì một môi trường rèn luyện ảo an toàn, tích cực.
+    \item \textbf{Quản lý bài viết (FR-03):} Đăng, chia sẻ, xóa bài viết trên bảng tin cộng đồng. AI hỗ trợ lọc hình ảnh và nội dung không phù hợp khi đăng bài viết.
+    \item \textbf{Tương tác xã hội (FR-04):} Thích, bình luận trên bài viết; chia sẻ hoạt động (sự kiện, thử thách) để mọi người cùng tham gia.
+    \item \textbf{Báo cáo nội dung vi phạm (FR-05):} Người dùng báo cáo bài viết vi phạm; quản trị viên tiếp nhận và xử lý.
 \end{itemize}
 
 \subsection{Sự kiện thể thao (Sport Events)}
+Nhóm tính năng sự kiện thể thao cho phép người dùng tổ chức và tham gia các sự kiện thể thao, hướng đến một mục tiêu chung của sự kiện. Hệ thống hỗ trợ cả hai hình thức: hoạt động ngoài trời có theo dõi GPS và hoạt động trong nhà qua video call kết hợp AI.
 \begin{itemize}
-    \item \textbf{Tổ chức và tham gia sự kiện (FR-06):} Người dùng có toàn quyền khởi tạo một sự kiện thi đấu mới theo ý tưởng riêng của bản thân, hoặc sử dụng công cụ AI để tự động tạo ra sự kiện dựa trên những gợi ý ban đầu. Bên cạnh đó, người dùng có thể dễ dàng tham gia các sự kiện mở do cộng đồng tổ chức, hoặc tham gia thông qua lời mời từ bạn bè. Để tăng trải nghiệm, hệ thống cung cấp giao diện giúp người dùng liên tục theo dõi tiến độ của bản thân, xem thành tích của bạn bè và nắm bắt được tiến độ chung của toàn sự kiện.
-    \item \textbf{Thi đua sự kiện Ngoài trời và ghi tiến độ thực (FR-07):} Đối với các sự kiện ngoài trời như chạy bộ hay đạp xe, hệ thống cho phép người dùng ghi lại lộ trình bằng định vị GPS trên bản đồ một cách cực kỳ chính xác theo thời gian thực (Real-time tracking). Người dùng có thể theo dõi biểu đồ lịch sử để biết được quãng đường, thời gian, số calo tiêu thụ cho các hoạt động của mình trong sự kiện. Ngoài ra sự kiện còn cho phép chia sẻ sự kiện, hoạt động của mình lên cộng đồng để thu hút, mời mọi người cùng tham gia vì một mục tiêu chung.
-    \item \textbf{Thi đua sự kiện Trong nhà qua Video Call (FR-08):} Đối với các sự kiện tập luyện tại nhà như Yoga, Cardio,... nền tảng cung cấp không gian sinh hoạt nhóm trực tuyến. Tại đây, mọi người có thể gọi điện tham gia qua Video Call để vừa tập luyện, vừa học hỏi, giao tiếp với các thành viên khác trong sự kiện. Đặc biệt, luồng camera của người dùng được tích hợp ngay với mô hình AI nhận diện chuyển động khuôn mặt. Công nghệ này đảm bảo hệ thống sẽ tự động giám sát và ghi nhận chính xác thời gian thực tế mà người dùng có mặt tại buổi sự kiện tham gia, từ đó loại bỏ tối đa các hành vi gian lận và định hình tính công bằng tuyệt đối cho mọi người trong sự kiện. Sau mỗi buổi video call trực tuyến, hệ thống tự động ghi nhận công sức của người dùng và cho phép người dùng xem lại những hình ảnh của buổi tập, lịch sử các buổi hoạt động mà mình tham gia, mọi người có thể chia sẻ sự kiện, hoạt động của mình để thu hút, mời mọi người cùng tham gia.
-    \item \textbf{Chia sẻ và mời tham gia sự kiện (FR-09):} Nền tảng cung cấp bộ công cụ lan tỏa, cho phép người dùng chia sẻ trực tiếp các sự kiện hấp dẫn hoặc thành tích bản thân đang đạt được lên dòng trạng thái Feed. Tính năng này không chỉ khơi dậy sự tò mò mà còn là lời mời gọi trực quan nhất để thúc giục bạn bè có chung đam mê cùng nhóm họp tham gia vì một mục tiêu chung.
-    \item \textbf{Báo cáo sự kiện vi phạm (FR-10):} Nhằm đảm bảo một sân chơi thể thao lành mạnh, nút Báo cáo (Report) được cung cấp để thành viên nhanh chóng gửi cảnh báo khi phát hiện một Event tổ chức với mục đích lừa đảo, chứa ngôn từ thù địch hoặc cổ xúy các thói quen sai lệch y khoa. Quản trị viên sẽ lập tức tiếp nhận dữ liệu và xử lý kịp thời.
+    \item \textbf{Tổ chức và tham gia sự kiện (FR-06):} Tạo sự kiện (thủ công hoặc AI hỗ trợ tạo) hoặc tham gia sự kiện thể thao (ngoài trời, trong nhà); theo dõi tiến độ cá nhân và chung của sự kiện.
+    \item \textbf{Thi đua sự kiện ngoài trời và ghi tiến độ thực (FR-07):} Ghi lộ trình GPS theo thời gian thực; xem quãng đường, thời gian, calo; chia sẻ hoạt động lên cộng đồng.
+    \item \textbf{Thi đua sự kiện trong nhà qua Video Call (FR-08):} Video call trực tuyến với mọi người; AI ghi nhận thời gian tham gia hợp lệ; lưu lịch sử buổi tập; chia sẻ hoạt động lên cộng đồng.
+    \item \textbf{Chia sẻ và mời tham gia sự kiện (FR-09):} Chia sẻ sự kiện, hoạt động và mời bạn bè, mọi người cùng tham gia.
+    \item \textbf{Báo cáo sự kiện vi phạm (FR-10):} Báo cáo sự kiện sai phạm; quản trị viên xử lý.
 \end{itemize}
 
 \subsection{Thử thách cộng đồng (Challenges)}
+Nhóm tính năng thử thách tập trung vào việc xây dựng kỷ luật cá nhân thông qua các mục tiêu mỗi ngày. Khác với sự kiện thể thao hướng đến mục tiêu chung, thử thách đề cao tiến độ bền bỉ riêng của từng cá nhân theo thời gian.
 \begin{itemize}
-    \item \textbf{Tạo và tham gia thử thách cộng đồng (FR-11):} Cho phép người dùng tự do tạo ra các chiến dịch thử thách liên quan đến ăn uống, tập luyện thể dục hay các hoạt động thể thao ngoài trời. Bằng cách kết hợp sâu công nghệ AI, hệ thống tự động sinh ra kịch bản để dễ dàng thiết lập những thử thách phù hợp nhất với từng cá nhân. Người dùng có thể tạo một thử thách cho riêng mình, hoặc tham gia vào các chiến dịch thử thách do bạn bè hay mọi người trong cộng đồng phát động.
-    \item \textbf{Hoàn thành tiến độ thử thách đa hình thái (FR-12):} Tính năng theo dõi tiến độ được áp dụng chuyên biệt cho từng loại hình thử thách. Đối với các thử thách dinh dưỡng, ăn uống, người dùng thực hiện check-in bằng hình ảnh thực tế bữa ăn hằng ngày, sau đó hệ thống sử dụng công nghệ nhận diện AI để xác định hình ảnh đó có hợp lệ với quy định thử thách hay không. Đối với thử thách tập luyện thể hình, người tham gia được tự do lựa chọn các bài tập mà hệ thống cấp phép, sau đó chuyển trực tiếp đến không gian tập luyện để hoàn thành. Đối với thử thách yêu cầu hoạt động thể thao ngoài trời, tương tự với cơ chế sự kiện, hệ thống cho phép người dùng ghi nhận tiến độ di chuyển dựa trên hệ thống định vị GPS theo thời gian thực. Một lịch biểu trực quan giúp người dùng dễ dàng biết được tiến độ mỗi ngày của bản thân và của những mọi người xung quanh. Đặc biệt, nền tảng hỗ trợ bình luận trực tiếp vào các hoạt động của người khác nhằm ghi nhận và tôn vinh sự nỗ lực của họ.
-    \item \textbf{Chia sẻ và mời mọi người tham gia (FR-13):} Nền tảng cung cấp công cụ chia sẻ thành tựu thử thách lên dòng trạng thái Feed nhằm thu hút, truyền năng lượng, đồng thời mời gọi bạn bè xung quanh cùng tham gia để giúp đỡ nhau vượt qua mọi rãnh rỗi.
-    \item \textbf{Báo cáo vi phạm thử thách (FR-14):} Nút báo cáo (Report) được tích hợp để gửi cảnh báo những thử thách chứa nội dung độc hại, lừa đảo, vi phạm chuẩn mực chung, qua đó giúp xây dựng cộng đồng trong sạch.
+    \item \textbf{Tạo và tham gia thử thách cộng đồng (FR-11):} Tạo (thủ công hoặc AI hỗ trợ tạo) hoặc tham gia thử thách cộng đồng (ăn uống, tập luyện, ngoài trời).
+    \item \textbf{Hoàn thành tiến độ thử thách(FR-12):} Check-in ảnh bữa ăn đối với thử thách ăn uống; Thực hiện tập các bài tập đối với thử thách tập luyện; Đo tiến độ GPS đối với thử thách ngoài trời.
+    \item \textbf{Chia sẻ và mời mọi người tham gia (FR-13):} Chia sẻ thử thách, hoạt động và mời bạn bè, mọi người cùng tham gia.
+    \item \textbf{Báo cáo vi phạm thử thách (FR-14):} Báo cáo thử thách vi phạm; quản trị viên xử lý.
 \end{itemize}
 
 \subsection{Tính toán các chỉ số sức khỏe và gợi ý tập luyện}
+Nhóm tính năng này cung cấp bộ công cụ đo lường và theo dõi sức khỏe cá nhân, đồng thời kết hợp trợ lý AI để đưa ra gợi ý tập luyện phù hợp với thể trạng và mục tiêu của từng người dùng.
 \begin{itemize}
-    \item \textbf{Đo lường các chỉ số sức khỏe (FR-15):} Nền tảng cung cấp một bộ công cụ tính toán chuẩn y khoa, cho phép người dùng dựa vào các thông số cơ thể cơ bản để xuất ra ngay lập tức các chỉ số sức khỏe nền tảng như BMI (Chỉ số khối cơ thể), BMR (Tỷ lệ năng lượng trao đổi chất cơ bản) hay TDEE (Tổng Calo tiêu hao mỗi ngày),...
-    \item \textbf{Trợ lý AI phân tích và gợi ý tập luyện (FR-16):} Từ nguồn số liệu sinh trắc học vừa đo lường, hệ thống Trợ lý ảo AI sẽ tiến hành phân tích sâu tình trạng sức khỏe của người dùng (thừa cân, thiếu cân hay cân đối). Kết hợp với mục tiêu mà người dùng mong muốn đạt được, AI sẽ rà soát toàn bộ kho dữ liệu bài tập khổng lồ trên hệ thống để tự động gợi ý một lộ trình giáo án tập luyện cá nhân hóa, vừa an toàn lại vừa mang lại hiệu quả cao nhất.
-    \item \textbf{Theo dõi biểu đồ sức khỏe theo thời gian (FR-17):} Mọi sự thay đổi về chỉ số cơ địa hay quá trình lên xuống cân nặng đều được hệ thống lưu trữ điện tử một cách an toàn. Nền tảng cung cấp hệ thống biểu đồ trực quan để vẽ lại tương quan sức khỏe của người dùng theo chiều dài thời gian. Tính năng này giúp người dùng dễ dàng theo dõi đồ thị biến thiên, đánh giá tiến bộ của bản thân qua từng tuần, từng tháng để có những điều chỉnh thói quen sống kịp thời.
+    \item \textbf{Đo lường các chỉ số sức khỏe (FR-15):} Hệ thống tính toán các chỉ số như BMI, BMR, TDEE và chỉ số liên quan từ thông số cơ thể người dùng nhập.
+    \item \textbf{Trợ lý AI phân tích và gợi ý tập luyện (FR-16):} Dựa vào các chỉ số đã tính toán, AI phân tích và gợi ý danh sách các bài tập phù hợp từ danh sách hệ thống bài tập.
+    \item \textbf{Theo dõi biểu đồ sức khỏe theo thời gian (FR-17):} Lưu lịch sử chỉ số; hiển thị biểu đồ xu hướng theo thời gian.
 \end{itemize}
 
 \subsection{Tập luyện cá nhân}
+Nhóm tính năng tập luyện giúp người dùng xây dựng giáo án và duy trì lịch tập cá nhân. Người dùng có thể tự thiết kế bài tập theo nhu cầu hoặc nhận gợi ý tập luyện cá nhân hóa từ AI dựa trên các chỉ số sức khỏe đã đo lường.
 \begin{itemize}
-    \item \textbf{Tùy biến giáo án thủ công (FR-18):} Dựa vào thiết bị sẵn có hoặc vùng cơ bắp mục tiêu muốn phát triển, hệ thống cung cấp công cụ lọc thông minh để đề xuất chính xác các bài tập tương ứng. Đi kèm mỗi bài là hệ thống video hướng dẫn thực hành trực quan và thông tin lộ trình chi tiết. Điểm mạnh ở đây là người dùng hoàn toàn có thể tự do xem xét, điều chỉnh khối lượng để cá nhân hoá buổi tập cho phù hợp với khả năng của bản thân.
-    \item \textbf{Tự động hóa bằng Trợ lý AI (FR-19):} Nhằm tối ưu hóa thời gian, hệ thống cho phép người dùng trực tiếp cung cấp mong muốn tập luyện, hoặc để AI tự động phân tích chéo thông qua các chỉ số sức khỏe của người dùng. Từ những dữ liệu này kết hợp với kho dữ liệu bài tập khổng lồ, AI sẽ làm nhiệm vụ tư duy thuật toán và lập tức đưa ra gợi ý tập hợp các bài tập phù hợp và chuẩn xác nhất.
-    \item \textbf{Lưu trữ và Lên lịch biểu (FR-20):} Tất cả các bộ bài tập cá nhân hóa đều có thể lưu trữ vĩnh viễn vào bộ sưu tập cá nhân. Người dùng có thể tạo lịch trình tập luyện mỗi ngày, giúp nâng cao sức khỏe bản thân.
-    \item \textbf{Rèn luyện thể thao độc lập ngoài trời (FR-21):} Ngoài các bài tập cá nhân tại chỗ, nền tảng tích hợp tính năng tập luyện các hoạt động thể thao ngoài trời. Mọi người có thể tập luyện các hoạt động như chạy bộ, đạp xe,.. kết hợp với định vị GPS và bản đồ giúp người dùng biết được thông tin về hoạt động của mình giúp nâng cao sức khỏe và chuẩn bị cho các hoạt động sự kiện, thử thách cộng đồng.
+    \item \textbf{Tùy biến giáo án thủ công (FR-18):} Dựa vào thiết bị, nhóm cơ muốn tập mà chọn lọc, tùy chỉnh bài tập cho phù hợp.
+    \item \textbf{AI gợi ý nhanh bài tập (FR-19):} Nhập mong muốn tập hoặc dựa trên chỉ số sức khỏe, AI gợi ý bộ bài tập phù hợp.
+    \item \textbf{Lưu trữ và Lên lịch biểu (FR-20):} Lưu giáo án; xếp lịch tập theo ngày.
+    \item \textbf{Rèn luyện thể thao độc lập ngoài trời (FR-21):} Ghi hoạt động ngoài trời (chạy bộ, đạp xe\ldots).
 \end{itemize}
 
 \subsection{Kết nối mạng lưới bạn bè}
+Nhóm tính năng này xây dựng yếu tố mạng xã hội, giúp người dùng mở rộng mạng lưới quan hệ và duy trì sự gắn kết với những người có chung đam mê thể thao.
 \begin{itemize}
-    \item \textbf{Theo dõi và Mở rộng mạng lưới (FR-22):} Thông qua công cụ tìm kiếm hoặc danh sách gợi ý, người dùng có thể dễ dàng tiếp cận, kết bạn hoặc nhấn nút theo dõi bất kỳ thành viên nào trên hệ thống. Tính năng này tạo điều kiện để mỗi người tự xây dựng và không ngừng mở rộng vòng kết nối quan hệ cộng đồng, tìm kiếm những người có chung đam mê và mục tiêu rèn luyện sức khỏe.
-    \item \textbf{Cập nhật dòng thời gian tương tác (FR-23):} Một khi mạng lưới bạn bè đã được thiết lập, mọi hoạt động thể thao nổi bật cốt lõi như bắt đầu tham gia một sự kiện, chinh phục một thử thách khó nhằn đều sẽ được cập nhật liên tục trên bảng tin (News Feed). Nhờ đó, người dùng có thể dễ dàng theo dõi sát sao được lịch trình hoạt động và nỗ lực của bạn bè để tương tác và cùng nhau duy trì ngọn lửa động lực mỗi ngày.
+    \item \textbf{Theo dõi và Mở rộng mạng lưới (FR-22):} Tìm kiếm, gợi ý, kết bạn hoặc theo dõi thành viên khác.
+    \item \textbf{Hoạt động tương tác với bạn bè (FR-23):}  Hoạt động nổi bật (sự kiện, thử thách) của bạn bè hiển thị trên bảng tin.
 \end{itemize}
 
 \subsection{Lịch trình cá nhân và thông báo}
+Nhóm tính năng này giúp người dùng nắm bắt toàn bộ kế hoạch hoạt động trên một lịch cá nhân thống nhất và nhận được thông báo kịp thời, từ đó duy trì thói quen tập luyện đều đặn.
 \begin{itemize}
-    \item \textbf{Theo dõi lịch trình hoạt động (FR-24):} Nền tảng cung cấp một giao diện Lịch (Calendar) trực quan và mang tính cá nhân hóa cao. Mọi luồng hoạt động mà người dùng đã thiết lập tham gia, bao gồm các Sự kiện thể thao cộng đồng, hạn chót của các Thử thách đã đăng ký tham gia, cho đến từng phiên Tập luyện cá nhân hằng ngày, đều được hệ thống tự động trích xuất và đồng bộ chi tiết lên lịch. Tính năng này đóng vai trò bao quát, giúp mỗi người dùng luôn nhận biết rõ ràng lộ trình sắp tới của bản thân để có những sắp xếp thời gian hợp lý nhất mà không bỏ lỡ bất kỳ hoạt động nào.
-    \item \textbf{Hệ thống thông báo và liên kết bảng tin (FR-25):} Tương đương với sức mạnh của Lịch, nền tảng sở hữu cơ chế thông báo (Notifications) thời gian thực nhằm cảnh báo người dùng mỗi khi một mục tiêu quan trọng đến hạn hoặc khi bạn bè tương tác. Đặc biệt hơn, thông tin về lịch sử hoạt động và các dự định tập luyện trong tương lai rút trích thẳng từ Calendar còn có thể được hệ thống đẩy trực tiếp lên bảng tin cộng đồng. Chức năng này không chỉ khơi gợi sự tò mò từ những người theo dõi, mà còn tăng cường sự giao tiếp, hưởng ứng từ mạng lưới bạn bè xung quanh, biến mục tiêu cá nhân thành một hoạt động được toàn cộng đồng ủng hộ.
+    \item \textbf{Theo dõi lịch trình hoạt động (FR-24):} Theo dõi lịch sự kiện, thử thách, buổi tập cá nhân mà tôi đã tham gia.
+    \item \textbf{Hệ thống thông báo và liên kết bảng tin (FR-25):} Thông báo thời gian thực (nhắc lịch, tương tác bạn bè); có thể đồng bộ hoạt động lên bảng tin.
 \end{itemize}
 
 \subsection{Quản trị Hệ thống toàn diện dành cho Quản trị viên}
+Phân hệ quản trị cung cấp cho Quản trị viên (Admin) đầy đủ công cụ để giám sát, kiểm soát và vận hành nền tảng một cách hiệu quả, đảm bảo chất lượng nội dung và tính toàn vẹn của dữ liệu hệ thống.
 \begin{itemize}
-    \item \textbf{Phân tích Dashboard trực quan (FR-26):} Hệ thống cung cấp một bảng điều khiển trung tâm (Dashboard) với các biểu đồ trực quan, giúp Quản trị viên theo dõi sát sao tình hình hoạt động của toàn bộ nền tảng. Tính năng này tổng hợp các số liệu thống kê để đo lường mức độ tương tác, số tài khoản mới, các hoạt động đang diễn ra cũng như sự tăng trưởng tự nhiên của cộng đồng.
-    \item \textbf{Kiểm soát và Xử lý vi phạm (FR-27):} Để bảo vệ sự trong sạch của hệ sinh thái, hệ thống cho phép Quản trị viên tiếp nhận và kiểm duyệt dựa trên hệ thống báo cáo (Report). Công cụ này cấp quyền đánh giá, cảnh cáo hoặc đình chỉ đối với mọi nội dung sai lệch bao gồm các bài viết phản cảm, luồng sự kiện lừa đảo, các thử thách vi phạm tiêu chuẩn, cũng như các tài khoản người dùng phá hoại.
-    \item \textbf{Quản lý toàn diện tài nguyên hệ thống (FR-28):} Quản trị viên nắm trong tay công cụ điều hành đa năng đối với các thực thể dữ liệu của nền tảng. Chức năng này cho phép truy xuất, chỉnh sửa hay xóa bỏ trực tiếp mọi thông tin trên quy mô toàn cầu, trải dài từ danh mục Bài viết (Feed), dữ liệu Người dùng, danh sách Sự kiện, Thử thách, cho tới việc cấu hình nền tảng các bài Tập luyện gốc.
+    \item \textbf{Phân tích Dashboard trực quan (FR-26):} Theo dõi, phân tích tình hình hệ thống dựa trên các biểu đồ dashboard.
+    \item \textbf{Kiểm soát và Xử lý vi phạm (FR-27):} Xử lý báo cáo; xóa bài viết, sự kiện, thử thách, tài khoản vi phạm.
+    \item \textbf{Quản lý toàn diện tài nguyên hệ thống (FR-28):} Truy vấn, chỉnh sửa dữ liệu người dùng, sự kiện, thử thách, danh mục bài tập và cấu hình liên quan.
 \end{itemize}
 
-\section{Yêu cầu phi chức năng (Non-Functional Requirements)}
+\section{Yêu cầu phi chức năng}
+\phantomsection\label{sec:req:nfr_manual}
 
-Bảng~\ref{tab:nfr_summary} tổng hợp các tiêu chí chất lượng phi chức năng mà hệ thống FitConnect cần đáp ứng.
+Bên cạnh yêu cầu chức năng, FitConnect cần đáp ứng các yêu cầu phi chức năng để bảo đảm hiệu năng, an toàn, độ tin cậy và trải nghiệm sử dụng thực tế. Bảng~\ref{tab:nfr_summary} tóm tắt các yêu cầu chính.
 
+% Bảng vừa một trang: dùng table+tabular thay vì longtable để tránh lỗi tách trang
+% ``Infinite glue shrinkage found in box being split'' (longtable + \small/\arraystretch).
 \begin{table}[H]
 \centering
-\caption{Tổng hợp yêu cầu phi chức năng hệ thống FitConnect}
-\label{tab:nfr_summary}
+\caption{Tổng hợp yêu cầu phi chức năng hệ thống FitConnect}\label{tab:nfr_summary}
 \small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|p{3.5cm}|p{10.5cm}|}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{|p{3.6cm}|p{10.4cm}|}
 \hline
 \textbf{Tiêu chí} & \textbf{Yêu cầu chính} \\
 \hline
 \textbf{Hiệu năng} (Performance) &
-Response time dưới 2.5--3.0 giây cho News Feed, biểu đồ sức khỏe và bảng xếp hạng sự kiện. Chịu hàng nghìn kết nối WebSocket đồng thời; cân bằng tải thông minh cho luồng xử lý AI frame camera trong sự kiện Video Call. \\
+Thời gian phản hồi API chính (p95) $\leq$ 2 giây; truy vấn nặng (tìm kiếm/tổng hợp) $\leq$ 3 giây. Hệ thống hỗ trợ tối thiểu 1.000 người dùng đồng thời (theo kịch bản Loader.io) và độ trễ thông báo thời gian thực (WebSocket) trung bình $\leq$ 1 giây. \\
 \hline
 \textbf{Bảo mật} (Security) &
-Toàn bộ dữ liệu Client--Server truyền qua SSL/HTTPS. Mật khẩu băm một chiều với Bcrypt + Salt. JWT kết hợp Route Protection phân quyền theo vai trò (Role-based Access Control). Chống SQL/NoSQL Injection và XSS. \\
+100\% giao tiếp qua HTTPS; mật khẩu băm Bcrypt (cost factor $\geq$ 10). Access Token hết hạn sau 15 phút, Refresh Token tối đa 7 ngày; khóa tạm 15 phút sau 5 lần đăng nhập sai liên tiếp; rate limiting tối thiểu 100 request/15 phút/IP cho endpoint nhạy cảm; 100\% route quản trị yêu cầu JWT hợp lệ và vai trò Admin. \\
 \hline
 \textbf{Khả dụng \& Tin cậy} (Availability) &
-SLA 99.9\% uptime; thiết kế dự phòng chịu tải bùng nổ. CSDL Replication đa nhánh; sao lưu tự động định kỳ (Data Dump) để khôi phục dữ liệu khi sự cố hạ tầng. \\
+Mục tiêu uptime dịch vụ $\geq$ 99.5\%/tháng; sao lưu dữ liệu tự động hằng ngày; RPO $\leq$ 24 giờ và RTO $\leq$ 4 giờ khi xảy ra sự cố nghiêm trọng. \\
 \hline
 \textbf{Mở rộng} (Scalability) &
-Backend Stateless REST API hỗ trợ mở rộng theo Cluster + Load Balancer (Nginx) mà không cần viết lại kiến trúc lõi. Frontend React Component có thể tái sử dụng, dễ bổ sung môn thể thao mới. \\
+Hỗ trợ mở rộng ngang tối thiểu 2--3 instance backend sau reverse proxy mà không thay đổi nghiệp vụ; khi tải tăng gấp 2 lần, thời gian phản hồi p95 không vượt quá 3 giây. \\
 \hline
 \textbf{Tương thích} (Compatibility) &
-Responsive layout TailwindCSS tự động canh chỉnh trên Smartphone, Tablet, PC. Cross-browser qua Webpack + Babel: tương thích Chrome, Edge, Safari. \\
+Responsive cho độ rộng màn hình từ 375px trở lên; hỗ trợ Chrome, Edge, Firefox, Safari ở 2 phiên bản ổn định gần nhất tại thời điểm phát hành. \\
 \hline
 \textbf{Khả năng sử dụng} (Usability) &
-Giao diện phẳng, gam màu đồng nhất, nút CTA (Call To Action) nổi bật. Thân thiện với mọi trình độ người dùng, kể cả người ít am hiểu công nghệ. \\
+Người dùng mới hoàn thành các tác vụ cốt lõi (đăng ký, tạo bài viết, tham gia sự kiện/thử thách) trong $\leq$ 3 phút mỗi tác vụ; luồng chính không quá 5 thao tác từ màn hình chính. \\
 \hline
-\textbf{Bảo trì \& Phát triển} (Maintainability) &
-Kiến trúc DRY phân tầng rõ rệt (Controller -- Service -- Route -- Config). TypeScript toàn dự án loại trừ Runtime Error ngay từ khâu biên dịch, thuận tiện bàn giao và bảo trì dài hạn. \\
+\textbf{Bảo trì \& Chất lượng mã} (Maintainability) &
+Frontend/backend dùng TypeScript và phân tầng rõ ràng; duy trì kiểm thử cho module quan trọng với độ bao phủ tối thiểu 85\% (unit + integration), lint/build phải đạt 100\% trước khi phát hành. \\
 \hline
 \end{tabular}
 \end{table}
 
-\section{Mô hình Use Case}
-Biểu đồ Use Case mô hình hóa luồng tương tác giữa các tác nhân và hệ thống, làm rõ các yêu cầu chức năng từ góc nhìn người dùng cuối.
-
-\subsection{Xác định các tác nhân (Actor)}
-
-\subsubsection{Người dùng (User)}
-
-Người dùng là tác nhân trung tâm, đại diện cho các cá nhân yêu thích vận động và mong muốn kết nối cộng đồng. Phạm vi quyền hạn gồm: quản lý hồ sơ cá nhân; đăng bài, tương tác mạng xã hội; tạo/tham gia sự kiện thể thao (GPS ngoài trời, Video Call trong nhà); tạo/tham gia thử thách cộng đồng (check-in AI, GPS, bài tập); tính toán chỉ số sức khỏe (BMI/BMR/TDEE); tập luyện cá nhân (thủ công hoặc AI gợi ý); và theo dõi lịch trình cùng thông báo thời gian thực.
-
-\subsubsection{Quản trị viên (Administrator)}
-
-Quản trị viên nắm đặc quyền cao nhất, không tham gia hoạt động cộng đồng mà tập trung quản trị và giám sát nền tảng. Trách nhiệm gồm: phân tích Dashboard thống kê; kiểm duyệt và xử lý báo cáo vi phạm (bài viết, sự kiện, thử thách, tài khoản); quản lý tài nguyên hệ thống (danh mục thể thao, thiết bị, kho bài tập, người dùng).
-
-\subsection{Biểu đồ Use Case tổng quát}
+\section{Lược đồ Use Case}
+Lược đồ Use Case (Tham khảo Hình~\ref{fig:usecase_tong_quat}) trình bày bức tranh tổng thể các chức năng của hệ thống FitConnect dưới góc nhìn của các tác nhân sử dụng. Hai tác nhân chính gồm \textbf{Người dùng (User)} và \textbf{Quản trị viên (Administrator)} với các quyền và phạm vi thao tác khác nhau.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{Images/IMG/ERD/USECASEDIAGRAMHethong.jpg}
     \vspace{0.5em}
-    \caption{Biểu đồ Use Case tổng quát hệ thống FitConnect}
+    \caption{Lược đồ Use Case của hệ thống FitConnect}
     \label{fig:usecase_tong_quat}
 \end{figure}
 
-Sơ đồ thể hiện rõ các mối quan hệ bao gồm (include) giữa các tình huống sử dụng phức tạp với các tình huống phụ trợ. \textbf{Người dùng} tương tác với 5 nhóm chức năng chính: quản lý tài khoản, nội dung cộng đồng, sức khỏe \& tập luyện, sự kiện thể thao, và thử thách cộng đồng. \textbf{Quản trị viên} tập trung vào Dashboard, kiểm duyệt vi phạm và quản lý tài nguyên hệ thống.
+Trong lược đồ Use Case, \textbf{Người dùng} có thể quản lý tài khoản, tham gia hoạt động cộng đồng, theo dõi sức khỏe -- tập luyện, đăng ký sự kiện thể thao và tham gia thử thách,... 
+\textbf{Quản trị viên} có thể quản trị hệ thống, kiểm duyệt nội dung vi phạm và quản lý các tài nguyên vận hành. Sự phân tách này giúp làm rõ phạm vi chức năng, vai trò của từng tác nhân trong hệ thống.
 
-
-
-\section{Đặc tả chi tiết Use Case}
-\label{sec:usecase_detail}
-
-Dựa trên biểu đồ Use Case tổng quát và kết quả khảo sát toàn bộ hệ thống FitConnect, phần này trình bày đặc tả chi tiết cho 15 tình huống sử dụng tiêu biểu, được tổ chức theo đúng 9 nhóm chức năng của nền tảng. Mỗi Use Case được mô tả theo cấu trúc chuẩn bao gồm tác nhân, điều kiện tiên quyết, luồng sự kiện chính, luồng ngoại lệ và hậu điều kiện.
-
-% ============================================================
-\subsection*{Nhóm 1: Quản lý tài khoản và hồ sơ người dùng}
-% ============================================================
-
-\subsection{UC-01: Đăng ký và đăng nhập tài khoản}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-01: Đăng ký và đăng nhập tài khoản}
-\label{tab:uc01}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Đăng ký và đăng nhập tài khoản \\
-\hline
-\textbf{Mã Use Case} & UC-01 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng tạo tài khoản mới hoặc xác thực đăng nhập bằng email hoặc tài khoản Google để truy cập hệ thống. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng chưa có phiên đăng nhập hợp lệ trên thiết bị. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\textbf{Đăng ký:}
-\begin{enumerate}
-    \item Người dùng truy cập màn hình đăng ký, nhập email, mật khẩu và tên hiển thị.
-    \item Hệ thống kiểm tra tính hợp lệ và sự duy nhất của email.
-    \item Hệ thống mã hóa mật khẩu, tạo tài khoản, tự động đăng nhập và chuyển hướng đến trang chủ.
-\end{enumerate}
-\textbf{Đăng nhập:}
-\begin{enumerate}
-    \item Người dùng nhập email và mật khẩu hoặc chọn đăng nhập bằng Google.
-    \item Hệ thống xác thực, tạo cặp Access Token và Refresh Token.
-    \item Hệ thống chuyển hướng người dùng đến trang chủ.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Email đã tồn tại: hệ thống yêu cầu sử dụng email khác.
-    \item Sai mật khẩu hoặc email không tồn tại: hệ thống hiển thị thông báo lỗi.
-    \item Người dùng quên mật khẩu: hệ thống gửi liên kết đặt lại mật khẩu qua email.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Người dùng có phiên đăng nhập hợp lệ và truy cập được đầy đủ chức năng nền tảng. \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{UC-02: Quản lý hồ sơ cá nhân}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-02: Quản lý hồ sơ cá nhân}
-\label{tab:uc02}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Quản lý hồ sơ cá nhân \\
-\hline
-\textbf{Mã Use Case} & UC-02 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng xem và cập nhật thông tin hồ sơ, ảnh đại diện, tiểu sử và theo dõi lịch sử hoạt động cá nhân trên nền tảng. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập thành công. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng truy cập trang hồ sơ cá nhân.
-    \item Hệ thống hiển thị đầy đủ thông tin gồm ảnh đại diện, tên, tiểu sử, thống kê số bài viết, sự kiện, thử thách và giáo án đã tham gia.
-    \item Người dùng chỉnh sửa các trường thông tin và xác nhận lưu.
-    \item Hệ thống cập nhật thông tin và phản hồi kết quả thành công.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Định dạng ảnh hoặc kích thước tệp không hợp lệ: hệ thống từ chối và thông báo yêu cầu.
-    \item Thiếu trường bắt buộc: hệ thống hiển thị thông báo lỗi và không lưu thay đổi.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Thông tin hồ sơ được cập nhật và hiển thị đồng nhất trên toàn nền tảng. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 2: Quản lý nội dung cộng đồng và tương tác mạng xã hội}
-% ============================================================
-
-\subsection{UC-03: Đăng bài viết và tương tác cộng đồng}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-03: Đăng bài viết và tương tác cộng đồng}
-\label{tab:uc03}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Đăng bài viết và tương tác cộng đồng \\
-\hline
-\textbf{Mã Use Case} & UC-03 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng tạo bài viết chia sẻ hoạt động lên bảng tin cộng đồng, đồng thời tương tác với bài viết của người khác bằng cảm xúc, bình luận và chia sẻ. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\textbf{Đăng bài viết:}
-\begin{enumerate}
-    \item Người dùng soạn nội dung và đính kèm hình ảnh hoặc video.
-    \item Hệ thống AI kiểm duyệt nội dung và hình ảnh tự động.
-    \item Bài viết hợp lệ được đăng lên bảng tin cộng đồng.
-\end{enumerate}
-\textbf{Tương tác:}
-\begin{enumerate}
-    \item Người dùng bày tỏ cảm xúc, bình luận hoặc chia sẻ lại bài viết.
-    \item Hệ thống ghi nhận tương tác và gửi thông báo đến chủ bài viết.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item AI phát hiện nội dung vi phạm: bài viết bị từ chối, người dùng nhận thông báo lý do.
-    \item Tệp đính kèm vượt giới hạn kích thước: hệ thống yêu cầu chọn lại.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Bài viết xuất hiện trên bảng tin; tương tác được lưu; thông báo gửi đến các bên liên quan. \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{UC-04: Báo cáo nội dung vi phạm}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-04: Báo cáo nội dung vi phạm}
-\label{tab:uc04}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Báo cáo nội dung vi phạm \\
-\hline
-\textbf{Mã Use Case} & UC-04 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng gửi báo cáo vi phạm khi phát hiện bài viết, bình luận, sự kiện, thử thách hoặc tài khoản có nội dung không phù hợp với tiêu chuẩn cộng đồng. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập và xác định được đối tượng cần báo cáo. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng nhấn nút báo cáo trên đối tượng vi phạm.
-    \item Hệ thống hiển thị danh sách lý do để người dùng lựa chọn.
-    \item Người dùng xác nhận gửi; hệ thống lưu báo cáo vào hàng đợi kiểm duyệt.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Đã báo cáo đối tượng này trước đó: hệ thống thông báo và không tạo báo cáo trùng.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Báo cáo được lưu và chờ Quản trị viên xử lý; người dùng nhận xác nhận gửi thành công. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 3: Sự kiện thể thao}
-% ============================================================
-
-\subsection{UC-05: Tạo và tham gia sự kiện thể thao}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-05: Tạo và tham gia sự kiện thể thao}
-\label{tab:uc05}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Tạo và tham gia sự kiện thể thao \\
-\hline
-\textbf{Mã Use Case} & UC-05 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng tạo sự kiện thể thao mới hoặc đăng ký tham gia sự kiện do cộng đồng tổ chức. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\textbf{Tạo sự kiện:}
-\begin{enumerate}
-    \item Người dùng điền thông tin gồm tên, mô tả, thời gian, địa điểm, loại hình (trong nhà/ngoài trời), mục tiêu và giới hạn người tham gia.
-    \item Hệ thống lưu và hiển thị sự kiện trên danh sách cộng đồng.
-\end{enumerate}
-\textbf{Tham gia sự kiện:}
-\begin{enumerate}
-    \item Người dùng duyệt danh sách và chọn sự kiện phù hợp.
-    \item Người dùng nhấn đăng ký; hệ thống ghi nhận và cập nhật lịch cá nhân.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Sự kiện đã đạt giới hạn người tham gia: hệ thống từ chối và thông báo.
-    \item Người dùng đã đăng ký trước đó: hệ thống ngăn đăng ký trùng.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Sự kiện được tạo hoặc người dùng được ghi nhận tham gia; lịch cá nhân được cập nhật. \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{UC-06: Thực hiện đo tiến độ sự kiện}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-06: Thực hiện đo tiến độ sự kiện}
-\label{tab:uc06}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Thực hiện đo tiến độ sự kiện \\
-\hline
-\textbf{Mã Use Case} & UC-06 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng ghi nhận kết quả thi đua trong sự kiện theo hình thức tương ứng: GPS ngoài trời hoặc Video Call trong nhà. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng ký tham gia sự kiện; sự kiện đang trong thời gian diễn ra. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\textbf{Sự kiện ngoài trời:}
-\begin{enumerate}
-    \item Hệ thống kích hoạt theo dõi GPS theo thời gian thực. Dữ liệu quãng đường, tốc độ và thời gian được ghi nhận liên tục.
-    \item Người dùng kết thúc hoạt động; hệ thống tổng hợp và cập nhật tiến độ.
-\end{enumerate}
-\textbf{Sự kiện trong nhà:}
-\begin{enumerate}
-    \item Người dùng tham gia phòng gọi điện video nhóm; hệ thống kích hoạt nhận diện khuôn mặt qua camera.
-    \item Thời gian hiện diện hợp lệ được ghi nhận tự động và cập nhật vào tiến độ sự kiện.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Mất kết nối GPS: hệ thống lưu tạm và đồng bộ lại khi có mạng.
-    \item Camera không phát hiện khuôn mặt liên tục: hệ thống tạm dừng tính thời gian và cảnh báo người dùng.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Tiến độ được cập nhật; bảng xếp hạng sự kiện được làm mới theo thời gian thực. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 4: Thử thách cộng đồng}
-% ============================================================
-
-\subsection{UC-07: Tạo và tham gia thử thách cộng đồng}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-07: Tạo và tham gia thử thách cộng đồng}
-\label{tab:uc07}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Tạo và tham gia thử thách cộng đồng \\
-\hline
-\textbf{Mã Use Case} & UC-07 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng tạo mới một thử thách cộng đồng theo ba loại hình (dinh dưỡng, bài tập, ngoài trời) hoặc đăng ký tham gia thử thách từ cộng đồng. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\textbf{Tạo thử thách:}
-\begin{enumerate}
-    \item Người dùng chọn loại thử thách, điền tên, mô tả, mục tiêu hằng ngày, thời gian và số người tối đa.
-    \item Hệ thống lưu và hiển thị thử thách trên danh sách cộng đồng.
-\end{enumerate}
-\textbf{Tham gia thử thách:}
-\begin{enumerate}
-    \item Người dùng tìm kiếm thử thách và nhấn đăng ký tham gia.
-    \item Hệ thống ghi nhận và cập nhật lịch cá nhân của người dùng.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Thử thách đã đủ người hoặc đã kết thúc: hệ thống thông báo và ngăn đăng ký.
-    \item Người dùng đã tham gia trước đó: hệ thống ngăn đăng ký trùng.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Thử thách được tạo hoặc người dùng được ghi nhận là thành viên; lịch cá nhân được cập nhật. \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{UC-08: Check-in tiến độ thử thách hằng ngày}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-08: Check-in tiến độ thử thách hằng ngày}
-\label{tab:uc08}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Check-in tiến độ thử thách hằng ngày \\
-\hline
-\textbf{Mã Use Case} & UC-08 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng thực hiện ghi nhận tiến độ hằng ngày trong thử thách theo phương thức phù hợp với loại thử thách đã đăng ký. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã tham gia thử thách; thử thách đang trong thời gian diễn ra. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng mở thử thách và chọn check-in hôm nay.
-    \item Người dùng thực hiện theo phương thức tương ứng:
-    \begin{itemize}
-        \item Thử thách dinh dưỡng: chụp ảnh bữa ăn; AI phân tích và xác minh tính hợp lệ.
-        \item Thử thách bài tập: thực hiện bài tập chỉ định trong không gian tập luyện tích hợp.
-        \item Thử thách ngoài trời: ghi nhận hoạt động qua định vị GPS.
-    \end{itemize}
-    \item Hệ thống cập nhật tiến độ, duy trì chuỗi streak và làm mới bảng xếp hạng.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Ảnh bữa ăn không đáp ứng yêu cầu sau phân tích AI: hệ thống từ chối và yêu cầu thực hiện lại.
-    \item Bỏ lỡ check-in trong ngày: chuỗi streak bị ngắt; hệ thống ghi nhận ngày không hoạt động.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Tiến độ ngày hôm nay được lưu; bảng xếp hạng thử thách cập nhật. Khi đủ mục tiêu, hệ thống ghi nhận trạng thái hoàn thành. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 5: Tập luyện cá nhân}
-% ============================================================
-
-\subsection{UC-09: Tập luyện cá nhân với gợi ý AI}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-09: Tập luyện cá nhân với gợi ý AI}
-\label{tab:uc09}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Tập luyện cá nhân với gợi ý AI \\
-\hline
-\textbf{Mã Use Case} & UC-09 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng yêu cầu AI đề xuất giáo án tập luyện phù hợp với thể trạng và mục tiêu, sau đó thực hiện và ghi nhận kết quả buổi tập. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập và đã cập nhật chỉ số sức khỏe cơ bản. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng chọn chế độ gợi ý AI, cung cấp thông tin về mục tiêu, thiết bị và nhóm cơ muốn tập.
-    \item AI phân tích và đề xuất danh sách bài tập kèm cấu hình số hiệp, số lần.
-    \item Người dùng điều chỉnh nếu cần và bắt đầu buổi tập. Từng hiệp được đánh dấu hoàn thành.
-    \item Hệ thống tổng hợp khối lượng, calo tiêu hao, thời lượng và lưu vào lịch sử.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Chưa cập nhật chỉ số sức khỏe: hệ thống chuyển hướng đến trang nhập thông tin trước.
-    \item AI không tìm được giáo án phù hợp: hệ thống gợi ý điều chỉnh bộ lọc hoặc chọn bài tập thủ công.
-    \item Người dùng bỏ dở: hệ thống lưu tiến độ đã hoàn thành.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Buổi tập lưu vào lịch sử tập luyện cá nhân; các chỉ số tiến độ được cập nhật. \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{UC-10: Lên lịch giáo án tập luyện}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-10: Lên lịch giáo án tập luyện}
-\label{tab:uc10}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Lên lịch giáo án tập luyện \\
-\hline
-\textbf{Mã Use Case} & UC-10 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng lưu lại giáo án tập luyện vào bộ sưu tập cá nhân và đặt lịch tập luyện hằng ngày để duy trì thói quen. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập và đã có ít nhất một giáo án tập luyện. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng mở giáo án và chọn lưu vào bộ sưu tập cá nhân (Workout Schedule).
-    \item Người dùng đặt lịch tập hằng tuần, chọn ngày và giờ thực hiện.
-    \item Hệ thống lưu lịch và tự động đồng bộ vào giao diện lịch cá nhân.
-    \item Khi đến giờ, hệ thống gửi thông báo nhắc nhở người dùng thực hiện buổi tập.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Trùng lịch với sự kiện hoặc thử thách đã đặt: hệ thống cảnh báo xung đột lịch để người dùng điều chỉnh.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Giáo án được lưu; lịch tập luyện xuất hiện trên giao diện lịch cá nhân và nhắc nhở được kích hoạt. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 6: Tính toán các chỉ số sức khỏe và gợi ý tập luyện}
-% ============================================================
-
-\subsection{UC-11: Tính toán và theo dõi chỉ số sức khỏe}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-11: Tính toán và theo dõi chỉ số sức khỏe}
-\label{tab:uc11}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Tính toán và theo dõi chỉ số sức khỏe \\
-\hline
-\textbf{Mã Use Case} & UC-11 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng sử dụng bộ công cụ tính toán đa chỉ số (BMI, BMR, TDEE, Body Fat, IBW, LBM, Calo đốt cháy, Lượng nước cần mỗi ngày) và theo dõi biểu đồ lịch sử sức khỏe theo thời gian. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng chọn công cụ tính toán mong muốn từ danh sách công cụ sức khỏe.
-    \item Người dùng nhập thông số cơ thể (cân nặng, chiều cao, tuổi, giới tính, mức độ vận động).
-    \item Hệ thống tính toán và hiển thị kết quả kèm giải thích và khuyến nghị thực tế.
-    \item Kết quả được lưu vào lịch sử; người dùng xem biểu đồ xu hướng theo thời gian và AI phân tích gợi ý giáo án phù hợp.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Người dùng nhập giá trị ngoài ngưỡng sinh lý hợp lý: hệ thống cảnh báo và yêu cầu kiểm tra lại.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Kết quả lưu vào lịch sử sức khỏe; biểu đồ xu hướng được cập nhật. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 7: Kết nối mạng lưới bạn bè}
-% ============================================================
-
-\subsection{UC-12: Theo dõi người dùng và quản lý bạn bè}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-12: Theo dõi người dùng và quản lý bạn bè}
-\label{tab:uc12}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Theo dõi người dùng và quản lý bạn bè \\
-\hline
-\textbf{Mã Use Case} & UC-12 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng tìm kiếm, theo dõi thành viên khác và quản lý mạng lưới quan hệ trên nền tảng. Bảng tin được cá nhân hóa dựa trên mạng lưới theo dõi. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng tìm kiếm theo tên hoặc duyệt danh sách gợi ý người có thể quen.
-    \item Người dùng xem hồ sơ và nhấn nút theo dõi.
-    \item Hệ thống ghi nhận quan hệ theo dõi một chiều và gửi thông báo đến người được theo dõi.
-    \item Bảng tin ưu tiên hiển thị nội dung từ những người đang được theo dõi.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Người dùng cố theo dõi chính mình: hệ thống ngăn chặn thao tác.
-    \item Đã theo dõi trước đó: nhấn lại sẽ chuyển sang chức năng hủy theo dõi.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Quan hệ theo dõi được lưu; bảng tin và gợi ý được cập nhật theo mạng lưới mới. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 8: Lịch trình cá nhân và thông báo}
-% ============================================================
-
-\subsection{UC-13: Quản lý lịch cá nhân và nhận thông báo}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-13: Quản lý lịch cá nhân và nhận thông báo}
-\label{tab:uc13}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Quản lý lịch cá nhân và nhận thông báo \\
-\hline
-\textbf{Mã Use Case} & UC-13 \\
-\hline
-\textbf{Tác nhân} & Người dùng \\
-\hline
-\textbf{Mô tả} & Người dùng xem toàn bộ lộ trình hoạt động từ sự kiện, thử thách và lịch tập luyện trên một giao diện lịch thống nhất, đồng thời nhận thông báo thời gian thực. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Người dùng đã đăng nhập và có ít nhất một hoạt động được đặt lịch. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Người dùng truy cập giao diện lịch cá nhân.
-    \item Hệ thống tổng hợp và hiển thị tất cả sự kiện thể thao, thử thách và lịch tập luyện trên giao diện lịch theo ngày/tuần/tháng.
-    \item Người dùng lọc theo loại hoạt động hoặc khoảng thời gian mong muốn.
-    \item Hệ thống gửi thông báo đẩy khi đến gần giờ hoạt động hoặc khi có tương tác mới từ cộng đồng.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Không có hoạt động trong khoảng thời gian đang xem: hệ thống hiển thị trạng thái trống và gợi ý đăng ký hoạt động mới.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Người dùng nắm được toàn bộ lộ trình sắp tới; thông báo được phân phối đúng thời điểm. \\
-\hline
-\end{tabular}
-\end{table}
-
-% ============================================================
-\clearpage
-\subsection*{Nhóm 9: Quản trị hệ thống toàn diện}
-% ============================================================
-
-\subsection{UC-14: Kiểm duyệt và xử lý báo cáo vi phạm}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-14: Kiểm duyệt và xử lý báo cáo vi phạm}
-\label{tab:uc14}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Kiểm duyệt và xử lý báo cáo vi phạm \\
-\hline
-\textbf{Mã Use Case} & UC-14 \\
-\hline
-\textbf{Tác nhân} & Quản trị viên \\
-\hline
-\textbf{Mô tả} & Quản trị viên xem xét và đưa ra quyết định xử lý đối với các báo cáo vi phạm từ cộng đồng về bài viết, sự kiện, thử thách và tài khoản người dùng. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Quản trị viên đã đăng nhập; có báo cáo chưa xử lý trong hệ thống. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Quản trị viên truy cập danh sách báo cáo và lọc theo loại đối tượng, trạng thái.
-    \item Quản trị viên xem xét nội dung bị báo cáo và lý do từ người gửi.
-    \item Quản trị viên chọn hành động: bỏ qua (hợp lệ), xóa nội dung vi phạm, hoặc khóa tài khoản vi phạm.
-    \item Hệ thống thực thi, cập nhật trạng thái báo cáo thành đã xử lý và thông báo đến người dùng liên quan.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Nội dung đã bị xóa trước khi xem xét: hệ thống tự động đánh dấu báo cáo đã giải quyết.
-    \item Trường hợp phức tạp: Quản trị viên đặt trạng thái đang xem xét và xử lý sau.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Báo cáo được cập nhật trạng thái đã xử lý; nội dung vi phạm bị xóa hoặc tài khoản vi phạm bị hạn chế. \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{UC-15: Quản lý tài nguyên và danh mục hệ thống}
-
-\vspace{-0.5em}
-\begin{table}[htbp]
-\centering
-\caption{Đặc tả Use Case UC-15: Quản lý tài nguyên và danh mục hệ thống}
-\label{tab:uc15}
-\renewcommand{\arraystretch}{0.82}
-\footnotesize
-\begin{tabular}{|p{3.2cm}|p{9.8cm}|}
-\hline
-\textbf{Tên Use Case} & Quản lý tài nguyên và danh mục hệ thống \\
-\hline
-\textbf{Mã Use Case} & UC-15 \\
-\hline
-\textbf{Tác nhân} & Quản trị viên \\
-\hline
-\textbf{Mô tả} & Quản trị viên quản lý toàn bộ tài nguyên dùng chung của nền tảng gồm danh mục thể thao, kho bài tập, danh mục thiết bị, tài khoản người dùng và theo dõi thống kê tổng quan hệ thống. \\
-\hline
-\textbf{Điều kiện tiên quyết} & Quản trị viên đã đăng nhập bằng tài khoản quản trị. \\
-\hline
-\textbf{Luồng chính} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{enumerate}
-    \item Quản trị viên truy cập mô-đun quản lý tương ứng (danh mục thể thao, bài tập, thiết bị hoặc người dùng).
-    \item Quản trị viên thực hiện thêm mới, chỉnh sửa hoặc xóa bỏ dữ liệu theo nhu cầu.
-    \item Hệ thống xác nhận và cập nhật; thay đổi có hiệu lực ngay trên toàn nền tảng.
-    \item Quản trị viên có thể xem thống kê tổng quan (số người dùng, số hoạt động, lưu lượng truy cập) trực tiếp trên Dashboard.
-\end{enumerate}
-\end{minipage} \\
-\hline
-\textbf{Luồng ngoại lệ} &
-\begin{minipage}[t]{9.8cm}
-
-\begin{itemize}
-    \item Xóa danh mục đang được tham chiếu bởi sự kiện hoặc thử thách đang hoạt động: hệ thống ngăn chặn và thông báo ràng buộc liên quan.
-    \item Khóa tài khoản đang tham gia sự kiện đang diễn ra: hệ thống cảnh báo trước khi thực thi.
-\end{itemize}
-\end{minipage} \\
-\hline
-\textbf{Hậu điều kiện} & Dữ liệu tài nguyên được cập nhật và có hiệu lực ngay; thay đổi tài khoản người dùng được áp dụng ngay lập tức. \\
-\hline
-\end{tabular}
-\end{table}
-
-
-
+Đặc tả chi tiết cho 15 trường hợp Use Case được trình bày tại Phụ lục~\ref{sec:usecase_detail} của báo cáo.

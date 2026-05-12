@@ -4,13 +4,17 @@ import UserModel from '~/models/schemas/user.schema'
 import authUserService from '~/services/userServices/authUser.services'
 import * as cryptoUtils from '~/utils/crypto'
 
-describe('Defense smoke flows', () => {
-  it('GET / returns service greeting', async () => {
+describe('[Kiểm thử khói] - Bảo mật tầng sâu (Defense Smoke)', () => {
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('API: Kiểm tra endpoint gốc (GET /) trả về thông báo chào mừng', async () => {
     const res = await request(app).get('/').expect(200)
     expect(res.text).toContain('Hello World')
   })
 
-  it('POST /api/auth/users/login returns token payload with mocked dependencies', async () => {
+  it('API: Đăng nhập với Dependencies được Mock (POST /api/auth/users/login)', async () => {
     const findOneSpy = jest.spyOn(UserModel, 'findOne').mockImplementation(() => {
       return {
         isDeleted: false,
@@ -37,7 +41,7 @@ describe('Defense smoke flows', () => {
     loginSpy.mockRestore()
   })
 
-  it('POST /api/posts rejects create post when access token is missing', async () => {
+  it('Bảo mật: Từ chối tạo Post khi thiếu Token (POST /api/posts)', async () => {
     const res = await request(app).post('/api/posts').send({
       content: 'smoke post content'
     })
@@ -45,14 +49,14 @@ describe('Defense smoke flows', () => {
     expect([401, 422]).toContain(res.status)
   })
 
-  it('POST /api/challenges/:id/join rejects unauthenticated user', async () => {
+  it('Bảo mật: Từ chối tham gia Thử thách khi chưa xác thực (POST /api/challenges/:id/join)', async () => {
     const res = await request(app).post('/api/challenges/challenge-id-smoke/join').send({})
 
     expect(res.status).toBe(401)
     expect(res.body?.message).toBe('Token is required')
   })
 
-  it('POST /api/trainings/:id/join rejects unauthenticated user', async () => {
+  it('Bảo mật: Từ chối tham gia Luyện tập khi chưa xác thực (POST /api/trainings/:id/join)', async () => {
     const res = await request(app).post('/api/trainings/training-id-smoke/join').send({})
 
     expect(res.status).toBe(401)

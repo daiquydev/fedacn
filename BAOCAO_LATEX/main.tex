@@ -3,7 +3,8 @@
 \documentclass[a4paper,12pt,oneside]{report}
 \usepackage{fontspec}           % Gói chuẩn để dùng font trên XeLaTeX
 \setmainfont{Times New Roman}  % Chọn font có sẵn trong Windows (nhớ gõ đúng tên font)
-\setmonofont{Consolas} % Hoặc "Courier New"
+% Consolas thường thiếu đủ dấu tiếng Việt trong \texttt → dùng Courier New (Windows).
+\setmonofont{Courier New}[Scale=0.92]
 % \usepackage[autostyle]{csquotes}
 \usepackage{etoolbox}
 \makeatletter
@@ -56,9 +57,9 @@
 \usepackage{alltt}
 \usepackage[framemethod=tikz]{mdframed}
 \usepackage{caption,subcaption}
-\usepackage{lastpage}
 \usepackage[lined,boxed,commentsnumbered]{algorithm2e}
 \usepackage{enumerate}
+\usepackage{enumitem}
 \usepackage{color}
 \usepackage{graphicx}
 \usepackage{tabularx}
@@ -77,6 +78,7 @@
   \end{tikzpicture}%
 }
 \usepackage[unicode]{hyperref}
+\usepackage{xurl}
 \hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true}
 %\usepackage{pstcol} 								% PSTricks with the standard color package
 
@@ -139,7 +141,7 @@
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-\usepackage{minted}
+\usepackage[cache=true]{minted}
 \usepackage{xcolor}
 \usepackage{colortbl}
 \usepackage{booktabs}
@@ -215,8 +217,8 @@
         \end{picture}&
         %\includegraphics[width=8mm, height=8mm]{hcmut.png} & %
         \begin{tabular}{l}
-        	\textbf{\bf \ttfamily Trường Đại Học Bách Khoa Tp.Hồ Chí Minh}\\
-        	\textbf{\bf \ttfamily Khoa Khoa Học \& Kỹ Thuật Máy Tính}
+        	\small Trường Đại Học Bách Khoa TP.Hồ Chí Minh\\
+        	\small Khoa Khoa Học \& Kỹ Thuật Máy Tính
         \end{tabular} 	
         \end{tabular}
     }
@@ -227,11 +229,14 @@
         \end{tabular}
     }
     \fancyfoot{}
-    \fancyfoot[L]{\scriptsize \ttfamily Đồ án Tốt Nghiệp - Học kỳ 252\\}
-    \fancyfoot[R]{\scriptsize \ttfamily Trang {\thepage}/\pageref{LastPage}}
+    \fancyfoot[L]{\scriptsize Đồ án Tốt Nghiệp - Học kỳ 252\\}
+    \fancyfoot[R]{\scriptsize Trang {\thepage}}
   \renewcommand{\headrulewidth}{0.4pt}
   \renewcommand{\footrulewidth}{0.4pt}
 }
+% Đồng bộ với plain: fancyhdr mặc định \pagestyle{fancy} chỉ có số trang giữa;
+% một số trang (float, gói khác) có thể chuyển sang fancy → gán fancy = plain.
+\fancypagestyleassign{fancy}{plain}
 % \DeclareUnicodeCharacter{2212}{-}
 
 \begin{document}
@@ -262,9 +267,8 @@
     
 \begin{flushright}
 \begin{tabular}{ll}
-\textbf{HỘI ĐỒNG:} & Hội đồng 2L Khoa học Máy tính \\
-\textbf{CTHĐ:} & PGS. TS. Lê Hồng Trang \\
-\textbf{TKHĐ:} & CN. Lê Bình Đẳng \\
+\textbf{HỘI ĐỒNG:} & Hội đồng 21L Khoa học Máy tính \\
+\textbf{GVPB:} & CN. Lê Bình Đẳng \\
 \textbf{GVHD:} & ThS. Lê Thị Bảo Thu \\
 \textbf{SVTH:} & Trần Đại Quý - 2114607 \\
 \end{tabular}
@@ -330,6 +334,7 @@
 \renewcommand{\listfigurename}{DANH MỤC HÌNH ẢNH}
 \renewcommand{\listtablename}{DANH MỤC BẢNG}
 \tableofcontents
+\pagestyle{plain}% Nội dung sau mục lục dùng cùng header/footer đã cấu hình (plain = fancy sau assign)
 \makeatother
 
 % \newpage
@@ -430,13 +435,13 @@
 \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 \input{background_survey}
 
-\chapter{PHÂN TÍCH VÀ ĐẶC TẢ YÊU CẦU HỆ THỐNG}
+\chapter{PHÂN TÍCH HỆ THỐNG}
 \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 \input{requirement}
 
-\chapter{THIẾT KẾ KIẾN TRÚC HỆ THỐNG}
-\renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
-\input{system_design}
+% \chapter{THIẾT KẾ KIẾN TRÚC HỆ THỐNG}
+% \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
+% \input{system_design}
 
 % \chapter{ĐẶC TẢ USE CASE }
 % \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
@@ -446,15 +451,16 @@
 % \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 % \input{database-design}
 
-\chapter{TÌM HIỂU CÔNG NGHỆ}
+\chapter{THIẾT KẾ HỆ THỐNG}
 \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 \input{technology}
 
-\chapter{HIỆN THỰC HỆ THỐNG}
+\chapter{HIỆN THỰC VÀ TRIỂN KHAI HỆ THỐNG}
 \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 \input{project-setup}
 
 \chapter{KIỂM THỬ HỆ THỐNG}
+\label{chap:testing}
 \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 \input{testing}
 
@@ -470,12 +476,16 @@
 \renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
 \input{outro}
 
-
-\addcontentsline{toc}{section}{Tài liệu tham khảo}
-\renewcommand*{\theHsection}{\the\value{section}} 
+% Tài liệu tham khảo đặt trước Phụ lục theo chuẩn trình bày báo cáo
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\renewcommand*{\theHsection}{\the\value{section}}
 \input{reference}
 
+\appendix
+\chapter{PHỤ LỤC}
+\renewcommand*{\theHsection}{\theHchapter.\the\value{section}}
+\input{usecase_appendix}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\end{document}  
- 
- 
+\end{document} 

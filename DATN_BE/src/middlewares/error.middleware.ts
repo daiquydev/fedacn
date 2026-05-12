@@ -4,8 +4,12 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/utils/error'
 
 export const defaultErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-  if (err instanceof ErrorWithStatus) {
-    return res.status(err.status).json(omit(err, ['status']))
+  if (err instanceof ErrorWithStatus || (err.status && err.message)) {
+    const status = err.status || HTTP_STATUS.INTERNAL_SERVER_ERROR
+    return res.status(status).json({
+      message: err.message,
+      errors: err.errors
+    })
   }
 
   // Axios error hoặc bất kỳ error có circular reference

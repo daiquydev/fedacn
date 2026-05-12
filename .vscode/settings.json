@@ -1,4 +1,35 @@
 {
+    "latex-workshop.latex.rootFile": "BAOCAO_LATEX/main.tex",
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.latex.autoClean.run": "onFailed",
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.synctex.afterBuild.enabled": true,
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk-xe",
+            "command": "latexmk",
+            "cwd": "%DIR%",
+            "args": [
+                "-cd",
+                "-xelatex",
+                "-shell-escape",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "%DOC%"
+            ],
+            "env": {
+                "TEXMF_OUTPUT_DIRECTORY": "%DIR%"
+            }
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (XeLaTeX)",
+            "tools": ["latexmk-xe"]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "latexmk (XeLaTeX)",
     "workbench.preferredDarkColorTheme": "Light+",
     "editor.allowVariableFontsInAccessibilityMode": true,
     "editor.autoClosingBrackets": "languageDefined",

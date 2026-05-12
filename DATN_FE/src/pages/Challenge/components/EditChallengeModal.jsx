@@ -254,15 +254,18 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
-    // Fetch categories
+    // Fetch ALL categories kèm trạng thái isDeleted
     const { data: categoriesData } = useQuery({
-        queryKey: ['sportCategories'],
-        queryFn: () => sportCategoryApi.getAll(),
-        staleTime: 1000
+        queryKey: ['sportCategoriesAll'],
+        queryFn: () => sportCategoryApi.getAllWithStatus(),
+        staleTime: 60000
     })
     const allCategories = categoriesData?.data?.result || []
-    const outdoorCategories = allCategories.filter(c => c.type === 'Ngoài trời')
+    // Chỉ hiện danh mục ngoài trời còn hoạt động trong dropdown
+    const outdoorCategories = allCategories.filter(c => c.type === 'Ngoài trời' && !c.isDeleted)
     const selectedCat = outdoorCategories.find(c => c.name === form.category)
+    // Danh mục hiện tại của thử thách có bị xóa không
+    const isCategoryDeleted = !!form.category && allCategories.some(c => c.name === form.category && c.isDeleted)
 
     // Populate form from challenge data
     useEffect(() => {
@@ -505,6 +508,11 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <FaBullseye className="inline mr-1 text-blue-500" /> Danh mục hoạt động *
                                 </label>
+                                {isCategoryDeleted && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1">
+                                        ⚠️ Danh mục <strong>&ldquo;{form.category}&rdquo;</strong> đã bị xóa. Vui lòng chọn danh mục khác để cập nhật.
+                                    </p>
+                                )}
                                 <select
                                     value={form.category}
                                     onChange={e => {
@@ -513,9 +521,14 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                         setField('category', catName)
                                         setField('kcal_per_unit', cat?.kcal_per_unit || 0)
                                     }}
-                                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.category ? 'border-red-400' : 'border-gray-200 dark:border-gray-600 focus:border-blue-400'}`}
+                                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white dark:bg-gray-800 outline-none transition text-sm ${errors.category ? 'border-red-400' : isCategoryDeleted ? 'border-amber-400' : 'border-gray-200 dark:border-gray-600 focus:border-blue-400'}`}
                                 >
                                     <option value="" disabled>-- Chọn danh mục --</option>
+                                    {isCategoryDeleted && (
+                                        <option value={form.category} disabled>
+                                            {form.category} (đã xóa — vui lòng chọn lại)
+                                        </option>
+                                    )}
                                     {outdoorCategories.map(cat => (
                                         <option key={cat._id} value={cat.name}>
                                             {cat.name} ({cat.kcal_per_unit} kcal/km)

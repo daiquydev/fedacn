@@ -861,11 +861,27 @@ class ChallengeService {
         return { ok: true }
     }
 
-    async getMyCreatedChallenges(userId: string, page: number = 1, limit: number = 20, status?: string) {
+    async getMyCreatedChallenges(
+        userId: string,
+        page: number = 1,
+        limit: number = 20,
+        status?: string,
+        search?: string,
+        challenge_type?: string
+    ) {
         const skip = (page - 1) * limit
         const condition: any = { creator_id: new Types.ObjectId(userId) }
         if (status) {
             condition.is_deleted = { $ne: true }
+        }
+
+        const q = search && String(search).trim()
+        if (q) {
+            condition.title = { $regex: q, $options: 'i' }
+        }
+
+        if (challenge_type && challenge_type !== 'all') {
+            condition.challenge_type = challenge_type
         }
 
         const now = new Date()

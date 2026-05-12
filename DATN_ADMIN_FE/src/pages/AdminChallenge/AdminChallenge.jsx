@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaTrophy, FaSearch, FaTrash, FaUsers, FaClock,
@@ -59,7 +59,13 @@ function ParticipantsModal({ challenge, onClose }) {
                                 </>
                             )
                         })()}
-                        {challenge.category && <span className='text-gray-500 font-medium'>— {challenge.category}</span>}
+                        {challenge.category && (
+                            <span className='text-gray-500 font-medium'>
+                                — {deletedCategoryNames.has(challenge.category)
+                                    ? <span className='italic text-gray-400'>Danh mục đã xóa</span>
+                                    : challenge.category}
+                            </span>
+                        )}
                     </p>
                 </div>
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
@@ -189,6 +195,10 @@ export default function AdminChallenge() {
         staleTime: 60000
     })
     const categories = categoriesData?.data?.result || []
+    const deletedCategoryNames = useMemo(
+        () => new Set(categories.filter(c => c.isDeleted).map(c => c.name)),
+        [categories]
+    )
 
     // Challenge list
     const isDeletedView = filterStatus === 'deleted'
@@ -651,7 +661,11 @@ export default function AdminChallenge() {
                                                             {typeCfg.label || c.challenge_type}
                                                         </span>
                                                         {c.category && (
-                                                            <p className='text-xs text-gray-400 mt-0.5'>{c.category}</p>
+                                                            <p className='text-xs text-gray-400 mt-0.5'>
+                                                                {deletedCategoryNames.has(c.category)
+                                                                    ? <span className='italic'>Danh mục đã xóa</span>
+                                                                    : c.category}
+                                                            </p>
                                                         )}
                                                     </div>
                                                 </td>

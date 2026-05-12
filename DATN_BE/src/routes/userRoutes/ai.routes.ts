@@ -166,16 +166,20 @@ aiRouter.post('/generate', async (req: Request, res: Response) => {
 
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: 'llama-3.1-8b-instant',
+            model: 'llama-3.3-70b-versatile',
             messages: [
                 {
                     role: 'system',
-                    content: 'Bạn là chuyên gia tạo nội dung form sự kiện thể thao. Chỉ trả về JSON object thuần túy, không có markdown hay giải thích.'
+                    content:
+                        'Bạn là chuyên gia điền form JSON cho ứng dụng thể thao/sức khỏe. ' +
+                        'Tin nhắn người dùng có thể là sự kiện thể thao HOẶC thử thách (ngoài trời/ăn uống/tập luyện) — đọc kỹ toàn bộ yêu cầu, schema và quy tắc trong đó. ' +
+                        'Kể cả mô tả rất ngắn (vài từ), hãy suy luận đầy đủ các trường hợp lý, thống nhất nội bộ, đúng định dạng được yêu cầu. ' +
+                        'Chỉ trả về một JSON object thuần túy, không markdown, không văn bản ngoài JSON.'
                 },
                 { role: 'user', content: prompt }
             ],
-            temperature: 0.7,
-            max_tokens: 1024
+            temperature: 0.45,
+            max_tokens: 1536
         }, {
             headers: {
                 'Content-Type': 'application/json',
@@ -263,7 +267,7 @@ Kết quả tính toán: ${JSON.stringify(calculatedResult)}
 Thông tin đầu vào của người dùng: ${JSON.stringify(inputData)}
 
 Nhiệm vụ của bạn:
-1. Phân tích ngắn gọn tình trạng sức khỏe của người dùng dựa trên chỉ số trên (2-3 câu, thân thiện, chuyên nghiệp)
+1. Phân tích ngắn gọn tình trạng sức khỏe của người dùng dựa trên chỉ số trên (2-3 câu, thân thiện, chuyên nghiệp). Nếu inputData ít trường, hãy tập trung vào calculatedResult và các ý nghĩa lâm sàng thông dụng của chỉ số đó.
 2. Từ danh sách bài tập bên dưới, chọn 4 bài tập PHÙ HỢP NHẤT với tình trạng sức khỏe của người dùng. Chỉ được chọn bài tập có trong danh sách (dùng đúng _id).
 3. Với mỗi bài tập được chọn, viết 1 câu lý do ngắn gọn tại sao bài đó phù hợp.
 
@@ -336,8 +340,8 @@ Trả về JSON theo đúng định dạng sau (không có markdown, không có 
 aiRouter.post('/analyze-workout-description', async (req: Request, res: Response) => {
     const { description, availableExercises } = req.body
 
-    if (!description || description.trim().length < 5) {
-        res.status(400).json({ message: 'description is required (min 5 chars)' })
+    if (!description || description.trim().length < 2) {
+        res.status(400).json({ message: 'description is required (min 2 chars)' })
         return
     }
 
@@ -362,7 +366,7 @@ aiRouter.post('/analyze-workout-description', async (req: Request, res: Response
 "${description.trim()}"
 
 Nhiệm vụ của bạn:
-1. Phân tích tình trạng sức khỏe của người dùng dựa trên mô tả trên (2-4 câu, thân thiện, chuyên nghiệp, như một bác sĩ đang tư vấn trực tiếp). Đưa ra nhận xét về tình trạng hiện tại và những điều cần lưu ý khi tập luyện.
+1. Phân tích tình trạng sức khỏe của người dùng dựa trên mô tả trên (2-4 câu, thân thiện, chuyên nghiệp, như một bác sĩ đang tư vấn trực tiếp). Nếu mô tả CỰC NGẮN (1-4 từ, ví dụ "giảm mỡ bụng", "tăng cơ", "lưng yếu", "mới tập"), hãy diễn giải ngắn gọn giả định hợp lý bạn đang dùng (ví dụ: người trưởng thành, chưa có chấn thương cấp tính) và nêu lưu ý an toàn chung.
 2. Từ danh sách bài tập bên dưới, chọn 4-6 bài tập PHÙ HỢP NHẤT với tình trạng và mục tiêu của người dùng. Chỉ được chọn bài tập có trong danh sách (dùng đúng _id). Ưu tiên các bài tập an toàn và phù hợp với thể trạng được mô tả.
 3. Với mỗi bài tập được chọn, viết 1 câu lý do ngắn gọn tại sao bài đó phù hợp với người dùng này cụ thể.
 

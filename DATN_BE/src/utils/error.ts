@@ -14,6 +14,8 @@ export class ErrorWithStatus {
   constructor({ message, status }: { message: string; status: number }) {
     this.message = message
     this.status = status
+    Object.defineProperty(this, 'message', { enumerable: true })
+    Object.defineProperty(this, 'status', { enumerable: true })
   }
 }
 
@@ -22,5 +24,6 @@ export class EntityError extends ErrorWithStatus {
   constructor({ message = AUTH_USER_MESSAGE.VALIDATION_ERROR, errors }: { message?: string; errors: ErrorsType }) {
     super({ message, status: HTTP_STATUS.UNPROCESSABLE_ENTITY })
     this.errors = errors
+    Object.defineProperty(this, 'errors', { enumerable: true })
   }
 }

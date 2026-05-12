@@ -315,11 +315,11 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
     const exerciseSearchRef = useRef(null)
 
     // Fetch all exercises for fitness type
-    const { data: exercisesData } = useQuery({
+    const { data: exercisesData, isFetching: exercisesFetching } = useQuery({
         queryKey: ['all-exercises'],
         queryFn: () => getAllExercises(),
         staleTime: 60000,
-        enabled: form.challenge_type === 'fitness'
+        enabled: form.challenge_type === 'fitness' || (showAIModal && aiType === 'fitness')
     })
     const allExercises = exercisesData?.data?.result || []
 
@@ -531,9 +531,9 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
     // ==================== AI FILL ====================
     // Contextual placeholders per type (Step 2 hint)
     const AI_PLACEHOLDERS = {
-        outdoor_activity: 'Nhập độ dài, mục tiêu và thời gian (ví dụ: chạy bộ 5km mỗi ngày trong 30 ngày)',
-        nutrition: 'Mô tả chế độ ăn và thời gian thử thách (ví dụ: ăn lành mạnh 2 tuần; hoặc "một bữa trưa healthy" — AI sẽ gợi ý khung giờ trưa nếu bạn nhắc buổi/bữa)',
-        fitness: 'Nhập chi tiết bài tập (ví dụ: tập gym 4 buổi/tuần, mỗi buổi 45 phút)'
+        outdoor_activity: 'Vài từ cũng được (vd: chạy bộ, đạp xe 2 tuần, leo núi cuối tuần)',
+        nutrition: 'Vài từ cũng được (vd: ăn sạch 14 ngày, bữa trưa healthy, detox 1 tuần)',
+        fitness: 'Vài từ cũng được (vd: tập bụng, gym nhà, full body 30 ngày)'
     }
 
     const buildAIPrompt = (desc, today, type) => {
@@ -544,6 +544,7 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
 "${desc}"
 
 Quy tắc:
+0. Mô tả CỰC NGẮN (1–5 từ, vd "chạy bộ", "đạp xe", "leo núi"): suy luận đầy đủ JSON; map category từ từ khoá → phải là một giá trị trong [${outdoorNames}] (chạy/chạy bộ/marathon→Chạy bộ nếu có; đạp/xe đạp→Đạp xe; leo/trekking→Leo núi; đi bộ→ưu tiên mục đi bộ nếu có trong list).
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
    - Mô tả ngắn (chỉ kiểu "tạo giải chạy bộ", "chạy bộ") và KHÔNG nói "một ngày"/"trong ngày" → endDate phải cách startDate ít nhất 6–20 ngày (thử thách nhiều ngày), bắt đầu từ ngày mai hoặc hôm nay nhưng KHÔNG để startDate = endDate = hôm nay.
 2. category: một trong [${outdoorNames}], chọn phù hợp nhất với mô tả.
@@ -569,6 +570,8 @@ Quy tắc:
 "${desc}"
 
 Quy tắc QUAN TRỌNG (đọc kỹ):
+
+0. Mô tả CỰC NGẮN (vd "ăn sạch", "detox", "giảm cân"): vẫn điền đủ title, ngày, goal_value, nutrition_sub_type; mặc định goal_value=1 và nutrition_sub_type="free" trừ khi có từ khoá bữa/buổi (quy tắc A/B bên dưới).
 
 A) Số bữa check-in mỗi ngày — goal_value
 - CHỈ dùng số > 1 khi mô tả NÓI RÕ nhiều bữa trong ngày (ví dụ "ba bữa", "3 bữa", "hai bữa chính"...).
@@ -607,13 +610,22 @@ D) Khác
 }`
         }
 
+        const catalogArr = allExercises.slice(0, 60).map((ex) => ({
+            name_vi: String(ex.name_vi || '').trim(),
+            name: String(ex.name || '').trim()
+        })).filter((e) => e.name_vi || e.name)
+        const exerciseCatalogJson = JSON.stringify(catalogArr)
+
         // fitness
         return `Hôm nay là ${today}. Người dùng muốn tạo một thử thách THỂ DỤC / TẬP LUYỆN (workout, gym, yoga...). Mô tả:
 "${desc}"
 
 Quy tắc:
+0. Mô tả CỰC NGẮN (vd "tập bụng", "gym nhà", "full body", "giảm mỡ"): vẫn điền đủ title, ngày, suggested_exercises; ưu tiên bài đa khớp, an toàn cho người mới nếu không nêu trình độ.
 1. startDate >= ${today}, endDate >= startDate, định dạng YYYY-MM-DD.
-2. suggested_exercises: một mảng chứa tên tiếng Việt của 2 đến 4 bài tập phù hợp với mô tả nhất.
+2. suggested_exercises: mảng 2–4 chuỗi. Mỗi chuỗi phải TRÙNG KHỚP NGUYÊN VĂN (không thêm mô tả, không thừa khoảng trắng đầu/cuối) với đúng một trong hai trường name_vi hoặc name trong catalog JSON dưới đây — ưu tiên name_vi nếu khác rỗng. Tuyệt đối không bịa tên ngoài catalog.
+Catalog bài tập trong hệ thống:
+${exerciseCatalogJson}
 3. visibility: "public" | "friends" | "private".
 4. title: ngắn gọn, tiếng Việt, hấp dẫn, CHỦ ĐỀ LUYỆN TẬP THỂ DỤC; thống nhất với suggested_exercises (gym/yoga/cơ bụng…).
 5. description: tối đa 150 ký tự, tiếng Việt, nói về luyện tập và tần suất gợi ý khớp mô tả người dùng.
@@ -633,6 +645,16 @@ Quy tắc:
         if (!aiDesc.trim()) { toast.error('Nhập mô tả trước!'); return }
         setAiLoading(true)
         try {
+            if (aiType === 'fitness') {
+                if (exercisesFetching) {
+                    toast.error('Đang tải danh sách bài tập, chờ vài giây rồi thử lại.')
+                    return
+                }
+                if (allExercises.length === 0) {
+                    toast.error('Chưa tải được danh sách bài tập. Vui lòng thử lại.')
+                    return
+                }
+            }
             const today = moment().format('YYYY-MM-DD')
             const prompt = buildAIPrompt(aiDesc.trim(), today, aiType)
 
@@ -733,9 +755,10 @@ Quy tắc:
                     const searchTerm = exName.toLowerCase().trim()
                     
                     const match = allExercises.find(ex => {
-                        const nameEn = (ex.name || '').toLowerCase()
-                        const nameVi = (ex.name_vi || '').toLowerCase()
+                        const nameEn = (ex.name || '').trim().toLowerCase()
+                        const nameVi = (ex.name_vi || '').trim().toLowerCase()
                         if (!nameEn && !nameVi) return false
+                        if (searchTerm === nameEn || searchTerm === nameVi) return true
                         return (nameEn && searchTerm.includes(nameEn)) || (nameVi && searchTerm.includes(nameVi)) ||
                                (nameEn && nameEn.includes(searchTerm)) || (nameVi && nameVi.includes(searchTerm))
                     })

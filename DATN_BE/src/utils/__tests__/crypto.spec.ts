@@ -1,11 +1,11 @@
 import { hashPassword, comparePassword } from '../crypto'
 
-describe('crypto utils', () => {
-  it('hashes and verifies password correctly', async () => {
-    const plain = 'Test@1234'
-    const hashed = await hashPassword(plain)
-    expect(hashed).not.toBe(plain)
-    const match = await comparePassword(plain, hashed)
-    expect(match).toBe(true)
+describe('[Tiện ích] - Mã hóa dữ liệu (Crypto)', () => {
+  it('Trường hợp: Mã hóa và kiểm tra mật khẩu thành công', async () => {
+    const password = 'password123'
+    const hash = await hashPassword(password)
+    expect(hash).not.toBe(password)
+    const isMatch = await comparePassword(password, hash)
+    expect(isMatch).toBe(true)
   })
 })

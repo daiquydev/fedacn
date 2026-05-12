@@ -31,7 +31,7 @@ const formatDateDisplay = (isoDate) => {
 }
 
 // Featured Events Carousel Banner
-function FeaturedBanner({ events, navigate }) {
+function FeaturedBanner({ events, navigate, deletedCategoryNames = new Set() }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const timerRef = useRef(null)
 
@@ -74,7 +74,7 @@ function FeaturedBanner({ events, navigate }) {
             )}
             <h2 className="text-2xl font-black mb-1 drop-shadow-lg">{ev.name}</h2>
             <p className="text-white/70 text-sm mb-3">
-              {ev.category} • {ev.participants || 0} người tham gia
+              {deletedCategoryNames.has(ev.category) ? 'Danh mục đã xóa' : ev.category} • {ev.participants || 0} người tham gia
             </p>
             <span className="inline-block bg-white/20 backdrop-blur-md hover:bg-white/30 transition px-5 py-2 rounded-xl text-sm font-bold">
               Xem chi tiết →
@@ -198,14 +198,21 @@ const SportEvent = () => {
     setPage(1)
   }, [debouncedSearch, selectedCategory, eventType, sortBy, filterDateFrom, filterDateTo, filterJoined])
 
-  // Fetch sport categories
+  // Fetch ALL categories kèm trạng thái isDeleted (để resolve tên + filter dropdown)
   const { data: categoriesData } = useQuery({
-    queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll()
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
+    staleTime: 60000
   })
 
-  // Dynamic categories from DB
+  // Tất cả danh mục (kể cả đã xóa) — dùng để resolve tên hiển thị
   const dbCategories = categoriesData?.data?.result || []
+
+  // Set tên danh mục đã bị soft-delete — dùng để kiểm tra trên UI
+  const deletedCategoryNames = useMemo(
+    () => new Set(dbCategories.filter(cat => cat.isDeleted).map(cat => cat.name)),
+    [dbCategories]
+  )
 
   // Lấy icon component từ DB field `icon` của category
   const renderCategoryIcon = (category) => {
@@ -213,7 +220,7 @@ const SportEvent = () => {
     return <IconComp />
   }
 
-  // Lookup map: tên category => icon component (dùng cho SportEventCard)
+  // Lookup map: tên category => icon component (kể cả danh mục đã xóa để icon vẫn hiện)
   const categoryIconLookup = useMemo(() => {
     const map = {}
     dbCategories.forEach(cat => {
@@ -222,10 +229,11 @@ const SportEvent = () => {
     return map
   }, [dbCategories])
 
-  // Filter categories based on selected eventType ('Ngoài trời' or 'Trong nhà')
+  // Filter dropdown: chỉ hiện danh mục còn hoạt động, lọc theo eventType
   const availableCategories = useMemo(() => {
-    if (eventType === 'all') return dbCategories
-    return dbCategories.filter(cat => cat.type === eventType)
+    const active = dbCategories.filter(cat => !cat.isDeleted)
+    if (eventType === 'all') return active
+    return active.filter(cat => cat.type === eventType)
   }, [dbCategories, eventType])
 
   const handleJoinEvent = (eventId) => {
@@ -290,7 +298,7 @@ const SportEvent = () => {
 
         if (featuredEvents.length === 0) return null
 
-        return <FeaturedBanner events={featuredEvents} navigate={navigate} />
+        return <FeaturedBanner events={featuredEvents} navigate={navigate} deletedCategoryNames={deletedCategoryNames} />
       })()}
 
       {/* Modern Search & Filters Section — Admin-inspired card design */}
@@ -578,6 +586,7 @@ const SportEvent = () => {
                 friendIds={friendIds}
                 connectedIds={connectedIds}
                 CategoryIcon={categoryIconLookup[event.category]}
+                deletedCategoryNames={deletedCategoryNames}
               />
             ))}
           </div>

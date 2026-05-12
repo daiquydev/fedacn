@@ -138,16 +138,23 @@ const EditSportEvent = () => {
   })
 
   const { data: categoriesData } = useQuery({
-    queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll()
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
+    staleTime: 60000
   })
 
-  const categories = categoriesData?.data?.result || []
-  const filteredCategories = categories.filter(c => c.type === newEvent.eventType)
+  const allCategories = categoriesData?.data?.result || []
+  // Chỉ hiện danh mục còn hoạt động trong dropdown (đúng loại eventType)
+  const filteredCategories = allCategories.filter(c => !c.isDeleted && c.type === newEvent.eventType)
+  // Danh mục hiện tại của sự kiện có bị xóa không
+  const isCategoryDeleted = allCategories.some(c => c.name === newEvent.category && c.isDeleted)
 
   useEffect(() => {
     if (filteredCategories.length > 0) {
       setNewEvent(prev => {
+        // Nếu category hiện tại đã bị xóa → giữ nguyên, không tự thay thế
+        const isDeleted = allCategories.some(c => c.name === prev.category && c.isDeleted)
+        if (isDeleted) return prev
         if (!filteredCategories.some(c => c.name === prev.category)) {
           return { ...prev, category: filteredCategories[0].name }
         }
@@ -374,12 +381,22 @@ const EditSportEvent = () => {
                 {/* Danh mục */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Danh mục thể thao</label>
+                  {isCategoryDeleted && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1">
+                      ⚠️ Danh mục <strong>&ldquo;{newEvent.category}&rdquo;</strong> đã bị xóa. Vui lòng chọn danh mục khác để cập nhật.
+                    </p>
+                  )}
                   <select
                     name="category"
                     value={newEvent.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400"
+                    className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-gray-700 dark:text-white outline-none focus:border-emerald-400 ${isCategoryDeleted ? 'border-amber-400' : 'border-gray-100 dark:border-gray-600'}`}
                   >
+                    {isCategoryDeleted && (
+                      <option value={newEvent.category} disabled>
+                        {newEvent.category} (đã xóa — vui lòng chọn lại)
+                      </option>
+                    )}
                     {filteredCategories.map(c => <option key={c._id || c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>

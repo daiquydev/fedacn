@@ -1,147 +1,682 @@
 \label{chap:technology}
 
-Chương này trình bày tổng quan các công nghệ được lựa chọn để xây dựng hệ thống, mô hình kiến trúc các tầng và luồng tương tác giữa chúng, đồng thời phân tích ưu nhược điểm và lý do lựa chọn. Nội dung bám theo sơ đồ kiến trúc tổng thể (Hình~\ref{fig:tech_architecture_overview}) và được điều chỉnh cho phù hợp với cách triển khai thực tế trên \textbf{máy chủ VPS}.
 
-\section{Kiến trúc tổng thể và stack công nghệ}
-\label{sec:tech_stack_overview}
+\section{Kiến trúc hệ thống}
+\label{sec:system_architecture}
 
-Hình~\ref{fig:tech_architecture_overview} mô tả kiến trúc logic toàn hệ thống: người dùng truy cập qua web (máy tính hoặc trình duyệt trên di động), tầng Frontend (React/Vite) giao tiếp với Backend (Node.js/Express) bằng \textbf{HTTP/REST (JSON)} cho các thao tác nghiệp vụ và \textbf{WebSocket (Socket.IO)} cho tính năng thời gian thực (thông báo, tín hiệu tương tác). Backend kết nối \textbf{MongoDB} qua \textbf{Mongoose ODM}, lưu trữ và phân phối media qua \textbf{Cloudinary (CDN)}, đồng thời gọi các \textbf{API bên thứ ba} (bản đồ, LLM, OAuth).
-
-\begin{itemize}
-    \item \textbf{Frontend:} React 18, Vite, Tailwind CSS, DaisyUI, TanStack Query; \texttt{face-api.js} hỗ trợ xử lý nhận diện khuôn mặt / kiểm tra ảnh phía trình duyệt (phù hợp với lớp ``NSFW \& Face'' trên sơ đồ).
-    \item \textbf{Giao tiếp mạng:} REST JSON; Socket.IO (WebSocket + polling) cho kênh hai chiều.
-    \item \textbf{Backend:} Node.js, Express.js, TypeScript; xác thực \textbf{JWT}; đăng nhập \textbf{OAuth 2.0} (Google; sơ đồ minh họa thêm khả năng mở rộng Facebook/GitHub).
-    \item \textbf{Nhóm nghiệp vụ trên API:} Auth, User, nội dung (bài viết, sự kiện, \ldots), kênh chat/thời gian thực, proxy AI (tương thích OpenAI API), xử lý ảnh liên quan kiểm duyệt/nhận diện.
-    \item \textbf{Cơ sở dữ liệu:} MongoDB (sơ đồ minh họa MongoDB Atlas dạng replica set; triển khai có thể dùng Atlas hoặc MongoDB cài trên cùng/VPS khác).
-    \item \textbf{Media:} Cloudinary (upload, biến đổi ảnh, CDN).
-    \item \textbf{Tích hợp ngoài:} API LLM kiểu OpenAI (trong mã nguồn dùng endpoint tương thích OpenAI qua Groq); \textbf{Goong Maps API} (bản đồ, địa lý --- tương ứng nhóm ``Maps/Geocoding'' trên sơ đồ); OAuth Google.
+Hệ thống được thiết kế dựa trên mô hình Client-Server (Tham khảo Hình~\ref{fig:tech_architecture_overview}), phân tách rõ ràng giữa phần giao diện người dùng (Frontend) và phần xử lý nghiệp vụ, quản lý dữ liệu (Backend), đảm bảo tính mô-đun hóa, dễ dàng bảo trì và mở rộng.
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Client (Máy khách):} Đóng vai trò là Tầng trình bày (Presentation Layer), là một ứng dụng đơn trang (Single Page Application - SPA) chạy trên trình duyệt web của người dùng. Client chịu trách nhiệm hiển thị giao diện, xử lý tương tác người dùng và gọi API để giao tiếp với máy chủ.
+    \item \textbf{Server (Máy chủ):} Chịu trách nhiệm xử lý các logic nghiệp vụ, xác thực quyền truy cập, tương tác với cơ sở dữ liệu và giao tiếp với các dịch vụ của bên thứ ba.
 \end{itemize}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{Images/IMG/Kientruchethong.png}
     \vspace{0.75em}
-    \caption{Kiến trúc tổng thể hệ thống: client, Frontend (React/Vite), Backend (Node/Express), tầng dữ liệu (MongoDB, Cloudinary) và dịch vụ ngoài; chú thích luồng HTTP/REST, WebSocket, truy vấn CSDL và upload media.}
+    \caption{Sơ đồ kiến trúc tổng thể hệ thống}
     \label{fig:tech_architecture_overview}
 \end{figure}
 
-Luồng xử lý điển hình (tham chiếu phần ``Request flow'' trên sơ đồ): \textbf{Client} $\rightarrow$ ứng dụng React $\rightarrow$ (HTTP và/hoặc WebSocket) $\rightarrow$ API Node.js $\rightarrow$ MongoDB và/hoặc Cloudinary $\rightarrow$ gọi API ngoài khi cần.
+\section{Các dịch vụ tích hợp}
+\label{sec:integration_services}
 
-\section{Công nghệ Frontend và Backend}
-\label{sec:tech_frontend}
+Để tối ưu hóa thời gian phát triển và phân tải cho máy chủ chính, hệ thống FitConnect tiến hành tích hợp các dịch vụ và API key từ bên thứ ba. Điểm nổi bật là toàn bộ các dịch vụ tích hợp được lựa chọn đều là gói miễn phí, phù hợp với quy mô dự án nhưng vẫn đảm bảo tính ổn định cao. Bao gồm:
 
-Bảng~\ref{tab:tech_stack_detail} tóm tắt các công nghệ cốt lõi ở tầng Frontend và Backend, cùng lý do lựa chọn.
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Cloudinary (API v2)~\cite{CloudinaryDocs}:} Nền tảng đám mây (CDN) chuyên dụng cho lưu trữ, tối ưu hóa và phân phối phương tiện truyền thông (hình ảnh, video). Hệ thống tích hợp Cloudinary bằng gói miễn phí để lưu hình ảnh, video, file,...
+    
+    \item \textbf{Groq API (Mô hình LLaMA 3)~\cite{GroqDocs}:} Cung cấp công cụ xử lý ngôn ngữ tự nhiên với tốc độ suy luận cực nhanh. Được tích hợp để hỗ trợ kiểm duyệt và tạo nội dung cộng đồng. Hệ thống đang sử dụng gói miễn phí cung cấp cho nhà phát triển.
+    
+    \item \textbf{Goong Maps API (v1)~\cite{GoongMapsAPI}:} Nền tảng bản đồ số cung cấp khả năng định vị, Geocoding và vẽ bản đồ. Tích hợp để theo dõi lộ trình chạy bộ/đạp xe ngoài trời thông qua GPS trên web. Hệ thống sử dụng gói miễn phí.
+    
+    \item \textbf{Google OAuth (v2.0)~\cite{GoogleOAuth}:} Cổng xác thực ủy quyền của Google (Google Identity Services) dùng cho tính năng đăng nhập một chạm (Single Sign-On). Đảm bảo bảo mật tài khoản người dùng theo tiêu chuẩn OAuth 2.0 toàn cầu và được cung cấp hoàn toàn miễn phí.
+    
+    \item \textbf{Gmail SMTP (TLS/SSL)~\cite{NodemailerDocs}:} Giao thức gửi thư điện tử được tích hợp thông qua thư viện Nodemailer kết hợp với Mật khẩu ứng dụng (App Passwords) của Google. Dùng để gửi email chứa mã xác thực (OTP) hoặc cấp lại mật khẩu một cách nhanh chóng, miễn phí mà không cần thuê máy chủ Mail Server chuyên dụng.
+\end{itemize}
+
+\section{Công nghệ sử dụng}
+\label{sec:tech_stack}
+
+Để hiện thực hóa kiến trúc trên, dự án sử dụng hệ sinh thái JavaScript/TypeScript toàn diện nhằm tạo sự đồng nhất từ Client đến Server. Dưới đây là các công nghệ cốt lõi được sử dụng trong hệ thống cùng với phiên bản và mục đích cụ thể:
+
+\subsubsection*{1. Công nghệ Frontend (Giao diện người dùng)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{React (v18.2)~\cite{ReactJSDocs}:} Thư viện UI cốt lõi để xây dựng giao diện theo mô hình Component, giúp dễ dàng tái sử dụng mã nguồn và quản lý trạng thái hiển thị.
+    \item \textbf{Vite (v4.4)~\cite{ViteDocs}:} Công cụ build frontend thế hệ mới (thay thế Webpack) giúp tối ưu hóa tốc độ khởi động server lúc phát triển và tối ưu file tĩnh khi triển khai lên production.
+    \item \textbf{Tailwind CSS (v3.3)~\cite{TailwindCSSDocs}:} Framework CSS tiện ích (Utility-first CSS) hỗ trợ tạo kiểu trực tiếp trên các thẻ HTML, giúp dựng giao diện linh hoạt (Responsive) nhanh chóng.
+    \item \textbf{TanStack Query / React Query (v5.28)~\cite{TanStackQuery}:} Thư viện quản lý trạng thái máy chủ (Server-state management), tự động xử lý caching, đồng bộ dữ liệu nền và tối ưu số lượng gọi API.
+    \item \textbf{React Router (v6.16)~\cite{ReactRouterDocs}:} Quản lý điều hướng (Routing) chuyển đổi giữa các màn hình trong ứng dụng Single Page Application mà không cần tải lại toàn bộ trang trình duyệt.
+\end{itemize}
+
+\subsubsection*{2. Công nghệ Backend (Máy chủ API)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Node.js (v20.9 LTS)~\cite{NodeJSDocs}:} Môi trường thực thi mã JavaScript đa nền tảng. Chạy trên kiến trúc hướng sự kiện và Non-blocking I/O, cực kỳ phù hợp cho các API yêu cầu tốc độ đáp ứng cao và kết nối thời gian thực.
+    \item \textbf{Express.js (v4.18)~\cite{ExpressJSDocs}:} Web Framework siêu nhẹ của Node.js, cung cấp hệ thống Routing mạnh mẽ và cơ chế Middleware linh hoạt để thiết kế các RESTful API.
+    \item \textbf{TypeScript (v5.2)~\cite{TypeScriptDocs}:} Ngôn ngữ lập trình phiên bản chặt chẽ hơn của JavaScript (Typed Superset). Giúp bắt lỗi kiểu dữ liệu (Static Typing) từ lúc viết code, tăng tính tự động nhắc lệnh (IntelliSense) và độ tin cậy cho toàn dự án.
+    \item \textbf{Socket.IO (v4.7)~\cite{SocketIODocs}:} Thư viện hỗ trợ kết nối và giao tiếp hai chiều thời gian thực (Real-time) dựa trên WebSockets. Được ứng dụng để đẩy hệ thống thông báo cho người dùng.
+    \item \textbf{JSON Web Token - JWT (v9.0)~\cite{JWTSpec}:} Chuẩn mã hóa chuỗi thông tin để xác thực (Authentication). Cho phép kiểm tra danh tính người dùng theo phương thức Stateless (không lưu phiên trên RAM máy chủ) qua mỗi request.
+\end{itemize}
+
+\section{Thiết kế cơ sở dữ liệu}
+\label{sec:database_design}
+
+Hệ thống sử dụng \textbf{MongoDB}~\cite{MongoDBDocs} --- cơ sở dữ liệu NoSQL hướng tài liệu. Dữ liệu được tổ chức thành các \textbf{collection}, mỗi collection chứa nhiều \textbf{document} dạng JSON/BSON linh hoạt. Quan hệ giữa các collection thực hiện qua \textbf{referencing} (lưu \texttt{ObjectId}) hoặc \textbf{embedding} (nhúng sub-document trực tiếp). Hệ thống FitConnect bao gồm 13 collection chính:
+
+% ─── 1. USERS ────────────────────────────────────────────────────────────────
+\textbf{Collection users}
+\label{subsec:col_users}
+
+Là trung tâm tham chiếu của toàn hệ thống. Lưu thông tin tài khoản, hồ sơ cá nhân và hồ sơ sức khỏe (BMI, BMR, TDEE).
+
+\definecolor{dbheadblue}{RGB}{41,82,145}
+\definecolor{dbrowalt}{RGB}{240,245,255}
 
 \begin{table}[H]
 \centering
-\caption{Công nghệ Frontend và Backend}
-\label{tab:tech_stack_detail}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.2cm}|p{2.5cm}|p{8.3cm}|}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{4.0cm}|p{2.6cm}|X|}
 \hline
-\textbf{Công nghệ} & \textbf{Lĩnh vực} & \textbf{Mục đích \& Lý do lựa chọn} \\
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
 \hline
-\textbf{React.js 18} \cite{ReactJSDocs} & Frontend UI & SPA theo component, hiệu năng tốt; hệ sinh thái TanStack Query, React Hook Form, React Router. \\
-\hline
-\textbf{TypeScript} \cite{TypeScriptDocs} & Backend (và có thể mở rộng FE) & Kiểu tĩnh, an toàn kiểu, bảo trì dài hạn; Backend hiện thực bằng TypeScript. \\
-\hline
-\textbf{Tailwind CSS + DaisyUI} & Frontend Styling & Utility-first, bundle gọn, responsive; DaisyUI thống nhất giao diện. \\
-\hline
-\textbf{Vite} & Build Tool & Khởi động nhanh, HMR, tối ưu bundle production. \\
-\hline
-\textbf{Node.js + Express.js} \cite{NodeJSDocs,ExpressJSDocs} & Backend API & I/O bất đồng bộ, một ngôn ngữ với Frontend; middleware linh hoạt; tích hợp Socket.IO trên cùng máy chủ HTTP. \\
-\hline
-\textbf{Socket.IO} & Frontend + Backend & Trừu tượng hóa WebSocket, fallback polling, phù hợp thông báo và tín hiệu thời gian thực. \\
-\hline
-\end{tabular}
+\texttt{\_id}                  & ObjectId          & Định danh duy nhất (tự động sinh bởi MongoDB). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{name}                  & String            & Họ và tên đầy đủ. \\ \hline
+\texttt{user\_name}            & String            & Tên hiển thị trên mạng xã hội (username). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{email}                 & String            & Địa chỉ email đăng nhập (unique index). \\ \hline
+\texttt{password}              & String            & Mật khẩu đã băm bcrypt (bỏ qua nếu đăng nhập OAuth). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{avatar}                & String (URL)      & Đường dẫn ảnh đại diện trên Cloudinary. \\ \hline
+\texttt{cover\_avatar}         & String (URL)      & Đường dẫn ảnh bìa trang cá nhân trên Cloudinary. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{birthday}              & Date              & Ngày sinh (chuỗi ISO 8601, UTC). \\ \hline
+\texttt{gender}                & String            & Giới tính: \texttt{"male"} hoặc \texttt{"female"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{address}               & String            & Địa chỉ sinh sống. \\ \hline
+\texttt{role}                  & Number            & Vai trò: \texttt{0} = người dùng, \texttt{1} = quản trị viên. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{status}                & Number            & Trạng thái: \texttt{0} = chưa xác thực, \texttt{1} = hoạt động, \texttt{2} = bị khóa. \\ \hline
+\texttt{auth\_provider}        & String            & Phương thức xác thực: \texttt{"local"} hoặc \texttt{"google"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{weight}                & Number            & Cân nặng hiện tại (kg). \\ \hline
+\texttt{height}                & Number            & Chiều cao hiện tại (cm). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{age}                   & Number            & Tuổi (năm). \\ \hline
+\texttt{hip}                   & Number            & Chu vi vòng mông (cm). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{waist}                 & Number            & Chu vi vòng eo (cm). \\ \hline
+\texttt{neck}                  & Number            & Chu vi vòng cổ (cm). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{activity\_level}       & Number            & Mức độ vận động từ 1–5, dùng làm hệ số nhân TDEE. \\ \hline
+\texttt{activity\_level\_text} & String            & Mô tả văn bản tương ứng với mức độ vận động. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{BMI}                   & Number            & Chỉ số khối cơ thể (tính từ \texttt{weight} và \texttt{height}). \\ \hline
+\texttt{BMR}                   & Number            & Tỷ lệ trao đổi chất cơ bản (kcal/ngày). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{TDEE}                  & Number            & Tổng năng lượng tiêu thụ mỗi ngày (kcal). \\ \hline
+\texttt{body\_fat}             & Number            & Tỷ lệ mỡ cơ thể (\%). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{IBW}                   & Number            & Cân nặng lý tưởng (kg) theo công thức Hamwi. \\ \hline
+\texttt{LBM}                   & Number            & Khối lượng nạc cơ thể (kg). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{health\_goal}          & String            & Mục tiêu sức khỏe (VD: Giảm cân, Tăng cơ). \\ \hline
+\texttt{dietary\_preferences}  & String            & Chế độ ăn ưa thích (VD: Low-carb, Keto). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{allergies}             & String            & Danh sách thực phẩm dị ứng (nếu có). \\ \hline
+\texttt{pre\_weight}           & Array[Object]     & Lịch sử cân nặng: mảng \texttt{\{weight, date\}}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{pre\_BMI}              & Array[Object]     & Lịch sử BMI: mảng \texttt{\{value, date\}}. \\ \hline
+\texttt{isDeleted}             & Boolean           & Cờ xóa mềm (soft delete). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}             & Date              & Thời điểm tạo tài khoản (UTC). \\ \hline
+\texttt{updatedAt}             & Date              & Thời điểm cập nhật cuối cùng (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{users}}
+\label{tab:col_users}
 \end{table}
 
-\begin{figure}[H]
-   \centering
-   \includegraphics[width=0.65\textwidth]{Images/Middleware.png}
-   \vspace{1em}
-   \caption{Luồng xử lý request với middleware trong Express.js \cite{VibloMiddleware}}
-   \label{fig:expressjs_middleware}
-\end{figure}
+% ─── 2. REFRESH TOKENS ───────────────────────────────────────────────────────
+\textbf{Collection refresh\_tokens}
+\label{subsec:col_refresh_tokens}
 
-\section{Cơ sở dữ liệu và dịch vụ bổ trợ}
-\label{sec:tech_database}
+Quản lý phiên đăng nhập bảo mật theo cơ chế JWT Refresh Token. Mỗi thiết bị/phiên đăng nhập tạo ra một document riêng. Index TTL tự động xóa token hết hạn. Khi đăng xuất, document bị xóa để thu hồi quyền truy cập.
 
-\subsection{MongoDB và Cloudinary}
-\label{subsec:tech_mongodb}
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}        & ObjectId  & Định danh duy nhất của refresh token. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{user\_id}    & ObjectId  & Tham chiếu đến người dùng sở hữu token (ref: \texttt{users}). \\ \hline
+\texttt{token}      & String    & Chuỗi JWT dùng để cấp lại access token. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{iat}        & Date      & Thời điểm phát hành token (issued at, UTC). \\ \hline
+\texttt{exp}        & Date      & Thời điểm hết hạn token (TTL index tự xóa sau mốc này). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}  & Date      & Thời điểm tạo document (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{refresh\_tokens}}
+\label{tab:col_refresh_tokens}
+\end{table}
 
-\textbf{MongoDB} \cite{MongoDBDocs} là CSDL NoSQL hướng tài liệu (BSON), phù hợp dữ liệu đa dạng của mạng xã hội thể thao. Mongoose ODM cung cấp schema, validation và truy vấn có cấu trúc. Trên sơ đồ, cụm MongoDB Atlas (replica set) thể hiện mô hình vận hành khuyến nghị khi dùng dịch vụ quản lý; khi tự host trên VPS vẫn giữ cùng vai trò logic trong kiến trúc.
+% ─── 3. POSTS ────────────────────────────────────────────────────────────────
+\textbf{Collection posts}
+\label{subsec:col_posts}
 
-\textbf{Cloudinary} là dịch vụ lưu trữ và phân phối media qua CDN; Backend tích hợp SDK để upload, nhận URL an toàn (HTTPS), giảm tải lưu trữ tĩnh trên VPS.
+Lưu bài viết trên bảng tin cộng đồng. Hỗ trợ chia sẻ lại bài viết qua \texttt{parent\_id}. Lượt thích và bình luận lưu ở các collection riêng (\texttt{like\_posts}, \texttt{comment\_posts}).
 
-\begin{figure}[H]
-   \centering
-   \includegraphics[width=0.65\textwidth]{Images/MongodbandSQL.png}
-   \vspace{1em}
-   \caption{So sánh cấu trúc dữ liệu MongoDB và SQL}
-   \label{fig:mongodb_vs_sql}
-\end{figure}
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}          & ObjectId        & Định danh duy nhất của bài viết. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{user\_id}      & ObjectId        & Tác giả bài viết (ref: \texttt{users}). \\ \hline
+\texttt{content}      & String          & Nội dung văn bản của bài viết. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{type}         & Number          & Loại bài: \texttt{0} = bài gốc, \texttt{1} = chia sẻ lại. \\ \hline
+\texttt{status}       & Number          & Trạng thái: \texttt{0} = nháp, \texttt{1} = công khai, \texttt{2} = chỉ mình tôi. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{is\_banned}    & Boolean         & Bài bị Admin ẩn do vi phạm nội dung. \\ \hline
+\texttt{parent\_id}    & ObjectId / null & Tham chiếu bài gốc nếu là bài chia sẻ lại. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{meal\_plan\_id} & ObjectId / null & Liên kết kế hoạch ăn uống được chia sẻ kèm (nếu có). \\ \hline
+\texttt{report\_post}  & Array[Object]   & Danh sách báo cáo vi phạm: mảng \texttt{\{user\_id, reason, created\_at\}}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}    & Date            & Thời điểm đăng bài (UTC). \\ \hline
+\texttt{updatedAt}    & Date            & Thời điểm chỉnh sửa cuối (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{posts}}
+\label{tab:col_posts}
+\end{table}
 
-\subsection{Công nghệ triển khai: máy chủ VPS}
-\label{subsec:tech_deployment_analysis}
+% ─── 4. LIKE_POSTS & COMMENT_POSTS ───────────────────────────────────────────
+\textbf{Collection like\_posts và comment\_posts}
+\label{subsec:col_interactions}
 
-Hệ thống được triển khai trên \textbf{máy chủ VPS} chạy \textbf{Ubuntu}: một máy ảo thuê riêng, tập trung toàn bộ tầng phục vụ ứng dụng (Nginx, tiến trình Node, tùy chọn MongoDB cục bộ). Sơ đồ Hình~\ref{fig:tech_architecture_overview} mô tả \textbf{kiến trúc logic} (thành phần và luồng nghiệp vụ); Hình~\ref{fig:vps_deployment} mô tả \textbf{sơ đồ triển khai VPS}---cách các thành phần đó được bố trí trên một host và điểm ra/vào qua Internet.
+\texttt{like\_posts} ghi nhận lượt thích, đảm bảo mỗi người dùng chỉ thích một bài một lần qua index unique \texttt{(user\_id, post\_id)}. \texttt{comment\_posts} lưu bình luận phân cấp, hỗ trợ reply lồng nhau qua \texttt{parent\_comment\_id}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{Images/IMG/deploy.png}
-    \vspace{0.75em}
-    \caption{Sơ đồ triển khai VPS: truy cập HTTPS, Nginx (TLS, static React, reverse proxy), ứng dụng Node.js (PM2, Express, Socket.IO), MongoDB (local hoặc Atlas), và tích hợp Cloudinary, Goong Maps, API LLM.}
-    \label{fig:vps_deployment}
-\end{figure}
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\multicolumn{3}{|l|}{\textbf{Collection \texttt{like\_posts}}} \\ \hline
+\rowcolor{dbrowalt}
+\texttt{\_id}       & ObjectId & Định danh duy nhất của lượt thích. \\ \hline
+\texttt{user\_id}   & ObjectId & Người dùng đã thích (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{post\_id}   & ObjectId & Bài viết được thích (ref: \texttt{posts}). Unique index \texttt{(user\_id, post\_id)}. \\ \hline
+\texttt{createdAt} & Date     & Thời điểm thích bài (UTC). \\ \hline
+\hline
+\multicolumn{3}{|l|}{\textbf{Collection \texttt{comment\_posts}}} \\ \hline
+\rowcolor{dbrowalt}
+\texttt{\_id}                & ObjectId        & Định danh duy nhất của bình luận. \\ \hline
+\texttt{user\_id}            & ObjectId        & Người viết bình luận (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{post\_id}            & ObjectId        & Bài viết được bình luận (ref: \texttt{posts}). \\ \hline
+\texttt{content}            & String          & Nội dung bình luận. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{parent\_comment\_id} & ObjectId / null & Bình luận cha (\texttt{null} nếu là cấp 1, ObjectId nếu là reply). \\ \hline
+\texttt{is\_banned}          & Boolean         & Bình luận bị Admin ẩn do vi phạm. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}          & Date            & Thời điểm đăng bình luận (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{like\_posts} và \texttt{comment\_posts}}
+\label{tab:col_interactions}
+\end{table}
 
-\subsubsection{Luồng truy cập từ Internet}
-Người dùng kết nối qua \textbf{Internet} tới địa chỉ public của VPS. Toàn bộ giao tiếp trình duyệt--máy chủ nên dùng \textbf{HTTPS (cổng 443)}: Nginx chấm dứt TLS (SSL/TLS), phát hành chứng chỉ ví dụ qua Let's Encrypt hoặc chứng chỉ thương mại. HTTPS là cần thiết cho OAuth, bảo vệ token JWT và cookie phiên.
+% ─── 5. FOLLOWS ──────────────────────────────────────────────────────────────
+\textbf{Collection follows}
+\label{subsec:col_follows}
 
-\subsubsection{Nginx: reverse proxy và phục vụ tĩnh}
-\textbf{Nginx} đóng vai trò điểm vào duy nhất (\textit{edge}) trước ứng dụng:
-\begin{itemize}
-    \item \textbf{SSL/TLS:} giải mã HTTPS, có thể bật HTTP/2, header bảo mật cơ bản.
-    \item \textbf{React (tĩnh):} thư mục kết quả \texttt{npm run build} của Vite/React được cấu hình làm \textit{root} cho đường dẫn gốc \texttt{/}; Nginx phục vụ HTML/CSS/JS tĩnh, hiệu năng tốt và giảm tải cho Node.
-    \item \textbf{Reverse proxy tới Node:} các yêu cầu có tiền tố \texttt{/api/...} được chuyển tiếp tới tiến trình Backend (REST JSON). Các yêu cầu \texttt{/socket.io/...} (và nâng cấp WebSocket tương thích Socket.IO) cũng được proxy tới cùng ứng dụng Node để thông báo, phòng gọi video và tín hiệu thời gian thực hoạt động đúng sau một cổng/domain thống nhất.
-\end{itemize}
-Cấu hình \texttt{proxy\_http\_version 1.1}, \texttt{Upgrade}, \texttt{Connection} cho đoạn WebSocket là thông lệ khi ghép Nginx với Socket.IO.
+Mô hình hóa quan hệ theo dõi của người dùng. Mỗi document là một mũi tên quan hệ \texttt{user\_id → follow\_id}, phục vụ lọc bảng tin ưu tiên nội dung từ người mình theo dõi.
 
-\subsubsection{Backend: Node.js, Express, Socket.IO và PM2}
-Ứng dụng \textbf{Node.js} (Express, TypeScript sau biên dịch) lắng nghe cổng nội bộ (ví dụ \texttt{127.0.0.1:4000}), không expose trực tiếp ra Internet. \textbf{PM2} (hoặc \textbf{systemd}) giữ tiến trình sống, tự khởi động lại khi crash hoặc khi reboot VPS, ghi log tập trung---phù hợp vận hành production trên một máy. Một tiến trình duy nhất phục vụ cả REST và Socket.IO trên cùng HTTP server (mô hình MERN-style đã dùng trong dự án).
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}        & ObjectId & Định danh duy nhất của quan hệ theo dõi. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{user\_id}    & ObjectId & Người thực hiện theo dõi (ref: \texttt{users}). \\ \hline
+\texttt{follow\_id}  & ObjectId & Người được theo dõi (ref: \texttt{users}). Unique index \texttt{(user\_id, follow\_id)}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}  & Date     & Thời điểm bắt đầu theo dõi (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{follows}}
+\label{tab:col_follows}
+\end{table}
 
-\subsubsection{Cơ sở dữ liệu trên VPS hoặc cloud}
-Sơ đồ thể hiện hai hướng tương thích:
-\begin{itemize}
-    \item \textbf{MongoDB (local):} cài trực tiếp trên VPS, giảm độ trễ nội bộ và chi phí cluster; cần sao lưu, cập nhật bản vá và giới hạn tài nguyên RAM/đĩa.
-    \item \textbf{MongoDB Atlas:} CSDL trên đám mây, VPS chỉ chạy ứng dụng; phù hợp khi muốn replica, backup và bảo trì do nhà cung cấp đảm nhiệm.
-\end{itemize}
-Ứng dụng chỉ cần chuỗi kết nối \texttt{MONGODB\_URL} phù hợp; Mongoose giữ nguyên vai trò ODM trong cả hai trường hợp.
+% ─── 6. SPORT EVENTS ─────────────────────────────────────────────────────────
+\textbf{Collection sport\_events}
+\label{subsec:col_sport_events}
 
-\subsubsection{Dịch vụ bên thứ ba (ngoài VPS)}
-Backend gọi ra Internet tới các API không nằm trên VPS:
-\begin{itemize}
-    \item \textbf{Cloudinary}---upload, lưu trữ và CDN cho ảnh/video.
-    \item \textbf{Goong Maps API}---bản đồ, địa lý, tuyến đường (phía client dùng SDK/map tiles; server có thể dùng khi cần).
-    \item \textbf{LLM API}---các nhà cung cấp như OpenAI, Gemini hoặc endpoint tương thích OpenAI (trong mã nguồn hiện tại có tích hợp kiểu OpenAI-compatible, ví dụ Groq) cho tính năng gợi ý, kiểm tra nội dung, v.v.
-\end{itemize}
-Các khóa API được đặt trong biến môi trường trên VPS, không đưa vào mã nguồn.
+Lưu thông tin sự kiện thể thao. Hỗ trợ hai hình thức: Ngoài trời (theo dõi GPS) và Trong nhà (Video Call + AI nhận diện khuôn mặt). Danh sách người tham gia lưu dạng mảng ObjectId nhúng để kiểm tra trạng thái tham gia nhanh.
 
-\subsubsection{Tùy chọn: Docker và email AWS SES}
-\textbf{Docker} \cite{DockerDocs} (Hình~\ref{fig:docker_architecture}) có thể đóng gói Backend hoặc toàn stack để đồng nhất môi trường; trên VPS production vẫn thường cần Nginx phía trước container (hoặc tương đương) cho TLS và tĩnh. \textbf{AWS SES} có thể dùng để gửi email hệ thống, độc lập với việc ứng dụng chạy trên VPS (không bắt buộc EC2/CloudFront).
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.8cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}              & ObjectId        & Định danh duy nhất của sự kiện. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{name}             & String          & Tên sự kiện thể thao. \\ \hline
+\texttt{description}      & String          & Mô tả ngắn. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{detailedDescription} & String        & Mô tả chi tiết đầy đủ . \\ \hline
+\texttt{category}         & String          & Thể loại (VD: Chạy bộ, Đạp xe). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{eventType}        & String          & Hình thức: \texttt{"Ngoài trời"} (GPS) hoặc \texttt{"Trong nhà"} (Video Call + AI). \\ \hline
+\texttt{startDate}        & Date            & Thời điểm bắt đầu sự kiện (UTC). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{endDate}          & Date            & Thời điểm kết thúc sự kiện (UTC). \\ \hline
+\texttt{address}          & String          & Địa điểm diễn ra (nếu ngoài trời). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{maxParticipants}  & Number          & Số người tham gia tối đa. \\ \hline
+\texttt{participants}     & Number          & Số người đã đăng ký hiện tại. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{image}            & String (URL)    & Ảnh đại diện sự kiện trên Cloudinary. \\ \hline
+\texttt{createdBy}        & ObjectId        & Người tạo sự kiện (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{organizer}        & String          & Tên đơn vị / CLB tổ chức. \\ \hline
+\texttt{targetValue}      & Number          & Mục tiêu hoàn thành (VD: 5). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{targetUnit}       & String          & Đơn vị mục tiêu (VD: km, giây). \\ \hline
+\texttt{difficulty}       & String          & Mức độ: \texttt{"easy"}, \texttt{"medium"}, \texttt{"hard"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{requirements}     & String          & Yêu cầu trang thiết bị khi tham gia. \\ \hline
+\texttt{benefits}         & String          & Lợi ích khi tham gia sự kiện. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{participants\_ids} & Array[ObjectId] & Danh sách ObjectId người đã đăng ký (nhúng để kiểm tra nhanh). \\ \hline
+\texttt{isDeleted}        & Boolean         & Cờ xóa mềm (soft delete). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}        & Date            & Thời điểm tạo sự kiện (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{sport\_events}}
+\label{tab:col_sport_events}
+\end{table}
 
-\begin{figure}[H]
-   \centering
-   \includegraphics[width=0.7\textwidth]{Images/Docker-Architecture.png}
-   \vspace{1em}
-   \caption{Kiến trúc Docker \cite{DockerDocs} (công cụ đóng gói tùy chọn khi triển khai)}
-   \label{fig:docker_architecture}
-\end{figure}
+% ─── 7. SPORT EVENT PROGRESS ─────────────────────────────────────────────────
+\textbf{Collection sport\_event\_progress}
+\label{subsec:col_event_progress}
 
-\section{Kết luận}
+Ghi nhận kết quả thi đua của từng người dùng trong từng hoạt động sự kiện. Hỗ trợ hai nguồn: GPS tự động và Video Call. Phục vụ bảng xếp hạng tổng của sự kiện.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}           & ObjectId     & Định danh duy nhất của bản ghi tiến độ. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{eventId}       & ObjectId     & Sự kiện liên kết (ref: \texttt{sport\_events}). \\ \hline
+\texttt{userId}        & ObjectId     & Người tham gia (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{date}          & Date         & Ngày ghi nhận kết quả (UTC). \\ \hline
+\texttt{value}         & Number       & Giá trị đạt được (VD: 5.2 km). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{unit}          & String       & Đơn vị đo (VD: km, giây). \\ \hline
+\texttt{distance}      & Number       & Quãng đường (mét). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{time}          & String       & Thời gian hoàn thành (mm:ss). \\ \hline
+\texttt{calories}      & Number       & Năng lượng tiêu hao (kcal). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{activeSeconds} & Number       & Tổng giây vận động thực tế. \\ \hline
+\texttt{source}        & String       & Nguồn dữ liệu: \texttt{"gps"} hoặc \texttt{"video"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{proofImage}    & String (URL) & Ảnh minh chứng hoàn thành trên Cloudinary. \\ \hline
+\texttt{notes}         & String       & Ghi chú thêm của người dùng. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{is\_deleted}    & Boolean      & Cờ xóa mềm. \\ \hline
+\texttt{createdAt}     & Date         & Thời điểm ghi nhận (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{sport\_event\_progress}}
+\label{tab:col_event_progress}
+\end{table}
+
+% ─── 8. ACTIVITY TRACKING ────────────────────────────────────────────────────
+\textbf{Collection activity\_tracking}
+\label{subsec:col_activity_tracking}
+
+Ghi nhận các hoạt động ngoài trời theo thời gian thực qua GPS. Mảng \texttt{gpsRoute} nhúng toàn bộ chuỗi tọa độ để vẽ lại lộ trình. Liên kết với \texttt{sport\_events} hoặc \texttt{challenges} để ghi nhận hoạt động GPS.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}            & ObjectId      & Định danh duy nhất của phiên hoạt động. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{userId}         & ObjectId      & Người dùng thực hiện (ref: \texttt{users}). \\ \hline
+\texttt{eventId}        & ObjectId/null & Sự kiện liên kết (ref: \texttt{sport\_events}), nếu có. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{challengeId}    & ObjectId/null & Thử thách liên kết (ref: \texttt{challenges}), nếu có. \\ \hline
+\texttt{activityType}   & String        & Loại hoạt động (VD: Chạy bộ, Đạp xe). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{name}           & String        & Tên phiên (VD: Chạy buổi sáng). \\ \hline
+\texttt{status}         & String        & Trạng thái: \texttt{"active"}, \texttt{"paused"}, \texttt{"completed"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{startTime}      & Date          & Thời điểm bắt đầu (UTC). \\ \hline
+\texttt{endTime}        & Date          & Thời điểm kết thúc (UTC). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{totalDuration}  & Number        & Tổng thời gian vận động (giây). \\ \hline
+\texttt{totalDistance}  & Number        & Tổng quãng đường (mét). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{avgSpeed}       & Number        & Tốc độ trung bình (km/h). \\ \hline
+\texttt{maxSpeed}       & Number        & Tốc độ tối đa đạt được (km/h). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{avgPace}        & Number        & Pace trung bình (phút/km). \\ \hline
+\texttt{calories}       & Number        & Năng lượng tiêu hao (kcal). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{gpsRoute}       & Array[Object] & Chuỗi tọa độ GPS: mảng \texttt{\{lat, lng, timestamp, speed\}}. \\ \hline
+\texttt{pauseIntervals} & Array[Object] & Các khoảng tạm dừng trong phiên. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{source}         & String        & Nguồn dữ liệu (VD: \texttt{"app"}). \\ \hline
+\texttt{createdAt}      & Date          & Thời điểm tạo bản ghi (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{activity\_tracking}}
+\label{tab:col_activity_tracking}
+\end{table}
+
+% ─── 9. CHALLENGES ───────────────────────────────────────────────────────────
+\textbf{Collection challenges}
+\label{subsec:col_challenges}
+
+Lưu thông tin thử thách cộng đồng (ăn uống, thể dục hoặc ngoài trời). Hỗ trợ tạo thủ công hoặc AI đề xuất.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}               & ObjectId      & Định danh duy nhất của thử thách. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{title}             & String        & Tiêu đề thử thách. \\ \hline
+\texttt{description}       & String        & Mô tả ngắn. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{image}             & String (URL)  & Ảnh đại diện trên Cloudinary. \\ \hline
+\texttt{creator\_id}        & ObjectId      & Người tạo (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{challenge\_type}    & String        & Loại: \texttt{"fitness"} (thể dục), \texttt{"nutrition"} (ăn uống), \texttt{"outdoor"} (ngoài trời). \\ \hline
+\texttt{category}          & String        & Phân mục cụ thể (VD: Core training). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{goal\_type}         & String        & Kiểu mục tiêu: \texttt{"duration"}, \texttt{"distance"}, \texttt{"calories"}. \\ \hline
+\texttt{goal\_value}        & Number        & Giá trị mục tiêu (VD: 60). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{goal\_unit}         & String        & Đơn vị (VD: giây, km, kcal). \\ \hline
+\texttt{kcal\_per\_unit}     & Number        & Năng lượng tiêu hao mỗi đơn vị hoạt động. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{start\_date}        & Date          & Ngày bắt đầu thử thách (UTC). \\ \hline
+\texttt{end\_date}          & Date          & Ngày kết thúc thử thách (UTC). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{visibility}        & String        & Hiển thị: \texttt{"public"} hoặc \texttt{"private"}. \\ \hline
+\texttt{status}            & String        & Trạng thái: \texttt{"active"}, \texttt{"completed"}, \texttt{"cancelled"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{difficulty}        & String        & Mức độ: \texttt{"easy"}, \texttt{"medium"}, \texttt{"hard"}. \\ \hline
+\texttt{badge\_emoji}       & String        & Huy hiệu emoji khi hoàn thành. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{participants\_count} & Number       & Tổng số người đã tham gia. \\ \hline
+\texttt{exercises}         & Array[Object] & Danh sách bài tập nhúng kèm: \texttt{\{exercise\_id, exercise\_name, sets\}}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{is\_deleted}        & Boolean       & Cờ xóa mềm. \\ \hline
+\texttt{createdAt}         & Date          & Thời điểm tạo (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{challenges}}
+\label{tab:col_challenges}
+\end{table}
+
+% ─── 10. CHALLENGE PARTICIPANTS ──────────────────────────────────────────────
+\textbf{Collection challenge\_participants}
+\label{subsec:col_challenge_participants}
+
+Theo dõi tiến độ từng người tham gia thử thách. Index unique \texttt{(challenge\_id, user\_id)} đảm bảo mỗi người chỉ tham gia một lần. Mỗi lần check-in hằng ngày cập nhật \texttt{current\_value}, \texttt{streak\_count} và mảng \texttt{completed\_days}.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.8cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}              & ObjectId      & Định danh duy nhất của bản ghi tham gia. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{challenge\_id}     & ObjectId      & Thử thách đăng ký (ref: \texttt{challenges}). Unique index \texttt{(challenge\_id, user\_id)}. \\ \hline
+\texttt{user\_id}          & ObjectId      & Người tham gia (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{goal\_value}       & Number        & Mục tiêu cần đạt. \\ \hline
+\texttt{current\_value}    & Number        & Giá trị hiện tại đã hoàn thành. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{is\_completed}     & Boolean       & Đánh dấu hoàn thành toàn bộ thử thách. \\ \hline
+\texttt{completed\_at}     & Date / null   & Thời điểm hoàn thành (UTC), null nếu chưa xong. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{joined\_at}        & Date          & Thời điểm đăng ký thử thách (UTC). \\ \hline
+\texttt{last\_activity\_at} & Date          & Lần check-in gần nhất (UTC). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{active\_days}      & Array[String] & Danh sách ngày có hoạt động (yyyy-mm-dd). \\ \hline
+\texttt{completed\_days}   & Array[String] & Danh sách ngày đã hoàn thành mục tiêu ngày. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{streak\_count}     & Number        & Số ngày liên tiếp hoàn thành (streak). \\ \hline
+\texttt{status}           & String        & Tiến trình: \texttt{"in\_progress"}, \texttt{"completed"}, \texttt{"failed"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}        & Date          & Thời điểm tạo bản ghi (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{challenge\_participants}}
+\label{tab:col_challenge_participants}
+\end{table}
+
+% ─── 11. EXERCISES ───────────────────────────────────────────────────────────
+\textbf{Collection exercises}
+\label{subsec:col_exercises}
+
+Kho bài tập hệ thống do Admin quản lý. Lưu đầy đủ thông tin kỹ thuật: nhóm cơ, thiết bị, hướng dẫn thực hiện, video và cấu hình hiệp mặc định. Được tham chiếu bởi \texttt{workout\_sessions} và \texttt{challenges}.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.8cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}              & ObjectId      & Định danh duy nhất của bài tập. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{name}             & String        & Tên bài tập (tiếng Anh). \\ \hline
+\texttt{name\_vi}          & String        & Tên bài tập (tiếng Việt). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{description}      & String        & Mô tả ngắn về bài tập. \\ \hline
+\texttt{instructions}     & Array[String] & Các bước thực hiện theo trình tự. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{tips}             & String        & Mẹo/lưu ý khi thực hiện bài tập. \\ \hline
+\texttt{primary\_muscles}  & Array[String] & Các nhóm cơ chính được tác động. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{secondary\_muscles} & Array[String] & Các nhóm cơ phụ. \\ \hline
+\texttt{equipment}        & Array[String] & Tên thiết bị cần dùng. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{muscle\_group\_ids} & Array[ObjectId] & Tham chiếu nhóm cơ (ref: \texttt{muscle\_groups}). \\ \hline
+\texttt{image\_url}        & String (URL)  & Ảnh minh họa bài tập trên Cloudinary. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{video\_url}        & String (URL)  & Video hướng dẫn trên Cloudinary. \\ \hline
+\texttt{category}         & String        & Nhóm bài tập: \texttt{"strength"}, \texttt{"cardio"}, \texttt{"flexibility"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{difficulty}       & String        & Mức độ: \texttt{"beginner"}, \texttt{"intermediate"}, \texttt{"advanced"}. \\ \hline
+\texttt{duration\_default} & Number        & Thời gian mặc định mỗi hiệp (phút). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{rest\_time\_default} & Number       & Nghỉ giữa các hiệp mặc định (giây). \\ \hline
+\texttt{default\_sets}     & Array[Object] & Cấu hình hiệp mặc định: \texttt{\{set\_number, reps, weight, calories\_per\_unit\}}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{is\_active}        & Boolean       & Bài tập đang hoạt động (hiển thị cho người dùng). \\ \hline
+\texttt{isDeleted}        & Boolean       & Cờ xóa mềm. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}        & Date          & Thời điểm tạo (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{exercises}}
+\label{tab:col_exercises}
+\end{table}
+
+% ─── 12. WORKOUT SESSIONS ────────────────────────────────────────────────────
+\textbf{Collection workout\_sessions}
+\label{subsec:col_workout_sessions}
+
+Ghi nhận buổi tập luyện thực tế. Danh sách bài tập cùng các hiệp thực hiện được nhúng trực tiếp để truy vấn nhanh lịch sử mà không cần join. Hỗ trợ chế độ AI gợi ý giáo án luyện tập qua \texttt{is\_smart\_mode}.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.8cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}               & ObjectId      & Định danh duy nhất của buổi tập. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{user\_id}           & ObjectId      & Người dùng thực hiện (ref: \texttt{users}). \\ \hline
+\texttt{started\_at}        & Date          & Thời điểm bắt đầu buổi tập (UTC). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{finished\_at}       & Date          & Thời điểm kết thúc buổi tập (UTC). \\ \hline
+\texttt{duration\_minutes}  & Number        & Tổng thời gian tập (phút). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{total\_calories}    & Number        & Tổng năng lượng tiêu hao (kcal). \\ \hline
+\texttt{total\_sets}        & Number        & Tổng số hiệp thực hiện. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{total\_reps}        & Number        & Tổng số lần lặp. \\ \hline
+\texttt{total\_volume}      & Number        & Tổng khối lượng nâng (kg \texttimes{} reps). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{total\_skipped\_sets} & Number       & Số hiệp bỏ qua. \\ \hline
+\texttt{muscles\_targeted}  & Array[String] & Các nhóm cơ được tập trong buổi. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{equipment\_used}    & Array[String] & Thiết bị đã dùng. \\ \hline
+\texttt{status}            & String        & Trạng thái: \texttt{"in\_progress"}, \texttt{"completed"}. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{is\_smart\_mode}     & Boolean       & Buổi tập do AI gợi ý giáo án. \\ \hline
+\texttt{target\_kcal}       & Number / null & Mục tiêu kcal đặt trước (chế độ smart). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{exercises}         & Array[Object] & Danh sách bài tập nhúng kèm hiệp thực hiện: \texttt{\{exercise\_id, exercise\_name, sets, ...\}}. \\ \hline
+\texttt{createdAt}         & Date          & Thời điểm tạo bản ghi (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{workout\_sessions}}
+\label{tab:col_workout_sessions}
+\end{table}
+
+% ─── 13. NOTIFICATIONS ───────────────────────────────────────────────────────
+\textbf{Collection notifications}
+\label{subsec:col_notifications}
+
+Lưu trữ và phân phối thông báo đến người dùng. Thông báo được đẩy thời gian thực qua Socket.IO và lưu vào collection để hiển thị lại trong lịch sử. Index theo \texttt{(receiver\_id, is\_read, createdAt)} giúp truy vấn nhanh số thông báo chưa đọc.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{3.8cm}|p{2.6cm}|X|}
+\hline
+\rowcolor{dbheadblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{Trường}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Kiểu dữ liệu}} &
+\multicolumn{1}{c|}{\color{white}\textbf{Mô tả}} \\
+\hline
+\texttt{\_id}                 & ObjectId      & Định danh duy nhất của thông báo. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{sender\_id}           & ObjectId      & Người gửi (ref: \texttt{users}), null nếu là hệ thống gửi. \\ \hline
+\texttt{receiver\_id}         & ObjectId      & Người nhận (ref: \texttt{users}). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{type}                & Number        & Loại thông báo (mã số: 1 = thích, 2 = bình luận, 3 = theo dõi,...). \\ \hline
+\texttt{name\_notification}   & String        & Tên loại thông báo (VD: Like bài viết). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{content}             & String        & Nội dung hiển thị cho người nhận. \\ \hline
+\texttt{link\_id}             & String        & ID đối tượng liên quan (bài viết, sự kiện,...). \\ \hline
+\rowcolor{dbrowalt}
+\texttt{metadata}            & Object        & Dữ liệu mở rộng liên quan (VD: \texttt{\{post\_id\}}). \\ \hline
+\texttt{is\_read}             & Boolean       & Người dùng đã đọc thông báo chưa. \\ \hline
+\rowcolor{dbrowalt}
+\texttt{createdAt}           & Date          & Thời điểm tạo thông báo (UTC). \\ \hline
+\end{tabularx}
+\caption{Cấu trúc Collection \texttt{notifications}}
+\label{tab:col_notifications}
+\end{table}
+
+
+\section{Kết luận chương}
 \label{sec:tech_conclusion}
 
-Stack và kiến trúc được chọn theo các tiêu chí: đáp ứng chức năng mạng xã hội thể thao, hiệu năng tốt, khả năng mở rộng, cộng đồng lớn và tốc độ phát triển. React + Vite + Tailwind/DaisyUI xây dựng giao diện hiện đại; Node.js + Express + TypeScript phục vụ REST và Socket.IO; MongoDB + Mongoose lưu trữ linh hoạt; Cloudinary đảm nhiệm media; tích hợp LLM (API kiểu OpenAI), Goong Maps và OAuth bổ sung năng lực thông minh và bản đồ. Triển khai thực tế trên \textbf{VPS Ubuntu} (Hình~\ref{fig:vps_deployment}) dùng Nginx (HTTPS, static build, proxy \texttt{/api} và \texttt{/socket.io}), PM2 cho Node, MongoDB local hoặc Atlas, và các API ngoài cho media, bản đồ và LLM. Thiết kế chi tiết use case và thành phần hệ thống được trình bày tại Chương~\ref{chap:system_design}.
+Chương 4 đã trình bày chi tiết về nền tảng kỹ thuật và thiết kế hệ thống của dự án FitConnect. Thông qua việc phân tích kiến trúc Client-Server, lựa chọn hệ sinh thái công nghệ hiện đại (MERN Stack kết hợp TypeScript) và thiết kế cơ sở dữ liệu NoSQL linh hoạt với 13 collection được chuẩn hóa, hệ thống đã hình thành một khung sườn vững chắc, đáp ứng tốt các yêu cầu về hiệu năng và khả năng mở rộng. 
 
-\textbf{Hướng phát triển:} Redis cache, hàng đợi message, CI/CD, giám sát (Prometheus/Grafana), mở rộng đa máy chủ hoặc tách tier khi tải tăng.
+Điểm nhấn của thiết kế nằm ở việc khai thác sức mạnh từ các dịch vụ đám mây và API tích hợp (Cloudinary, Goong Maps, Groq AI), giúp tối ưu hóa tài nguyên server trong khi vẫn đảm bảo cung cấp các tính năng thông minh và đa dạng cho người dùng. Những thiết kế chi tiết về cấu trúc dữ liệu và kiến trúc logic này chính là cơ sở quan trọng để tiến hành hiện thực hóa hệ thống thực tế, nội dung này sẽ được trình bày chi tiết trong Chương 5.

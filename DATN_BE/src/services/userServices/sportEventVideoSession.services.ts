@@ -5,6 +5,7 @@ import SportCategoryModel from '~/models/schemas/sportCategory.schema'
 import { Types } from 'mongoose'
 import { roundKcal } from '~/utils/math.utils'
 import { capVideoSessionSeconds, resolveIndoorSessionIdForJoin } from './sportEventVideoSession.helpers'
+import { getSportEventProgressCountFromDate, isDailySportEventProgressAllowedAt } from '~/utils/sportEventProgressWindow.utils'
 
 // ─── In-memory presence tracker ─────────────────────────────────────────────
 // Tracks face-detection state per active video session (vsId → state)
@@ -59,12 +60,10 @@ class SportEventVideoSessionService {
         }
 
         const now = new Date()
-        // Cho phép join sớm 10 phút trước khi bắt đầu
-        if (event.startDate) {
-            const startTime = new Date(event.startDate).getTime()
-            if (now.getTime() < startTime - 10 * 60 * 1000) {
-                throw new Error('Sự kiện chưa bắt đầu. Chỉ có thể vào phòng 10 phút trước thời gian quy định.')
-            }
+        if (!isDailySportEventProgressAllowedAt(event.startDate, event.endDate, now)) {
+            throw new Error(
+                'Sự kiện chưa mở video call trong ngày. Chỉ có thể vào phòng từ 10 phút trước giờ diễn ra trong ngày đã chọn.'
+            )
         }
         // Chặn join nếu sự kiện đã kết thúc
         if (event.endDate && new Date(event.endDate) < now) {
@@ -280,8 +279,8 @@ class SportEventVideoSessionService {
         const event = await SportEventModel.findById(eventId)
         if (!event || event.eventType !== 'Trong nhà') return []
 
-        const startDate = event?.startDate ? new Date(event.startDate) : null
-        const dateFilter = startDate ? { joinedAt: { $gte: startDate } } : {}
+        const countFrom = getSportEventProgressCountFromDate(event?.startDate)
+        const dateFilter = countFrom ? { joinedAt: { $gte: countFrom } } : {}
 
         const sessions = await SportEventVideoSessionModel
             .find({ eventId, userId, is_deleted: { $ne: true }, ...dateFilter })
@@ -333,8 +332,8 @@ class SportEventVideoSessionService {
             }
         }
 
-        const startDate = event?.startDate ? new Date(event.startDate) : null
-        const dateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+        const countFrom = getSportEventProgressCountFromDate(event?.startDate)
+        const dateMatch = countFrom ? { joinedAt: { $gte: countFrom } } : {}
 
         const stats = await SportEventVideoSessionModel.aggregate([
             {

@@ -41,7 +41,7 @@ const PRIVACY_OPTIONS = [
  * - Embed sport_event_id vào content: [sport-event:ID]
  * - Nhấn vào preview trong PostCard → navigate đến trang sự kiện
  */
-export default function SportEventShareModal({ event, onClose, eventId }) {
+export default function SportEventShareModal({ event, onClose, eventId, deletedCategoryNames = new Set() }) {
     const { profile } = useContext(AppContext)
     const navigate = useNavigate()
     const queryClient = useQueryClient()
@@ -283,7 +283,7 @@ function SportEventPreviewCardInModal({ event, isOnline }) {
                     </span>
                     {event.category && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium">
-                            {event.category}
+                            {deletedCategoryNames.has(event.category) ? 'Danh mục đã xóa' : event.category}
                         </span>
                     )}
                 </div>

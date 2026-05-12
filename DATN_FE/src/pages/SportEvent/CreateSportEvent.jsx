@@ -284,6 +284,7 @@ Người dùng muốn tạo một sự kiện thể thao. Dưới đây là mô 
 "${aiDescription.trim()}"
 
 Hãy điền đầy đủ tất cả các trường sau thành một JSON object hợp lệ. Tuân thủ các quy tắc:
+0. ĐẦU VÀO CỰC NGẮN (vài từ, không có ngày/địa điểm): coi như "ý tưởng nhanh" — suy luận đầy đủ mọi trường; map từ khoá → môn: chạy/5k/10k/HM/FM/marathon→Chạy bộ; đạp/xe đạp→Đạp xe; bơi→Bơi lội; đá banh/bóng đá→Bóng đá; gym/tạ/fitness→Gym / Fitness; yoga→Yoga; pickleball/cầu lông→Cầu lông hoặc môn gần nhất trong danh mục; leo núi/trekking→Leo núi; tennis→Đánh tennis; "trong nhà"/yoga/pilates/zumba theo danh mục Trong nhà tương ứng.
 1. Nếu mô tả đã có thông tin rõ ràng cho một trường → dùng thông tin đó.
 2. Nếu không có → tự suy luận hợp lý, thực tế, phù hợp văn hóa Việt Nam và ngữ cảnh thể thao.
 3. Ngày: định dạng YYYY-MM-DD. startDate phải >= ${today}. endDate phải >= startDate.
@@ -592,7 +593,7 @@ JSON output (chỉ object, không gì khác):
                   value={aiDescription}
                   onChange={e => setAiDescription(e.target.value)}
                   rows={5}
-                  placeholder={`Ví dụ: "Giải chạy bộ bán marathon buổi sáng tại công viên Tao Đàn, TP.HCM, dành cho cộng đồng yêu thể thao, khoảng 100 người, chạy 21km, tổ chức vào cuối tháng 3/2026..."`}
+                  placeholder={`Ngắn gọn vẫn được: "giải chạy 5k", "yoga trong nhà 1 tuần", "bơi sáng hồ Xuân Hương". Hoặc mô tả dài như: giải bán marathon buổi sáng Tao Đàn, ~100 người, 21km, cuối tháng 3...`}
                   className="w-full px-4 py-3 rounded-2xl border-2 border-purple-100 dark:border-purple-900 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none resize-none transition text-sm leading-relaxed"
                 />
                 <p className="text-xs text-gray-400 mt-1">Càng chi tiết, AI càng điền chính xác hơn. Có thể dùng tiếng Việt.</p>

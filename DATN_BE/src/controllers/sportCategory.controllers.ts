@@ -18,6 +18,22 @@ export const getSportCategoriesController = async (req: Request, res: Response) 
     }
 }
 
+export const getSportCategoriesWithStatusController = async (req: Request, res: Response) => {
+    try {
+        const categories = await sportCategoryService.getSportCategoriesAllWithStatus()
+        return res.status(HTTP_STATUS.OK).json({
+            message: 'Lấy danh sách danh mục thể thao (kèm trạng thái) thành công',
+            result: categories
+        })
+    } catch (error) {
+        const errMsg = (error as Error).message
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            message: errMsg,
+            errorInfo: { message: errMsg }
+        })
+    }
+}
+
 export const getAllSportCategoriesAdminController = async (req: Request, res: Response) => {
     try {
         const categories = await sportCategoryService.getAllSportCategoriesAdmin()

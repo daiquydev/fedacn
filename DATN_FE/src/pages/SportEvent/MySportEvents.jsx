@@ -106,6 +106,8 @@ const MySportEvents = () => {
 
   // Filter state for BOTH tabs
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'ongoing' | 'upcoming' | 'ended'
+  // Created tab: loại hình sự kiện (Ngoài trời / Trong nhà)
+  const [createdEventType, setCreatedEventType] = useState('all')
 
   // Debounce sidebar search for created events
   const [createdDebouncedSearch, setCreatedDebouncedSearch] = useState('')
@@ -132,15 +134,21 @@ const MySportEvents = () => {
   }, [joinedSearch])
 
   const { data: joinedCategoriesData } = useQuery({
-    queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll(),
-    enabled: activeTab === 'joined',
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
     staleTime: 60_000
   })
   const joinedDbCategories = joinedCategoriesData?.data?.result || []
+  // Set tên danh mục đã bị xóa — để resolve nhãn hiển thị
+  const deletedCategoryNames = useMemo(
+    () => new Set(joinedDbCategories.filter(c => c.isDeleted).map(c => c.name)),
+    [joinedDbCategories]
+  )
+  // Dropdown filter: chỉ hiện danh mục còn hoạt động
   const joinedAvailableCategories = useMemo(() => {
-    if (joinedEventType === 'all') return joinedDbCategories
-    return joinedDbCategories.filter((cat) => cat.type === joinedEventType)
+    const active = joinedDbCategories.filter((cat) => !cat.isDeleted)
+    if (joinedEventType === 'all') return active
+    return active.filter((cat) => cat.type === joinedEventType)
   }, [joinedDbCategories, joinedEventType])
 
   const clearJoinedListFilters = () => {
@@ -169,12 +177,13 @@ const MySportEvents = () => {
   // Reset created page when filters change
   useEffect(() => {
     setCreatedPage(1)
-  }, [createdDebouncedSearch, statusFilter])
+  }, [createdDebouncedSearch, statusFilter, createdEventType])
 
   // Reset filter when switching tabs
   const handleTabChange = (tab) => {
     setActiveTab(tab)
     setStatusFilter('all')
+    setCreatedEventType('all')
     setMobileShowDetail(false)
   }
 
@@ -190,12 +199,13 @@ const MySportEvents = () => {
   }, [statsData])
 
   const { data: createdEventsData, isLoading: isLoadingCreated } = useQuery({
-    queryKey: ['myCreatedEvents', createdPage, createdDebouncedSearch, statusFilter],
+    queryKey: ['myCreatedEvents', createdPage, createdDebouncedSearch, statusFilter, createdEventType],
     queryFn: () => getMyEvents({ 
       page: createdPage, 
       limit: 50,
       search: createdDebouncedSearch || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      eventType: createdEventType !== 'all' ? createdEventType : undefined
     }),
     keepPreviousData: true
   })
@@ -502,7 +512,11 @@ const MySportEvents = () => {
               mobileShowDetail={mobileShowDetail}
               onMobileBack={() => setMobileShowDetail(false)}
               statusFilter={statusFilter}
-              onClearFilter={() => setStatusFilter('all')}
+              onClearFilter={() => { setStatusFilter('all'); setCreatedEventType('all') }}
+              // Event type filter
+              createdEventType={createdEventType}
+              onCreatedEventTypeChange={setCreatedEventType}
+              deletedCategoryNames={deletedCategoryNames}
             />
           ) : (
             <JoinedTabContent
@@ -593,7 +607,9 @@ function CreatedTabContent({
   leaderboard, overallProgress,
   onDeleteClick, navigate,
   mobileShowDetail, onMobileBack,
-  statusFilter, onClearFilter
+  statusFilter, onClearFilter,
+  createdEventType, onCreatedEventTypeChange,
+  deletedCategoryNames
 }) {
   if (isLoading) {
     return (
@@ -604,7 +620,7 @@ function CreatedTabContent({
   }
 
   if (createdTotal === 0) {
-    if (sidebarSearch || statusFilter !== 'all') {
+    if (sidebarSearch || statusFilter !== 'all' || createdEventType !== 'all') {
       return (
         <div className="text-center py-20 px-6">
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -640,8 +656,8 @@ function CreatedTabContent({
     <div className="flex flex-col md:flex-row min-h-[500px]">
       {/* ─── SIDEBAR (event list) ─── */}
       <div className={`md:w-72 lg:w-80 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 ${mobileShowDetail ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
-        {/* Search */}
-        <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+        {/* Search + Event Type Filter */}
+        <div className="p-3 border-b border-gray-100 dark:border-gray-700 space-y-2">
           <div className="relative">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
             <input
@@ -651,6 +667,31 @@ function CreatedTabContent({
               onChange={(e) => onSidebarSearchChange(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white placeholder:text-gray-400"
             />
+          </div>
+          {/* Event type dropdown */}
+          <div className="flex bg-gray-100 dark:bg-gray-700/60 p-1 rounded-lg gap-0.5">
+            {[
+              { value: 'all', label: 'Tất cả' },
+              { value: 'Ngoài trời', label: '🌿 Ngoài trời' },
+              { value: 'Trong nhà', label: '🏠 Trong nhà' }
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onCreatedEventTypeChange(value)}
+                className={`flex-1 px-2 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all ${
+                  createdEventType === value
+                    ? value === 'Ngoài trời'
+                      ? 'bg-white dark:bg-gray-800 text-green-600 shadow-sm'
+                      : value === 'Trong nhà'
+                        ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                        : 'bg-white dark:bg-gray-800 text-indigo-600 shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -718,6 +759,7 @@ function CreatedTabContent({
             participantSort={participantSort}
             onParticipantPageChange={onParticipantPageChange}
             onParticipantSearchChange={onParticipantSearchChange}
+            deletedCategoryNames={deletedCategoryNames}
             onParticipantStatusChange={onParticipantStatusChange}
             onParticipantSortChange={onParticipantSortChange}
             isLoadingParticipants={isLoadingParticipants}
@@ -754,7 +796,8 @@ function EventDashboard({
   onParticipantPageChange, onParticipantSearchChange, onParticipantStatusChange, onParticipantSortChange,
   isLoadingParticipants, onKickClick,
   leaderboard, overallProgress,
-  onDeleteClick, navigate, onMobileBack
+  onDeleteClick, navigate, onMobileBack,
+  deletedCategoryNames
 }) {
   const status = getStatusBadge(event)
 
@@ -829,7 +872,7 @@ function EventDashboard({
           />
         )}
         {activeSubTab === 'settings' && (
-          <SettingsSubTab event={event} onDeleteClick={onDeleteClick} navigate={navigate} />
+          <SettingsSubTab event={event} onDeleteClick={onDeleteClick} navigate={navigate} deletedCategoryNames={deletedCategoryNames} />
         )}
       </div>
     </div>
@@ -1170,7 +1213,7 @@ function ParticipantsSubTab({
 // ═══════════════════════════════════════════════════════════
 // SUB-TAB: Settings (Quick edit)
 // ═══════════════════════════════════════════════════════════
-function SettingsSubTab({ event, onDeleteClick, navigate }) {
+function SettingsSubTab({ event, onDeleteClick, navigate, deletedCategoryNames = new Set() }) {
   return (
     <div className="space-y-6 max-w-xl">
       {/* Quick info */}
@@ -1185,7 +1228,10 @@ function SettingsSubTab({ event, onDeleteClick, navigate }) {
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Thể loại</span>
-            <span className="text-gray-800 dark:text-white font-medium">{event.category}</span>
+            {deletedCategoryNames.has(event.category)
+              ? <span className="text-gray-400 dark:text-gray-500 font-medium italic">Danh mục đã xóa</span>
+              : <span className="text-gray-800 dark:text-white font-medium">{event.category}</span>
+            }
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Loại sự kiện</span>

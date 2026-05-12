@@ -12,6 +12,10 @@ import {
 import { MdVideocam } from 'react-icons/md'
 import moment from 'moment'
 import toast from 'react-hot-toast'
+import {
+    isDailySportEventProgressAllowedAt,
+    nextDailySportEventProgressWindowOpensAt
+} from '../../../utils/sportEventProgressWindow'
 
 import {
     getEventSessions,
@@ -140,29 +144,51 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
         )
     }, [videoSessions, event?.startDate])
 
-    // ── Window calculation for event
-    const eventStartMoment = useMemo(() => moment(event?.startDate), [event?.startDate])
-    const eventEndMoment = useMemo(() => moment(event?.endDate), [event?.endDate])
-
+    // ── Cửa sổ video: mỗi ngày trong khoảng sự kiện mở từ (giờ trên startDate) − 10 phút
     const getWindowStatus = useCallback(() => {
         const now = moment()
-        const secondsBefore = eventStartMoment.diff(now, 'seconds')
-        const isEnded = now.isAfter(eventEndMoment)
-        const isActive = secondsBefore <= 0 && !isEnded  // event has started
-        const canJoin = secondsBefore <= 600 && !isEnded  // <=10 minutes before start
-        return { secondsBefore, isEnded, isActive, canJoin }
-    }, [eventStartMoment, eventEndMoment])
+        const t0 = moment(event?.startDate)
+        const isEnded =
+            event?.endDate && now.clone().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+
+        const officialToday =
+            t0.isValid() &&
+            now
+                .clone()
+                .startOf('day')
+                .hour(t0.hour())
+                .minute(t0.minute())
+                .second(t0.second())
+                .millisecond(t0.millisecond())
+        const secondsBeforeOfficial = officialToday
+            ? officialToday.diff(now, 'seconds')
+            : Number.POSITIVE_INFINITY
+
+        const nextOpen = nextDailySportEventProgressWindowOpensAt(event?.startDate, event?.endDate, now)
+        const secondsUntilCanJoin =
+            nextOpen && nextOpen.isValid() ? nextOpen.diff(now, 'seconds') : Number.POSITIVE_INFINITY
+
+        const canJoin =
+            !!event?.startDate &&
+            t0.isValid() &&
+            !isEnded &&
+            isDailySportEventProgressAllowedAt(event.startDate, event.endDate, now)
+
+        const isActive = secondsBeforeOfficial <= 0 && !isEnded && t0.isValid()
+        return { secondsBeforeOfficial, secondsUntilCanJoin, isEnded, isActive, canJoin }
+    }, [event?.startDate, event?.endDate])
 
     // ── Countdown timer
     useEffect(() => {
         const update = () => {
-            const { secondsBefore, canJoin, isEnded } = getWindowStatus()
+            const { secondsUntilCanJoin, canJoin, isEnded } = getWindowStatus()
             if (isEnded || canJoin) {
                 setCountdown(null)
                 clearInterval(countdownRef.current)
                 return
             }
-            setCountdown(secondsBefore > 120 * 60 ? null : secondsBefore)
+            const sec = Math.max(0, secondsUntilCanJoin)
+            setCountdown(sec > 120 * 60 ? null : sec)
         }
         update()
         countdownRef.current = setInterval(update, 1000)
@@ -429,7 +455,7 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
         }, 300)
     }, [refetchSessions, queryClient, eventId])
 
-    const { canJoin, isEnded, secondsBefore } = getWindowStatus()
+    const { canJoin, isEnded, secondsBeforeOfficial, secondsUntilCanJoin } = getWindowStatus()
 
     const metricUnit = activeMetric === 'calories' ? 'kcal' : 'phút'
     const barColor = activeMetric === 'calories' ? '#F97316' : '#3B82F6'
@@ -501,17 +527,17 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
                             <p className="text-sm opacity-80">Sự kiện đã kết thúc</p>
                         ) : canJoin ? (
                             <p className="text-sm opacity-90">
-                                {secondsBefore > 0
-                                    ? `🟡 Sự kiện bắt đầu trong ${formatCountdown(secondsBefore)} — Bạn có thể vào sớm`
+                                {secondsBeforeOfficial > 0
+                                    ? `🟡 Sự kiện bắt đầu trong ${formatCountdown(secondsBeforeOfficial)} — Bạn có thể vào sớm`
                                     : '🟢 Sự kiện đang diễn ra — Tham gia ngay!'
                                 }
                             </p>
                         ) : countdown !== null ? (
                             <p className="text-sm opacity-90">
-                                ⏳ Còn <span className="font-mono font-bold text-yellow-300">{formatCountdown(countdown)}</span> nữa sẽ mở video call
+                                ⏳ Còn <span className="font-mono font-bold text-yellow-300">{formatCountdown(Math.max(0, secondsUntilCanJoin))}</span> nữa sẽ mở video call
                             </p>
                         ) : (
-                            <p className="text-sm opacity-80">Video call mở 10 phút trước khi sự kiện bắt đầu</p>
+                            <p className="text-sm opacity-80">Video call mở 10 phút trước thời gian diễn ra</p>
                         )}
                     </div>
 

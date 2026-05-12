@@ -719,7 +719,7 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
   }, [])
 
   const runAnalysis = async () => {
-    if (description.trim().length < 10) return
+    if (description.trim().length < 2) return
     setStatus('loading')
     setError('')
     try {
@@ -818,7 +818,7 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
           <FaBrain /> AI Gợi ý Tập Luyện
         </div>
         <h2 className="text-xl font-bold mb-1">Mô tả tình trạng sức khỏe của bạn</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">AI bác sĩ sẽ phân tích và gợi ý bài tập phù hợp</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">AI bác sĩ sẽ phân tích và gợi ý bài tập phù hợp — chỉ cần vài từ (ví dụ: giảm mỡ bụng, tăng cơ tay) cũng được.</p>
       </div>
 
       {(status === 'idle' || status === 'error') && (
@@ -832,9 +832,9 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
               onChange={e => setDescription(e.target.value)}
               rows={6}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-purple-400 outline-none transition resize-none text-sm"
-              placeholder="Nhập lưu ý của bạn..."
+              placeholder="Ví dụ: giảm mỡ bụng / lưng hay mỏi / mới tập gym / marathon 42k..."
             />
-            <p className="text-xs text-gray-400 mt-1 text-right">{description.length} ký tự</p>
+            <p className="text-xs text-gray-400 mt-1 text-right">{description.length} ký tự (tối thiểu 2)</p>
           </div>
           {status === 'error' && <p className="text-sm text-red-500 text-center">{error}</p>}
           <div className="flex gap-3 mt-4">
@@ -842,7 +842,7 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
               className="flex-1 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 font-medium text-gray-700 dark:text-gray-300 flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
               <FaChevronLeft /> Quay lại
             </button>
-            <button onClick={runAnalysis} disabled={description.trim().length < 10 || allExercises.length === 0}
+            <button onClick={runAnalysis} disabled={description.trim().length < 2 || allExercises.length === 0}
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold disabled:opacity-40 flex items-center justify-center gap-2 hover:from-purple-700 hover:to-pink-700 shadow-lg transition">
               <FaBrain /> Phân tích AI
             </button>

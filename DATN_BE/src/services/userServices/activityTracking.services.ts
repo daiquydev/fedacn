@@ -3,6 +3,7 @@ import SportEventModel from '~/models/schemas/sportEvent.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import { Types } from 'mongoose'
 import { roundKcal } from '~/utils/math.utils'
+import { isDailySportEventProgressAllowedAt } from '~/utils/sportEventProgressWindow.utils'
 
 class ActivityTrackingService {
     // Start a new activity
@@ -25,10 +26,11 @@ class ActivityTrackingService {
             throw new Error('Event not found')
         }
 
-        // Block progress tracking if event is not ongoing
         const now = new Date()
-        if (event.startDate && new Date(event.startDate) > now) {
-            throw new Error('Sự kiện chưa bắt đầu, không thể ghi tiến độ')
+        if (!isDailySportEventProgressAllowedAt(event.startDate, event.endDate, now)) {
+            throw new Error(
+                'Chưa tới giờ ghi hoạt động hôm nay (mở từ 10 phút trước giờ diễn ra trong ngày đã chọn, trong khoảng ngày sự kiện)'
+            )
         }
         if (event.endDate && new Date(event.endDate) < now) {
             throw new Error('Sự kiện đã kết thúc, không thể ghi tiến độ')

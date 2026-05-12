@@ -31,8 +31,12 @@ import {
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import moment from 'moment'
 import toast from 'react-hot-toast'
+import {
+  nextDailySportEventProgressWindowOpensAt
+} from '../../utils/sportEventProgressWindow'
 
 // API imports
+import sportCategoryApi from '../../apis/sportCategoryApi'
 import {
   getSportEvent,
   joinSportEvent,
@@ -99,6 +103,17 @@ export default function SportEventDetail() {
   })
 
   // ==================== DATA FETCHING ====================
+
+  // Fetch all categories (kèm trạng thái) để resolve tên danh mục đã xóa
+  const { data: categoriesData } = useQuery({
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
+    staleTime: 60000
+  })
+  const deletedCategoryNames = useMemo(() => {
+    const all = categoriesData?.data?.result || []
+    return new Set(all.filter(c => c.isDeleted).map(c => c.name))
+  }, [categoriesData])
 
   // Fetch Event Details
   const {
@@ -414,11 +429,11 @@ export default function SportEventDetail() {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   useEffect(() => {
     if (!event?.startDate) return
-    const startDt = moment(event.startDate)
-    if (!moment().isBefore(startDt)) return
+    const openDt = nextDailySportEventProgressWindowOpensAt(event.startDate, event.endDate)
+    if (!openDt || !openDt.isValid() || !moment().isBefore(openDt)) return
     const tick = () => {
       const now = moment()
-      const diff = startDt.diff(now)
+      const diff = openDt.diff(now)
       if (diff <= 0) { setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 }); return }
       const dur = moment.duration(diff)
       setCountdown({ days: Math.floor(dur.asDays()), hours: dur.hours(), minutes: dur.minutes(), seconds: dur.seconds() })
@@ -426,7 +441,7 @@ export default function SportEventDetail() {
     tick()
     const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
-  }, [event?.startDate])
+  }, [event?.startDate, event?.endDate, id])
 
 
 
@@ -468,8 +483,10 @@ export default function SportEventDetail() {
   const eventStartDate = moment(event.startDate)
   const eventEndDate = moment(event.endDate)
 
-  const isEnded = moment().isAfter(eventEndDate)
-  const isNotStarted = moment().isBefore(eventStartDate)
+  const isEnded =
+    event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+  const isNotStarted =
+    event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))
   const isOngoing = !isEnded && !isNotStarted
 
   return (
@@ -482,6 +499,7 @@ export default function SportEventDetail() {
           event={event}
           eventId={id}
           onClose={() => setShowShareModal(false)}
+          deletedCategoryNames={deletedCategoryNames}
         />
       )}
 
@@ -563,7 +581,7 @@ export default function SportEventDetail() {
                   )}
                 </span>
                 <span className="px-4 py-1.5 bg-red-500 rounded-full text-sm font-medium">
-                  {event.category}
+                  {deletedCategoryNames.has(event.category) ? 'Danh mục đã xóa' : event.category}
                 </span>
 
               </div>

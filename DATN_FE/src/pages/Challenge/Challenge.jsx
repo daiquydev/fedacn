@@ -16,7 +16,7 @@ import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { getImageUrl } from '../../utils/imageUrl'
-import { getChallengePersonalProgressPercent } from '../../utils/challengeProgress'
+import { getChallengePersonalProgressPercent, formatFitnessExerciseListSummary, formatFitnessExerciseListTitle } from '../../utils/challengeProgress'
 import { getSportIcon } from '../../utils/sportIcons'
 import useravatar from '../../assets/images/useravatar.jpg'
 import ParticipantsList from '../../components/ParticipantsList'
@@ -35,7 +35,7 @@ const VISIBILITY_CONFIG = {
 }
 
 /** Banner carousel — cùng pattern trang Sự kiện Thể thao */
-function FeaturedChallengesBanner({ challenges, navigate }) {
+function FeaturedChallengesBanner({ challenges, navigate, deletedCategoryNames = new Set() }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const timerRef = useRef(null)
 
@@ -78,7 +78,14 @@ function FeaturedChallengesBanner({ challenges, navigate }) {
             <h2 className="text-2xl font-black mb-1 drop-shadow-lg">{c.title}</h2>
             <p className="text-white/70 text-sm mb-3">
               {(TYPE_CONFIG[c.challenge_type]?.label || 'Thử thách')}
-              {c.category ? ` • ${c.category}` : ''} • {c.participants_count ?? 0} người tham gia
+              {c.challenge_type === 'fitness'
+                ? (() => {
+                    const ex = formatFitnessExerciseListSummary(c.exercises)
+                    if (ex) return ` • ${ex}`
+                    if (c.category) return ` • ${deletedCategoryNames.has(c.category) ? 'Danh mục đã xóa' : c.category}`
+                    return ''
+                  })()
+                : (c.category ? ` • ${deletedCategoryNames.has(c.category) ? 'Danh mục đã xóa' : c.category}` : '')} • {c.participants_count ?? 0} người tham gia
             </p>
             <span className="inline-block bg-white/20 backdrop-blur-md hover:bg-white/30 transition px-5 py-2 rounded-xl text-sm font-bold">
               Xem chi tiết →
@@ -103,7 +110,7 @@ function FeaturedChallengesBanner({ challenges, navigate }) {
 }
 
 // Challenge Card — styled after SportEventCard
-function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), connectedIds = new Set(), CategoryIcon }) {
+function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), connectedIds = new Set(), CategoryIcon, deletedCategoryNames = new Set() }) {
   const navigate = useNavigate()
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
 
@@ -139,7 +146,7 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
 
         {/* Type Badge */}
         <div className={`absolute top-3 left-3 bg-white dark:bg-gray-900 font-medium px-3 py-1 rounded-full text-sm flex items-center gap-1.5 ${config.text}`}>
-          {config.icon} <span>{challenge.category && challenge.challenge_type === 'outdoor_activity' ? challenge.category : config.label}</span>
+          {config.icon} <span>{config.label}</span>
         </div>
 
         {/* Participant Count Badge — cùng style sự kiện */}
@@ -183,12 +190,38 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
             <FaFire className="mr-2 text-amber-500 flex-shrink-0" />
             <span>Mỗi ngày: {challenge.goal_value} {challenge.goal_unit}</span>
           </div>
-          {challenge.category && (
+          {challenge.challenge_type === 'fitness' ? (
+            (() => {
+              const exSummary = formatFitnessExerciseListSummary(challenge.exercises)
+              if (exSummary) {
+                return (
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400" title={formatFitnessExerciseListTitle(challenge.exercises)}>
+                    <FaDumbbell className="mr-2 flex-shrink-0 text-purple-500" />
+                    <span className="line-clamp-2">{exSummary}</span>
+                  </div>
+                )
+              }
+              if (challenge.category) {
+                return (
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    {CategoryIcon ? <CategoryIcon className="mr-2 flex-shrink-0" /> : <MdSportsSoccer className="mr-2 flex-shrink-0" />}
+                    {deletedCategoryNames.has(challenge.category)
+                      ? <span className="italic text-gray-400 dark:text-gray-500">Danh mục đã xóa</span>
+                      : <span>{challenge.category}</span>}
+                  </div>
+                )
+              }
+              return null
+            })()
+          ) : challenge.category ? (
             <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
               {CategoryIcon ? <CategoryIcon className="mr-2 flex-shrink-0" /> : <MdSportsSoccer className="mr-2 flex-shrink-0" />}
-              <span>{challenge.category}</span>
+              {deletedCategoryNames.has(challenge.category)
+                ? <span className="italic text-gray-400 dark:text-gray-500">Danh mục đã xóa</span>
+                : <span>{challenge.category}</span>
+              }
             </div>
-          )}
+          ) : null}
           {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && challenge.time_window_start && challenge.time_window_end && (
             <div className="flex items-center text-xs font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400 px-2 py-1 rounded w-max mt-1">
               <FaClock className="mr-1.5" />
@@ -391,23 +424,39 @@ export default function Challenge() {
     placeholderData: hasActiveFilters ? undefined : keepPreviousData
   })
 
+  // Thể dục không còn lọc theo danh mục sự kiện — tránh giữ filter từ tab Ngoài trời
+  useEffect(() => {
+    if (activeType === 'fitness') setSelectedCategory('all')
+  }, [activeType])
+
   // Reset page to 1 whenever any filter changes
   useEffect(() => {
     setPage(1)
   }, [debouncedSearch, activeType, selectedCategory, sortBy, filterJoined, filterVisibility, filterDateFrom, filterDateTo])
 
-  // Fetch sport categories
+  // Fetch ALL categories kèm trạng thái isDeleted
   const { data: categoriesData } = useQuery({
-    queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll()
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
+    staleTime: 60000
   })
 
   const dbCategories = categoriesData?.data?.result || []
+
+  // Set tên danh mục đã xóa — để resolve label trên UI
+  const deletedCategoryNames = useMemo(
+    () => new Set(dbCategories.filter(cat => cat.isDeleted).map(cat => cat.name)),
+    [dbCategories]
+  )
+
+  // Dropdown filter: chỉ danh mục còn hoạt động, lọc theo loại thử thách
   const availableCategories = useMemo(() => {
+    const active = dbCategories.filter(cat => !cat.isDeleted)
     if (activeType === 'nutrition') return []
-    if (activeType === 'outdoor_activity') return dbCategories.filter(cat => cat.type === 'Ngoài trời')
-    if (activeType === 'fitness') return dbCategories.filter(cat => cat.type === 'Trong nhà')
-    return dbCategories
+    if (activeType === 'outdoor_activity') return active.filter(cat => cat.type === 'Ngoài trời')
+    // Thể dục: mục tiêu theo bài tập (exercises), không lọc theo danh mục sự kiện "Trong nhà"
+    if (activeType === 'fitness') return []
+    return active
   }, [dbCategories, activeType])
 
   const categoryIconLookup = useMemo(() => {
@@ -494,7 +543,7 @@ export default function Challenge() {
           .sort((a, b) => (b.participants_count || 0) - (a.participants_count || 0))
           .slice(0, 3)
         if (isLoading || featured.length === 0) return null
-        return <FeaturedChallengesBanner challenges={featured} navigate={navigate} />
+        return <FeaturedChallengesBanner challenges={featured} navigate={navigate} deletedCategoryNames={deletedCategoryNames} />
       })()}
 
       {/* Search & Filters — matching SportEvent filter card */}
@@ -811,6 +860,7 @@ export default function Challenge() {
                   friendIds={friendIds}
                   connectedIds={connectedIds}
                   CategoryIcon={challenge.category ? categoryIconLookup[challenge.category] : undefined}
+                  deletedCategoryNames={deletedCategoryNames}
                 />
               ))}
             </div>

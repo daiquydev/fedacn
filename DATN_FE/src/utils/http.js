@@ -11,6 +11,18 @@ import {
 } from './auth'
 import { isAxiosExpiredTokenError, isAxiosUnauthorizedError } from './utils'
 
+/** Gom toast lỗi API: không có response (mạng/timeout) → một toast; có response → gom theo status + message */
+function toastHttpError(message, error) {
+  const text = message || 'Có lỗi xảy ra'
+  if (!error?.response) {
+    toast.error(text, { id: 'http-no-response' })
+    return
+  }
+  const status = error.response.status
+  const id = `http-${status}-${String(text).slice(0, 120)}`
+  toast.error(text, { id })
+}
+
 const URL = {
   BASE_URL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api'
 }
@@ -105,7 +117,7 @@ class Http {
           const data = error.response?.data
           console.log(data)
           const message = data?.message || error.message
-          toast.error(message)
+          toastHttpError(message, error)
         }
         if (isAxiosUnauthorizedError(error)) {
           const config = error.response?.config || {}
@@ -141,7 +153,8 @@ class Http {
           clearLS()
           this.accessToken = ''
           this.refreshToken = ''
-          toast.error(error.response?.data.data?.message || error.response?.data.message)
+          const authMsg = error.response?.data.data?.message || error.response?.data.message
+          toastHttpError(authMsg, error)
           // window.location.reload()
         }
         return Promise.reject(error)

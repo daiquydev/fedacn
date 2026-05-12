@@ -17,14 +17,14 @@ describe('capVideoSessionSeconds', () => {
         expect(safeActiveSeconds).toBe(maxElapsed)
     })
 
-    it('keeps honest values under cap', () => {
+    it('Trường hợp: Chấp nhận thời lượng hợp lệ dưới ngưỡng giới hạn', () => {
         const ended = new Date('2026-01-01T12:10:00.000Z')
         const { safeTotalSeconds, safeActiveSeconds } = capVideoSessionSeconds(joined, ended, 120, 600, 15)
         expect(safeTotalSeconds).toBe(600)
         expect(safeActiveSeconds).toBe(120)
     })
 
-    it('never returns negative maxElapsed', () => {
+    it('Trường hợp biên: Không bao giờ trả về giá trị thời gian âm', () => {
         const ended = new Date('2026-01-01T11:59:00.000Z')
         const { maxElapsed, safeTotalSeconds, safeActiveSeconds } = capVideoSessionSeconds(joined, ended, 10, 60, 0)
         expect(maxElapsed).toBe(0)

@@ -1,9 +1,9 @@
 import request from 'supertest'
 import { app } from '../index'
 
-describe('App basic routes', () => {
-  it('returns Hello World on root path', async () => {
+describe('[Hệ thống] - Kiểm tra khởi tạo ứng dụng', () => {
+  it('Trường hợp: Truy cập đường dẫn gốc (/) trả về Hello World', async () => {
     const res = await request(app).get('/').expect(200)
-    expect(res.text).toContain('Hello World')
+    expect(res.text).toBe('Hello World!')
   })
 })

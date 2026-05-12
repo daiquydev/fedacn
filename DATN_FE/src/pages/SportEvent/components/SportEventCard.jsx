@@ -18,7 +18,7 @@ import useravatar from '../../../assets/images/useravatar.jpg';
  * @param {Set}    props.friendIds     - Set of friend IDs (mutual follow)
  * @param {Set}    props.connectedIds  - Set of all connected IDs (friends + followings + followers)
  */
-const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), connectedIds = new Set(), CategoryIcon }) => {
+const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), connectedIds = new Set(), CategoryIcon, deletedCategoryNames = new Set() }) => {
   const navigate = useNavigate();
 
   // Map participants_ids to ParticipantsList format
@@ -43,7 +43,8 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
   const isOnline = event.eventType === 'Trong nhà';
   const eventDate = moment(event.startDate);
   const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'));
-  const isNotStarted = event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'));
+  const beforeFirstCalendarDay = event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'));
+  const isNotStarted = !!beforeFirstCalendarDay;
   const isArchivedReadOnly = !!(event.is_archived_read_only || event.isDeleted);
 
   return (
@@ -112,8 +113,11 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
           </div>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             {CategoryIcon ? <CategoryIcon className="mr-2" /> : <MdSportsScore className="mr-2" />}
-            <span>{event.category}</span>
-
+            {deletedCategoryNames.has(event.category) ? (
+              <span className="italic text-gray-400 dark:text-gray-500">Danh mục đã xóa</span>
+            ) : (
+              <span>{event.category}</span>
+            )}
           </div>
         </div>
 

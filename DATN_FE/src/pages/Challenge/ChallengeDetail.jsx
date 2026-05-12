@@ -7,6 +7,8 @@ import {
   inviteFriendToChallenge
 } from '../../apis/challengeApi'
 import { currentAccount } from '../../apis/userApi'
+import sportCategoryApi from '../../apis/sportCategoryApi'
+import { getSportIcon } from '../../utils/sportIcons'
 import { toast } from 'react-hot-toast'
 import {
   FaTrophy, FaArrowLeft, FaUtensils, FaRunning, FaDumbbell,
@@ -15,7 +17,7 @@ import {
   FaUserFriends as FaInvite, FaGlobe, FaUserFriends, FaLock
 } from 'react-icons/fa'
 import {
-  MdCheckCircle, MdErrorOutline
+  MdCheckCircle, MdErrorOutline, MdFitnessCenter
 } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
@@ -33,7 +35,7 @@ import ParticipantProgressModal from './components/ParticipantProgressModal'
 import ChallengeShareModal from '../../components/Challenge/ChallengeShareModal'
 import ModalReportChallenge from './components/ModalReportChallenge'
 import { format } from 'date-fns'
-import { getChallengePersonalProgressPercent } from '../../utils/challengeProgress'
+import { getChallengePersonalProgressPercent, formatFitnessExerciseListSummary, formatFitnessExerciseListTitle } from '../../utils/challengeProgress'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', color: 'bg-emerald-500', checkinLabel: 'Chụp ảnh bữa ăn' },
@@ -84,6 +86,41 @@ export default function ChallengeDetail() {
     queryFn: currentAccount
   })
   const me = meData?.data?.result?.[0]
+
+  const { data: allCategoriesData } = useQuery({
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
+    staleTime: 60_000
+  })
+  const deletedCategoryNames = useMemo(() => {
+    const list = allCategoriesData?.data?.result || []
+    return new Set(list.filter((c) => c.isDeleted).map((c) => c.name))
+  }, [allCategoriesData])
+  const categoryNameToIconKey = useMemo(() => {
+    const list = allCategoriesData?.data?.result || []
+    const map = {}
+    list.forEach((c) => {
+      if (c?.name) map[c.name] = c.icon
+    })
+    return map
+  }, [allCategoriesData])
+
+  const fitnessExercisesBadgeText = useMemo(
+    () => (challenge?.challenge_type === 'fitness' ? formatFitnessExerciseListSummary(challenge?.exercises) : null),
+    [challenge?.challenge_type, challenge?.exercises]
+  )
+  const fitnessExercisesBadgeTitle = useMemo(
+    () => (challenge?.challenge_type === 'fitness' ? formatFitnessExerciseListTitle(challenge?.exercises) : ''),
+    [challenge?.challenge_type, challenge?.exercises]
+  )
+
+  const outdoorCheckinHintLabel = useMemo(() => {
+    if (!challenge || challenge.challenge_type !== 'outdoor_activity') return 'chạy/đi bộ/đạp xe'
+    const cat = String(challenge.category || '').trim()
+    if (!cat) return 'chạy/đi bộ/đạp xe'
+    if (deletedCategoryNames.has(cat)) return 'Danh mục đã xóa'
+    return cat
+  }, [challenge, deletedCategoryNames])
 
   const isCreator =
     Boolean(challenge && me?._id) &&
@@ -419,8 +456,30 @@ export default function ChallengeDetail() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${config.color} flex items-center gap-1.5 shadow-lg`}>
-                  {config.icon} {challenge.category && challenge.challenge_type === 'outdoor_activity' ? challenge.category : config.label}
+                  {config.icon} {config.label}
                 </span>
+                {challenge.challenge_type === 'outdoor_activity' && String(challenge.category || '').trim() && (() => {
+                  const catName = String(challenge.category).trim()
+                  const OutdoorCatIcon = getSportIcon(categoryNameToIconKey[catName])
+                  const isDel = deletedCategoryNames.has(catName)
+                  return (
+                    <span className="px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-lg bg-cyan-500/90 text-white max-w-[min(100%,20rem)]">
+                      <OutdoorCatIcon className="text-base shrink-0 opacity-95" />
+                      <span className="truncate">
+                        {isDel ? <span className="italic opacity-90">Danh mục đã xóa</span> : catName}
+                      </span>
+                    </span>
+                  )
+                })()}
+                {challenge.challenge_type === 'fitness' && fitnessExercisesBadgeText && (
+                  <span
+                    className="px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-lg bg-violet-500/90 text-white max-w-[min(100%,22rem)]"
+                    title={fitnessExercisesBadgeTitle || undefined}
+                  >
+                    <MdFitnessCenter className="text-base shrink-0 opacity-95" />
+                    <span className="truncate">{fitnessExercisesBadgeText}</span>
+                  </span>
+                )}
                 {(() => {
                   const vis = VISIBILITY_CONFIG[challenge?.visibility]
                   if (!vis) return null
@@ -688,7 +747,7 @@ export default function ChallengeDetail() {
                   <span className="text-3xl">🏃</span>
                   <div>
                     <p className="font-semibold text-blue-700 dark:text-blue-400 mb-1">Ghi nhận khoảng cách</p>
-                    <p className="text-sm">Chuyển sang tab "Tiến độ cá nhân", nhấn vào ngày hôm nay trên lịch. Nhập km đã {challenge.category || 'chạy/đi bộ/đạp xe'}, thời gian và calo tiêu hao.</p>
+                    <p className="text-sm">Chuyển sang tab "Tiến độ cá nhân", nhấn vào ngày hôm nay trên lịch. Nhập km đã {outdoorCheckinHintLabel}, thời gian và calo tiêu hao.</p>
                   </div>
                 </div>
               )}

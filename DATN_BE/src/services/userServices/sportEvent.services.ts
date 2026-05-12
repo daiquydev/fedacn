@@ -686,13 +686,17 @@ class SportEventService {
   }
 
   // Get my sport events
-  async getMyEventsService(userId: string, page: number = 1, limit: number = 10, status?: string, search?: string) {
+  async getMyEventsService(userId: string, page: number = 1, limit: number = 10, status?: string, search?: string, eventType?: string) {
     const skip = (page - 1) * limit
 
     const condition: any = { createdBy: userId, isDeleted: { $ne: true } }
 
     if (search) {
       condition.name = { $regex: search, $options: 'i' }
+    }
+
+    if (eventType && eventType !== 'all') {
+      condition.eventType = eventType
     }
 
     const now = new Date()

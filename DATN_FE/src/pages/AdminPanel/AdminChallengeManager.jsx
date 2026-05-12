@@ -1,6 +1,7 @@
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import sportCategoryApi from '../../apis/sportCategoryApi'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -60,6 +61,16 @@ function ChallengeListTab() {
   const challenges = result.challenges || []
   const total = result.total || 0
   const totalPage = result.totalPage || 1
+
+  const { data: allCatData } = useQuery({
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
+    staleTime: 60_000
+  })
+  const deletedCategoryNames = useMemo(() => {
+    const list = allCatData?.data?.result || []
+    return new Set(list.filter((c) => c.isDeleted).map((c) => c.name))
+  }, [allCatData])
 
   // client-side status filter (API doesn't support it directly without admin route)
   const filtered = statusFilter === 'all'
@@ -169,7 +180,13 @@ function ChallengeListTab() {
                           <p className='font-semibold text-slate-800 dark:text-slate-100 max-w-[200px] truncate'>
                             {c.title}
                           </p>
-                          <p className='text-xs text-slate-400 truncate max-w-[200px]'>{c.category || c.goal_type}</p>
+                          <p className='text-xs text-slate-400 truncate max-w-[200px]'>
+                            {c.category
+                              ? deletedCategoryNames.has(c.category)
+                                ? <span className='italic text-red-400'>Danh mục đã xóa</span>
+                                : c.category
+                              : c.goal_type}
+                          </p>
                         </div>
                       </div>
                     </td>

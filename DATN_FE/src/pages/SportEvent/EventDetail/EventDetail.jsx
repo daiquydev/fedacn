@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fa'
 import { MdSportsSoccer, MdLeaderboard } from 'react-icons/md'
 import moment from 'moment'
+import { isDailySportEventProgressAllowedAt, nextDailySportEventProgressWindowOpensAt } from '../../../utils/sportEventProgressWindow'
 import { getSportEvent, joinSportEvent, leaveSportEvent, getUserProgress, getLeaderboard } from '../../../apis/sportEventApi'
 import { getImageUrl } from '../../../utils/imageUrl'
 import useravatar from '../../../assets/images/useravatar.jpg'
@@ -202,9 +203,14 @@ export default function EventDetail() {
   const isParticipant = event.participants_ids?.some(p => String(p._id || p) === String(userId)) || false
   const isCreator = String(event.createdBy?._id || event.createdBy) === String(userId)
   const isArchivedReadOnly = Boolean(event?.is_archived_read_only)
-  const isEventInPast = new Date(event.endDate) < new Date()
-  const isEventStarted = new Date(event.startDate) <= new Date()
-  const isOngoing = isEventStarted && !isEventInPast
+  const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+  const isNotStarted =
+    event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))
+  const isOngoing = !isEnded && !isNotStarted
+
+  const isLeaderboardLocked = event.startDate
+    ? !isDailySportEventProgressAllowedAt(event.startDate, event.endDate)
+    : false
 
   // Fetch my progress when we confirm user is participant
   useEffect(() => {
@@ -268,10 +274,10 @@ export default function EventDetail() {
               </div>
 
               {/* Event Status Badge */}
-              <div className={`absolute top-4 right-4 rounded-full px-4 py-2 flex items-center gap-1.5 ${isEventInPast ? 'bg-gray-800/70 text-gray-200' : isOngoing ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'}`}>
+              <div className={`absolute top-4 right-4 rounded-full px-4 py-2 flex items-center gap-1.5 ${isEnded ? 'bg-gray-800/70 text-gray-200' : isOngoing ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'}`}>
                 {isOngoing && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                 <span className="font-medium text-sm">
-                  {isEventInPast ? 'Đã kết thúc' : isOngoing ? 'Đang diễn ra' : 'Sắp diễn ra'}
+                  {isEnded ? 'Đã kết thúc' : isOngoing ? 'Đang diễn ra' : 'Sắp diễn ra'}
                 </span>
               </div>
 
@@ -324,7 +330,7 @@ export default function EventDetail() {
                 <div className="w-full px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg font-medium text-center border border-gray-200 dark:border-gray-600">
                   📦 Sự kiện đã được lưu trữ — chỉ xem
                 </div>
-              ) : isEventInPast ? (
+              ) : isEnded ? (
                 <div className="text-center py-4">
                   <p className="text-gray-500 dark:text-gray-400">Sự kiện này đã kết thúc</p>
                 </div>
@@ -624,12 +630,14 @@ export default function EventDetail() {
 
               {showLeaderboard && (
                 <div className="p-4 max-h-96 overflow-y-auto">
-                  {!isEventStarted ? (
+                  {isLeaderboardLocked ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <FaChartLine className="mx-auto text-4xl mb-3 text-gray-300 dark:text-gray-600" />
-                      <p>Bảng xếp hạng sẽ được mở<br />khi sự kiện bắt đầu</p>
+                      <p>Bảng xếp hạng mở từ 10 phút trước giờ diễn ra trong ngày</p>
                       <p className="mt-2 text-sm">
-                        {moment(event.startDate).format('DD/MM/YYYY HH:mm')}
+                        Mở tiếp theo:{' '}
+                        {nextDailySportEventProgressWindowOpensAt(event.startDate, event.endDate)?.format('DD/MM/YYYY HH:mm')
+                          ?? moment(event.startDate).format('DD/MM/YYYY HH:mm')}
                       </p>
                     </div>
                   ) : progressLoading ? (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     FaCalendarAlt, FaTrash, FaUndo, FaSearch,
@@ -37,7 +37,7 @@ const EVENT_TYPE_CONFIG = {
 }
 
 // ─── Chi tiết sự kiện (phân tích) ─────────────────────────────────────────────
-function EventDetailModal({ event, onClose }) {
+function EventDetailModal({ event, onClose, deletedCategoryNames = new Set() }) {
     const typeCfg = EVENT_TYPE_CONFIG[event?.eventType] || EVENT_TYPE_CONFIG['Ngoài trời']
     const TypeIcon = typeCfg.icon || FaRunning
     const participantsListFallback = Array.isArray(event?.participants_ids) ? event.participants_ids : []
@@ -65,7 +65,11 @@ function EventDetailModal({ event, onClose }) {
             <div className='grid grid-cols-2 gap-4'>
                 <div className='bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl'>
                     <p className='text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1'>Danh mục & Loại</p>
-                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>{event.category}</p>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
+                        {deletedCategoryNames.has(event.category)
+                            ? <span className='italic text-gray-400 dark:text-gray-500'>Danh mục đã xóa</span>
+                            : event.category}
+                    </p>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full mt-1 ${typeCfg.badge}`}>
                         <TypeIcon size={11} className='shrink-0' aria-hidden /> {typeCfg.label}
                     </span>
@@ -210,6 +214,10 @@ export default function AdminSportEvent() {
         staleTime: 60000
     })
     const categories = (catData?.data?.result || []).filter(c => !c.isDeleted)
+    const deletedCategoryNames = useMemo(
+        () => new Set((catData?.data?.result || []).filter(c => c.isDeleted).map(c => c.name)),
+        [catData]
+    )
 
     const invalidate = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: ['adminSportEvents'] })
@@ -803,6 +811,7 @@ export default function AdminSportEvent() {
                 <EventDetailModal
                     event={detailEvent}
                     onClose={() => setDetailEvent(null)}
+                    deletedCategoryNames={deletedCategoryNames}
                 />
             )}
 

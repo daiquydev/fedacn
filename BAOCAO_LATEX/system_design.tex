@@ -12,7 +12,7 @@ Hệ thống tuân theo mô hình phân lớp client-server, Frontend là SPA (S
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{Images/API.png}
+    \includegraphics[width=0.75\textwidth]{Images/API.jpg}
     \vspace{1em}
     \caption{Mô hình kiến trúc Client-Server với REST API \cite{MicrosoftLearnClientServerImg}.}
     \label{fig:rest_api_architecture}
@@ -109,354 +109,407 @@ Lớp dữ liệu đóng vai trò quan trọng trong việc lưu trữ và quả
 \section{Thiết kế cơ sở dữ liệu}
 \label{sec:database_design}
 
-Hệ thống sử dụng MongoDB - cơ sở dữ liệu NoSQL hướng tài liệu, phù hợp với cấu trúc đa hình thái và đặc thù biến thiên của mạng xã hội thể thao. Thiết kế CSDL được tổ chức theo mô hình module hóa, chia thành 9 nhóm chức năng chính: Cộng đồng, Sự kiện thể thao, Thử thách cộng đồng, Công cụ tính toán, Tập luyện, Bạn bè, Lịch cá nhân và thông báo, Quản lý người dùng, và Quản lý hệ thống Admin. Thiết kế này giúp đảm bảo tính độc lập, dễ dàng bảo trì và hỗ trợ linh hoạt quá trình phát triển tương lai.
+Hệ thống sử dụng \textbf{MongoDB} --- cơ sở dữ liệu NoSQL hướng tài liệu. Dữ liệu được tổ chức thành các \textbf{collection}, mỗi collection chứa nhiều \textbf{document} dạng JSON/BSON linh hoạt. Quan hệ giữa các collection thực hiện qua \textbf{referencing} (lưu \texttt{ObjectId}) hoặc \textbf{embedding} (nhúng sub-document trực tiếp). Schema được định nghĩa và validate qua \textbf{Mongoose ODM}.
 
-\subsection{Mô hình ERD tổng quan hệ thống}
-\label{subsec:overall_erd}
+Phần này trình bày 13 collection cốt lõi của hệ thống FitConnect cùng document ví dụ tương ứng.
 
-Sơ đồ ERD (Entity-Relationship Diagram) tổng quan hệ thống phản ánh toàn bộ cấu trúc dữ liệu cốt lõi của nền tảng FitConnect, bao gồm các thực thể chính và mối quan hệ giữa chúng tương ứng với 9 nhóm tính năng được triển khai. Mô hình được thiết kế theo hướng tài liệu (Document-oriented) phù hợp với MongoDB, lấy thực thể \textbf{User} làm trung tâm liên kết, từ đó kết nối các nhánh nghiệp vụ độc lập theo từng phân hệ chức năng.
+% ─── 1. USERS ────────────────────────────────────────────────────────────────
+\subsection{Collection \texttt{users}}
+\label{subsec:col_users}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDTongquanhethong.jpg}
-    \vspace{1em}
-    \caption{Sơ đồ ERD tổng quan hệ thống: Thể hiện các thực thể chính, mối quan hệ và một số thuộc tính đại diện}
-    \label{fig:erd_tongquan}
-\end{figure}
+Là trung tâm tham chiếu của toàn hệ thống. Lưu thông tin tài khoản, hồ sơ cá nhân và hồ sơ sức khỏe (BMI, BMR, TDEE). Lịch sử biến động chỉ số được nhúng trực tiếp vào document dưới dạng mảng để vẽ biểu đồ xu hướng mà không cần truy vấn collection riêng.
 
-\subsubsection{Các thực thể và vai trò của chúng trong hệ thống}
-\label{subsubsec:erd_entities_roles}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "name": "Nguyen Van A",
+  "user_name": "vana",
+  "email": "vana@gmail.com",
+  "password": "$2b$10$...",
+  "avatar": "https://res.cloudinary.com/.../avatar.png",
+  "cover_avatar": "https://res.cloudinary.com/.../cover.png",
+  "birthday": "2000-03-15T00:00:00Z",
+  "gender": "male",
+  "address": "TP. Ho Chi Minh",
+  "role": 0,
+  "status": 1,
+  "auth_provider": "local",
+  "weight": 68,
+  "height": 170,
+  "age": 26,
+  "hip": 92,
+  "waist": 78,
+  "neck": 37,
+  "activity_level": 2,
+  "activity_level_text": "Tap luyen nhe 1-3 ngay/tuan",
+  "BMI": 23.5,
+  "BMR": 1680,
+  "TDEE": 2310,
+  "body_fat": 18.2,
+  "IBW": 63.5,
+  "LBM": 55.6,
+  "health_goal": "Giam can",
+  "dietary_preferences": "Low-carb",
+  "allergies": "",
+  "pre_weight": [
+    { "weight": 72, "date": "2026-01-01" },
+    { "weight": 68, "date": "2026-04-01" }
+  ],
+  "pre_BMI": [
+    { "value": 24.9, "date": "2026-01-01" },
+    { "value": 23.5, "date": "2026-04-01" }
+  ],
+  "isDeleted": false,
+  "createdAt": "2026-01-10T08:00:00Z",
+  "updatedAt": "2026-05-09T10:30:00Z"
+}
+\end{minted}
 
-Sơ đồ ERD tổng quan gồm \textbf{10 thực thể chính}, lấy \textbf{User} làm trung tâm liên kết. Bảng~\ref{tab:erd_entities} mô tả vai trò của từng thực thể.
+% ─── 2. REFRESH TOKENS ───────────────────────────────────────────────────────
+\subsection{Collection \texttt{refresh\_tokens}}
+\label{subsec:col_refresh_tokens}
 
-\begin{table}[H]
-\centering
-\caption{Vai trò các thực thể trong sơ đồ ERD tổng quan}
-\label{tab:erd_entities}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{10.2cm}|}
-\hline
-\textbf{Thực thể} & \textbf{Vai trò trong hệ thống} \\
-\hline
-\textbf{User} & Thực thể trung tâm: đăng bài, tương tác, theo dõi bạn bè; tạo/tham gia sự kiện và thử thách; lập giáo án và quản lý lịch cá nhân. \\
-\hline
-\textbf{Post} & Bài đăng trên bảng tin cộng đồng (1 User, đa phương tiện, kiểm soát hiển thị công khai/bạn bè/riêng tư, nhận like và bình luận). \\
-\hline
-\textbf{SportsEvent} & Sự kiện thể thao tập thể: hỗ trợ hình thức Ngoài trời (GPS) và Trong nhà (Video Call + AI nhận diện khuôn mặt). \\
-\hline
-\textbf{Participant (SportsEvent)} & Thực thể trung gian ghi nhận đăng ký tham gia, mục tiêu cá nhân và tiến độ thi đua; phục vụ bảng xếp hạng nội bộ sự kiện. \\
-\hline
-\textbf{Challenge} & Thử thách rèn luyện kỷ luật ngắn hạn (3 loại: dinh dưỡng, bài tập, ngoài trời); hỗ trợ tạo thủ công hoặc AI đề xuất; check-in tiến độ hằng ngày. \\
-\hline
-\textbf{Participant (Challenge)} & Thực thể trung gian ghi nhận mục tiêu, kết quả check-in từng ngày và bảng xếp hạng nội bộ thử thách. \\
-\hline
-\textbf{Workout} & Giáo án tập luyện cá nhân (tự tạo hoặc AI đề xuất), liên kết tập hợp \textbf{Exercise}; có thể lưu vào lịch và theo dõi lịch sử. \\
-\hline
-\textbf{Exercise} & Kho bài tập đơn lẻ: nhóm cơ mục tiêu, kỹ thuật, cấu hình hiệp/lần/thời gian; được \textbf{Workout} tham chiếu để xây dựng lộ trình. \\
-\hline
-\textbf{Dashboard} & Phân hệ Admin: giám sát tăng trưởng, quản lý người dùng/sự kiện, xử lý báo cáo vi phạm, cấu hình danh mục thể thao. \\
-\hline
-\textbf{Calendar} & Lịch cá nhân tổng hợp tự động từ sự kiện, thử thách và tập luyện; gửi thông báo nhắc nhở đúng thời điểm. \\
-\hline
-\end{tabular}
-\end{table}
+Quản lý phiên đăng nhập bảo mật theo cơ chế JWT Refresh Token. Mỗi thiết bị/phiên đăng nhập tạo ra một document riêng. Index TTL tự động xóa token hết hạn. Khi đăng xuất, document bị xóa để thu hồi quyền truy cập.
 
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c1b23bc56fg001234bcde"),
+  "user_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "iat": "2026-05-09T10:30:00Z",
+  "exp": "2026-06-09T10:30:00Z",
+  "createdAt": "2026-05-09T10:30:00Z"
+}
+\end{minted}
 
-\subsubsection{Tổng kết mối quan hệ giữa các thực thể}
-\label{subsubsec:erd_relationships_summary}
-Bảng dưới đây tóm tắt các mối quan hệ chính trong sơ đồ ERD tổng quan:
+% ─── 3. POSTS ────────────────────────────────────────────────────────────────
+\subsection{Collection \texttt{posts}}
+\label{subsec:col_posts}
 
-\begin{table}[H]
-\centering
-\caption{Tổng kết quan hệ trong sơ đồ ERD tổng quan hệ thống}
-\label{tab:erd_relationships}
-\begin{tabular}{|l|l|c|l|}
-\hline
-\textbf{Thực thể A} & \textbf{Thực thể B} & \textbf{Lực lượng} & \textbf{Tên quan hệ} \\
-\hline
-User & Post & 1 -- N & post (đăng bài) \\
-User & Post & M -- M & interact (tương tác) \\
-User & User & M -- M & Follow (theo dõi) \\
-User & SportsEvent & 1 -- N & Create (tạo sự kiện) \\
-User & SportsEvent & M -- N & Join (tham gia sự kiện) \\
-SportsEvent & Participant (Event) & 1 -- N & Including \\
-User & Participant (Event) & 1 -- 1 & is \\
-User & Challenge & 1 -- N & Create (tạo thử thách) \\
-User & Challenge & 1 -- M & Join (tham gia thử thách) \\
-Challenge & Participant (Chall.) & 1 -- N & Including \\
-User & Participant (Chall.) & 1 -- 1 & is \\
-User & Workout & 1 -- N & Practice (tập luyện) \\
-Workout & Exercise & N -- N & Include \\
-User & Calendar & 1 -- N & use (sử dụng lịch) \\
-Dashboard & SportsEvent / User & 1 -- N & Manage (quản lý) \\
-Calendar & User & 1 -- N & Manage (quản lý lịch) \\
-\hline
-\end{tabular}
-\end{table}
+Lưu bài viết trên bảng tin cộng đồng. Hỗ trợ chia sẻ lại bài viết qua \texttt{parent\_id}. Báo cáo vi phạm nhúng trực tiếp vào document. Lượt thích và bình luận lưu ở các collection riêng (\texttt{like\_posts}, \texttt{comment\_posts}).
 
-\subsection{Phân tích 9 nhóm chức năng chính (Module)}
-\label{subsec:main_modules_analysis}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c2b34cd56ef001234bcde"),
+  "user_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "content": "Hom nay chay bo 5km sau 30 phut, ca ngay nang luong!",
+  "type": 0,
+  "status": 1,
+  "is_banned": false,
+  "parent_id": null,
+  "meal_plan_id": null,
+  "report_post": [
+    {
+      "user_id": ObjectId("681c1a12ab45ef001234efgh"),
+      "reason": "Noi dung khong phu hop",
+      "created_at": "2026-05-09T08:00:00Z"
+    }
+  ],
+  "createdAt": "2026-05-09T07:00:00Z",
+  "updatedAt": "2026-05-09T07:00:00Z"
+}
+\end{minted}
 
-Dựa trên sơ đồ ERD tổng quan và nguyên tắc thiết kế hướng tài liệu (Document-oriented) của MongoDB, cơ sở dữ liệu được tổ chức thành 9 nhóm tính năng chính. Mỗi nhóm sở hữu tập hợp các collection riêng biệt, đảm bảo tính độc lập trong truy vấn và khả năng mở rộng linh hoạt.
+% ─── 4. LIKE_POSTS & COMMENT_POSTS ───────────────────────────────────────────
+\subsection{Collection \texttt{like\_posts} và \texttt{comment\_posts}}
+\label{subsec:col_interactions}
 
-% ─── 1. QUẢN LÝ NGƯỜI DÙNG ──────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Quản lý người dùng}
-\label{subsubsec:module_nguoidung}
+\texttt{like\_posts} ghi nhận lượt thích, đảm bảo mỗi người dùng chỉ thích một bài một lần qua index unique \texttt{(user\_id, post\_id)}. \texttt{comment\_posts} lưu bình luận phân cấp, hỗ trợ reply lồng nhau qua \texttt{parent\_comment\_id}.
 
-Nhóm này đóng vai trò nền tảng định danh của toàn hệ thống, quản lý vòng đời tài khoản từ đăng ký, xác thực đến lưu trữ hồ sơ sức khỏe cá nhân. Mọi collection nghiệp vụ khác trong hệ thống đều tham chiếu về user\_id của nhóm này như một khóa ngoại xuyên suốt.
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+// Collection: like_posts
+{
+  "_id": ObjectId("681c2c45de67ef001234cdef"),
+  "user_id": ObjectId("681c1a12ab45ef001234efgh"),
+  "post_id": ObjectId("681c2b34cd56ef001234bcde"),
+  "createdAt": "2026-05-09T07:05:00Z"
+}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{Images/IMG/ERD/ERDQuanlynguoidung.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Quản lý người dùng}
-    \label{fig:erd_nguoidung}
-\end{figure}
+// Collection: comment_posts
+{
+  "_id": ObjectId("681c2d56ef78fg001234defg"),
+  "user_id": ObjectId("681c1a12ab45ef001234efgh"),
+  "post_id": ObjectId("681c2b34cd56ef001234bcde"),
+  "content": "Tuyet voi! Minh cung moi chay xong buoi sang",
+  "parent_comment_id": null,
+  "is_banned": false,
+  "createdAt": "2026-05-09T07:10:00Z"
+}
+\end{minted}
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{users:} Lưu trữ toàn bộ thông tin tài khoản và hồ sơ cá nhân, bao gồm thông tin định danh (email, tên hiển thị, ảnh đại diện, ngày sinh, giới tính), phân quyền và trạng thái tài khoản. Ngoài ra còn lưu các chỉ số sức khỏe tích hợp như cân nặng, chiều cao, BMI, BMR, TDEE, tỷ lệ mỡ cơ thể và các tùy chọn cá nhân hóa.
-    \item \textbf{health\_metric\_readings:} Ghi nhận chuỗi lịch sử các chỉ số sức khỏe theo thời gian (loại chỉ số, giá trị đo, thời điểm ghi nhận), phục vụ vẽ biểu đồ xu hướng thể trạng.
-    \item \textbf{body\_measurement\_logs:} Lưu lịch sử đo lường cơ thể định kỳ (cân nặng, chiều cao, vòng cổ, vòng eo, vòng hông), hỗ trợ tính toán chỉ số mỡ cơ thể và theo dõi tiến độ giảm cân.
-    \item \textbf{refresh\_tokens:} Quản lý phiên đăng nhập bảo mật theo cơ chế JWT Refresh Token, lưu thông tin token, thời điểm cấp phát và thời hạn hết hiệu lực, đảm bảo xác thực liên tục và an toàn.
-    \item \textbf{notifications:} Lưu trữ và phân phối thông báo hệ thống tới người dùng, bao gồm loại thông báo, nội dung, liên kết điều hướng và trạng thái đã đọc, hỗ trợ thông báo thời gian thực.
-\end{itemize}
+% ─── 5. FOLLOWS ──────────────────────────────────────────────────────────────
+\subsection{Collection \texttt{follows}}
+\label{subsec:col_follows}
 
-% ─── 2. CỘNG ĐỒNG ─────────────────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Cộng đồng}
-\label{subsubsec:module_congdong}
+Mô hình hóa quan hệ theo dõi một chiều giữa người dùng (Social Graph). Mỗi document là một cạnh có hướng \texttt{user\_id → follow\_id}, phục vụ lọc bảng tin ưu tiên nội dung từ người mình theo dõi.
 
-Nhóm này kiến tạo không gian mạng xã hội tương tác mở, cho phép người dùng chia sẻ hoạt động, tương tác bài viết và xây dựng mạng lưới quan hệ. Đây là trung tâm nội dung sôi động nhất của nền tảng, tích hợp kiểm duyệt AI tự động để đảm bảo môi trường lành mạnh.
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c3c45de67fg001234cdef"),
+  "user_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "follow_id": ObjectId("681c1a12ab45ef001234efgh"),
+  "createdAt": "2026-05-09T08:00:00Z"
+}
+\end{minted}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDCongDong.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Cộng đồng}
-    \label{fig:erd_congdong}
-\end{figure}
+% ─── 6. SPORT EVENTS ─────────────────────────────────────────────────────────
+\subsection{Collection \texttt{sport\_events}}
+\label{subsec:col_sport_events}
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{posts:} Lưu trữ bài viết của người dùng trên bảng tin cộng đồng, bao gồm nội dung văn bản, trạng thái kiểm duyệt và liên kết chia sẻ lại từ bài viết gốc. Hỗ trợ cấu trúc bài viết phân cấp (chia sẻ lại).
-    \item \textbf{post\_media:} Quản lý tệp đính kèm đa phương tiện (hình ảnh, video) của từng bài viết, hỗ trợ sắp xếp thứ tự hiển thị nhiều ảnh trên một bài đăng.
-    \item \textbf{post\_likes:} Ghi nhận lượt thích của từng người dùng với từng bài viết, đảm bảo tính duy nhất mỗi tương tác.
-    \item \textbf{post\_comments:} Lưu trữ bình luận phân cấp, hỗ trợ trả lời lồng nhau và trạng thái kiểm duyệt từng bình luận.
-    \item \textbf{post\_reports / comment\_reports:} Tiếp nhận báo cáo vi phạm bài viết và bình luận từ cộng đồng (lý do, trạng thái xử lý), cung cấp dữ liệu cho Admin kiểm duyệt.
-    \item \textbf{follows:} Quản lý quan hệ theo dõi một chiều giữa người dùng (ai theo dõi ai), phục vụ lọc và phân phối bài viết ưu tiên từ mạng lưới bạn bè trên bảng tin.
-    \item \textbf{event\_posts:} Tập hợp collection song song cho phép người tham gia sự kiện chia sẻ kết quả, cảm nghĩ lên bảng tin cộng đồng, tích hợp like, bình luận và báo cáo tương tự posts thông thường.
-\end{itemize}
+Lưu thông tin sự kiện thể thao tập thể. Hỗ trợ hai hình thức: Ngoài trời (theo dõi GPS) và Trong nhà (Video Call + AI điểm danh khuôn mặt). Danh sách người tham gia lưu dạng mảng ObjectId nhúng để kiểm tra trạng thái tham gia nhanh.
 
-% ─── 3. SỰ KIỆN THỂ THAO ─────────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Sự kiện thể thao}
-\label{subsubsec:module_sukien}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c4d56ef78gh001234defg"),
+  "name": "Chay Bo Sang Som Quan 1",
+  "description": "Su kien chay bo the duc buoi sang...",
+  "detailedDescription": "...",
+  "category": "Chay bo",
+  "eventType": "Ngoai troi",
+  "startDate": "2026-05-15T05:30:00Z",
+  "endDate": "2026-05-15T07:00:00Z",
+  "location": "Online",
+  "address": "Cong Vien Le Van Tam, Q.1, TP.HCM",
+  "distance": "5km",
+  "maxParticipants": 50,
+  "participants": 12,
+  "image": "https://res.cloudinary.com/.../event.jpg",
+  "createdBy": ObjectId("681c1a12ab45ef001234abcd"),
+  "organizer": "CLB The Thao ABC",
+  "targetValue": 5,
+  "targetUnit": "km",
+  "difficulty": "easy",
+  "requirements": "Giay chay bo, ao the thao",
+  "benefits": "Cai thien suc khoe, ket ban",
+  "participants_ids": [
+    ObjectId("681c1a12ab45ef001234abcd"),
+    ObjectId("681c1a12ab45ef001234efgh")
+  ],
+  "isDeleted": false,
+  "createdAt": "2026-05-09T09:00:00Z"
+}
+\end{minted}
 
-Nhóm này điều phối toàn bộ vòng đời của các sự kiện thể thao tập thể: từ khi tổ chức viên tạo sự kiện, người dùng tham gia, ghi nhận tiến độ theo thời gian thực (GPS hoặc Video Call), cho đến khi chia sẻ kết quả lên cộng đồng.
+% ─── 7. SPORT EVENT PROGRESS ─────────────────────────────────────────────────
+\subsection{Collection \texttt{sport\_event\_progress}}
+\label{subsec:col_event_progress}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDSukienthethao.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Sự kiện thể thao}
-    \label{fig:erd_sukien}
-\end{figure}
+Ghi nhận kết quả thi đua của từng người dùng trong từng buổi sự kiện. Hỗ trợ ba nguồn: GPS tự động, Video Call và nhập tay. Phục vụ bảng xếp hạng nội bộ sự kiện.
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{sport\_categories:} Danh mục phân loại thể thao do Admin cấu hình, lưu tên môn, kiểu địa điểm (trong nhà/ngoài trời) và lượng calo tiêu hao chuẩn, làm tiêu chuẩn phân loại chung toàn hệ thống.
-    \item \textbf{sport\_events:} Định nghĩa đầy đủ thông tin sự kiện: tên, mô tả, thời gian bắt đầu/kết thúc, địa điểm, giới hạn người tham gia, hình thức (trong nhà/ngoài trời), mục tiêu và độ khó.
-    \item \textbf{sport\_event\_participants:} Lưu thông tin đăng ký tham gia của từng người dùng vào sự kiện, bao gồm thời điểm đăng ký.
-    \item \textbf{sport\_event\_sessions:} Đại diện cho từng buổi thi đấu trong sự kiện, lưu số thứ tự buổi, thời gian, thời lượng, đường dẫn phòng Video Call và trạng thái hoàn thành.
-    \item \textbf{sport\_event\_progress:} Ghi nhận kết quả thi đua của từng người dùng trong từng buổi (giá trị đạt được, quãng đường, lượng calo, ảnh bằng chứng).
-    \item \textbf{sport\_event\_attendance / attendance\_check\_in\_records:} Theo dõi và lưu chi tiết điểm danh từng phiên theo thời gian vào/ra, phục vụ tính tổng thời lượng tham gia thực tế.
-    \item \textbf{sport\_event\_video\_sessions:} Quản lý thông tin phòng Video Call nhóm, ghi nhận thời gian người dùng tham gia qua camera và tổng thời gian hoạt động.
-    \item \textbf{sport\_event\_posts / sport\_event\_comments:} Cho phép người tham gia chia sẻ cảm nghĩ và tương tác trong không gian riêng của từng sự kiện.
-\end{itemize}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c5e67fg89hi001234efgh"),
+  "eventId": ObjectId("681c4d56ef78gh001234defg"),
+  "userId": ObjectId("681c1a12ab45ef001234abcd"),
+  "date": "2026-05-15T07:05:00Z",
+  "value": 5.2,
+  "unit": "km",
+  "distance": 5200,
+  "time": "28:45",
+  "calories": 312,
+  "activeSeconds": 1725,
+  "source": "gps",
+  "proofImage": "https://res.cloudinary.com/.../proof.jpg",
+  "notes": "Hoan thanh trong 28 phut 45 giay",
+  "is_deleted": false,
+  "createdAt": "2026-05-15T07:05:00Z"
+}
+\end{minted}
 
-% ─── 4. THỬ THÁCH CỘNG ĐỒNG ──────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Thử thách cộng đồng}
-\label{subsubsec:module_thuthach}
+% ─── 8. ACTIVITY TRACKING ────────────────────────────────────────────────────
+\subsection{Collection \texttt{activity\_tracking}}
+\label{subsec:col_activity_tracking}
 
-Nhóm này quản lý các chiến dịch rèn luyện kỷ luật theo ngày trong cộng đồng. Người dùng check-in tiến độ hằng ngày theo phương thức đặc thù của từng loại thử thách; AI tự động xác thực dữ liệu đầu vào và cập nhật bảng xếp hạng theo thời gian thực.
+Ghi nhận hoạt động ngoài trời theo thời gian thực qua GPS. Mảng \texttt{gpsRoute} nhúng toàn bộ chuỗi tọa độ để vẽ lại lộ trình. Liên kết với \texttt{sport\_events} hoặc \texttt{challenges} tùy mục đích sử dụng.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDThuthachcongdong.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Thử thách cộng đồng}
-    \label{fig:erd_thuthach}
-\end{figure}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c5f78gh90ij001234fghi"),
+  "userId": ObjectId("681c1a12ab45ef001234abcd"),
+  "eventId": ObjectId("681c4d56ef78gh001234defg"),
+  "challengeId": null,
+  "activityType": "Chay bo",
+  "name": "Chay buoi sang 15/05",
+  "status": "completed",
+  "startTime": "2026-05-15T05:32:00Z",
+  "endTime": "2026-05-15T06:01:00Z",
+  "totalDuration": 1725,
+  "totalDistance": 5200,
+  "avgSpeed": 10.8,
+  "maxSpeed": 14.2,
+  "avgPace": 5.55,
+  "calories": 312,
+  "gpsRoute": [
+    { "lat": 10.7769, "lng": 106.7009, "timestamp": 1747280000, "speed": 10.5 },
+    { "lat": 10.7772, "lng": 106.7015, "timestamp": 1747280030, "speed": 11.2 }
+  ],
+  "pauseIntervals": [],
+  "source": "app",
+  "createdAt": "2026-05-15T05:32:00Z"
+}
+\end{minted}
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{challenges:} Định nghĩa thử thách với đầy đủ thông tin: tên, mô tả, loại thử thách (dinh dưỡng, bài tập, thể thao), mục tiêu cần đạt, ngày bắt đầu/kết thúc, phạm vi hiển thị và khung giờ thực hiện trong ngày.
-    \item \textbf{challenge\_participants:} Ghi nhận trạng thái tham gia của từng người dùng, theo dõi giá trị hiện tại so với mục tiêu, số ngày streak liên tiếp, ngày hoạt động và trạng thái hoàn thành tổng thể.
-    \item \textbf{challenge\_progress:} Lưu chi tiết mỗi lần check-in hằng ngày: ngày thực hiện, giá trị đạt được, ghi chú, ảnh bằng chứng, kết quả xác thực của AI, thông tin vận động (quãng đường, thời gian, lượng calo) và tên thực phẩm nếu là thử thách dinh dưỡng.
-    \item \textbf{challenge\_exercises / challenge\_exercise\_sets:} Liệt kê danh sách bài tập yêu cầu và cấu hình hiệp/lần/cân nặng cho từng bài tập trong thử thách dạng vận động.
-    \item \textbf{challenge\_day\_comments:} Cho phép người tham gia bình luận, động viên nhau gắn với ngày check-in cụ thể, hỗ trợ trả lời lồng nhau.
-    \item \textbf{challenge\_reports:} Tiếp nhận báo cáo vi phạm thử thách từ cộng đồng để Admin xem xét.
-\end{itemize}
+% ─── 9. CHALLENGES ───────────────────────────────────────────────────────────
+\subsection{Collection \texttt{challenges}}
+\label{subsec:col_challenges}
 
-% ─── 5. TẬP LUYỆN ─────────────────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Tập luyện}
-\label{subsubsec:module_tapluyen}
+Lưu thông tin thử thách rèn luyện kỷ luật ngắn hạn (dinh dưỡng, bài tập hoặc ngoài trời). Danh sách bài tập yêu cầu (loại fitness) được nhúng trực tiếp. Hỗ trợ tạo thủ công hoặc AI đề xuất.
 
-Nhóm này phục vụ nhu cầu tập luyện cá nhân độc lập, cung cấp kho bài tập phong phú, công cụ lập giáo án (thủ công hoặc AI đề xuất), ghi nhận buổi tập thực tế và theo dõi lịch sử hoạt động theo thời gian.
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c6f78gh90ij001234fghi"),
+  "title": "30 Ngay Plank Moi Ngay",
+  "description": "Ren luyen core moi sang, bat dau tu 30 giay",
+  "image": "https://res.cloudinary.com/.../challenge.jpg",
+  "creator_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "challenge_type": "fitness",
+  "category": "Core training",
+  "goal_type": "duration",
+  "goal_value": 60,
+  "goal_unit": "giay",
+  "kcal_per_unit": 0.15,
+  "start_date": "2026-05-10T00:00:00Z",
+  "end_date": "2026-06-09T23:59:59Z",
+  "visibility": "public",
+  "is_public": true,
+  "status": "active",
+  "difficulty": "medium",
+  "badge_emoji": "\ud83c\udfc6",
+  "participants_count": 128,
+  "exercises": [
+    {
+      "exercise_id": ObjectId("681caa11bb22cc001234aabb"),
+      "exercise_name": "Plank",
+      "sets": [{ "set_number": 1, "reps": 1, "weight": 0, "calories_per_unit": 0 }]
+    }
+  ],
+  "is_deleted": false,
+  "createdAt": "2026-05-09T10:00:00Z"
+}
+\end{minted}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDTapluyen.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Tập luyện}
-    \label{fig:erd_tapluyen}
-\end{figure}
+% ─── 10. CHALLENGE PARTICIPANTS ──────────────────────────────────────────────
+\subsection{Collection \texttt{challenge\_participants}}
+\label{subsec:col_challenge_participants}
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{exercises:} Kho bài tập hệ thống với đầy đủ thông tin kỹ thuật: tên bài tập, mô tả, hướng dẫn thực hiện từng bước, mẹo, danh sách thiết bị, nhóm cơ chính/phụ được tác động, hình ảnh minh họa, video hướng dẫn, phân loại và mức độ khó.
-    \item \textbf{workout\_sessions:} Ghi nhận buổi tập thực tế của người dùng, lưu thời gian bắt đầu/kết thúc, tổng khối lượng, số hiệp, số lần, lượng calo tiêu hao, thời lượng tập và chế độ thông minh (AI-guided).
-    \item \textbf{workout\_session\_exercises / workout\_session\_sets:} Liệt kê chi tiết các bài tập và từng hiệp thực tế trong buổi tập (số hiệp, số lần, cân nặng, trạng thái hoàn thành hoặc bỏ qua).
-    \item \textbf{workout\_schedules / workout\_items:} Quản lý giáo án tập luyện được lên kế hoạch theo tuần/tháng và danh sách các hoạt động tập luyện theo ngày cụ thể trong lịch.
-    \item \textbf{saved\_workout\_templates:} Giáo án mẫu đã lưu để tái sử dụng, hỗ trợ lặp lại theo ngày trong tuần, khung giờ tập và tùy chọn nhắc nhở tự động.
-    \item \textbf{user\_training\_profiles:} Hồ sơ tập luyện gamification của người dùng, theo dõi điểm kinh nghiệm (XP), cấp độ, danh hiệu, số buổi tập đã tham gia/hoàn thành và streak dài nhất.
-    \item \textbf{trainings / training\_participants:} Hỗ trợ hình thức tập luyện theo nhóm với cơ chế tham gia và theo dõi tiến độ tương tự Challenge.
-\end{itemize}
+Theo dõi tiến độ từng người tham gia thử thách. Index unique \texttt{(challenge\_id, user\_id)} đảm bảo mỗi người chỉ tham gia một lần. Mỗi lần check-in hằng ngày cập nhật \texttt{current\_value}, \texttt{streak\_count} và mảng \texttt{completed\_days}.
 
-% ─── 6. CÔNG CỤ TÍNH TOÁN ─────────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Công cụ tính toán}
-\label{subsubsec:module_congcu}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c7g89hi01jk001234ghij"),
+  "challenge_id": ObjectId("681c6f78gh90ij001234fghi"),
+  "user_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "goal_value": 60,
+  "current_value": 45,
+  "is_completed": false,
+  "completed_at": null,
+  "joined_at": "2026-05-10T06:00:00Z",
+  "last_activity_at": "2026-05-12T06:30:00Z",
+  "active_days": ["2026-05-10", "2026-05-11", "2026-05-12"],
+  "completed_days": ["2026-05-10", "2026-05-11", "2026-05-12"],
+  "streak_count": 3,
+  "status": "in_progress",
+  "createdAt": "2026-05-10T06:00:00Z"
+}
+\end{minted}
 
-Nhóm này vận hành hệ thống đo lường và tính toán các chỉ số sinh lý học cá nhân, cung cấp dữ liệu nền tảng cho các khuyến nghị AI và biểu đồ xu hướng sức khỏe theo thời gian.
+% ─── 11. EXERCISES ───────────────────────────────────────────────────────────
+\subsection{Collection \texttt{exercises}}
+\label{subsec:col_exercises}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{Images/IMG/ERD/ERDCongcutinhtoan.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Công cụ tính toán}
-    \label{fig:erd_congcu}
-\end{figure}
+Kho bài tập hệ thống do Admin quản lý. Lưu đầy đủ thông tin kỹ thuật: nhóm cơ, thiết bị, hướng dẫn thực hiện, video và cấu hình hiệp mặc định. Được tham chiếu bởi \texttt{workout\_sessions} và \texttt{challenges}.
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{user\_health\_profiles:} Lưu trữ hồ sơ sức khỏe tổng hợp của người dùng gồm cân nặng, chiều cao, tuổi, giới tính, các số đo vòng cơ thể và mức độ vận động. Hệ thống tự động tính toán và lưu kết quả BMI, BMR, TDEE, tỷ lệ mỡ cơ thể và cân nặng lý tưởng.
-    \item \textbf{health\_metric\_readings:} Ghi nhận lịch sử chuỗi giá trị các chỉ số sức khỏe theo thời gian, phục vụ vẽ biểu đồ xu hướng và phân tích tiến triển sức khỏe.
-    \item \textbf{user\_weight\_history:} Lưu lịch sử cân nặng định kỳ, phục vụ theo dõi tiến độ mục tiêu thay đổi cân nặng theo ngày/tuần/tháng.
-    \item \textbf{activity\_level\_factors:} Bảng tra cứu hệ số nhân theo mức độ vận động thể chất (ít vận động, vận động nhẹ, vừa phải, cường độ cao...), được dùng trong công thức tính TDEE.
-\end{itemize}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681caa11bb22cc001234aabb"),
+  "name": "Push Up",
+  "name_vi": "Hít Đất",
+  "description": "Bai tap co ban giup tang co nguc va tay",
+  "instructions": [
+    "Nam san, hai tay rong bang vai",
+    "Ha nguoi xuong den khi nguc cham san",
+    "Day nguoi len ve vi tri ban dau"
+  ],
+  "tips": "Giu lung thang, khong de mong vong cao",
+  "primary_muscles": ["Nguc", "Tay truoc"],
+  "secondary_muscles": ["Vai", "Bung"],
+  "equipment": ["Khong can thiet bi"],
+  "equipment_ids": [],
+  "muscle_group_ids": [ObjectId("681cbb22cc33dd001234bbcc")],
+  "image_url": "https://res.cloudinary.com/.../pushup.jpg",
+  "video_url": "https://res.cloudinary.com/.../pushup.mp4",
+  "category": "strength",
+  "difficulty": "beginner",
+  "duration_default": 3,
+  "rest_time_default": 60,
+  "default_sets": [
+    { "set_number": 1, "reps": 15, "weight": 0, "calories_per_unit": 0.5 },
+    { "set_number": 2, "reps": 12, "weight": 0, "calories_per_unit": 0.5 }
+  ],
+  "is_active": true,
+  "isDeleted": false,
+  "createdAt": "2026-01-01T00:00:00Z"
+}
+\end{minted}
 
-% ─── 7. BẠN BÈ ─────────────────────────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Bạn bè}
-\label{subsubsec:module_banbe}
+% ─── 12. WORKOUT SESSIONS ────────────────────────────────────────────────────
+\subsection{Collection \texttt{workout\_sessions}}
+\label{subsec:col_workout_sessions}
 
-Nhóm này kiến tạo và duy trì mạng lưới quan hệ xã hội (Social Graph) giữa các thành viên. Dữ liệu theo dõi được sử dụng để lọc bảng tin, gợi ý kết bạn và hiển thị hoạt động của người trong mạng lưới.
+Ghi nhận buổi tập luyện thực tế. Danh sách bài tập cùng các hiệp thực hiện được nhúng trực tiếp để truy vấn nhanh lịch sử mà không cần join. Hỗ trợ chế độ AI gợi ý giáo án qua \texttt{is\_smart\_mode}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.55\textwidth]{Images/IMG/ERD/ERDBanbe.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Bạn bè}
-    \label{fig:erd_banbe}
-\end{figure}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c8h90ij12kl001234hijk"),
+  "user_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "started_at": "2026-05-09T06:00:00Z",
+  "finished_at": "2026-05-09T06:45:00Z",
+  "duration_minutes": 45,
+  "total_calories": 280,
+  "total_sets": 12,
+  "total_reps": 96,
+  "total_volume": 4320,
+  "total_skipped_sets": 1,
+  "muscles_targeted": ["Nguc", "Tay truoc", "Vai"],
+  "equipment_used": ["Khong can thiet bi"],
+  "status": "completed",
+  "is_smart_mode": false,
+  "target_kcal": null,
+  "exercises": [
+    {
+      "exercise_id": ObjectId("681caa11bb22cc001234aabb"),
+      "exercise_name": "Push Up",
+      "sets": [
+        { "set_number": 1, "reps": 15, "weight": 0, "completed": true, "skipped": false },
+        { "set_number": 2, "reps": 12, "weight": 0, "completed": true, "skipped": false }
+      ],
+      "duration_default": 3,
+      "rest_time_default": 60
+    }
+  ],
+  "createdAt": "2026-05-09T06:00:00Z"
+}
+\end{minted}
 
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{follows:} Quản lý quan hệ theo dõi một chiều giữa người dùng (người theo dõi và người được theo dõi). Thiết kế dạng cạnh đồ thị cho phép truy vấn hiệu quả danh sách người theo dõi và được theo dõi, phục vụ phân phối bài viết ưu tiên từ mạng lưới bạn bè trên bảng tin.
-\end{itemize}
+% ─── 13. NOTIFICATIONS ───────────────────────────────────────────────────────
+\subsection{Collection \texttt{notifications}}
+\label{subsec:col_notifications}
 
-% ─── 8. LỊCH CÁ NHÂN VÀ THÔNG BÁO ───────────────────────────────────────────
-\subsubsection{Nhóm tính năng Lịch cá nhân và Thông báo}
-\label{subsubsec:module_lichcanhan}
+Lưu trữ và phân phối thông báo đến người dùng. Thông báo được đẩy thời gian thực qua Socket.IO và lưu vào collection để hiển thị lại trong lịch sử. Index theo \texttt{(receiver\_id, is\_read, createdAt)} giúp truy vấn nhanh số thông báo chưa đọc.
 
-Nhóm này đóng vai trò điều phối dòng thời gian cá nhân, tổng hợp tất cả các mốc lịch từ sự kiện thể thao, thử thách và lịch tập luyện vào một giao diện thống nhất, đồng thời phân phối thông báo thời gian thực đến người dùng.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDLichcannhanthongbao.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Lịch cá nhân và Thông báo}
-    \label{fig:erd_lichcanhan}
-\end{figure}
-
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{notifications:} Lưu trữ và phân phối thông báo đến người nhận, bao gồm người gửi, người nhận, loại thông báo, nội dung, đường dẫn điều hướng, dữ liệu metadata đính kèm và trạng thái đã đọc.
-    \item \textbf{workout\_schedules / workout\_items:} Lưu lịch tập luyện cá nhân theo tuần và chi tiết từng hoạt động tập luyện theo ngày cụ thể. Được tổng hợp vào giao diện Calendar để hiển thị và đánh dấu hoàn thành.
-    \item \textbf{saved\_workout\_templates:} Giáo án mẫu có lịch lặp lại tự động theo ngày trong tuần và khung giờ cụ thể, hỗ trợ gửi nhắc nhở tích hợp vào Calendar.
-    \item \textbf{user\_meal\_schedules:} Lưu kế hoạch thực đơn cá nhân theo ngày, theo dõi tiến độ hoàn thành và số bữa ăn đã thực hiện trong ngày.
-    \item \textbf{user\_meal\_schedule\_reminders:} Cấu hình nhắc nhở bữa ăn theo giờ và loại bữa (sáng, trưa, tối, phụ), có thể bật/tắt linh hoạt.
-    \item \textbf{user\_meal\_items:} Chi tiết từng bữa ăn trong kế hoạch thực đơn, lưu tên món, ngày và giờ dự kiến, thông tin dinh dưỡng (calo, đạm, tinh bột, chất béo) và trạng thái hoàn thành.
-\end{itemize}
-
-% ─── 9. QUẢN LÝ HỆ THỐNG ADMIN ───────────────────────────────────────────────
-\subsubsection{Nhóm tính năng Quản lý hệ thống Admin}
-\label{subsubsec:module_admin}
-
-Nhóm này cung cấp bộ công cụ quản trị tập trung dành riêng cho Quản trị viên. Admin có quyền giám sát toàn bộ nội dung người dùng, xử lý vi phạm theo nhiều loại đối tượng, đồng thời quản lý danh mục dùng chung và theo dõi mức sử dụng tính năng AI trên nền tảng.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Images/IMG/ERD/ERDQuanlyAdmin.png}
-    \vspace{1em}
-    \caption{ERD nhóm tính năng Quản lý hệ thống Admin}
-    \label{fig:erd_admin}
-\end{figure}
-
-\textbf{Các collection chính và chức năng:}
-\begin{itemize}
-    \item \textbf{post\_reports / challenge\_reports / sport\_event\_reports:} Tiếp nhận và quản lý báo cáo vi phạm từ cộng đồng theo từng loại nội dung (bài viết, thử thách, sự kiện thể thao), lưu lý do báo cáo, trạng thái xử lý và thông tin người kiểm duyệt.
-    \item \textbf{user\_reports / exercise\_reports:} Cho phép người dùng báo cáo tài khoản vi phạm hoặc bài tập có nội dung sai lệch, phục vụ Admin xem xét và xử lý kịp thời.
-    \item \textbf{equipment\_reports / meal\_plan\_reports:} Tiếp nhận báo cáo liên quan đến thiết bị tập luyện và kế hoạch thực đơn không phù hợp.
-    \item \textbf{sport\_categories:} Danh mục thể thao do Admin quản lý, lưu tên môn, icon, kiểu địa điểm và lượng calo chuẩn, được dùng làm tiêu chuẩn phân loại sự kiện toàn hệ thống.
-    \item \textbf{equipment:} Danh mục thiết bị và dụng cụ tập luyện (tên tiếng Việt, tên tiếng Anh, hình ảnh, trạng thái kích hoạt), phục vụ phân loại và tìm kiếm bài tập.
-    \item \textbf{muscle\_groups:} Danh mục nhóm cơ thể với thông tin tên, vị trí trên cơ thể và hình ảnh minh họa, phục vụ phân loại bài tập theo nhóm cơ mục tiêu.
-    \item \textbf{meal\_plans:} Quản lý kế hoạch thực đơn mẫu do nhóm quản trị tạo ra, phục vụ gợi ý dinh dưỡng cho người dùng.
-    \item \textbf{ai\_usage\_logs:} Ghi nhận nhật ký sử dụng các tính năng AI trên nền tảng (người dùng, tính năng sử dụng, thời điểm), phục vụ phân tích mức độ tiêu thụ và giám sát tài nguyên AI.
-\end{itemize}
-
-\section{Thiết kế giao diện}
-\label{sec:ui_ux_design}
-
-Thiết kế giao diện hướng đến ba nguyên tắc cốt lõi: dễ sử dụng, nhất quán và hấp dẫn. Mục tiêu là giúp người dùng tiếp cận trực quan và hiệu quả 9 nhóm tính năng chính của nền tảng, bao gồm mạng xã hội cộng đồng, sự kiện thể thao, thử thách, tập luyện, công cụ tính toán sức khỏe, kết nối bạn bè, lịch cá nhân, quản lý tài khoản và phân hệ quản trị Admin.
-
-\subsection{Mục tiêu thiết kế}
-\label{subsec:ui_goals}
-\begin{itemize}
-    \item \textbf{Dễ sử dụng:} Giao diện trực quan, thao tác tối giản và dễ điều hướng cho mọi đối tượng người dùng từ người mới đến người dùng thường xuyên.
-    \item \textbf{Nhất quán:} Đồng nhất về bố cục, bảng màu Indigo/Violet, icon và cách hiển thị thông tin trên toàn bộ 9 nhóm tính năng.
-    \item \textbf{Responsive:} Hiển thị linh hoạt và tối ưu trên nền tảng Web cho cả desktop và tablet.
-    \item \textbf{Hấp dẫn:} Thiết kế hiện đại theo phong cách Glassmorphism, sử dụng hệ màu năng động phù hợp với chủ đề thể dục thể thao và cộng đồng rèn luyện sức khỏe.
-    \item \textbf{Phân hệ rõ ràng:} Mỗi nhóm tính năng sở hữu điểm vào (entry point) riêng biệt, đảm bảo người dùng luôn xác định được vị trí và ngữ cảnh sử dụng.
-\end{itemize}
-
-\subsection{Prototype và màn hình chính}
-\label{subsec:ui_prototype}
-
-\subsubsection{Tổng quan về Prototype}
-Trong quá trình thiết kế giao diện người dùng, nhóm phát triển đã xây dựng bộ prototype tương tác hoàn chỉnh nhằm mục đích kiểm tra trải nghiệm người dùng (UX) và thu thập phản hồi trước khi triển khai phát triển chính thức. Prototype được thiết kế sử dụng công cụ MarvelApp\footnote{\href{https://marvelapp.com/prototype/ch16ai1}{Prototype tương tác trên MarvelApp}}, cho phép mô phỏng đầy đủ các tương tác, luồng điều hướng và hành vi của ứng dụng thực tế.
-
-Bộ prototype bao gồm toàn bộ các màn hình chức năng chính của hệ thống, được tổ chức theo 9 nhóm nghiệp vụ cốt lõi như sau:
-
-\begin{itemize}
-    \item \textbf{Nhóm Quản lý người dùng:} Màn hình đăng ký, đăng nhập (bao gồm Google OAuth), khôi phục mật khẩu và trang hồ sơ cá nhân tổng hợp.
-    \item \textbf{Nhóm Cộng đồng:} Bảng tin Community Feed, đăng bài chia sẻ hoạt động, tương tác Reaction, bình luận phân cấp và kiểm duyệt nội dung bằng AI.
-    \item \textbf{Nhóm Sự kiện thể thao:} Khám phá và lọc sự kiện theo phân loại Trong nhà/Ngoài trời, trang chi tiết sự kiện, theo dõi tiến độ GPS, Video Call điểm danh AI và chia sẻ kết quả.
-    \item \textbf{Nhóm Thử thách cộng đồng:} Danh sách thử thách, tạo thử thách (thủ công hoặc AI đề xuất), check-in hằng ngày và bảng xếp hạng nội bộ.
-    \item \textbf{Nhóm Tập luyện:} Thư viện bài tập lọc theo nhóm cơ/thiết bị, giáo án tập luyện (thủ công hoặc AI gợi ý), tập luyện ngoài trời GPS và lịch sử hoạt động.
-    \item \textbf{Nhóm Công cụ tính toán:} Tính toán chỉ số sinh lý học (BMI, BMR, TDEE), phân tích AI và biểu đồ lịch sử chỉ số sức khỏe theo thời gian.
-    \item \textbf{Nhóm Bạn bè:} Tìm kiếm và kết nối thành viên, theo dõi (Follow) và quản lý danh sách bạn bè.
-    \item \textbf{Nhóm Lịch cá nhân và Thông báo:} Lịch tổng hợp tự động từ sự kiện, thử thách và tập luyện; nhận thông báo thời gian thực.
-    \item \textbf{Nhóm Quản lý hệ thống Admin:} Dashboard tăng trưởng, quản lý người dùng và nội dung, kiểm duyệt báo cáo vi phạm, cấu hình danh mục thể thao.
-\end{itemize}
-
-\subsubsection{Đánh giá Prototype}
-Bộ prototype đã được kiểm tra với nhóm người dùng thử nghiệm (beta testers) gồm 15 người từ các nhóm đối tượng khác nhau. Kết quả thu được cho thấy mức độ hài lòng trung bình đạt 4.2/5.0 điểm về tính dễ sử dụng và 4.5/5.0 điểm về tính thẩm mỹ. Các phản hồi tích cực tập trung vào việc giao diện trực quan, dễ điều hướng và hình ảnh hấp dẫn. Một số điểm cải thiện đã được ghi nhận và áp dụng vào phiên bản cuối cùng, bao gồm điều chỉnh kích thước font chữ, cải thiện contrast màu sắc cho accessibility, và tối ưu hóa các animation transitions.
-
-\subsection{Bảng màu và Typography}
-\label{subsec:ui_color_typography_retained}
-\begin{itemize}
-    \item \textbf{Bảng màu:} Cấu trúc hệ màu Tía và Xanh đậm làm chủ đạo (Indigo/Violet Hue) mang lại điểm tựa thị giác, điểm xuyết cùng hiệu ứng nền kính mờ (Glassmorphism), lấp đầy giao diện bằng một ngôn ngữ tươi mới chuẩn chỉnh phong thái năng động của môn khoa học công nghệ sức khỏe rèn luyện chuyên nghiệp. Đi kèm cùng màu nhấn (accent color) với ý đồ kêu gọi mạnh mẽ động tác tương tác ngay và luôn trên màn hình.
-    \item \textbf{Typography:} Font chữ dễ đọc, hiện đại (Inter, Roboto, Montserrat). Phân cấp rõ ràng giữa tiêu đề, nội dung chính và phụ.
-\end{itemize}
+\begin{minted}[frame=single, framesep=2mm, fontsize=\small, bgcolor=backcolour, breaklines, linenos]{javascript}
+{
+  "_id": ObjectId("681c9i01jk23lm001234ijkl"),
+  "sender_id": ObjectId("681c1a12ab45ef001234efgh"),
+  "receiver_id": ObjectId("681c1a12ab45ef001234abcd"),
+  "type": 1,
+  "name_notification": "Like bai viet",
+  "content": "Nguyen Van B da thich bai viet cua ban",
+  "link_id": "681c2b34cd56ef001234bcde",
+  "metadata": { "post_id": "681c2b34cd56ef001234bcde" },
+  "is_read": false,
+  "createdAt": "2026-05-09T10:35:00Z"
+}
+\end{minted}
 
 

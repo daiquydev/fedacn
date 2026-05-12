@@ -1,21 +1,5 @@
 # Báo cáo LaTeX: giữ mã nguồn / hình; bỏ qua artifact build & đầu ra nặng
-BAOCAO_LATEX/**/*.aux
-BAOCAO_LATEX/**/*.log
-BAOCAO_LATEX/**/*.fls
-BAOCAO_LATEX/**/*.fdb_latexmk
-BAOCAO_LATEX/**/*.synctex.gz
-BAOCAO_LATEX/**/*.xdv
-BAOCAO_LATEX/**/*.toc
-BAOCAO_LATEX/**/*.nlo
-BAOCAO_LATEX/**/*.out
-BAOCAO_LATEX/**/*.bbl
-BAOCAO_LATEX/**/*.blg
-BAOCAO_LATEX/**/*.bcf
-BAOCAO_LATEX/**/*.run.xml
-BAOCAO_LATEX/_minted/
-BAOCAO_LATEX/**/*.minted
-BAOCAO_LATEX/main.synctex(busy)
-BAOCAO_LATEX.zip
+BAOCAO_LATEX/
 *.zip
 *.pdf
 node_modules/

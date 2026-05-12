@@ -21,3 +21,30 @@ export function getChallengePersonalProgressPercent(challenge, participationReco
   const current = Number(rec?.current_value) || 0
   return Math.min(Math.round((current / total) * 100), 100)
 }
+
+/**
+ * Chuỗi ngắn cho thử thách thể dục (theo danh sách bài tập), không dùng danh mục sự kiện trong/ngoài trời.
+ * @param {Array<{ exercise_name_vi?: string, exercise_name?: string }>|undefined|null} exercises
+ * @returns {string|null}
+ */
+export function formatFitnessExerciseListSummary(exercises) {
+  if (!Array.isArray(exercises) || exercises.length === 0) return null
+  const names = exercises
+    .map((ex) => String(ex.exercise_name_vi || ex.exercise_name || '').trim())
+    .filter(Boolean)
+  if (names.length === 0) return `${exercises.length} bài tập`
+  const sep = ' · '
+  if (names.length <= 3) return names.join(sep)
+  return `${names.slice(0, 2).join(sep)} · +${names.length - 2} bài`
+}
+
+/**
+ * @param {Array<{ exercise_name_vi?: string, exercise_name?: string }>|undefined|null} exercises
+ */
+export function formatFitnessExerciseListTitle(exercises) {
+  if (!Array.isArray(exercises) || exercises.length === 0) return ''
+  return exercises
+    .map((ex) => String(ex.exercise_name_vi || ex.exercise_name || 'Bài tập').trim())
+    .filter(Boolean)
+    .join(' · ')
+}

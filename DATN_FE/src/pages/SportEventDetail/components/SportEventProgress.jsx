@@ -23,11 +23,13 @@ import {
   FaShareAlt,
   FaBolt,
   FaChartLine,
-  FaTrash
+  FaTrash,
+  FaPlay
 } from 'react-icons/fa'
 import { MdOutlineHistoryEdu } from 'react-icons/md'
 import moment from 'moment'
 import toast from 'react-hot-toast'
+import { isDailySportEventProgressAllowedAt, nextDailySportEventProgressWindowOpensAt } from '../../../utils/sportEventProgressWindow'
 import { getUserActivities, softDeleteActivity } from '../../../apis/sportEventApi'
 import sportCategoryApi from '../../../apis/sportCategoryApi'
 import { getSportIcon } from '../../../utils/sportIcons'
@@ -94,6 +96,14 @@ function formatPace(totalSeconds, distanceKm) {
   const pm = Math.floor(paceSeconds / 60)
   const ps = Math.floor(paceSeconds % 60)
   return `${pm}p ${String(ps).padStart(2, '0')}s/km`
+}
+
+function formatCountdown(secs) {
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = Math.floor(secs % 60)
+  if (h > 0) return `${h}g ${String(m).padStart(2, '0')}p ${String(s).padStart(2, '0')}s`
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 export default function SportEventProgress({
@@ -589,6 +599,63 @@ export default function SportEventProgress({
     }
   }
 
+  const recordingCountdownIntervalRef = useRef(null)
+  const [recordingCountdown, setRecordingCountdown] = useState(null)
+
+  const getRecordingWindowStatus = useCallback(() => {
+    const now = moment()
+    if (event?.eventType !== 'Ngoài trời') return null
+    const t0 = moment(event?.startDate)
+    const isEndedBanner =
+      !!(event?.endDate && now.clone().startOf('day').isAfter(moment(event.endDate).endOf('day')))
+
+    const officialToday =
+      t0.isValid() &&
+      now
+        .clone()
+        .startOf('day')
+        .hour(t0.hour())
+        .minute(t0.minute())
+        .second(t0.second())
+        .millisecond(t0.millisecond())
+    const secondsBeforeOfficial = officialToday
+      ? officialToday.diff(now, 'seconds')
+      : Number.POSITIVE_INFINITY
+
+    const nextOpen = nextDailySportEventProgressWindowOpensAt(event?.startDate, event?.endDate, now)
+    const secondsUntilCanJoin =
+      nextOpen && nextOpen.isValid() ? nextOpen.diff(now, 'seconds') : Number.POSITIVE_INFINITY
+
+    const canRecord =
+      !!event?.startDate &&
+      t0.isValid() &&
+      !isEndedBanner &&
+      isDailySportEventProgressAllowedAt(event.startDate, event.endDate, now)
+
+    return { secondsBeforeOfficial, secondsUntilCanJoin, isEnded: isEndedBanner, canRecord }
+  }, [event?.startDate, event?.endDate, event?.eventType])
+
+  useEffect(() => {
+    if (event?.eventType !== 'Ngoài trời') return undefined
+    const tick = () => {
+      const rw = getRecordingWindowStatus()
+      if (!rw || rw.isEnded || rw.canRecord) {
+        setRecordingCountdown(null)
+        return
+      }
+      const sec = Math.max(0, rw.secondsUntilCanJoin)
+      setRecordingCountdown(sec > 120 * 60 ? null : sec)
+    }
+    tick()
+    recordingCountdownIntervalRef.current = setInterval(tick, 1000)
+    return () => {
+      if (recordingCountdownIntervalRef.current) {
+        clearInterval(recordingCountdownIntervalRef.current)
+        recordingCountdownIntervalRef.current = null
+      }
+    }
+  }, [getRecordingWindowStatus, event?.eventType])
+
   if (!userProgress) return <div>Loading...</div>
 
   const metricUnit = METRIC_CONFIG[activeMetric]?.label(event?.targetUnit || '')
@@ -597,8 +664,7 @@ export default function SportEventProgress({
   // Determine displayed stats
   const isOutdoor = event?.eventType === 'Ngoài trời'
   const isEnded = event?.endDate ? moment().isAfter(moment(event.endDate)) : false
-  const isNotStarted = event?.startDate ? moment().isBefore(moment(event.startDate)) : false
-  
+  const recordingWindow = isOutdoor ? getRecordingWindowStatus() : null
   const getOutdoorTargetValue = () => {
     if (!allTimeGpsStats) return 0;
     const unit = (event?.targetUnit || '').toLowerCase();
@@ -633,35 +699,71 @@ export default function SportEventProgress({
         />
       )}
 
-      {/* Activity Tracking Button - only for outdoor events */}
-      {isOutdoor && (
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 shadow-lg text-white">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Ghi hoạt động ngoài trời — layout giống banner Video Call trong nhà */}
+      {isOutdoor && recordingWindow && (
+        <div
+          className={`rounded-2xl p-6 shadow-lg text-white relative overflow-hidden
+          ${recordingWindow.canRecord
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
+            : recordingWindow.isEnded
+              ? 'bg-gradient-to-r from-gray-500 to-gray-600'
+              : 'bg-gradient-to-r from-violet-600 to-blue-600'
+            }`}
+        >
+          <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
+          <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/10 rounded-full" />
+
+          <div className="relative flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h3 className="text-xl font-bold mb-1">🏃 Ghi hoạt động ngoài trời</h3>
-              <p className="text-sm opacity-90">Bắt đầu ghi quãng đường và tốc độ khi bạn di chuyển trong ngày</p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex gap-2 w-full sm:w-auto">
-                {isArchivedReadOnly ? (
-                  <div className="flex-1 sm:flex-none bg-white/20 px-4 py-3 rounded-xl font-bold text-sm text-center shadow-sm w-full flex items-center justify-center">
-                    Sự kiện đã gỡ bỏ
-                  </div>
-                ) : isEnded || isNotStarted ? (
-                  <div className="flex-1 sm:flex-none bg-white/20 px-4 py-3 rounded-xl font-bold text-sm text-center shadow-sm w-full flex items-center justify-center">
-                    {isEnded ? 'Sự kiện đã kết thúc' : 'Sự kiện chưa bắt đầu'}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => navigate(`/sport-event/${id}/tracking`)}
-                    className="flex-1 sm:flex-none bg-white text-red-500 px-4 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <FaMapMarkerAlt />
-                    Bắt đầu ghi
-                  </button>
-                )}
+              <div className="flex items-center gap-2 mb-1">
+                <FaMapMarkerAlt className="text-2xl" />
+                <h3 className="text-xl font-bold">Ghi hoạt động ngoài trời</h3>
               </div>
+
+              {recordingWindow.isEnded ? (
+                <p className="text-sm opacity-80">Sự kiện đã kết thúc</p>
+              ) : recordingWindow.canRecord ? (
+                <p className="text-sm opacity-90">
+                  {recordingWindow.secondsBeforeOfficial > 0
+                    ? `🟡 Hoạt động trong ngày bắt đầu sau ${formatCountdown(recordingWindow.secondsBeforeOfficial)} — Bạn có thể bắt đầu ghi sớm`
+                    : '🟢 Trong khung giờ diễn ra — Ghi quãng đường khi di chuyển!'}
+                </p>
+              ) : recordingCountdown !== null ? (
+                <p className="text-sm opacity-90">
+                  ⏳ Còn{' '}
+                  <span className="font-mono font-bold text-yellow-300">
+                    {formatCountdown(Math.max(0, recordingWindow.secondsUntilCanJoin))}
+                  </span>{' '}
+                  nữa sẽ mở ghi hoạt động
+                </p>
+              ) : (
+                <p className="text-sm opacity-80">Ghi hoạt động mở 10 phút trước thời gian diễn ra</p>
+              )}
             </div>
+
+            {isArchivedReadOnly ? (
+              <div className="flex-shrink-0 bg-white/20 px-6 py-3 rounded-xl font-bold text-sm text-center shadow-sm flex items-center justify-center">
+                Sự kiện đã gỡ bỏ
+              </div>
+            ) : recordingWindow.isEnded ? (
+              <div className="flex-shrink-0 bg-white/20 px-6 py-3 rounded-xl font-bold text-sm text-center shadow-sm flex items-center justify-center">
+                Sự kiện đã kết thúc
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => recordingWindow.canRecord && navigate(`/sport-event/${id}/tracking`)}
+                disabled={!recordingWindow.canRecord}
+                className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg
+                  ${recordingWindow.canRecord
+                    ? 'bg-white text-blue-600 hover:bg-blue-50 cursor-pointer'
+                    : 'bg-white/30 text-white/60 cursor-not-allowed'
+                  }`}
+              >
+                <FaPlay className="text-xs" />
+                Bắt đầu ghi
+              </button>
+            )}
           </div>
           {todayGpsStats && (
             <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4 text-center">

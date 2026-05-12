@@ -75,6 +75,8 @@ export default function MyChallenge() {
   
   // Filter state for BOTH tabs
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'ongoing' | 'upcoming' | 'ended'
+  // Tab đã tạo: loại thử thách (ăn uống / ngoài trời / thể dục)
+  const [createdChallengeType, setCreatedChallengeType] = useState('all')
 
   // Debounce sidebar search for created challenges
   const [createdDebouncedSearch, setCreatedDebouncedSearch] = useState('')
@@ -115,17 +117,18 @@ export default function MyChallenge() {
   }, [joinedSearch])
 
   const { data: joinedCategoriesData } = useQuery({
-    queryKey: ['sportCategories'],
-    queryFn: () => sportCategoryApi.getAll(),
+    queryKey: ['sportCategoriesAll'],
+    queryFn: () => sportCategoryApi.getAllWithStatus(),
     enabled: activeTab === 'joined',
     staleTime: 60_000
   })
   const joinedDbCategories = joinedCategoriesData?.data?.result || []
   const joinedAvailableCategories = useMemo(() => {
+    const active = joinedDbCategories.filter((cat) => !cat.isDeleted)
     if (joinedActiveType === 'nutrition') return []
-    if (joinedActiveType === 'outdoor_activity') return joinedDbCategories.filter((cat) => cat.type === 'Ngoài trời')
-    if (joinedActiveType === 'fitness') return joinedDbCategories.filter((cat) => cat.type === 'Trong nhà')
-    return joinedDbCategories
+    if (joinedActiveType === 'outdoor_activity') return active.filter((cat) => cat.type === 'Ngoài trời')
+    if (joinedActiveType === 'fitness') return []
+    return active
   }, [joinedDbCategories, joinedActiveType])
 
   const joinedCategoryIconLookup = useMemo(() => {
@@ -135,6 +138,10 @@ export default function MyChallenge() {
     })
     return map
   }, [joinedDbCategories])
+
+  useEffect(() => {
+    if (joinedActiveType === 'fitness') setJoinedSelectedCategory('all')
+  }, [joinedActiveType])
 
   const clearJoinedAdvancedFilters = () => {
     setJoinedFilterVisibility('all')
@@ -164,12 +171,13 @@ export default function MyChallenge() {
   // Reset created page when filters change
   React.useEffect(() => {
     setCreatedPage(1)
-  }, [createdDebouncedSearch, statusFilter])
+  }, [createdDebouncedSearch, statusFilter, createdChallengeType])
 
   // Reset filter when switching tabs
   const handleTabChange = (tab) => {
     setActiveTab(tab)
     setStatusFilter('all')
+    setCreatedChallengeType('all')
     setMobileShowDetail(false)
     setSelectedParticipant(null)
   }
@@ -186,12 +194,13 @@ export default function MyChallenge() {
   }, [statsData])
 
   const { data: createdData, isLoading: isLoadingCreated } = useQuery({
-    queryKey: ['my-created-challenges', createdPage, createdDebouncedSearch, statusFilter],
+    queryKey: ['my-created-challenges', createdPage, createdDebouncedSearch, statusFilter, createdChallengeType],
     queryFn: () => getMyCreatedChallenges({ 
       page: createdPage, 
       limit: 50,
       search: createdDebouncedSearch || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      challenge_type: createdChallengeType !== 'all' ? createdChallengeType : undefined
     }),
     staleTime: 1000,
     keepPreviousData: true
@@ -238,12 +247,13 @@ export default function MyChallenge() {
     return createdChallenges.find((c) => c._id === selectedChallengeId) || null
   }, [selectedChallengeId, createdChallenges])
 
-  // Auto-select first challenge
+  // Auto-select first challenge, hoặc chọn lại khi bộ lọc loại bỏ thử thách đang chọn
   React.useEffect(() => {
-    if (createdChallenges.length > 0 && !selectedChallengeId) {
+    if (createdChallenges.length === 0) return
+    if (!selectedChallengeId || !createdChallenges.some((c) => c._id === selectedChallengeId)) {
       setSelectedChallengeId(createdChallenges[0]._id)
     }
-  }, [createdChallenges])
+  }, [createdChallenges, selectedChallengeId])
 
   // Leaderboard for selected challenge
   const { data: leaderboardData } = useQuery({
@@ -303,13 +313,6 @@ export default function MyChallenge() {
     }
   })
 
-  // Sidebar filtered challenges
-  const filteredSidebarChallenges = useMemo(() => {
-    if (!sidebarSearch.trim()) return createdChallenges
-    return createdChallenges.filter((c) => c.title.toLowerCase().includes(sidebarSearch.toLowerCase()))
-  }, [createdChallenges, sidebarSearch])
-
-  // ─── HANDLERS ────────────────────────────────────────────
   const handleSelectChallenge = (id) => {
     setSelectedChallengeId(id)
     setActiveSubTab('overview')
@@ -446,7 +449,7 @@ export default function MyChallenge() {
           {activeTab === 'created' ? (
             <CreatedTabContent
               isLoading={isLoadingCreated}
-              challenges={filteredSidebarChallenges}
+              challenges={createdChallenges}
               createdTotal={createdTotal}
               selectedChallenge={selectedChallenge}
               selectedChallengeId={selectedChallengeId}
@@ -472,7 +475,9 @@ export default function MyChallenge() {
               mobileShowDetail={mobileShowDetail}
               onMobileBack={() => setMobileShowDetail(false)}
               statusFilter={statusFilter}
-              onClearFilter={() => setStatusFilter('all')}
+              onClearFilter={() => { setStatusFilter('all'); setCreatedChallengeType('all') }}
+              createdChallengeType={createdChallengeType}
+              onCreatedChallengeTypeChange={setCreatedChallengeType}
             />
           ) : (
             <JoinedTabContent
@@ -578,7 +583,8 @@ function CreatedTabContent({
   leaderboard,
   onDeleteClick, onEditClick, navigate,
   mobileShowDetail, onMobileBack,
-  statusFilter, onClearFilter
+  statusFilter, onClearFilter,
+  createdChallengeType, onCreatedChallengeTypeChange
 }) {
   if (isLoading) {
     return (
@@ -589,7 +595,7 @@ function CreatedTabContent({
   }
 
   if (createdTotal === 0) {
-    if (sidebarSearch || statusFilter !== 'all') {
+    if (sidebarSearch || statusFilter !== 'all' || createdChallengeType !== 'all') {
       return (
         <div className="text-center py-20 px-6">
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -622,8 +628,8 @@ function CreatedTabContent({
     <div className="flex flex-col md:flex-row min-h-[500px]">
       {/* ─── SIDEBAR (challenge list) ─── */}
       <div className={`md:w-72 lg:w-80 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 ${mobileShowDetail ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
-        {/* Search */}
-        <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+        {/* Search + loại thử thách */}
+        <div className="p-3 border-b border-gray-100 dark:border-gray-700 space-y-2">
           <div className="relative">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
             <input
@@ -634,13 +640,47 @@ function CreatedTabContent({
               className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white placeholder:text-gray-400"
             />
           </div>
+          <div className="grid grid-cols-2 gap-1">
+            <button
+              type="button"
+              onClick={() => onCreatedChallengeTypeChange('all')}
+              className={`px-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+                createdChallengeType === 'all'
+                  ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-800'
+                  : 'bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+            >
+              Tất cả loại
+            </button>
+            {[
+              { value: 'nutrition', cfg: TYPE_CONFIG.nutrition, active: 'bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-300 shadow-sm ring-1 ring-emerald-200 dark:ring-emerald-800' },
+              { value: 'outdoor_activity', cfg: TYPE_CONFIG.outdoor_activity, active: 'bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800' },
+              { value: 'fitness', cfg: TYPE_CONFIG.fitness, active: 'bg-white dark:bg-gray-800 text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-800' }
+            ].map(({ value, cfg, active }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onCreatedChallengeTypeChange(value)}
+                className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  createdChallengeType === value
+                    ? active
+                    : 'bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                <span className="text-sm opacity-90">{cfg.icon}</span>
+                <span className="truncate">{cfg.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Challenge list */}
         <div className="flex-1 overflow-y-auto max-h-[600px] scrollbar-thin pr-1">
           {challenges.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-              Không tìm thấy thử thách nào phù hợp với "{sidebarSearch}"
+              {sidebarSearch.trim()
+                ? `Không tìm thấy thử thách nào phù hợp với "${sidebarSearch}"`
+                : 'Không có thử thách nào phù hợp với bộ lọc hiện tại.'}
             </div>
           ) : (
           challenges.map((challenge) => {

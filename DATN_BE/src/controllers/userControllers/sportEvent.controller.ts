@@ -203,7 +203,7 @@ export const leaveSportEventController = async (req: Request, res: Response) => 
 
 export const getMyEventsController = async (req: Request, res: Response) => {
   try {
-    const { page, limit, status, search } = req.query
+    const { page, limit, status, search, eventType } = req.query
     const userId = (req as any).decoded?.user_id
 
     if (!userId) {
@@ -212,7 +212,7 @@ export const getMyEventsController = async (req: Request, res: Response) => {
       })
     }
 
-    const result = await sportEventService.getMyEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string, search as string)
+    const result = await sportEventService.getMyEventsService(userId, Number(page) || 1, Number(limit) || 10, status as string, search as string, eventType as string)
     return res.json({
       result,
       message: 'Get my sport events successfully'

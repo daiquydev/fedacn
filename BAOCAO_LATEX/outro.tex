@@ -1,91 +1,78 @@
-﻿% !TeX root = main.tex
+% !TeX root = main.tex
 
-Dự án ``Xây dựng nền tảng mạng xã hội rèn luyện thể dục thể thao cộng đồng FitConnect'' đã được hoàn thành với kết quả vượt ngoài mong đợi ban đầu. Nhìn lại toàn bộ hành trình từ ý tưởng đến sản phẩm hoàn chỉnh, đây là một nỗ lực nghiêm túc và có tính tiên phong nhằm lấp đầy khoảng trống mà các nền tảng hiện tại chưa giải quyết được: tích hợp sâu giữa mạng xã hội cộng đồng và các công cụ hỗ trợ rèn luyện sức khỏe cá nhân trong một hệ sinh thái duy nhất, được dẫn dắt bởi Trí tuệ nhân tạo.
+Dự án ``Xây dựng nền tảng mạng xã hội rèn luyện thể dục thể thao cộng đồng FitConnect'' đã hoàn thành chu kỳ phát triển từ nghiên cứu lý thuyết đến hiện thực sản phẩm. Chương này sẽ tổng kết các kết quả đạt được, đánh giá khách quan các ưu nhược điểm và vạch ra lộ trình phát triển trong tương lai.
 
-\section{Kết quả đạt được}
+\section{Đánh giá kết quả đạt được}
 
-\subsection{Hiện thực đầy đủ 9 nhóm tính năng cốt lõi}
-
-Hệ thống FitConnect đã được hiện thực thành công toàn bộ 9 nhóm tính năng cốt lõi đã đề ra trong giai đoạn phân tích yêu cầu, mỗi nhóm đều được triển khai đến mức độ sẵn sàng đưa vào sử dụng thực tế.
-
-\textbf{Nhóm 1 -- Quản lý tài khoản và hồ sơ người dùng:} Hệ thống cung cấp đầy đủ quy trình đăng ký, đăng nhập thông qua email lẫn Google OAuth 2.0, cơ chế khôi phục mật khẩu an toàn bằng mã OTP 6 chữ số gửi qua email, và một không gian Profile Dashboard toàn diện cho phép người dùng cá nhân hóa hồ sơ (ảnh đại diện, ảnh nền, thông tin cá nhân, thông số nhân trắc học) đồng thời theo dõi lịch sử toàn bộ hoạt động bao gồm bài viết, sự kiện, thử thách và giáo án tập luyện.
-
-\textbf{Nhóm 2 -- Mạng xã hội cộng đồng:} Bảng tin cộng đồng (Newsfeed) được xây dựng với đầy đủ tính năng của một mạng xã hội hiện đại: đăng bài viết kèm hình ảnh, bày tỏ cảm xúc, bình luận và trả lời bình luận theo luồng, chia sẻ nội dung. Điểm đặc biệt của nhóm tính năng này là sự tích hợp của hai lớp kiểm duyệt nội dung thông minh: mô hình NSFW Detection (TensorFlow.js) chạy trên trình duyệt để phát hiện hình ảnh nhạy cảm trước khi đăng, và bộ lọc từ ngữ tự động để chặn nội dung vi phạm tiêu chuẩn cộng đồng ngay cả trong phần bình luận. Cơ chế báo cáo vi phạm cộng đồng kết hợp với bảng điều khiển kiểm duyệt toàn diện của Quản trị viên tạo nên một vòng kiểm soát chặt chẽ.
-
-\textbf{Nhóm 3 -- Sự kiện thể thao:} Đây là nhóm tính năng phức tạp và đặc trưng nhất của nền tảng. Hệ thống hỗ trợ song song hai hình thức thi đua: Ngoài trời (chạy bộ, đạp xe, leo núi) với tính năng theo dõi lộ trình GPS thời gian thực trên bản đồ Goong Maps, tự động tính toán quãng đường, tốc độ và calo tiêu hao; và Trong nhà (Yoga, Cardio, Gym) với không gian Video Call nhóm tích hợp AI nhận diện khuôn mặt (face-api.js) để tự động giám sát thời gian hiện diện hợp lệ của từng người tham gia, đảm bảo tính công bằng tuyệt đối. Ngoài ra, tính năng AI điền tự động thông tin sự kiện từ một đoạn mô tả ngôn ngữ tự nhiên đã rút ngắn đáng kể thời gian tổ chức.
-
-\textbf{Nhóm 4 -- Thử thách cộng đồng:} Ba loại hình thử thách (Ăn uống/Dinh dưỡng, Thể dục, Ngoài trời) đều được hiện thực với cơ chế check-in tiến độ chuyên biệt. Thử thách dinh dưỡng xác minh ảnh bữa ăn bằng AI đa phương thức; thử thách vận động tích hợp trực tiếp vào không gian tập luyện của nhóm tính năng 6; thử thách ngoài trời sử dụng lại cơ sở hạ tầng GPS đã xây dựng. Hệ thống lịch biểu trực quan giúp theo dõi chuỗi streak liên tục và bảng xếp hạng cộng đồng thời gian thực.
-
-\textbf{Nhóm 5 -- Kết nối mạng lưới bạn bè:} Hệ thống xây dựng cơ chế kết bạn và theo dõi đầy đủ, với bảng tin (News Feed) ưu tiên hiển thị nội dung từ những người trong mạng lưới. Mọi hoạt động thể thao nổi bật như tham gia sự kiện hay chinh phục thử thách đều tự động cập nhật lên bảng tin để lan tỏa động lực trong cộng đồng.
-
-\textbf{Nhóm 6 -- Tập luyện cá nhân:} Hệ thống tập luyện cá nhân cung cấp ba phương thức lựa chọn bài tập bổ sung lẫn nhau: tùy chỉnh thủ công theo thiết bị sẵn có hoặc nhóm cơ mục tiêu (với trực quan hóa nhóm cơ bắp qua thư viện React Body Highlighter), gợi ý AI thông minh dựa trên mô tả tình trạng sức khỏe bằng ngôn ngữ tự nhiên, hoặc sử dụng lại các giáo án đã lưu. Người dùng có thể lên lịch tập luyện hàng tuần và được nhắc nhở tự động, đồng thời tất cả buổi tập được lưu vào lịch sử chi tiết với calo tiêu hao, thời lượng và nhóm cơ đã kích hoạt. Tính năng theo dõi hoạt động thể thao ngoài trời độc lập (chạy bộ, đạp xe) cũng được tích hợp để chuẩn bị cho các sự kiện và thử thách.
-
-\textbf{Nhóm 7 -- Tính toán các chỉ số sức khỏe và gợi ý AI:} Bộ công cụ tính toán y khoa bao gồm 8 chỉ số: BMI, BMR, TDEE, Body Fat, IBW (Cân nặng lý tưởng), LBM (Khối lượng cơ thể nạc), Calo đốt cháy và Lượng nước cần mỗi ngày. Mỗi lần tính toán đều được lưu vào lịch sử và hiển thị qua biểu đồ xu hướng theo thời gian. Đặc biệt, tính năng AI Phân Tích Sức Khỏe tổng hợp toàn bộ chỉ số để đưa ra lời khuyên dinh dưỡng và danh sách bài tập gợi ý cá nhân hóa từ kho dữ liệu của hệ thống.
-
-\textbf{Nhóm 8 -- Lịch trình cá nhân và thông báo:} Giao diện Lịch cá nhân (Calendar) tự động đồng bộ tất cả hoạt động mà người dùng đã đăng ký -- sự kiện thể thao, thử thách cộng đồng, lịch tập luyện cá nhân -- vào một giao diện thống nhất. Hệ thống thông báo thời gian thực (Socket.io) gửi cảnh báo khi đến giờ tập, khi bạn bè tương tác và khi có mục tiêu sắp đến hạn.
-
-\textbf{Nhóm 9 -- Quản trị hệ thống toàn diện:} Bảng điều khiển Quản trị viên (Admin Dashboard) tích hợp biểu đồ thống kê thời gian thực về tăng trưởng người dùng, mức độ tương tác theo từng nhóm tính năng và thống kê sử dụng AI theo danh mục. Quản trị viên có toàn quyền kiểm duyệt và xử lý mọi nội dung vi phạm (bài viết, sự kiện, thử thách, tài khoản) thông qua luồng báo cáo từ cộng đồng, đồng thời quản lý toàn bộ tài nguyên dữ liệu nền tảng bao gồm danh mục thể thao, thiết bị tập luyện và kho bài tập.
-
-\subsection{Kết quả kiểm thử}
-
-Chất lượng của hệ thống được kiểm chứng thông qua nhiều phương pháp kiểm thử đa cấp độ:
-
+\subsection{Đối với nhiệm vụ đề tài}
+Dựa trên các mục tiêu chiến lược đã đề ra tại Mục~\ref{sec:intro:objectives}, dự án đã hoàn thành và đạt được các kết quả cụ thể sau:
 \begin{itemize}
-    \item \textbf{Kiểm thử chức năng:} 65 kịch bản kiểm thử UAT (User Acceptance Testing) bao phủ toàn bộ 9 nhóm tính năng đều cho kết quả \textbf{96.9\% thành công} (63/65 kịch bản passed). 15 kịch bản Happy Case đại diện (TC-01 đến TC-15) đều vượt qua hoàn toàn.
-
-    \item \textbf{Kiểm thử Unit và API:} Tổng cộng 80 Unit Test với tỉ lệ bao phủ mã nguồn trung bình \textbf{88.5\%}; 73 API Endpoint được kiểm thử, đạt tỉ lệ thành công \textbf{97.3\%} (71/73 endpoints passed).
-
-    \item \textbf{Kiểm thử tải (Loader.io):} Hệ thống xử lý ổn định \textbf{1.000 người dùng đồng thời} trong vòng 1 phút với thời gian phản hồi trung bình chỉ \textbf{13ms}, tỉ lệ lỗi \textbf{0\%} (953/953 yêu cầu thành công), chứng minh kiến trúc Event Loop của Node.js hoạt động hiệu quả dưới áp lực cao.
-
-    \item \textbf{Chất lượng giao diện (Google PageSpeed Insights):} Frontend đạt điểm số xuất sắc -- \textbf{Hiệu suất 85/100}, \textbf{Khả năng tiếp cận 92/100}, \textbf{Best Practices 100/100} và \textbf{SEO 100/100} -- đáp ứng toàn bộ các tiêu chuẩn kỹ thuật web hiện đại năm 2026.
-
-    \item \textbf{Hiệu năng cơ sở dữ liệu (MongoDB Atlas):} Cụm Replica Set 3 nodes vận hành ổn định liên tục trong 2 tháng (tháng 3 đến tháng 4 năm 2026). Thời gian phản hồi các truy vấn được tối ưu rõ rệt: truy vấn danh sách bài viết phân trang đạt \textbf{$\sim$80ms}, truy vấn tổng hợp tiến độ Thử thách (Pipeline Aggregation) đạt \textbf{$\sim$150ms}, tìm kiếm bài tập thể dục (Text Indexing) đạt \textbf{$\sim$45ms}.
-
-    \item \textbf{Kiểm thử bảo mật:} Hệ thống vượt qua tất cả kịch bản tấn công: từ chối Token hết hạn/bị giả mạo (401 Unauthorized), ngăn chặn XSS và NoSQL Injection, phân quyền phân đoạn chặt chẽ (User không thể truy cập route \texttt{/api/admin}), và cơ chế Rate Limiting tự động chặn IP khi vượt 100 request/15 phút.
+    \item \textbf{Xây dựng không gian cộng đồng thể thao chuyên biệt:} Hiện thực hóa thành công một mạng xã hội tập trung, giúp kết nối những người cùng đam mê rèn luyện và loại bỏ các yếu tố gây nhiễu thông tin. Hệ thống đã thiết lập được môi trường tương tác an toàn, văn minh thông qua các công cụ kiểm duyệt nội dung thông minh.
+    \item \textbf{Triển khai mô hình sự kiện thể thao hướng tới mục tiêu chung:} Xây dựng thành công nền tảng tổ chức sự kiện linh hoạt, hỗ trợ cả hai hình thức vận động ngoài trời (GPS) và trong nhà (Video trực tuyến). Hệ thống đã giải quyết được bài toán kết nối tập thể và tạo ra sự thi đua thông qua bảng xếp hạng tiến độ chung của sự kiện.
+    \item \textbf{Hiện thực hóa tính năng thử thách cộng đồng và kỷ luật cá nhân:} Xây dựng tính năng thử thách cộng đồng đa dạng từ ăn uống đến tập luyện, giúp người dùng duy trì sự bền bỉ mỗi ngày. Việc tích hợp AI để xác thực kết quả thử thách đã giúp tăng tính trung thực và nghiêm túc trong quá trình rèn luyện cá nhân.
+    \item \textbf{Hiện thực hóa module phân tích sức khỏe và AI gợi ý tập luyện:} Xây dựng thành công bộ công cụ đo lường chỉ số thể chất chuẩn y khoa, kết hợp cùng trí tuệ nhân tạo (AI) để tự động phân tích thể trạng và thiết lập các giáo án tập luyện cá nhân hóa. Tính năng này đã cho phép người dùng chuyển đổi trực tiếp từ kết quả phân tích sức khỏe sang lộ trình rèn luyện cụ thể trên hệ thống lịch cá nhân.
+    \item \textbf{Hoàn thiện hệ thống quản trị và vận hành chuyên nghiệp:} Phát triển phân hệ Admin với dashboard trực quan, giúp quản trị viên nắm bắt toàn diện các chỉ số tăng trưởng, quản lý dữ liệu và thực thi các chính sách cộng đồng một cách hiệu quả.
+    \item \textbf{Đảm bảo chất lượng trải nghiệm và giá trị xã hội:} Sản phẩm hoàn thiện đạt các tiêu chuẩn về tính tiện dụng, hiệu năng và khả năng truy cập trên đa thiết bị (Responsive). Đề tài đã góp phần thúc đẩy lối sống lành mạnh và củng cố năng lực phân tích, thiết kế hệ thống phần mềm thực tế.
 \end{itemize}
 
-\subsection{Thành tựu về mặt kỹ thuật}
-
-Về mặt kỹ thuật, hệ thống được xây dựng trên kiến trúc hiện đại và đồng nhất ngôn ngữ từ đầu đến cuối bằng \textbf{JavaScript/TypeScript}. Backend (Node.js + Express.js) triển khai đúng mô hình Routes~$\rightarrow$~Controllers~$\rightarrow$~Services ba lớp với MongoDB Atlas (Replica Set) làm cơ sở dữ liệu chính; Frontend người dùng (React 18 + Vite + TanStack Query) và Frontend quản trị viên (React 18) được triển khai độc lập theo mô hình monorepo. Trí tuệ nhân tạo được tích hợp xuyên suốt ở nhiều điểm chiến lược: kiểm duyệt hình ảnh (NSFW Detection), nhận diện khuôn mặt (face-api.js), xác minh bữa ăn (AI đa phương thức), phân tích sức khỏe và gợi ý cá nhân hóa, tạo nội dung tự động cho sự kiện và thử thách. Toàn bộ hệ thống AI sử dụng mô hình Proxy Pattern để che giấu API Key phía Backend và ghi nhận thống kê sử dụng theo từng danh mục tính năng.
-
-\section{Hạn chế hiện tại}
-
-Bên cạnh những kết quả đạt được, dự án còn tồn tại một số hạn chế khách quan xuất phát từ giới hạn về thời gian và nguồn lực của một đồ án tốt nghiệp:
-
+\subsection{Đối với cơ sở lý thuyết và công nghệ}
+Để hiện thực nền tảng FitConnect, chúng tôi đã tiến hành nghiên cứu sâu rộng cả về cơ sở lý thuyết chuyên ngành lẫn các công nghệ phần mềm hiện đại, cụ thể:
 \begin{itemize}
-    \item \textbf{Quy mô cơ sở dữ liệu bài tập:} Kho dữ liệu bài tập hiện tại được xây dựng thủ công với số lượng bài tập còn hạn chế, chưa bao phủ đầy đủ tất cả các môn thể thao và phương pháp tập luyện chuyên sâu. Điều này ảnh hưởng đến chất lượng gợi ý AI trong một số trường hợp đặc thù.
-
-    \item \textbf{Tính cá nhân hóa AI còn ở mức tổng quát:} Các gợi ý bài tập và phân tích sức khỏe hiện tại sử dụng mô hình ngôn ngữ lớn (LLM) kết hợp dữ liệu người dùng, nhưng chưa có cơ chế học tăng cường (Reinforcement Learning) để AI cải thiện dần độ chính xác gợi ý dựa trên phản hồi thực tế từ hành vi tập luyện lâu dài của người dùng.
-
-    \item \textbf{Chưa có ứng dụng di động riêng:} Hệ thống hiện chỉ là ứng dụng web với thiết kế Responsive, chưa có ứng dụng iOS/Android native. Các tính năng đòi hỏi quyền truy cập phần cứng sâu hơn (cảm biến gia tốc, GPS background tracking, thông báo đẩy) còn bị giới hạn bởi API trình duyệt.
-
-    \item \textbf{Năng lực xử lý Video Call ở quy mô lớn:} Hạ tầng WebRTC hiện tại được triển khai theo mô hình Peer-to-Peer (P2P) thông qua máy chủ TURN. Khi số lượng người tham gia một phòng Video Call vượt ngưỡng, độ trễ và chất lượng hình ảnh có thể bị ảnh hưởng; giải pháp SFU (Selective Forwarding Unit) chuyên dụng chưa được tích hợp.
-
-    \item \textbf{Mức độ tự động hóa kiểm thử:} Bộ kiểm thử hiện tại chủ yếu là Unit Test và kiểm thử API thủ công; chưa có bộ kiểm thử End-to-End (E2E) tự động bằng Playwright/Cypress để phủ toàn bộ các luồng người dùng phức tạp.
+    \item \textbf{Về mặt cơ sở lý thuyết:}
+    \begin{itemize}
+        \item Tìm hiểu và áp dụng các chỉ số y khoa nền tảng như BMI, BMR, TDEE và đặc biệt là hệ số MET (Metabolic Equivalent of Task) để xây dựng thuật toán tính toán năng lượng tiêu hao (Kcal) chính xác cho từng loại hình vận động.
+        \item Xây dựng hệ thống phân loại bài tập khoa học và cấu trúc dữ liệu cho các sự kiện thể thao cộng đồng, thử thách thể chất dựa trên các mô hình vận động thực tế (theo quãng đường, thời gian hoặc cường độ).
+        \item Nghiên cứu các mô hình tương tác mạng xã hội để thiết lập cơ chế kết nối, chia sẻ và thúc đẩy động lực tập luyện trong cộng đồng một cách tự nhiên và bền vững.
+    \end{itemize}
+    \item \textbf{Về mặt công nghệ và hạ tầng:}
+    \begin{itemize}
+        \item \textbf{Ứng dụng Web:} Sử dụng kết hợp React 18, Vite, Tailwind CSS và TanStack Query để xây dựng giao diện đơn giản nhưng hiệu quả, đáp ứng tốt trên đa thiết bị.
+        \item \textbf{Server nền tảng:} Hiện thực bằng Node.js kết hợp Express.js, sử dụng MongoDB Atlas (NoSQL) để lưu trữ thông tin linh hoạt và tích hợp các dịch vụ bên thứ ba:
+        \begin{itemize}
+            \item Định vị và bản đồ: Goong Maps API.
+            \item Lưu trữ đa phương tiện: Cloudinary.
+            \item Dịch vụ AI đa mô hình: Groq API, Gemini API.
+        \end{itemize}
+    \end{itemize}
+    \item Hệ thống đã được triển khai thành công trên hạ tầng điện toán đám mây thông qua Google Cloud Platform (Cloud Run), Vercel, đồng thời áp dụng quy trình CI/CD cơ bản để đảm bảo tính ổn định và khả năng mở rộng.
 \end{itemize}
 
-\section{Định hướng phát triển tương lai}
+\subsection{Đối với quy trình phát triển phần mềm}
+Về vấn đề tổ chức và quản lý mã nguồn, chúng tôi đã áp dụng công cụ Git và nền tảng Github vào quá trình phát triển theo cấu trúc Monorepo, giúp tăng hiệu quả việc cộng tác và đồng bộ mã nguồn giữa các phần của hệ thống.
 
-Với nền tảng kỹ thuật vững chắc và kiến trúc mở rộng được đã xây dựng, FitConnect sở hữu tiềm năng phát triển rõ ràng theo nhiều hướng chiến lược:
+Về vấn đề kiểm thử, chúng tôi đã tìm hiểu về Vitest, Postman và Apidog, sau đó áp dụng chúng vào quá trình kiểm thử đơn vị (Unit test) cho các logic tính toán và kiểm thử API để đảm bảo tính đúng đắn của dữ liệu.
 
+Về vấn đề hiệu suất website, chúng tôi đã đánh giá liên tục thông qua PageSpeed Insights. Việc cải thiện hiệu năng đã đạt được những kết quả rất tích cực về mặt hiển thị và SEO, tuy nhiên vẫn còn một số điểm cần tối ưu hóa thêm ở khâu nạp dữ liệu từ các dịch vụ bên thứ ba.
+
+\section{Đánh giá ưu, nhược điểm của nền tảng}
+
+\subsection{Ưu điểm}
+Hệ thống FitConnect được xây dựng với định hướng trở thành một hệ sinh thái thể thao cộng đồng toàn diện. Qua quá trình thử nghiệm và đối chiếu thực tế với các nền tảng fitness hàng đầu (như Strava, MyFitnessPal, Nike Training Club), hệ thống đã chứng minh được những ưu điểm vượt trội sau:
 \begin{itemize}
-    \item \textbf{Phát triển ứng dụng di động (Mobile App):} Xây dựng ứng dụng iOS và Android bằng React Native hoặc Flutter để tận dụng đầy đủ năng lực phần cứng của thiết bị thông minh: GPS Background Tracking (theo dõi liên tục khi tắt màn hình), kết nối Bluetooth với thiết bị đo nhịp tim và cảm biến, thông báo đẩy (Push Notification) theo thời gian thực, và quét mã vạch thực phẩm để tra cứu thông tin dinh dưỡng tức thì.
-
-    \item \textbf{Nâng cấp hạ tầng Video Call (SFU):} Tích hợp máy chủ SFU chuyên dụng (mediasoup hoặc LiveKit) để thay thế mô hình P2P hiện tại, cho phép phòng Video Call hỗ trợ hàng trăm người tham gia đồng thời với chất lượng hình ảnh ổn định, cùng các tính năng nâng cao như ghi hình phiên tập và phát lại sau buổi sự kiện.
-
-    \item \textbf{AI cá nhân hóa thế hệ tiếp theo:} Xây dựng mô hình học máy (Machine Learning) dựa trên lịch sử tập luyện dài hạn của từng người dùng để AI dự đoán được nguy cơ chấn thương, tự động điều chỉnh khối lượng tập theo chu kỳ phục hồi (Periodization), và đề xuất lộ trình dài hạn (12 tuần, 6 tháng) tùy theo mục tiêu cụ thể.
-
-    \item \textbf{Tích hợp thiết bị đeo thông minh (Wearables):} Kết nối API với Apple Health, Google Fit và các thiết bị smartwatch (Apple Watch, Garmin, Fitbit) để tự động đồng bộ dữ liệu nhịp tim, bước chân, chất lượng giấc ngủ và calo tiêu hao thực tế, làm phong phú thêm hồ sơ sức khỏe và tăng độ chính xác của gợi ý AI.
-
-    \item \textbf{Mở rộng tính năng Dinh dưỡng:} Xây dựng cơ sở dữ liệu dinh dưỡng món ăn Việt Nam hợp tác với Viện Dinh dưỡng Quốc gia, tích hợp tính năng nhận diện món ăn từ hình ảnh (Food Recognition AI) và lên kế hoạch thực đơn cá nhân hóa hoàn chỉnh kết hợp với chỉ tiêu TDEE đã tính.
-
-    \item \textbf{Gamification và hệ thống phần thưởng:} Phát triển hệ thống điểm danh tiếng (Reputation Points), huy hiệu thành tích (Achievement Badges) và bảng xếp hạng toàn cầu theo từng môn thể thao để tăng động lực dài hạn. Tích hợp cơ chế thưởng cộng đồng (Community Rewards) và các chương trình đối tác với thương hiệu thể thao.
-
-    \item \textbf{Nền tảng cho Huấn luyện viên chuyên nghiệp (Coach Platform):} Xây dựng vai trò Huấn luyện viên được xác minh (Verified Coach) với khả năng tạo và bán giáo án tập luyện chuyên nghiệp, tổ chức các lớp học trực tuyến có phí thông qua Video Call, và theo dõi tiến độ học viên theo thời gian thực.
+    \item \textbf{Tính toàn diện vượt trội (All-in-one):} FitConnect là nền tảng hiếm hoi hội tụ đầy đủ cả 5 nhóm tính năng cốt lõi: Mạng xã hội, Sự kiện, Thử thách, AI cá nhân hóa và Vận hành chuyên nghiệp. Trong khi các đối thủ thường chỉ mạnh ở một mảng duy nhất (như Strava mạnh về cộng đồng nhưng thiếu AI; MyFitnessPal mạnh về dinh dưỡng nhưng thiếu tính kết nối), FitConnect mang lại trải nghiệm "một điểm dừng" cho mọi nhu cầu tập luyện.
+    \item \textbf{Cộng đồng thể thao chuyên sâu và tương tác cao:} Hệ thống xây dựng một môi trường mạng xã hội thực thụ cho người yêu thể thao. Đạt được mức độ tương tác ngang hàng với các ứng dụng hàng đầu hiện nay, cho phép người dùng dễ dàng kết nối, theo dõi hành trình của bạn bè và chia sẻ thành tựu, từ đó tạo ra động lực rèn luyện bền vững.
+    \item \textbf{Mô hình tổ chức sự kiện linh hoạt nhất:} Đây là lợi thế cạnh tranh cốt lõi của FitConnect. Hệ thống không chỉ hỗ trợ theo dõi GPS cho các hoạt động ngoài trời mà còn tích hợp Video Call cho các sự kiện tập luyện trong nhà. Sự kết hợp giữa Online và Offline giúp đáp ứng nhu cầu của mọi đối tượng, từ người bận rộn tại thành phố đến các vận động viên chuyên nghiệp.
+    \item \textbf{Hệ thống thử thách (Challenges) xuất sắc:} Các thử thách cộng đồng về dinh dưỡng, bài tập và thể dục nhóm được thiết kế nhằm tăng tính thi đua lành mạnh. Việc áp dụng các cơ chế gamification giúp người dùng duy trì thói quen tập luyện lâu dài, khắc phục nhược điểm "bỏ cuộc sớm" thường thấy ở các ứng dụng theo dõi đơn thuần.
+    \item \textbf{Trí tuệ nhân tạo (AI) cá nhân hóa tiên tiến:} FitConnect tích hợp sâu AI vào quy trình vận hành, từ việc xác minh bữa ăn, phân tích sức khỏe đến gợi ý lộ trình tập luyện thích ứng theo thời gian thực. Đây là tính năng giúp hệ thống đi đầu trong xu hướng "Smart Fitness" của tương lai, mang lại giá trị thiết thực và chính xác cho từng cá nhân.
+    \item \textbf{Vận hành hệ thống chuyên nghiệp và an toàn:} Khác với nhiều ứng dụng mã nguồn mở hoặc cộng đồng, FitConnect sở hữu quy trình quản trị chặt chẽ với lịch tích hợp, thông báo thời gian thực và đặc biệt là cơ chế kiểm duyệt nội dung (moderation) thông minh, giúp đảm bảo môi trường cộng đồng văn minh, an toàn.
 \end{itemize}
 
-\section{Kết luận}
+Tóm lại, FitConnect không chỉ là một công cụ theo dõi (tracking app) mà là một nền tảng "Community Hub" thông minh. Sự kết hợp nhuần nhuyễn giữa tính xã hội (Social), tính tương tác (Engagement), tính thông minh (Smart) và sự chuyên nghiệp (Professional) đã tạo nên một vị thế cạnh tranh cực kỳ mạnh mẽ trên thị trường hiện nay.
 
-Nhìn lại toàn bộ quá trình thực hiện, đồ án đã hoàn thành sứ mệnh của mình: xây dựng một nền tảng mạng xã hội sức khỏe cộng đồng toàn diện mang tên FitConnect, vừa đáp ứng đầy đủ 9 nhóm tính năng đã cam kết, vừa được kiểm chứng chất lượng nghiêm túc qua nhiều phương pháp kiểm thử khoa học. Hệ thống không chỉ là một sản phẩm kỹ thuật đơn thuần mà còn là một giải pháp số có ý nghĩa xã hội thực tiễn: giúp người Việt Nam dễ dàng hơn trong việc bắt đầu, duy trì và lan tỏa thói quen rèn luyện thể thao lành mạnh thông qua sức mạnh của cộng đồng và công nghệ AI.
+\subsection{Nhược điểm}
+Tuy nhiên nền tảng cũng có những khuyết điểm cần phải khắc phục với mục đích nâng cao chất lượng:
+\begin{itemize}
+    \item Hệ thống mới chỉ là ứng dụng web Responsive, chưa triển khai được ứng dụng di động bản địa (Native App) trên Android và iOS.
+    \item Kho dữ liệu bài tập tập thể dục cần được mở rộng thêm để đa dạng hóa các gợi ý từ AI.
+    \item Cơ chế Video Call theo mô hình P2P hiện tại sẽ gặp giới hạn về băng thông khi số lượng người tham gia trong một sự kiện quá đông.
+\end{itemize}
 
-Với kiến trúc phần mềm hiện đại, mã nguồn được tổ chức sạch sẽ theo chuẩn TypeScript, và cơ sở hạ tầng cơ sở dữ liệu phân tán đã được kiểm chứng, FitConnect có đầy đủ nền tảng kỹ thuật vững chắc để tiếp tục phát triển theo những định hướng đã vạch ra, hướng tới trở thành một giải pháp sức khỏe cộng đồng toàn diện đồng hành cùng người Việt Nam trên hành trình xây dựng cuộc sống khỏe mạnh và chất lượng hơn.
+\section{Hướng phát triển đề tài}
+Mặc dù đã đạt được những mục tiêu cốt lõi, hệ thống vẫn khó tránh khỏi một số hạn chế nhất định do giới hạn về thời gian nghiên cứu và thực hiện. Dựa trên nền tảng hiện có, chúng tôi đề xuất các hướng phát triển mở rộng tiềm năng nhằm tối ưu hóa trải nghiệm và gia tăng giá trị cho người dùng trong tương lai:
+\begin{itemize}
+    \item Phát triển ứng dụng di động (Mobile App) bằng React Native để tận dụng tối đa phần cứng và tính năng GPS chạy nền.
+    \item Tích hợp máy chủ SFU (như mediasoup) để tối ưu hóa tính năng Video Call cho các sự kiện quy mô lớn.
+    \item Mở rộng kết nối với các thiết bị đeo thông minh (Smartwatch) như Apple Watch, Garmin để đồng bộ dữ liệu sức khỏe tức thì.
+    \item Tích hợp công nghệ nhận diện tư thế (Pose Estimation) để AI có thể hỗ trợ sửa lỗi kỹ thuật khi người dùng thực hiện bài tập qua camera.
+
+\end{itemize}

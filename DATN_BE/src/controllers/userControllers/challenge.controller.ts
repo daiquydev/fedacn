@@ -143,9 +143,16 @@ export const removeChallengeParticipantController = async (req: Request, res: Re
 
 export const getMyCreatedChallengesController = async (req: Request, res: Response) => {
     const userId = (req as any).decoded.user_id
-    const { page, limit, status } = req.query
+    const { page, limit, status, search, challenge_type } = req.query
 
-    const result = await challengeService.getMyCreatedChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string)
+    const result = await challengeService.getMyCreatedChallenges(
+        userId,
+        Number(page) || 1,
+        Number(limit) || 20,
+        status as string,
+        search as string,
+        challenge_type as string
+    )
 
     return res.json({ message: 'Lấy thử thách đã tạo thành công', result })
 }

@@ -2,6 +2,10 @@ import SportEventProgressModel, { SportEventProgress } from '~/models/schemas/sp
 import SportEventVideoSessionModel from '~/models/schemas/sportEventVideoSession.schema'
 import SportEventModel from '~/models/schemas/sportEvent.schema'
 import { Types, PipelineStage } from 'mongoose'
+import {
+  getSportEventProgressCountFromDate,
+  isDailySportEventProgressAllowedAt
+} from '~/utils/sportEventProgressWindow.utils'
 
 class SportEventProgressService {
   // Add progress entry
@@ -45,8 +49,10 @@ class SportEventProgressService {
     }
 
     const progressDate = date ? new Date(date) : new Date()
-    if (event.startDate && progressDate < new Date(event.startDate)) {
-      throw new Error('Sự kiện chưa bắt đầu, chưa thể ghi nhận tiến độ')
+    if (!isDailySportEventProgressAllowedAt(event.startDate, event.endDate, progressDate)) {
+      throw new Error(
+        'Chưa tới giờ ghi tiến độ trong ngày (mở từ 10 phút trước giờ diễn ra trong ngày đã chọn, trong khoảng ngày sự kiện)'
+      )
     }
     if (event.endDate && progressDate > new Date(event.endDate)) {
       throw new Error('Sự kiện đã kết thúc, không thể ghi nhận tiến độ')
@@ -73,11 +79,11 @@ class SportEventProgressService {
   // Get user's progress history for an event
   async getUserProgressService(eventId: string, userId: string) {
     const event = await SportEventModel.findById(eventId)
-    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const countFrom = getSportEventProgressCountFromDate(event?.startDate)
     const isKcal = this.isKcalUnit(event?.targetUnit || '')
     const isIndoor = event?.eventType === 'Trong nhà'
 
-    const dateFilter = startDate ? { date: { $gte: startDate } } : {}
+    const dateFilter = countFrom ? { date: { $gte: countFrom } } : {}
 
     const progressHistory = await SportEventProgressModel.find({
       eventId,
@@ -95,7 +101,7 @@ class SportEventProgressService {
 
     // For indoor kcal events: override totalCalories from VideoSession (single source of truth)
     if (isIndoor && isKcal) {
-      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const vsDateMatch = countFrom ? { joinedAt: { $gte: countFrom } } : {}
       const vsAgg = await SportEventVideoSessionModel.aggregate([
         {
           $match: {
@@ -130,7 +136,7 @@ class SportEventProgressService {
   // Get leaderboard for an event
   async getLeaderboardService(eventId: string, sortBy: string = 'totalProgress') {
     const event = await SportEventModel.findById(eventId)
-    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const countFrom = getSportEventProgressCountFromDate(event?.startDate)
     const isKcal = this.isKcalUnit(event?.targetUnit || '')
     const isIndoor = event?.eventType === 'Trong nhà'
 
@@ -139,7 +145,7 @@ class SportEventProgressService {
     if (isIndoor && isKcal) {
       // ── Indoor kcal events: aggregate directly from VideoSession table
       // This is the SAME source IndoorEventProgress uses, ensuring consistency
-      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const vsDateMatch = countFrom ? { joinedAt: { $gte: countFrom } } : {}
       leaderboardData = await SportEventVideoSessionModel.aggregate([
         {
           $match: {
@@ -184,7 +190,7 @@ class SportEventProgressService {
       leaderboardData.sort((a, b) => (b.totalCalories || 0) - (a.totalCalories || 0))
     } else {
       // ── Outdoor events (or non-kcal events): use SportEventProgress table
-      const dateMatch = startDate ? { date: { $gte: startDate } } : {}
+      const dateMatch = countFrom ? { date: { $gte: countFrom } } : {}
       leaderboardData = await SportEventProgressModel.aggregate([
         { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
         {
@@ -256,7 +262,7 @@ class SportEventProgressService {
     const isKcal = this.isKcalUnit(event.targetUnit || '')
     const isIndoor = event.eventType === 'Trong nhà'
     const perPersonTarget = (event.targetValue || 0) / Math.max(event.maxParticipants || 1, 1)
-    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const countFrom = getSportEventProgressCountFromDate(event?.startDate)
 
     // Build a userId → displayValue map (+ time / entries / speed helpers)
     const displayMap = new Map<
@@ -275,7 +281,7 @@ class SportEventProgressService {
 
     if (isIndoor) {
       // ── Indoor events: aggregate from VideoSession for accurate time/calories
-      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const vsDateMatch = countFrom ? { joinedAt: { $gte: countFrom } } : {}
       const vsData = await SportEventVideoSessionModel.aggregate([
         {
           $match: {
@@ -299,7 +305,7 @@ class SportEventProgressService {
       ])
 
       // Also aggregate progress for totalProgress value matching targetUnit
-      const dateMatchP = startDate ? { date: { $gte: startDate } } : {}
+      const dateMatchP = countFrom ? { date: { $gte: countFrom } } : {}
       const progressDataIndoor = await SportEventProgressModel.aggregate([
         { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatchP } },
         { $group: { _id: '$userId', totalProgress: { $sum: '$value' } } }
@@ -325,7 +331,7 @@ class SportEventProgressService {
       })
     } else {
       // ── Outdoor / non-kcal: aggregate from SportEventProgress table
-      const dateMatch = startDate ? { date: { $gte: startDate } } : {}
+      const dateMatch = countFrom ? { date: { $gte: countFrom } } : {}
       const progressData = await SportEventProgressModel.aggregate([
         { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
         {
@@ -488,13 +494,13 @@ class SportEventProgressService {
   // Get overall event progress (sum of all participants)
   async getEventOverallProgressService(eventId: string) {
     const event = await SportEventModel.findById(eventId)
-    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const countFrom = getSportEventProgressCountFromDate(event?.startDate)
     const isKcal = this.isKcalUnit(event?.targetUnit || '')
     const isIndoor = event?.eventType === 'Trong nhà'
 
     if (isIndoor && isKcal) {
       // Indoor kcal: aggregate from VideoSession (same source as IndoorEventProgress)
-      const vsDateMatch = startDate ? { joinedAt: { $gte: startDate } } : {}
+      const vsDateMatch = countFrom ? { joinedAt: { $gte: countFrom } } : {}
       const result = await SportEventVideoSessionModel.aggregate([
         {
           $match: {
@@ -529,7 +535,7 @@ class SportEventProgressService {
     }
 
     // Outdoor / non-kcal: use SportEventProgress table
-    const dateMatch = startDate ? { date: { $gte: startDate } } : {}
+    const dateMatch = countFrom ? { date: { $gte: countFrom } } : {}
     const result = await SportEventProgressModel.aggregate([
       { $match: { eventId: new Types.ObjectId(eventId), is_deleted: { $ne: true }, ...dateMatch } },
       {
@@ -576,7 +582,10 @@ class SportEventProgressService {
       is_deleted: { $ne: true }
     }
     const dateClause: Record<string, Date> = {}
-    if (event.startDate) dateClause.$gte = new Date(event.startDate)
+    if (event.startDate) {
+      const from = getSportEventProgressCountFromDate(event.startDate)
+      if (from) dateClause.$gte = from
+    }
     if (event.endDate) dateClause.$lte = new Date(event.endDate)
     if (fromDate) {
       const f = new Date(fromDate)
@@ -615,7 +624,10 @@ class SportEventProgressService {
       { $addFields: { _refEnd: { $ifNull: ['$endedAt', '$joinedAt'] } } }
     ]
     const dateClause: Record<string, Date> = {}
-    if (event.startDate) dateClause.$gte = new Date(event.startDate)
+    if (event.startDate) {
+      const from = getSportEventProgressCountFromDate(event.startDate)
+      if (from) dateClause.$gte = from
+    }
     if (event.endDate) dateClause.$lte = new Date(event.endDate)
     if (fromDate) {
       const f = new Date(fromDate)

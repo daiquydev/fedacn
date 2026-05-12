@@ -1,0 +1,1228 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/constants/messages.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/constants</a> messages.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>21/21</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/0</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/0</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>21/21</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a>
+<a name='L288'></a><a href='#L288'>288</a>
+<a name='L289'></a><a href='#L289'>289</a>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a>
+<a name='L317'></a><a href='#L317'>317</a>
+<a name='L318'></a><a href='#L318'>318</a>
+<a name='L319'></a><a href='#L319'>319</a>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a>
+<a name='L322'></a><a href='#L322'>322</a>
+<a name='L323'></a><a href='#L323'>323</a>
+<a name='L324'></a><a href='#L324'>324</a>
+<a name='L325'></a><a href='#L325'>325</a>
+<a name='L326'></a><a href='#L326'>326</a>
+<a name='L327'></a><a href='#L327'>327</a>
+<a name='L328'></a><a href='#L328'>328</a>
+<a name='L329'></a><a href='#L329'>329</a>
+<a name='L330'></a><a href='#L330'>330</a>
+<a name='L331'></a><a href='#L331'>331</a>
+<a name='L332'></a><a href='#L332'>332</a>
+<a name='L333'></a><a href='#L333'>333</a>
+<a name='L334'></a><a href='#L334'>334</a>
+<a name='L335'></a><a href='#L335'>335</a>
+<a name='L336'></a><a href='#L336'>336</a>
+<a name='L337'></a><a href='#L337'>337</a>
+<a name='L338'></a><a href='#L338'>338</a>
+<a name='L339'></a><a href='#L339'>339</a>
+<a name='L340'></a><a href='#L340'>340</a>
+<a name='L341'></a><a href='#L341'>341</a>
+<a name='L342'></a><a href='#L342'>342</a>
+<a name='L343'></a><a href='#L343'>343</a>
+<a name='L344'></a><a href='#L344'>344</a>
+<a name='L345'></a><a href='#L345'>345</a>
+<a name='L346'></a><a href='#L346'>346</a>
+<a name='L347'></a><a href='#L347'>347</a>
+<a name='L348'></a><a href='#L348'>348</a>
+<a name='L349'></a><a href='#L349'>349</a>
+<a name='L350'></a><a href='#L350'>350</a>
+<a name='L351'></a><a href='#L351'>351</a>
+<a name='L352'></a><a href='#L352'>352</a>
+<a name='L353'></a><a href='#L353'>353</a>
+<a name='L354'></a><a href='#L354'>354</a>
+<a name='L355'></a><a href='#L355'>355</a>
+<a name='L356'></a><a href='#L356'>356</a>
+<a name='L357'></a><a href='#L357'>357</a>
+<a name='L358'></a><a href='#L358'>358</a>
+<a name='L359'></a><a href='#L359'>359</a>
+<a name='L360'></a><a href='#L360'>360</a>
+<a name='L361'></a><a href='#L361'>361</a>
+<a name='L362'></a><a href='#L362'>362</a>
+<a name='L363'></a><a href='#L363'>363</a>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a>
+<a name='L367'></a><a href='#L367'>367</a>
+<a name='L368'></a><a href='#L368'>368</a>
+<a name='L369'></a><a href='#L369'>369</a>
+<a name='L370'></a><a href='#L370'>370</a>
+<a name='L371'></a><a href='#L371'>371</a>
+<a name='L372'></a><a href='#L372'>372</a>
+<a name='L373'></a><a href='#L373'>373</a>
+<a name='L374'></a><a href='#L374'>374</a>
+<a name='L375'></a><a href='#L375'>375</a>
+<a name='L376'></a><a href='#L376'>376</a>
+<a name='L377'></a><a href='#L377'>377</a>
+<a name='L378'></a><a href='#L378'>378</a>
+<a name='L379'></a><a href='#L379'>379</a>
+<a name='L380'></a><a href='#L380'>380</a>
+<a name='L381'></a><a href='#L381'>381</a>
+<a name='L382'></a><a href='#L382'>382</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export const AUTH_USER_MESSAGE = {
+  VALIDATION_ERROR: 'Lỗi dữ liệu',
+  USER_NOT_FOUND: 'Không tìm thấy người dùng',
+  PASSWORD_NOT_MATCH: 'Mật khẩu không khớp',
+  EMAIL_ALREADY_EXISTS: 'Email đã tồn tại',
+  PASSWORD_MUST_BE_STRONG: 'Mật khẩu phải chứa ít nhất 6 ký tự, 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt',
+  REGISTER_SUCCESS: 'Đăng ký thành công',
+  LOGIN_SUCCESS: 'Đăng nhập thành công',
+  ACCESS_TOKEN_IS_REQUIRED: 'Cần có access token',
+  USED_REFRESH_TOKEN_OR_NOT_EXIST: 'Refresh token đã được sử dụng hoặc không tồn tại',
+  LOGOUT_SUCCESS: 'Đăng xuất thành công',
+  REFRESH_TOKEN_IS_REQUIRED: 'Cần có refresh token',
+  REFRESH_TOKEN_SUCCESS: 'Lấy refresh token thành công',
+  PASSWORD_INCORRECT: 'Mật khẩu không chính xác',
+  EMAIL_OR_PASSWORD_INCORRECT: 'Email hoặc mật khẩu không chính xác',
+  GMAIL_NOT_VERIFIED: 'Email chưa được xác thực',
+  ACCOUNT_BANNED: 'Tài khoản đã bị khóa',
+  ACCOUNT_DELETED: 'Tài khoản đã bị xóa',
+  UNAUTHORIZED: 'Không có quyền truy cập',
+  USER_NAME_OR_PASSWORD_INCORRECT: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+  OLD_PASSWORD_NEW_PASSWORD_NOT_SAME: 'Mật khẩu cũ và mật khẩu mới không được giống nhau',
+  SEND_OTP_SUCCESS: 'Gửi mã OTP thành công',
+  OTP_CODE_INVALID: 'Mã OTP không hợp lệ',
+  VERIFY_OTP_SUCCESS: 'Xác thực mã OTP thành công',
+  RESET_PASSWORD_SUCCESS: 'Đặt lại mật khẩu thành công',
+  EMAIL_NOT_EXIST: 'Email không tồn tại',
+  PASSWORD_SAME_OLD_PASSWORD: 'Mật khẩu mới không được giống mật khẩu cũ',
+  ACCESS_TOKEN_REQUIRED: 'Cần có access token'
+} as const
+&nbsp;
+export const POST_MESSAGE = {
+  NO_CONTENT_OR_IMAGE: 'Không có nội dung hoặc ảnh',
+  CREATE_POST_SUCCESS: 'Tạo bài viết thành công',
+  UPLOAD_IMAGE_SUCCESS: 'Tải ảnh thành công',
+  UPLOAD_IMAGE_FAILED: 'Không thể tải ảnh',
+  NOT_CREATE_POST: 'Không thể tạo bài viết',
+  POST_NOT_FOUND: 'Không tìm thấy bài viết',
+  DELETE_POST_SUCCESS: 'Xóa bài viết thành công',
+  LIKE_POST_SUCCESS: 'Like bài viết thành công',
+  UNLIKE_POST_SUCCESS: 'Unlike bài viết thành công',
+  COMMENT_POST_SUCCESS: 'Bình luận bài viết thành công',
+  DELETE_COMMENT_POST_SUCCESS: 'Xóa bình luận bài viết thành công',
+  LIKE_COMMENT_POST_SUCCESS: 'Like bình luận bài viết thành công',
+  UNLIKE_COMMENT_POST_SUCCESS: 'Unlike bình luận bài viết thành công',
+  SHARE_POST_SUCCESS: 'Chia sẻ bài viết thành công',
+  UPDATE_POST_SUCCESS: 'Cập nhật bài viết thành công',
+  UPDATE_COMMENT_POST_SUCCESS: 'Cập nhật bình luận bài viết thành công',
+  DELETE_COMMENT_POST_FAIL: 'Không thể xóa bình luận bài viết',
+  DELETE_POST_FAIL: 'Không thể xóa bài viết',
+  UPDATE_POST_FAIL: 'Không thể cập nhật bài viết',
+  GET_POST_SUCCESS: 'Lấy bài viết thành công',
+  GET_NEW_FEEDS_SUCCESS: 'Lấy new feeds thành công',
+  CREATE_POST_COMMENT_SUCCESS: 'Tạo bình luận bài viết thành công',
+  COMMENT_MUST_NOT_BE_EMPTY: 'Bình luận không được để trống',
+  GET_POST_COMMENTS_SUCCESS: 'Lấy bình luận bài viết thành công',
+  COMMENT_NOT_FOUND: 'Không tìm thấy bình luận',
+  REPORT_POST_SUCCESS: 'Báo cáo bài viết thành công',
+  REPORTED_POST: 'Bài viết đã được báo cáo',
+  INAPPROPRIATE_POST_TEXT: 'Nội dung bài viết không phù hợp với cộng đồng.',
+  INAPPROPRIATE_COMMENT_TEXT: 'Nội dung bình luận không phù hợp với cộng đồng.'
+} as const
+&nbsp;
+export const SPORT_EVENT_MESSAGE = {
+  REPORT_EVENT_SUCCESS: 'Báo cáo sự kiện thành công',
+  REPORTED_EVENT: 'Bạn đã báo cáo sự kiện này rồi',
+  EVENT_NOT_FOUND: 'Không tìm thấy sự kiện'
+} as const
+&nbsp;
+export const CHALLENGE_MESSAGE = {
+  REPORT_CHALLENGE_SUCCESS: 'Báo cáo thử thách thành công',
+  REPORTED_CHALLENGE: 'Bạn đã báo cáo thử thách này rồi',
+  CHALLENGE_NOT_FOUND: 'Không tìm thấy thử thách'
+} as const
+&nbsp;
+export const USER_MESSAGE = {
+  GET_USER_SUCCESS: 'Lấy thông tin người dùng thành công',
+  UPDATE_USER_SUCCESS: 'Cập nhật thông tin người dùng thành công',
+  CHANGE_PASSWORD_SUCCESS: 'Đổi mật khẩu thành công',
+  FOLLOW_USER_SUCCESS: 'Theo dõi người dùng thành công',
+  CANNOT_FOLLOW_YOURSELF: 'Không thể theo dõi chính mình',
+  GET_ME_SUCCESS: 'Lấy thông tin cá nhân thành công',
+  UNFOLLOW_USER_SUCCESS: 'Bỏ theo dõi người dùng thành công',
+  DECLINE_FRIEND_REQUEST_SUCCESS: 'Từ chối lời mời kết bạn thành công',
+  UNFRIEND_USER_SUCCESS: 'Hủy kết bạn thành công',
+  USER_NOT_FOUND: 'Không tìm thấy người dùng',
+  USER_NAME_ALREADY_EXISTS: 'Tên người dùng đã tồn tại',
+  OLD_PASSWORD_INCORRECT: 'Mật khẩu cũ không chính xác',
+  GOOGLE_ACCOUNT_CANNOT_CHANGE_PASSWORD:
+    'Tài khoản đăng nhập bằng Google không hỗ trợ đổi mật khẩu trên hệ thống. Vui lòng quản lý mật khẩu tại tài khoản Google của bạn.',
+  UPDATE_PASSWORD_SUCCESS: 'Cập nhật mật khẩu thành công',
+  GET_BOOKMARKED_SUCCESS: 'Lấy danh sách đã bookmark thành công',
+  RECOMMEND_USER_SUCCESS: 'Gợi ý người dùng thành công',
+  REQUEST_ALREADY_SENT: 'Yêu cầu nâng cấp đã được gửi từ trước, vui lòng chờ admin xác nhận',
+  REQUEST_UPGRADE_SUCCESS: 'Yêu cầu nâng cấp thành công',
+  CANNOT_UPGRADE: 'Không thể nâng cấp'
+} as const
+&nbsp;
+export const BLOG_MESSAGE = {
+  GET_BLOG_SUCCESS: 'Lấy thông tin blog thành công',
+  GET_BLOGS_SUCCESS: 'Lấy danh sách blog thành công',
+  GET_BLOG_CATEGORIES_SUCCESS: 'Lấy danh sách danh mục blog thành công',
+  GET_BLOG_CATEGORY_SUCCESS: 'Lấy thông tin danh mục blog thành công',
+  CREATE_BLOG_SUCCESS: 'Tạo blog thành công',
+  UPDATE_BLOG_SUCCESS: 'Cập nhật blog thành công',
+  DELETE_BLOG_SUCCESS: 'Xóa blog thành công',
+  DELETE_BLOG_FAIL: 'Không thể xóa blog',
+  CREATE_BLOG_CATEGORY_SUCCESS: 'Tạo danh mục blog thành công',
+  UPDATE_BLOG_CATEGORY_SUCCESS: 'Cập nhật danh mục blog thành công',
+  DELETE_BLOG_CATEGORY_SUCCESS: 'Xóa danh mục blog thành công',
+  DELETE_BLOG_CATEGORY_FAIL: 'Không thể xóa danh mục blog',
+  BLOG_NOT_FOUND: 'Không tìm thấy blog',
+  BLOG_CATEGORY_NOT_FOUND: 'Không tìm thấy danh mục blog',
+  BLOG_CATEGORY_ALREADY_EXISTS: 'Danh mục blog đã tồn tại',
+  BLOG_ALREADY_EXISTS: 'Blog đã tồn tại',
+  COMMENT_MUST_NOT_BE_EMPTY: 'Bình luận không được để trống',
+  CREATE_COMMENT_BLOG_SUCCESS: 'Tạo bình luận blog thành công',
+  DELETE_COMMENT_BLOG_SUCCESS: 'Xóa bình luận blog thành công',
+  GET_COMMENTS_BLOG_SUCCESS: 'Lấy bình luận blog thành công'
+} as const
+&nbsp;
+export const NOTIFICATION_MESSAGE = {
+  GET_LIST_NOTIFICATION_SUCCESS: 'Lấy danh sách thông báo thành công',
+  READ_NOTIFICATION_SUCCESS: 'Đọc thông báo thành công',
+  READ_ALL_NOTIFICATION_SUCCESS: 'Đánh dấu tất cả thông báo đã đọc thành công',
+  DELETE_NOTIFICATION_SUCCESS: 'Xóa thông báo thành công',
+  CHECK_READ_NOTIFICATION_SUCCESS: 'Kiểm tra thông báo đã đọc thành công'
+} as const
+&nbsp;
+export const ACTIVITY_MESSAGE = {
+  GET_LIST_ACTIVITY_CATEGORY_SUCCESS: 'Lấy danh sách danh mục hoạt động thành công',
+  GET_LIST_ACTIVITY_SUCCESS: 'Lấy danh sách hoạt động thành công'
+} as const
+&nbsp;
+export const CALCULATOR_MESSAGE = {
+  CALCULATE_BMI_SUCCESS: 'Tính chỉ số BMI thành công',
+  HEIGHT_MUST_GREATER_THAN_0: 'Chiều cao phải lớn hơn 0',
+  CALCULATE_BMR_SUCCESS: 'Tính chỉ số BMR thành công',
+  AGE_MUST_GREATER_THAN_0: 'Tuổi phải lớn hơn 0',
+  GENDER_MUST_BE_MALE_OR_FEMALE: 'Giới tính phải là male hoặc female',
+  WEIGHT_MUST_GREATER_THAN_0: 'Cân nặng phải lớn hơn 0',
+  CALCULATE_TDDE_SUCCESS: 'Tính chỉ số TDDE thành công',
+  ACTIVITY_MUST_BE_IN_ACTIVITY_VALUE: 'Hoạt động phải thuộc 1 trong các giá trị của ActivityValue',
+  CALCULATE_BODY_FAT_SUCCESS: 'Tính chỉ số body fat thành công',
+  CALCULATE_LBM_SUCCESS: 'Tính chỉ số LBM thành công',
+  CALCULATE__CALORIE_BURNED_SUCCESS: 'Tính chỉ số calorie burned thành công',
+  CALCULATE__WATER_INTAKE_SUCCESS: 'Tính chỉ số water intake thành công',
+  CALCULATE_IBW_SUCCESS: 'Tính chỉ số IBW thành công',
+  TIME_MUST_GREATER_THAN_0: 'Thời gian phải lớn hơn 0',
+  SAVE_BMI_SUCCESS: 'Lưu chỉ số BMI thành công',
+  SAVE_BMR_SUCCESS: 'Lưu chỉ số BMR thành công',
+  SAVE_TDEE_SUCCESS: 'Lưu chỉ số TDEE thành công',
+  SAVE_BODY_FAT_SUCCESS: 'Lưu chỉ số body fat thành công',
+  SAVE_LBM_SUCCESS: 'Lưu chỉ số LBM thành công',
+  SAVE_IBW_SUCCESS: 'Lưu chỉ số IBW thành công'
+} as const
+&nbsp;
+export const WORKOUT_MESSAGE = {
+  CREATE_WORKOUT_SUCCESS: 'Tạo workout thành công',
+  GET_LIST_WORKOUT_SUCCESS: 'Lấy danh sách workout thành công',
+  START_DATE_INVALID: 'Ngày bắt đầu không hợp lệ',
+  END_DATE_INVALID: 'Ngày kết thúc không hợp lệ',
+  GET_WORKOUT_SUCCESS: 'Lấy thông tin workout thành công',
+  CREATE_WORKOUT_ITEM_SUCCESS: 'Tạo workout item thành công',
+  GET_LIST_DATE_WORKOUT_ITEM_SUCCESS: 'Lấy danh sách ngày workout item thành công',
+  COMPLETE_DATE_WORKOUT_ITEM_SUCCESS: 'Hoàn thành ngày workout item thành công',
+  DELETE_DATE_WORKOUT_ITEM_SUCCESS: 'Xóa ngày workout item thành công',
+  UPDATE_WORKOUT_SUCCESS: 'Cập nhật workout thành công',
+  DELETE_WORKOUT_SUCCESS: 'Xóa workout thành công',
+  WEIGHT_SYNC_SUCCESS: 'Đồng bộ cân nặng thành công'
+}
+&nbsp;
+export const MEAL_MESSAGE = {
+  BMI_TDEE_NOT_FOUND: 'Bạn phải tính chỉ số BMI và TDEE trước',
+  CREATE_MEAL_SCHEDULE_SUCCESS: 'Tạo meal schedule thành công',
+  GET_LIST_MEAL_SCHEDULE_SUCCESS: 'Lấy danh sách meal schedule thành công',
+  GET_MEAL_SCHEDULE_SUCCESS: 'Lấy thông tin meal schedule thành công',
+  START_DATE_INVALID: 'Ngày bắt đầu không hợp lệ',
+  END_DATE_INVALID: 'Ngày kết thúc không hợp lệ',
+  WEIGHT_TARGET_INVALID: 'Cân nặng mục tiêu không hợp lệ',
+  PURPOSE_INVALID: 'Mục đích không hợp lệ',
+  INVALID_WEIGHT_TARGET: 'Cân nặng mục tiêu không hợp lệ',
+  MEAL_SCHEDULE_NOT_FOUND: 'Không tìm thấy meal schedule',
+  UPDATE_MEAL_SCHEDULE_SUCCESS: 'Cập nhật meal schedule thành công',
+  CREATE_MEAL_ITEM_SUCCESS: 'Tạo meal item thành công',
+  GET_LIST_DATE_MEAL_ITEM_SUCCESS: 'Lấy danh sách ngày meal item thành công',
+  COMPLETE_DATE_MEAL_ITEM_SUCCESS: 'Hoàn thành ngày meal item thành công',
+  DELETE_DATE_MEAL_ITEM_SUCCESS: 'Xóa ngày meal item thành công',
+  DELETE_MEAL_SCHEDULE_SUCCESS: 'Xóa meal schedule thành công'
+}
+&nbsp;
+export const RECIPE_MESSAGE = {
+  CREATE_RECIPE_SUCCESS: 'Tạo công thức thành công',
+  GET_RECIPE_SUCCESS: 'Lấy thông tin công thức thành công',
+  IMAGE_REQUIRED: 'Ảnh không được để trống',
+  INSTRUCTIONS_REQUIRED: 'Hướng dẫn nấu không được để trống',
+  INSTRUCTIONS_INVALID: 'Hướng dẫn nấu không hợp lệ',
+  REGION_INVALID: 'Khu vực không hợp lệ',
+  TITLE_REQUIRED: 'Tiêu đề không được để trống',
+  CONTENT_REQUIRED: 'Nội dung không được để trống',
+  DESCRIPTION_REQUIRED: 'Mô tả không được để trống',
+  TIME_INVALID: 'Thời gian không hợp lệ',
+  DIFFICULT_LEVEL_INVALID: 'Độ khó không hợp lệ',
+  PROCESSING_FOOD_INVALID: 'Chế biến thức ăn không hợp lệ',
+  GET_ALL_RECIPE_CATEGORY_SUCCESS: 'Lấy danh mục công thức thành công',
+  GET_LIST_RECIPE_FOR_CHEF_SUCCESS: 'Lấy danh sách công thức cho đầu bếp thành công',
+  GET_RECIPE_FOR_CHEF_SUCCESS: 'Lấy thông tin công thức cho đầu bếp thành công',
+  UPDATE_RECIPE_SUCCESS: 'Cập nhật công thức thành công',
+  GET_LIST_RECIPE_FOR_USER_SUCCESS: 'Lấy danh sách công thức cho người dùng thành công',
+  GET_RECIPE_FOR_USER_SUCCESS: 'Lấy thông tin công thức cho người dùng thành công',
+  LIKE_RECIPE_SUCCESS: 'Like công thức thành công',
+  CREATE_COMMENT_RECIPE_SUCCESS: 'Tạo bình luận công thức thành công',
+  DELETE_COMMENT_RECIPE_SUCCESS: 'Xóa bình luận công thức thành công',
+  BOOKMARK_RECIPE_SUCCESS: 'Bookmark công thức thành công',
+  UNBOOKMARK_RECIPE_SUCCESS: 'Unbookmark công thức thành công',
+  GET_COMMENT_RECIPE_SUCCESS: 'Lấy bình luận công thức thành công',
+  RECIPE_NOT_FOUND: 'Không tìm thấy công thức',
+  DELETE_RECIPE_SUCCESS: 'Xóa công thức thành công',
+  ENERGY_INVALID: 'Năng lượng không hợp lệ',
+  PROTEIN_INVALID: 'Protein không hợp lệ',
+  FAT_INVALID: 'Fat không hợp lệ',
+  CARBOHYDRATE_INVALID: 'Carbohydrate không hợp lệ',
+  UNIT_INVALID: 'Đơn vị không hợp lệ',
+  QUANTITY_INVALID: 'Số lượng không hợp lệ',
+  GET_THREE_TOP_RECIPES_SUCCESS: 'Lấy 3 công thức nổi bật thành công',
+  CREATE_RECIPE_FAILED: 'Tạo công thức thất bại',
+  GET_RECIPES_FAILED: 'Lấy danh sách công thức thất bại',
+  UPDATE_RECIPE_FAILED: 'Cập nhật công thức thất bại',
+  DELETE_RECIPE_FAILED: 'Xóa công thức thất bại',
+  GET_MY_RECIPES_SUCCESS: 'Lấy danh sách công thức của tôi thành công'
+}
+&nbsp;
+export const MEAL_PLAN_MESSAGE = {
+  CREATE_MEAL_PLAN_SUCCESS: 'Tạo thực đơn thành công',
+  GET_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn thành công',
+  GET_MY_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn của tôi thành công',
+  GET_MEAL_PLAN_DETAIL_SUCCESS: 'Lấy chi tiết thực đơn thành công',
+  GET_MEAL_COOKING_SUCCESS: 'Lấy hướng dẫn chế biến thành công',
+  UPDATE_MEAL_PLAN_SUCCESS: 'Cập nhật thực đơn thành công',
+  DELETE_MEAL_PLAN_SUCCESS: 'Xóa thực đơn thành công',
+  LIKE_MEAL_PLAN_SUCCESS: 'Like thực đơn thành công',
+  UNLIKE_MEAL_PLAN_SUCCESS: 'Unlike thực đơn thành công',
+  BOOKMARK_MEAL_PLAN_SUCCESS: 'Bookmark thực đơn thành công',
+  UNBOOKMARK_MEAL_PLAN_SUCCESS: 'Unbookmark thực đơn thành công',
+  RATE_MEAL_PLAN_SUCCESS: 'Đánh giá thực đơn thành công',
+  GET_BOOKMARKED_MEAL_PLANS_SUCCESS: 'Lấy danh sách thực đơn đã bookmark thành công',
+  COMMENT_MEAL_PLAN_SUCCESS: 'Bình luận thực đơn thành công',
+  GET_MEAL_PLAN_COMMENTS_SUCCESS: 'Lấy bình luận thực đơn thành công',
+  APPLY_MEAL_PLAN_SUCCESS: 'Áp dụng thực đơn thành công',
+  REPORT_MEAL_PLAN_SUCCESS: 'Báo cáo thực đơn thành công',
+  GET_FEATURED_MEAL_PLANS_SUCCESS: 'Lấy thực đơn nổi bật thành công',
+  GET_TRENDING_MEAL_PLANS_SUCCESS: 'Lấy thực đơn đang thịnh hành thành công',
+  GET_MEAL_PLAN_SOCIAL_SUCCESS: 'Lấy thông tin bạn bè đang áp dụng thành công',
+  INVITE_SENT_SUCCESS: 'Gửi lời mời tham gia thực đơn thành công',
+  INVITE_ALREADY_SENT: 'Bạn đã gửi lời mời cho người này trước đó',
+  INVITE_TARGET_NOT_FRIEND: 'Chỉ có thể mời những người theo dõi lẫn nhau',
+  INVITE_SELF_NOT_ALLOWED: 'Không thể tự mời chính mình',
+  FRIEND_ALREADY_APPLYING: 'Người này đã áp dụng thực đơn này',
+  MEAL_PLAN_NOT_FOUND: 'Không tìm thấy thực đơn',
+  MEAL_PLAN_MEAL_NOT_FOUND: 'Không tìm thấy món ăn trong thực đơn',
+  MEAL_PLAN_MEAL_MISMATCH: 'Món ăn không thuộc thực đơn này',
+  TITLE_REQUIRED: 'Tiêu đề không được để trống',
+  DURATION_INVALID: 'Thời gian không hợp lệ',
+  CATEGORY_INVALID: 'Danh mục không hợp lệ',
+  UNAUTHORIZED_ACCESS: 'Không có quyền truy cập',
+  ALREADY_LIKED: 'Đã like thực đơn này rồi',
+  ALREADY_BOOKMARKED: 'Đã bookmark thực đơn này rồi',
+  NOT_LIKED: 'Chưa like thực đơn này',
+  NOT_BOOKMARKED: 'Chưa bookmark thực đơn này',
+  RATING_INVALID: 'Đánh giá không hợp lệ',
+  ALREADY_REPORTED: 'Bạn đã báo cáo thực đơn này rồi',
+  REASON_REQUIRED: 'Vui lòng nhập lý do báo cáo'
+}
+&nbsp;
+export const USER_MEAL_SCHEDULE_MESSAGE = {
+  GET_USER_MEAL_SCHEDULES_SUCCESS: 'Lấy danh sách lịch thực đơn thành công',
+  GET_USER_MEAL_SCHEDULE_DETAIL_SUCCESS: 'Lấy chi tiết lịch thực đơn thành công',
+  GET_ACTIVE_MEAL_SCHEDULE_SUCCESS: 'Lấy thực đơn đang áp dụng thành công',
+  UPDATE_USER_MEAL_SCHEDULE_SUCCESS: 'Cập nhật lịch thực đơn thành công',
+  DELETE_USER_MEAL_SCHEDULE_SUCCESS: 'Xóa lịch thực đơn thành công',
+  GET_DAY_MEAL_ITEMS_SUCCESS: 'Lấy món ăn trong ngày thành công',
+  COMPLETE_MEAL_ITEM_SUCCESS: 'Hoàn thành món ăn thành công',
+  SKIP_MEAL_ITEM_SUCCESS: 'Bỏ qua món ăn thành công',
+  SUBSTITUTE_MEAL_ITEM_SUCCESS: 'Thay thế món ăn thành công',
+  RESCHEDULE_MEAL_ITEM_SUCCESS: 'Thay đổi lịch món ăn thành công',
+  SWAP_MEAL_ITEMS_SUCCESS: 'Hoán đổi món ăn thành công',
+  ADD_MEAL_ITEM_SUCCESS: 'Thêm món ăn vào lịch thành công',
+  REMOVE_MEAL_ITEM_SUCCESS: 'Xóa món ăn khỏi lịch thành công',
+  UPDATE_MEAL_ITEM_SUCCESS: 'Cập nhật món ăn thành công',
+  GET_DAY_NUTRITION_STATS_SUCCESS: 'Lấy thống kê dinh dưỡng ngày thành công',
+  GET_SCHEDULE_OVERVIEW_SUCCESS: 'Lấy tổng quan lịch thực đơn thành công',
+  GET_COMPLETED_MEAL_ITEMS_SUCCESS: 'Lấy lịch sử món ăn đã hoàn thành thành công',
+  UPDATE_REMINDERS_SUCCESS: 'Cập nhật nhắc nhở thành công',
+  GET_PROGRESS_REPORT_SUCCESS: 'Lấy báo cáo tiến độ thành công',
+  SCHEDULE_NOT_FOUND: 'Không tìm thấy lịch thực đơn',
+  MEAL_ITEM_NOT_FOUND: 'Không tìm thấy món ăn',
+  UNAUTHORIZED_ACCESS: 'Không có quyền truy cập',
+  MEAL_ITEM_ALREADY_COMPLETED: 'Món ăn đã được hoàn thành',
+  RATING_INVALID: 'Đánh giá không hợp lệ',
+  ACTUAL_SERVINGS_INVALID: 'Khẩu phần thực tế không hợp lệ'
+}
+&nbsp;
+export const ALBUM_MESSAGE = {
+  CREATE_ALBUM_SUCCESS: 'Tạo album thành công',
+  GET_LIST_ALBUM_SUCCESS: 'Lấy danh sách album thành công',
+  GET_ALBUM_SUCCESS: 'Lấy thông tin album thành công',
+  ALBUM_NOT_FOUND: 'Không tìm thấy album',
+  DELETE_RECIPE_IN_ALBUM_SUCCESS: 'Xóa công thức trong album thành công',
+  UPDATE_ALBUM_SUCCESS: 'Cập nhật album thành công',
+  GET_RECIPES_IN_ALBUM_SUCCESS: 'Lấy danh sách công thức trong album thành công',
+  BOOKMARK_ALBUM_SUCCESS: 'Bookmark album thành công',
+  UN_BOOKMARK_ALBUM_SUCCESS: 'Unbookmark album thành công',
+  DELETE_ALBUM_SUCCESS: 'Xóa album thành công'
+}
+&nbsp;
+export const INGREDIENT_MESSAGE = {
+  GET_ALL_CATEGORY_INGREDIENTS_SUCCESS: 'Lấy danh mục nguyên liệu thành công',
+  GET_LIST_INGREDIENTS_SUCCESS: 'Lấy danh sách nguyên liệu thành công'
+}
+&nbsp;
+export const SEARCH_MESSAGE = {
+  SEARCH_SUCCESS: 'Tìm kiếm thành công'
+}
+&nbsp;
+export const AUTH_ADMIN_MESSAGE = {
+  LOGIN_SUCCESS: 'Đăng nhập thành công',
+  LOGOUT_SUCCESS: 'Đăng xuất thành công',
+  ACCOUNT_BANNED: 'Tài khoản đã bị khóa',
+  REFRESH_TOKEN_IS_REQUIRED: 'Cần có refresh token'
+}
+&nbsp;
+export const ADMIN_MESSAGE = {
+  GET_ALL_USER_SUCCESS: 'Lấy danh sách người dùng thành công',
+  GET_USER_BY_ID_SUCCESS: 'Lấy thông tin người dùng thành công',
+  DELETE_USER_BY_ID_SUCCESS: 'Xóa người dùng thành công',
+  CREATE_WRITTER_AND_INSPECTOR_SUCCESS: 'Tạo người viết và kiểm duyệt thành công',
+  EMAIL_ALREADY_EXISTS: 'Email đã tồn tại',
+  USER_NAME_ALREADY_EXISTS: 'Tên người dùng đã tồn tại',
+  ROLE_INVALID: 'Role không hợp lệ',
+  GET_REQUEST_UPGRADE_SUCCESS: 'Lấy yêu cầu nâng cấp thành công',
+  REJECT_REQUEST_UPGRADE_SUCCESS: 'Từ chối yêu cầu nâng cấp thành công',
+  ACCEPT_REQUEST_UPGRADE_SUCCESS: 'Chấp nh ận yêu cầu nâng cấp thành công',
+  GET_DASHBROAD_SUCCESS: 'Lấy thông tin dashboard thành công'
+}
+&nbsp;
+export const INSPECTOR_MESSAGE = {
+  GET_ALL_POST_REPORT_SUCCESS: 'Lấy danh sách bài viết bị report thành công',
+  GET_POST_REPORT_DETAIL_SUCCESS: 'Lấy thông tin bài viết bị report thành công',
+  ACCEPT_POST_REPORT_SUCCESS: 'Từ chối report bài viết thành công',
+  DELETE_POST_REPORT_SUCCESS: 'Xóa bài viết bị report thành công',
+  GET_LIST_BLOG_FOR_INSPECTOR_SUCCESS: 'Lấy danh sách blog cho inspector thành công',
+  ACCEPT_BLOG_SUCCESS: 'Duyệt blog thành công',
+  REJECT_BLOG_SUCCESS: 'Từ chối blog thành công',
+  GET_BLOG_DETAIL_FOR_INSPECTOR_SUCCESS: 'Lấy thông tin blog cho inspector thành công',
+  GET_LIST_RECIPE_FOR_INSPECTOR_SUCCESS: 'Lấy danh sách công thức cho inspector thành công',
+  GET_RECIPE_DETAIL_FOR_INSPECTOR_SUCCESS: 'Lấy thông tin công thức cho inspector thành công',
+  ACCEPT_RECIPE_SUCCESS: 'Duyệt công thức thành công',
+  REJECT_RECIPE_SUCCESS: 'Từ chối công thức thành công',
+  GET_LIST_ALBUM_FOR_INSPECTOR_SUCCESS: 'Lấy danh sách album cho inspector thành công',
+  GET_ALBUM_DETAIL_FOR_INSPECTOR_SUCCESS: 'Lấy thông tin album cho inspector thành công',
+  GET_RECIPE_IN_ALBUM_FOR_INSPECTOR_SUCCESS: 'Lấy danh sách công thức trong album cho inspector thành công',
+  ACCEPT_ALBUM_SUCCESS: 'Duyệt album thành công',
+  REJECT_ALBUM_SUCCESS: 'Từ chối album thành công',
+  GET_MEAL_PLAN_REPORT_SUCCESS: 'Lấy danh sách thực đơn bị báo cáo thành công',
+  GET_SPORT_EVENT_REPORTS_SUCCESS: 'Lấy danh sách sự kiện bị báo cáo thành công',
+  ACCEPT_SPORT_EVENT_REPORT_SUCCESS: 'Đã bỏ qua báo cáo, giữ sự kiện',
+  DELETE_SPORT_EVENT_REPORT_SUCCESS: 'Đã gỡ sự kiện vi phạm',
+  GET_DELETED_SPORT_EVENTS_SUCCESS: 'Lấy danh sách sự kiện đã gỡ thành công',
+  RESTORE_SPORT_EVENT_SUCCESS: 'Khôi phục sự kiện thành công',
+  GET_CHALLENGE_REPORTS_SUCCESS: 'Lấy danh sách thử thách bị báo cáo thành công',
+  ACCEPT_CHALLENGE_REPORT_SUCCESS: 'Đã bỏ qua báo cáo, giữ thử thách',
+  DELETE_CHALLENGE_REPORT_SUCCESS: 'Đã gỡ thử thách vi phạm',
+  GET_DELETED_CHALLENGES_SUCCESS: 'Lấy danh sách thử thách đã gỡ thành công',
+  RESTORE_CHALLENGE_SUCCESS: 'Khôi phục thử thách thành công'
+}
+&nbsp;
+export const WRITTER_MESSAGE = {
+  CREATE_INGREDIENT_SUCCESS: 'Tạo nguyên liệu thành công',
+  GET_LIST_RECIPE_FOR_WRITTER_SUCCESS: 'Lấy danh sách công thức cho writter thành công',
+  GET_RECIPE_DETAIL_FOR_WRITTER_SUCCESS: 'Lấy thông tin công thức cho writter thành công',
+  DELETE_INGREDIENT_SUCCESS: 'Xóa nguyên liệu thành công'
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-05-10T06:53:19.666Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    
