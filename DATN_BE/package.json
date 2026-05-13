@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npx nodemon --development",
-    "build": "rimraf ./dist && tsc && tsc-alias",
+    "build": "node -e \"const fs=require('fs');try{fs.rmSync('dist',{recursive:true,force:true,maxRetries:12,retryDelay:300});}catch(e){if(e.code!=='ENOENT')throw e;}\" && tsc && tsc-alias",
     "start": "node dist/index.js",
     "fetch:images": "ts-node -r tsconfig-paths/register ./scripts/fetchRecipeImages.ts",
     "fetch:users-posts": "ts-node -r tsconfig-paths/register ./scripts/fetchUsersPostsImages.ts",
