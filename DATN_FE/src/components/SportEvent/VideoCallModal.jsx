@@ -938,8 +938,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
                                         text-orange-800 text-[11px] font-semibold px-2.5 py-1 rounded-full max-w-[220px]">
                             <MdWarning className="text-orange-500 flex-shrink-0 text-sm" />
                             <span className="tabular-nums">
-                                Không thấy mặt: {absenceSecs}s
-                                {absenceSecs >= 5 ? ' · Thực tế đang dừng' : ''}
+                                Không phát hiện khuôn mặt: {absenceSecs}s
+                                {absenceSecs >= 5 ? ' · Đang tạm dừng' : ''}
                             </span>
                         </div>
                     )}
@@ -1187,7 +1187,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
                         </div>
                     )}
 
-                    {/* ═══ OVERLAY HUD — AI status + absence warning (z-30 để luôn nổi trên video) ═══ */}
+                    {/* ═══ OVERLAY HUD — AI status (cảnh báo vắng mặt chỉ hiển thị trên top bar) ═══ */}
                     <div className="absolute top-5 right-5 z-30 flex flex-col items-end gap-2 pointer-events-none">
                         <div className={`flex items-center gap-2 text-xs font-semibold rounded-full px-4 py-2 border ${
                             aiReady ? 'text-emerald-700 border-emerald-200 bg-emerald-50/80'
@@ -1202,15 +1202,6 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
                                 <><AiOutlineLoading3Quarters className="animate-spin" /> AI đang tải...</>
                             )}
                         </div>
-                        {absenceSecs > 0 && (
-                            <div className="flex items-center gap-2 text-xs font-semibold rounded-full px-4 py-2 border
-                                text-orange-700 border-orange-200 bg-orange-50/90"
-                                style={{ backdropFilter: 'blur(8px)' }}>
-                                <MdWarning className="text-orange-500" />
-                                Không phát hiện khuôn mặt ({absenceSecs}s)
-                                {absenceSecs >= 5 && ' — Đã tạm dừng'}
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
