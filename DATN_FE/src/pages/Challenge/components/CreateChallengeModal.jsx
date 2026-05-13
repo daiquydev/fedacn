@@ -8,7 +8,7 @@ import sportCategoryApi from '../../../apis/sportCategoryApi'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
-import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
+import { formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
 import toast from 'react-hot-toast'
 import moment from 'moment'
 import DatePicker from 'react-datepicker'
@@ -314,6 +314,14 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
     const [showExerciseDropdown, setShowExerciseDropdown] = useState(false)
     const exerciseSearchRef = useRef(null)
 
+    // Phải khai báo trước useQuery bên dưới (enabled dùng showAIModal / aiType — tránh TDZ / ReferenceError)
+    const [errors, setErrors] = useState({})
+    const [showAIModal, setShowAIModal] = useState(false)
+    const [aiStep, setAiStep] = useState(1)          // 1 = choose type, 2 = describe
+    const [aiType, setAiType] = useState('')          // selected type in wizard
+    const [aiDesc, setAiDesc] = useState('')
+    const [aiLoading, setAiLoading] = useState(false)
+
     // Fetch all exercises for fitness type
     const { data: exercisesData, isFetching: exercisesFetching } = useQuery({
         queryKey: ['all-exercises'],
@@ -358,13 +366,6 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
         document.addEventListener('mousedown', handler)
         return () => document.removeEventListener('mousedown', handler)
     }, [])
-
-    const [errors, setErrors] = useState({})
-    const [showAIModal, setShowAIModal] = useState(false)
-    const [aiStep, setAiStep] = useState(1)          // 1 = choose type, 2 = describe
-    const [aiType, setAiType] = useState('')          // selected type in wizard
-    const [aiDesc, setAiDesc] = useState('')
-    const [aiLoading, setAiLoading] = useState(false)
 
     const openAIModal = () => {
         setAiStep(1)
@@ -1053,7 +1054,7 @@ ${exerciseCatalogJson}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</p>
-                                                            <p className="text-[10px] text-gray-400 truncate">{ex.name_vi} • {formatExerciseCategoryVi(ex.category)} • {formatExerciseDifficultyVi(ex.difficulty)}</p>
+                                                            <p className="text-[10px] text-gray-400 truncate">{[ex.name_vi, formatExerciseDifficultyVi(ex.difficulty)].filter(Boolean).join(' • ')}</p>
                                                         </div>
                                                     </button>
                                                 ))}

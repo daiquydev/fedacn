@@ -5,7 +5,7 @@ import { FaBrain, FaDumbbell, FaTimes, FaSync, FaPlay, FaHeartbeat, FaRedo, FaIn
 import { GiBiceps } from 'react-icons/gi'
 import http from '../../../utils/http'
 import { getAllExercises } from '../../../apis/exerciseApi'
-import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
+import { formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
 import ExerciseDetailModal from '../../ExerciseDetailModal'
 
 const DIFF_COLOR = {
@@ -406,11 +406,6 @@ export default function AIAnalysisModal({ isOpen, onClose, calculationType, inpu
                                                                         }`}
                                                                 >
                                                                     {formatExerciseDifficultyVi(ex.difficulty)}
-                                                                </span>
-                                                            )}
-                                                            {ex.category && (
-                                                                <span className='rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'>
-                                                                    {formatExerciseCategoryVi(ex.category)}
                                                                 </span>
                                                             )}
                                                         </div>

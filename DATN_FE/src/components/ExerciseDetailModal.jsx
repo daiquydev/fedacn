@@ -1,6 +1,6 @@
 import { FaTimes } from 'react-icons/fa'
 import { GiBiceps } from 'react-icons/gi'
-import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../utils/exerciseLabels'
+import { formatExerciseDifficultyVi } from '../utils/exerciseLabels'
 
 export function getExerciseYouTubeId(url) {
   if (!url) return null
@@ -51,7 +51,6 @@ export default function ExerciseDetailModal({ exercise, onClose, aiReason }) {
 
           <div className="flex gap-2 flex-wrap">
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${detailEx.difficulty === 'beginner' ? 'bg-green-100 text-green-700' : detailEx.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{formatExerciseDifficultyVi(detailEx.difficulty)}</span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{formatExerciseCategoryVi(detailEx.category)}</span>
             {(() => {
               const cpu = detailEx.default_sets?.[0]?.calories_per_unit ?? null
               return cpu != null

@@ -2,8 +2,8 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaUndo, FaChevronDown, FaRunning, FaBolt, FaListOl, FaLightbulb, FaLink, FaThList, FaEyeSlash, FaStopwatch } from 'react-icons/fa'
-import { GiBiceps, GiMeditation } from 'react-icons/gi'
+import { FaDumbbell, FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaCopy, FaMagic, FaSearch, FaToggleOn, FaToggleOff, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaUndo, FaChevronDown, FaListOl, FaLightbulb, FaLink, FaThList, FaEyeSlash, FaStopwatch } from 'react-icons/fa'
+import { GiBiceps } from 'react-icons/gi'
 import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader'
 import {
     adminGetEquipment, adminCreateEquipment, adminUpdateEquipment, adminDeleteEquipment,
@@ -447,12 +447,6 @@ function DefaultSetsEditor({ sets, onChange, onDifficultyChange }) {
 }
 
 // ===================== EXERCISE MANAGEMENT =====================
-const CATEGORY_CONFIG = {
-    strength: { label: 'Sức mạnh', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', bar: 'bg-blue-500', dot: 'bg-blue-500' },
-    cardio: { label: 'Tim mạch', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', bar: 'bg-red-500', dot: 'bg-red-500' },
-    stretching: { label: 'Giãn cơ', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', bar: 'bg-green-500', dot: 'bg-green-500' },
-    plyometrics: { label: 'Bật nhảy', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', bar: 'bg-orange-500', dot: 'bg-orange-500' }
-}
 const DIFFICULTY_CONFIG = {
     beginner: { label: 'Dễ', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
     intermediate: { label: 'Trung bình', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
@@ -490,7 +484,6 @@ function ExerciseManager() {
     const [search, setSearch] = useState('')
     const [filterMuscle, setFilterMuscle] = useState('') // muscle_group _id
     const [filterEquipment, setFilterEquipment] = useState('') // equipment _id
-    const [filterCategory, setFilterCategory] = useState('') // '' | 'strength' | 'cardio' | 'stretching' | 'plyometrics'
     const [status, setStatus] = useState('active') // 'active' | 'deleted'
     const [showMuscleFilter, setShowMuscleFilter] = useState(false)
     const [showEquipmentFilter, setShowEquipmentFilter] = useState(false)
@@ -533,8 +526,8 @@ function ExerciseManager() {
     const [form, setForm] = useState(initForm)
 
     const { data, isLoading } = useQuery({
-        queryKey: ['admin-exercises', search, filterMuscle, filterEquipment, filterCategory, page, status],
-        queryFn: () => adminGetExercises({ search, muscle_group_id: filterMuscle, equipment_id: filterEquipment, category: filterCategory || undefined, page, limit: LIMIT, status }),
+        queryKey: ['admin-exercises', search, filterMuscle, filterEquipment, page, status],
+        queryFn: () => adminGetExercises({ search, muscle_group_id: filterMuscle, equipment_id: filterEquipment, page, limit: LIMIT, status }),
         keepPreviousData: true
     })
     const result = data?.data?.result || {}
@@ -547,26 +540,13 @@ function ExerciseManager() {
     const allEquipment = eqData?.data?.result || []
     const allMuscleGroups = mgData?.data?.result || []
 
-    // Stat counts per category
-    const { data: strengthData } = useQuery({ queryKey: ['admin-exercises-count-strength'], queryFn: () => adminGetExercises({ category: 'strength', page: 1, limit: 1, status: 'active' }) })
-    const { data: cardioData } = useQuery({ queryKey: ['admin-exercises-count-cardio'], queryFn: () => adminGetExercises({ category: 'cardio', page: 1, limit: 1, status: 'active' }) })
-    const { data: stretchData } = useQuery({ queryKey: ['admin-exercises-count-stretching'], queryFn: () => adminGetExercises({ category: 'stretching', page: 1, limit: 1, status: 'active' }) })
-    const { data: plyoData } = useQuery({ queryKey: ['admin-exercises-count-plyometrics'], queryFn: () => adminGetExercises({ category: 'plyometrics', page: 1, limit: 1, status: 'active' }) })
     const { data: totalAllData } = useQuery({ queryKey: ['admin-exercises-count-all'], queryFn: () => adminGetExercises({ page: 1, limit: 1, status: 'active' }) })
     const { data: deletedCountData } = useQuery({ queryKey: ['admin-exercises-count-deleted'], queryFn: () => adminGetExercises({ page: 1, limit: 1, status: 'deleted' }) })
     const totalActiveCount = totalAllData?.data?.result?.total || 0
     const deletedCount = deletedCountData?.data?.result?.total || 0
-    const strengthCount = strengthData?.data?.result?.total || 0
-    const cardioCount = cardioData?.data?.result?.total || 0
-    const stretchCount = stretchData?.data?.result?.total || 0
-    const plyoCount = plyoData?.data?.result?.total || 0
 
     const invalidateAll = () => {
         qc.invalidateQueries({ queryKey: ['admin-exercises'] })
-        qc.invalidateQueries({ queryKey: ['admin-exercises-count-strength'] })
-        qc.invalidateQueries({ queryKey: ['admin-exercises-count-cardio'] })
-        qc.invalidateQueries({ queryKey: ['admin-exercises-count-stretching'] })
-        qc.invalidateQueries({ queryKey: ['admin-exercises-count-plyometrics'] })
         qc.invalidateQueries({ queryKey: ['admin-exercises-count-all'] })
         qc.invalidateQueries({ queryKey: ['admin-exercises-count-deleted'] })
     }
@@ -670,9 +650,9 @@ function ExerciseManager() {
     // Active filter count (for badge)
     const activeFilterCount = [filterMuscle, filterEquipment].filter(Boolean).length
 
-    const clearAllFilters = () => { setSearchInput(''); setSearch(''); setFilterMuscle(''); setFilterEquipment(''); setFilterCategory(''); setPage(1) }
+    const clearAllFilters = () => { setSearchInput(''); setSearch(''); setFilterMuscle(''); setFilterEquipment(''); setPage(1) }
 
-    const switchStatus = (s) => { setStatus(s); setPage(1); setFilterMuscle(''); setFilterEquipment(''); setFilterCategory(''); setSearchInput(''); setSearch(''); setShowMuscleFilter(false); setShowEquipmentFilter(false) }
+    const switchStatus = (s) => { setStatus(s); setPage(1); setFilterMuscle(''); setFilterEquipment(''); setSearchInput(''); setSearch(''); setShowMuscleFilter(false); setShowEquipmentFilter(false) }
 
     const handleDeleteClick = (ex) => setConfirmDelete({ id: ex._id, name: ex.name })
     const handleDeleteConfirm = () => {
@@ -695,26 +675,9 @@ function ExerciseManager() {
                 {/* Status tabs */}
                 <div className='relative z-10 mt-3 flex flex-wrap gap-2'>
                     <button type='button' onClick={() => switchStatus('active')}
-                        className={`admin-hero-tab shrink-0 ${status === 'active' && !filterCategory ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                        className={`admin-hero-tab shrink-0 ${status === 'active' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
                         <FaThList size={14} className='shrink-0 opacity-95' aria-hidden /> Tất cả <span className='font-black tabular-nums'>({totalActiveCount})</span>
                     </button>
-                    {[
-                        { key: 'strength', Icon: FaDumbbell, label: 'Sức mạnh', count: strengthCount },
-                        { key: 'cardio', Icon: FaRunning, label: 'Tim mạch', count: cardioCount },
-                        { key: 'stretching', Icon: GiMeditation, label: 'Giãn cơ', count: stretchCount },
-                        { key: 'plyometrics', Icon: FaBolt, label: 'Bật nhảy', count: plyoCount },
-                    ].map(cat => (
-                        <button
-                            type='button'
-                            key={cat.key}
-                            onClick={() => { if (status !== 'active') switchStatus('active'); setFilterCategory(cat.key); setPage(1) }}
-                            className={`admin-hero-tab shrink-0 ${
-                                filterCategory === cat.key ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
-                            }`}
-                        >
-                            <cat.Icon size={14} className='shrink-0 opacity-95' aria-hidden /> {cat.label} <span className='font-black tabular-nums'>({cat.count})</span>
-                        </button>
-                    ))}
                     <button type='button' onClick={() => switchStatus('deleted')}
                         className={`admin-hero-tab shrink-0 ${status === 'deleted' ? 'bg-white text-indigo-700 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>
                         <FaTrash size={14} className='shrink-0 opacity-95' aria-hidden /> Đã xóa <span className='font-black tabular-nums'>({deletedCount})</span>
@@ -884,26 +847,17 @@ function ExerciseManager() {
                         {/* Scrollable body */}
                         <div className='flex-1 overflow-y-auto p-5 space-y-4'>
 
-                            {/* ── Row 1: Identity + Category ── */}
-                            <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
-                                <div className='md:col-span-1'>
+                            {/* ── Row 1: Identity ── */}
+                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                <div>
                                     <label className={labelClass}>Tên tiếng Anh <span className='text-red-500'>*</span></label>
                                     <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                                         className={inputClass} placeholder='Nhập tên bài tập (EN)' />
                                 </div>
-                                <div className='md:col-span-1'>
+                                <div>
                                     <label className={labelClass}>Tên tiếng Việt</label>
                                     <input value={form.name_vi} onChange={e => setForm({ ...form, name_vi: e.target.value })}
                                         className={inputClass} placeholder='Nhập tên bài tập (VI)' />
-                                </div>
-                                <div className='md:col-span-1'>
-                                    <label className={labelClass}>Loại hình <span className='text-red-500'>*</span></label>
-                                    <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={inputClass}>
-                                        <option value='strength'>Sức mạnh</option>
-                                        <option value='cardio'>Tim mạch</option>
-                                        <option value='stretching'>Giãn cơ</option>
-                                        <option value='plyometrics'>Bật nhảy</option>
-                                    </select>
                                 </div>
                             </div>
 
@@ -1051,14 +1005,13 @@ function ExerciseManager() {
                         <table className='w-full divide-y divide-gray-100 dark:divide-slate-700'>
                             <thead className='bg-gray-50 dark:bg-slate-900'>
                                 <tr>
-                                    {['Bài tập', 'Loại hình', 'Độ khó', 'Sets × Reps', 's/rep · nghỉ', 'Nhóm cơ', 'Thiết bị', 'Hành động'].map(h => (
+                                    {['Bài tập', 'Độ khó', 'Sets × Reps', 's/rep · nghỉ', 'Nhóm cơ', 'Thiết bị', 'Hành động'].map(h => (
                                         <th key={h} className='px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody className='divide-y divide-gray-50 dark:divide-slate-700'>
                                 {exercises.map(ex => {
-                                    const cat = CATEGORY_CONFIG[ex.category] || CATEGORY_CONFIG.strength
                                     const diff = DIFFICULTY_CONFIG[ex.difficulty] || DIFFICULTY_CONFIG.intermediate
                                     const sets = ex.default_sets || []
                                     const equipList = (ex.equipment_ids || []).filter(e => typeof e === 'object')
@@ -1071,15 +1024,12 @@ function ExerciseManager() {
                                         <tr key={ex._id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${status === 'deleted' ? 'opacity-70' : ''}`}>
                                             <td className='px-5 py-3'>
                                                 <div className='flex items-center gap-2'>
-                                                    <div className={`w-2 h-8 rounded-full flex-shrink-0 ${cat.bar}`} />
+                                                    <div className='w-2 h-8 rounded-full flex-shrink-0 bg-indigo-500' />
                                                     <div>
                                                         <p className='font-semibold text-sm text-slate-800 dark:text-slate-100'>{ex.name}</p>
                                                         {ex.name_vi && <p className='text-xs text-slate-400'>{ex.name_vi}</p>}
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td className='px-5 py-3'>
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${cat.color}`}>{cat.label}</span>
                                             </td>
                                             <td className='px-5 py-3'>
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${diff.color}`}>{diff.label}</span>

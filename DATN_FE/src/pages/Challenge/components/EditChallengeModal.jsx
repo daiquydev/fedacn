@@ -5,7 +5,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { updateChallenge } from '../../../apis/challengeApi'
 import { getAllExercises } from '../../../apis/exerciseApi'
 import sportCategoryApi from '../../../apis/sportCategoryApi'
-import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
+import { formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
 import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
@@ -662,7 +662,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</p>
-                                                        <p className="text-[10px] text-gray-400 truncate">{ex.name_vi} • {formatExerciseCategoryVi(ex.category)} • {formatExerciseDifficultyVi(ex.difficulty)}</p>
+                                                        <p className="text-[10px] text-gray-400 truncate">{[ex.name_vi, formatExerciseDifficultyVi(ex.difficulty)].filter(Boolean).join(' • ')}</p>
                                                     </div>
                                                 </button>
                                             ))}

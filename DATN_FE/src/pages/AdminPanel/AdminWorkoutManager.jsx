@@ -10,7 +10,7 @@ import {
     adminGetExercises, adminCreateExercise, adminUpdateExercise, adminDeleteExercise
 } from '../../apis/adminWorkoutApi'
 import DeleteConfirmBox from '../../components/GlobalComponents/DeleteConfirmBox'
-import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../utils/exerciseLabels'
+import { formatExerciseDifficultyVi } from '../../utils/exerciseLabels'
 
 const SEC_PER_REP_MIN = 1
 const SEC_PER_REP_MAX = 120
@@ -479,16 +479,6 @@ function ExerciseManager() {
                     {/* Stats */}
                     <div className='grid grid-cols-2 md:grid-cols-4 gap-3 mt-3'>
                         <div>
-                            <label className='text-xs font-medium text-slate-500'>Loại</label>
-                            <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-                                className='w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm'>
-                                <option value='strength'>Sức mạnh</option>
-                                <option value='cardio'>Tim mạch</option>
-                                <option value='stretching'>Giãn cơ</option>
-                                <option value='plyometrics'>Bật nhảy</option>
-                            </select>
-                        </div>
-                        <div>
                             <label className='text-xs font-medium text-slate-500'>Độ khó</label>
                             <select value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}
                                 className='w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm'>
@@ -562,7 +552,6 @@ function ExerciseManager() {
                             <tr>
                                 <th className='py-2 pr-3'>Tên</th>
                                 <th className='py-2 pr-3'>Tên VN</th>
-                                <th className='py-2 pr-3'>Loại</th>
                                 <th className='py-2 pr-3'>Độ khó</th>
                                 <th className='py-2 pr-3'>Thiết bị</th>
                                 <th className='py-2 pr-3'>Nhóm cơ</th>
@@ -574,12 +563,6 @@ function ExerciseManager() {
                                 <tr key={ex._id}>
                                     <td className='py-2 pr-3 font-medium max-w-[120px] truncate'>{ex.name}</td>
                                     <td className='py-2 pr-3 max-w-[120px] truncate'>{ex.name_vi}</td>
-                                    <td className='py-2 pr-3'>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${ex.category === 'strength' ? 'bg-blue-100 text-blue-700' :
-                                            ex.category === 'cardio' ? 'bg-red-100 text-red-700' :
-                                                ex.category === 'stretching' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                            }`}>{formatExerciseCategoryVi(ex.category)}</span>
-                                    </td>
                                     <td className='py-2 pr-3'>
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${ex.difficulty === 'beginner' ? 'bg-emerald-100 text-emerald-700' :
                                             ex.difficulty === 'intermediate' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'

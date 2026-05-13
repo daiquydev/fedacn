@@ -1,5 +1,5 @@
 import { roundKcal } from '../../utils/mathUtils'
-import { formatExerciseCategoryVi, formatExerciseDifficultyVi } from '../../utils/exerciseLabels'
+import { formatExerciseDifficultyVi } from '../../utils/exerciseLabels'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -946,11 +946,6 @@ const AIDescriptionStep = ({ onConfirm, onBack }) => {
                           {ex.difficulty && (
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${DIFF_COLOR_AI[ex.difficulty] || 'bg-gray-100 text-gray-600'}`}>
                               {formatExerciseDifficultyVi(ex.difficulty)}
-                            </span>
-                          )}
-                          {ex.category && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold">
-                              {formatExerciseCategoryVi(ex.category)}
                             </span>
                           )}
                         </div>
@@ -2138,9 +2133,22 @@ function computeMetrics(metrics) {
 }
 
 // Main Component
+function resolveChallengeExerciseId(ex) {
+  const idRaw = ex?.exercise_id
+  if (idRaw == null) return ''
+  if (typeof idRaw === 'object' && idRaw._id != null) return String(idRaw._id)
+  return String(idRaw)
+}
+
 export default function Training() {
   const navigate = useNavigate()
   const location = useLocation()
+  const shouldHydrateChallengeLibrary =
+    location.state?.referrer === 'challenge' &&
+    Array.isArray(location.state?.challengeExercises) &&
+    location.state.challengeExercises.length > 0
+
+  const [fromChallengeHydrating, setFromChallengeHydrating] = useState(shouldHydrateChallengeLibrary)
   const [openQuitConfirm, setOpenQuitConfirm] = useState(false)
 
   // Mode: null (selecting), 'normal', 'smart', 'from_calculator'
@@ -2246,21 +2254,54 @@ export default function Training() {
     }
   }, [])
 
-  // Handle navigation from Challenge (Fitness Checkin)
+  // Từ thử thách: luôn merge default_sets (và tempo) mới nhất từ thư viện bài tập trước khi vào bước Chuẩn bị
   useEffect(() => {
-    if (location.state?.referrer === 'challenge' && location.state?.challengeExercises?.length > 0) {
-      const exercises = location.state.challengeExercises.map(ex => ({
-        ...ex,
-        _id: ex.exercise_id,
-        name: ex.exercise_name,
-        name_vi: ex.exercise_name_vi || '',
-        default_sets: ex.sets?.length > 0 ? ex.sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }],
-        duration_default: ex.duration_default ?? ex.exercise_id?.duration_default,
-        rest_time_default: ex.rest_time_default ?? ex.exercise_id?.rest_time_default
-      }))
-      setSelectedExercises(exercises)
+    const rawList = location.state?.referrer === 'challenge' ? location.state?.challengeExercises : null
+    if (!Array.isArray(rawList) || rawList.length === 0) return
+
+    let cancelled = false
+
+    const fallbackSets = (ex) =>
+      ex.sets?.length > 0 ? ex.sets : [{ set_number: 1, reps: 10, weight: 1, calories_per_unit: 10 }]
+
+    const apply = (byId) => {
+      const merged = rawList.map((ex) => {
+        const idStr = resolveChallengeExerciseId(ex)
+        const lib = idStr ? byId.get(idStr) : null
+        const default_sets =
+          lib?.default_sets?.length > 0 ? lib.default_sets : fallbackSets(ex)
+        return {
+          ...ex,
+          _id: ex.exercise_id,
+          name: ex.exercise_name,
+          name_vi: ex.exercise_name_vi || lib?.name_vi || '',
+          default_sets,
+          duration_default: lib?.duration_default ?? ex.duration_default ?? ex.exercise_id?.duration_default,
+          rest_time_default: lib?.rest_time_default ?? ex.rest_time_default ?? ex.exercise_id?.rest_time_default
+        }
+      })
+      if (cancelled) return
+      setSelectedExercises(merged)
       setMode('from_challenge')
       setCalcStep('setup')
+      setFromChallengeHydrating(false)
+    }
+
+    ;(async () => {
+      setFromChallengeHydrating(true)
+      let byId = new Map()
+      try {
+        const res = await getAllExercises()
+        const list = res?.data?.result || []
+        byId = new Map(list.map((e) => [String(e._id), e]))
+      } catch {
+        toast.error('Không tải được thư viện bài tập — dùng set đã lưu trong thử thách.')
+      }
+      if (!cancelled) apply(byId)
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -2575,6 +2616,7 @@ export default function Training() {
     setSessionId(null); setPreparedSets(null); setSuggestData(null); setKcalResult(null)
     setShowSaveModal(false); setCurrentExerciseSetsToSave(null)
     setOpenQuitConfirm(false)
+    setFromChallengeHydrating(false)
   }
 
   const resetToMenu = () => {
@@ -2582,6 +2624,7 @@ export default function Training() {
     setSelectedEquipment([]); setSelectedMuscles([]); setSelectedExercises([])
     setPreparedSets(null); setSuggestData(null); setKcalResult(null); setOutdoorData(null)
     setShowSaveModal(false); setCurrentExerciseSetsToSave(null); setShowSavedModal(false)
+    setFromChallengeHydrating(false)
   }
 
   // Determine what step indicator to show and for which mode
@@ -2591,6 +2634,15 @@ export default function Training() {
 
   return (
     <div>
+      {fromChallengeHydrating && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/85 dark:bg-gray-950/85 backdrop-blur-sm">
+          <div className="text-center px-6 max-w-sm">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4" />
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Đang tải set mặc định mới nhất từ thư viện bài tập…</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Áp dụng cho buổi tập từ thử thách</p>
+          </div>
+        </div>
+      )}
       {/* Page Header - full width */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -2600,10 +2652,14 @@ export default function Training() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">
-                {mode === 'from_challenge' ? `\u{1F3CB}\uFE0F ${location.state?.challengeTitle || 'Tập luyện thử thách'}` : mode === 'outdoor' ? 'Hoạt động ngoài trời' : 'Tập luyện'}
+                {(mode === 'from_challenge' || fromChallengeHydrating) && location.state?.referrer === 'challenge'
+                  ? `\u{1F3CB}\uFE0F ${location.state?.challengeTitle || 'Tập luyện thử thách'}`
+                  : mode === 'outdoor' ? 'Hoạt động ngoài trời' : 'Tập luyện'}
               </h1>
               <p className="text-white/75 text-xs mt-0.5">
-                {mode === 'from_challenge' ? 'Hoàn thành bài tập để ghi nhận tiến độ thử thách' : mode === 'outdoor' ? 'Ghi quãng đường và tốc độ khi bạn di chuyển' : 'Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn'}
+                {(mode === 'from_challenge' || fromChallengeHydrating) && location.state?.referrer === 'challenge'
+                  ? 'Hoàn thành bài tập để ghi nhận tiến độ thử thách'
+                  : mode === 'outdoor' ? 'Ghi quãng đường và tốc độ khi bạn di chuyển' : 'Xây dựng bài tập cá nhân hóa theo mục tiêu của bạn'}
               </p>
             </div>
           </div>
