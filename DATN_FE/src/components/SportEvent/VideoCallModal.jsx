@@ -537,51 +537,45 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         }, 1000)
     }
 
-    // ── Load face-api.js model from local /models first ───────────────────────
+    // ── Load MediaPipe Face Detection model ───────────────────────────────────
     async function loadFaceModel() {
         try {
-            const faceapi = await import('face-api.js')
-            faceApiRef.current = faceapi
-            // Try local first, then CDN fallback
-            const modelUrls = [
-                '/models',
-                import.meta.env.VITE_FACE_API_MODEL_URL,
-                'https://justadudewhohacks.github.io/face-api.js/models'
-            ].map(u => (u || '').trim()).filter(Boolean)
-
-            let loaded = false
-            for (const url of modelUrls) {
-                try {
-                    await faceapi.nets.tinyFaceDetector.loadFromUri(url)
-                    loaded = true
-                    console.log('[AI] Face model loaded from:', url)
-                    break
-                } catch { /* try next */ }
-            }
-            if (!loaded) throw new Error('Không tải được face model')
+            const { FaceDetector, FilesetResolver } = await import('@mediapipe/tasks-vision')
+            const filesetResolver = await FilesetResolver.forVisionTasks(
+                'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
+            )
+            const detector = await FaceDetector.createFromOptions(filesetResolver, {
+                baseOptions: {
+                    modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
+                    delegate: 'GPU'
+                },
+                runningMode: 'VIDEO',
+                minDetectionConfidence: 0.5
+            })
+            faceApiRef.current = detector
             aiReadyRef.current = true
             setAiReady(true)
             setAiError(null)
+            console.log('[AI] MediaPipe Face Detection loaded')
         } catch (err) {
             const msg = 'AI nhận diện không khả dụng'
             setAiError(msg)
-            console.error('[AI] Model load failed:', err?.message)
+            console.error('[AI] MediaPipe load failed:', err?.message)
         }
     }
 
-    // ── Detect face from local video element ─────────────────────────────────
-    async function detectFace() {
-        const faceapi = faceApiRef.current
+    // ── Detect face using MediaPipe ───────────────────────────────────────────
+    function detectFace() {
+        const detector = faceApiRef.current
         const vid = localVideoRef.current
-        if (!faceapi || !vid) return false
+        if (!detector || !vid) return false
         if (!camOnRef.current) return false
         if (vid.readyState < 2 || vid.videoWidth === 0) return false
         const videoTrack = localStreamRef.current?.getVideoTracks?.()[0]
         if (!videoTrack || videoTrack.readyState !== 'live' || !videoTrack.enabled) return false
         try {
-            const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
-            const faces = await faceapi.detectAllFaces(vid, opts)
-            return faces.length > 0
+            const result = detector.detectForVideo(vid, Date.now())
+            return result.detections.length > 0
         } catch {
             return false
         }
@@ -608,7 +602,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
                 } else if (!modelReady) {
                     isPresent = false
                 } else {
-                    isPresent = await detectFace()
+                    isPresent = detectFace()
                 }
 
                 setFace(isPresent)
