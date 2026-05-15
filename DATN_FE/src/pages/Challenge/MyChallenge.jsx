@@ -366,7 +366,12 @@ export default function MyChallenge() {
                 <FaArrowLeft className="text-xs" /> Danh sách thử thách
               </button>
               <button
-                onClick={() => navigate('/challenge/create', { state: { from: '/challenge/my-challenges' } })}
+                onClick={() => navigate('/challenge/create', {
+                  state: {
+                    from: '/challenge/my-challenges',
+                    ...(createdChallengeType !== 'all' ? { challengeType: createdChallengeType } : {})
+                  }
+                })}
                 className="bg-white hover:bg-gray-50 text-indigo-600 px-5 py-2.5 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
               >
                 <FaPlus className="text-xs" /> Tạo thử thách mới

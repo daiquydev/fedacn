@@ -10,6 +10,7 @@ export default function CreateChallenge() {
   const location = useLocation()
   const queryClient = useQueryClient()
   const from = location.state?.from || '/challenge/my-challenges'
+  const initialChallengeType = location.state?.challengeType || 'nutrition'
 
   const handleClose = () => {
     queryClient.invalidateQueries({ queryKey: ['challenges-feed'] })
@@ -17,6 +18,6 @@ export default function CreateChallenge() {
   }
 
   return (
-    <CreateChallengeModal layout="page" open onClose={handleClose} />
+    <CreateChallengeModal layout="page" open onClose={handleClose} initialChallengeType={initialChallengeType} />
   )
 }

@@ -527,7 +527,12 @@ export default function Challenge() {
               <FaStar /> Thử thách của tôi
             </Link>
             <button
-              onClick={() => navigate('/challenge/create', { state: { from: '/challenge' } })}
+              onClick={() => navigate('/challenge/create', {
+                state: {
+                  from: '/challenge',
+                  ...(activeType !== 'all' ? { challengeType: activeType } : {})
+                }
+              })}
               className="bg-white hover:bg-gray-50 text-orange-600 px-4 py-2 rounded-xl font-semibold transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
             >
               <FaPlus /> Tạo thử thách

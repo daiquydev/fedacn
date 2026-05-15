@@ -179,6 +179,31 @@ const TYPE_GRADIENT = {
     fitness: 'from-purple-500 to-pink-600'
 }
 
+const NUTRITION_DEFAULT_CATEGORY = 'Ăn uống'
+
+const createInitialForm = (challengeType = 'nutrition') => {
+    const isNutrition = challengeType === 'nutrition'
+    const isFitness = challengeType === 'fitness'
+    return {
+        title: '',
+        description: '',
+        image: '',
+        challenge_type: challengeType,
+        category: isNutrition ? NUTRITION_DEFAULT_CATEGORY : '',
+        kcal_per_unit: 0,
+        goal_type: isNutrition ? 'meals_logged' : isFitness ? 'exercises_completed' : 'daily_km',
+        goal_value: isNutrition ? '1' : '',
+        goal_unit: isNutrition ? 'bữa' : isFitness ? 'bài tập' : 'km',
+        startDate: '',
+        endDate: '',
+        visibility: 'public',
+        badge_emoji: '🏆',
+        nutrition_sub_type: 'free',
+        time_window_start: '08:00',
+        time_window_end: '11:00'
+    }
+}
+
 // Nutrition goal options (fitness is now fixed to total_kcal)
 const NON_OUTDOOR_GOALS = {
     nutrition: [
@@ -214,7 +239,13 @@ function PreviewCard({ form, selectedCat }) {
                 {/* Type badge */}
                 <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5">
                     {typeConf?.icon}
-                    <span>{form.challenge_type === 'outdoor_activity' && form.category ? form.category : typeConf?.label || '...'}</span>
+                    <span>
+                        {form.challenge_type === 'outdoor_activity' && form.category
+                            ? form.category
+                            : form.challenge_type === 'nutrition'
+                                ? (form.category || NUTRITION_DEFAULT_CATEGORY)
+                                : (typeConf?.label || '...')}
+                    </span>
                 </div>
 
                 {/* Status */}
@@ -269,30 +300,12 @@ function PreviewCard({ form, selectedCat }) {
 }
 
 // ==================== MAIN MODAL (layout="modal" | "page") ====================
-export default function CreateChallengeModal({ open, onClose, layout = 'modal' }) {
+export default function CreateChallengeModal({ open, onClose, layout = 'modal', initialChallengeType = 'nutrition' }) {
     const navigate = useNavigate()
     const queryClient = useQueryClient()
     const isPage = layout === 'page'
 
-    const [form, setForm] = useState({
-        title: '',
-        description: '',
-        image: '',
-        challenge_type: 'outdoor_activity',
-        category: '',
-        kcal_per_unit: 0,
-        goal_type: 'daily_km',
-        goal_value: '',
-        goal_unit: 'km',
-        startDate: '',
-        endDate: '',
-        visibility: 'public',
-        badge_emoji: '🏆',
-        // nutrition time-window
-        nutrition_sub_type: 'free',
-        time_window_start: '08:00',
-        time_window_end: '11:00'
-    })
+    const [form, setForm] = useState(() => createInitialForm(initialChallengeType))
 
     // Exercise selection state (fitness challenges)
     const [selectedExercises, setSelectedExercises] = useState([])
@@ -370,13 +383,22 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
     const outdoorCategories = allCategories.filter(c => c.type === 'Ngoài trời')
     const selectedCat = outdoorCategories.find(c => c.name === form.category)
 
-    // Auto-set default outdoor category
+    // Mặc định danh mục theo loại thử thách
     useEffect(() => {
+        if (form.challenge_type === 'nutrition') {
+            if (form.category !== NUTRITION_DEFAULT_CATEGORY) {
+                setForm(prev => ({ ...prev, category: NUTRITION_DEFAULT_CATEGORY, kcal_per_unit: 0 }))
+            }
+            return
+        }
         if (form.challenge_type === 'outdoor_activity' && outdoorCategories.length > 0 && !form.category) {
             const first = outdoorCategories[0]
             setForm(prev => ({ ...prev, category: first.name, kcal_per_unit: first.kcal_per_unit || 0 }))
         }
-    }, [form.challenge_type, outdoorCategories.length])
+        if (form.challenge_type === 'fitness' && form.category) {
+            setForm(prev => ({ ...prev, category: '', kcal_per_unit: 0 }))
+        }
+    }, [form.challenge_type, form.category, outdoorCategories.length])
 
     // Reset goal when changing type
     const FIXED_GOALS = {
@@ -476,7 +498,9 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
             visibility: form.visibility,
             is_public: form.visibility !== 'private',
             badge_emoji: form.badge_emoji,
-            category: form.category,
+            category: form.challenge_type === 'nutrition'
+                ? (form.category || NUTRITION_DEFAULT_CATEGORY)
+                : form.category,
             kcal_per_unit: form.kcal_per_unit || 0,
             // nutrition time-window
             nutrition_sub_type: form.challenge_type === 'nutrition' ? form.nutrition_sub_type : 'free',
@@ -686,6 +710,8 @@ ${exerciseCatalogJson}
 
                 // Nutrition: khung giờ + số bữa (AI + suy luận từ mô tả tiếng Việt)
                 if (aiType === 'nutrition') {
+                    updated.category = NUTRITION_DEFAULT_CATEGORY
+                    updated.kcal_per_unit = 0
                     const userLine = aiDesc.trim()
                     const fromTextWindow = inferMealTimeWindowFromDescription(userLine)
                     const explicitMeals = inferExplicitMealsPerDay(userLine)
