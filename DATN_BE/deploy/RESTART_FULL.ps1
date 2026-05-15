@@ -73,7 +73,7 @@ Write-Host "[OK] Da tao $BAT_TUNNEL" -ForegroundColor Green
 Write-Host "[>>] Khoi dong cloudflared (http2)..." -ForegroundColor Yellow
 pm2 stop cloudflared 2>$null
 pm2 delete cloudflared 2>$null
-pm2 start $BAT_TUNNEL --name cloudflared
+pm2 start "$APP_DIR\deploy\ecosystem.cloudflared.js"
 pm2 save
 Start-Sleep -Seconds 8
 
