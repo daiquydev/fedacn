@@ -44,9 +44,9 @@ const TYPE_CONFIG = {
 }
 
 const VISIBILITY_CONFIG = {
-  public:  { icon: <FaGlobe />,       label: 'Công khai',    bg: 'bg-green-500/90', text: 'text-white' },
-  friends: { icon: <FaUserFriends />, label: 'Bạn bè',       bg: 'bg-blue-500/90',  text: 'text-white' },
-  private: { icon: <FaLock />,        label: 'Chỉ mình tôi', bg: 'bg-gray-600/90',  text: 'text-white' }
+  public: { icon: <FaGlobe />, label: 'Công khai', bg: 'bg-green-500/90', text: 'text-white' },
+  friends: { icon: <FaUserFriends />, label: 'Bạn bè', bg: 'bg-blue-500/90', text: 'text-white' },
+  private: { icon: <FaLock />, label: 'Chỉ mình tôi', bg: 'bg-gray-600/90', text: 'text-white' }
 }
 
 
@@ -222,7 +222,7 @@ export default function ChallengeDetail() {
   const joinMutation = useSafeMutation({
     mutationFn: () => joinChallenge(id),
     onSuccess: () => { toast.success('Đã tham gia thử thách!'); queryClient.invalidateQueries({ queryKey: ['challenge', id] }) },
-    onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
+    onError: (err) => { /* Global interceptor handles this */ }
   })
 
   const quitMutation = useSafeMutation({
@@ -254,7 +254,7 @@ export default function ChallengeDetail() {
         refetchProgress()
       }
     },
-    onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
+    onError: (err) => { /* Global interceptor handles this */ }
   })
 
   // Invite Friend Mutation
@@ -264,9 +264,7 @@ export default function ChallengeDetail() {
       setInvitedIds(prev => new Set([...prev, String(friendId)]))
       toast.success('Đã gửi lời mời! Bạn bè của bạn sẽ nhận được thông báo.')
     },
-    onError: (error) => {
-      toast.error(error?.response?.data?.message || 'Không thể gửi lời mời')
-    }
+    onError: (error) => { /* Global interceptor handles this */ }
   })
 
   // ==================== COMPUTED ====================
@@ -531,7 +529,7 @@ export default function ChallengeDetail() {
                 <span className="bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Đang diễn ra
                 </span>
-                
+
                 {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && challenge.time_window_start && challenge.time_window_end && (
                   (() => {
                     const now = new Date()
@@ -539,19 +537,19 @@ export default function ChallengeDetail() {
                     const currentMinutes = now.getMinutes()
                     const [startH, startM] = challenge.time_window_start.split(':').map(Number)
                     const [endH, endM] = challenge.time_window_end.split(':').map(Number)
-                    
+
                     const currentTimeVal = currentHours * 60 + currentMinutes
                     const startTimeVal = startH * 60 + startM
                     const endTimeVal = endH * 60 + endM
-                    
+
                     const isInWindow = currentTimeVal >= startTimeVal && currentTimeVal <= endTimeVal
-                    
+
                     return (
                       <span className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit shadow-lg ${isInWindow ? 'bg-emerald-500/90 text-white border border-emerald-400' : 'bg-gray-800/80 text-white border border-gray-600'}`}>
-                         <FaClock size={10} />
-                         {isInWindow 
-                            ? `🟢 Đang mở check-in (${challenge.time_window_start} - ${challenge.time_window_end})` 
-                            : `🔴 Đã đóng / Chưa tới giờ (${challenge.time_window_start} - ${challenge.time_window_end})`}
+                        <FaClock size={10} />
+                        {isInWindow
+                          ? `🟢 Đang mở check-in (${challenge.time_window_start} - ${challenge.time_window_end})`
+                          : `🔴 Đã đóng / Chưa tới giờ (${challenge.time_window_start} - ${challenge.time_window_end})`}
                       </span>
                     )
                   })()

@@ -46,7 +46,8 @@ export const getChallengeController = async (req: Request, res: Response) => {
 }
 
 export const createChallengeController = async (req: Request, res: Response) => {
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
     const {
         title, description, image, challenge_type,
         goal_type, goal_value, goal_unit,
@@ -87,7 +88,8 @@ export const createChallengeController = async (req: Request, res: Response) => 
 
 export const updateChallengeController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
 
     const result = await challengeService.updateChallenge(id, userId, req.body)
 
@@ -96,7 +98,8 @@ export const updateChallengeController = async (req: Request, res: Response) => 
 
 export const deleteChallengeController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
 
     const result = await challengeService.deleteChallenge(id, userId)
 
@@ -105,7 +108,8 @@ export const deleteChallengeController = async (req: Request, res: Response) => 
 
 export const joinChallengeController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
 
     const result = await challengeService.joinChallenge(id, userId)
 
@@ -114,7 +118,8 @@ export const joinChallengeController = async (req: Request, res: Response) => {
 
 export const quitChallengeController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
 
     const result = await challengeService.quitChallenge(id, userId)
 
@@ -143,7 +148,8 @@ export const removeChallengeParticipantController = async (req: Request, res: Re
 }
 
 export const getMyCreatedChallengesController = async (req: Request, res: Response) => {
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
     const { page, limit, status, search, challenge_type } = req.query
 
     const result = await challengeService.getMyCreatedChallenges(
@@ -159,7 +165,8 @@ export const getMyCreatedChallengesController = async (req: Request, res: Respon
 }
 
 export const getMyChallengesController = async (req: Request, res: Response) => {
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
     const { page, limit, status, search, challenge_type, category, sortBy, dateFrom, dateTo, visibility } = req.query
 
     const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20, status as string, {
@@ -177,7 +184,8 @@ export const getMyChallengesController = async (req: Request, res: Response) => 
 }
 
 export const getChallengeStatsController = async (req: Request, res: Response) => {
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
     const { type } = req.query
 
     const result = await challengeService.getChallengeStats(userId, type as string)
@@ -187,7 +195,8 @@ export const getChallengeStatsController = async (req: Request, res: Response) =
 
 export const addProgressController = async (req: Request, res: Response) => {
     const { id } = req.params
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
 
     const result = await challengeService.addProgress(id, userId, req.body)
 
@@ -264,7 +273,8 @@ export const getChallengeProgressEntryController = async (req: Request, res: Res
 
 export const deleteProgressController = async (req: Request, res: Response) => {
     const { id, progressId } = req.params
-    const userId = (req as any).decoded.user_id
+    const userId = (req as any).decoded?.user_id || (req as any).decoded_authorization?.user_id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
 
     const result = await challengeService.deleteProgress(id, progressId, userId)
 
