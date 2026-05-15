@@ -7,7 +7,7 @@ async function listChallenges() {
   const challenges = await ChallengeModel.find({})
   console.log(`Found ${challenges.length} challenges:`)
   challenges.forEach(c => {
-    console.log(`- ID: ${c._id}, Name: ${c.name}, GoalType: ${c.goalType}, Category: ${c.category}`)
+    console.log(`- ID: ${c._id}, Title: ${c.title}, GoalType: ${c.goal_type}, Category: ${c.category}`)
   })
   await mongoose.disconnect()
 }
