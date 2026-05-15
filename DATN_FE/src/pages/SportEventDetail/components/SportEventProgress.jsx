@@ -201,7 +201,7 @@ export default function SportEventProgress({
     const today = moment().startOf('day')
     const todaysActivities = completedActivities.filter(a => moment(a.startTime).isSame(today, 'day'))
 
-    const distance = todaysActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
+    const distance = todaysActivities.reduce((sum, a) => sum + (a.totalDistance / 1000), 0)
     const duration = todaysActivities.reduce((sum, a) => sum + a.totalDuration, 0)
     return {
       totalSessions: todaysActivities.length,
@@ -213,7 +213,7 @@ export default function SportEventProgress({
   // Aggregate stats from filtered GPS activities (react to time filter)
   const gpsStats = useMemo(() => {
     if (!filteredActivities.length) return null
-    const totalDistance = filteredActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
+    const totalDistance = filteredActivities.reduce((sum, a) => sum + (a.totalDistance / 1000), 0)
     const totalCalories = filteredActivities.reduce((sum, a) => sum + roundKcal(a.calories), 0)
     const totalDuration = filteredActivities.reduce((sum, a) => sum + a.totalDuration, 0)
     const avgSpeed = totalDuration > 0 ? (totalDistance / (totalDuration / 3600)).toFixed(2) : 0
@@ -243,7 +243,7 @@ export default function SportEventProgress({
   // Total GPS stats for progress overview — always ALL activities (independent of time filter)
   const allTimeGpsStats = useMemo(() => {
     if (!completedActivities.length) return null
-    const totalDistance = completedActivities.reduce((sum, a) => sum + parseFloat((a.totalDistance / 1000).toFixed(2)), 0)
+    const totalDistance = completedActivities.reduce((sum, a) => sum + (a.totalDistance / 1000), 0)
     const totalCalories = completedActivities.reduce((sum, a) => sum + roundKcal(a.calories), 0)
     const totalDuration = completedActivities.reduce((sum, a) => sum + a.totalDuration, 0)
     return { totalDistance, totalCalories, totalDuration, totalSessions: completedActivities.length }
@@ -375,7 +375,8 @@ export default function SportEventProgress({
         const d = moment(a.startTime).format('DD/MM')
         const fd = moment(a.startTime).format('YYYY-MM-DD')
         if (!dayMap[fd]) dayMap[fd] = { distance: 0, calories: 0, sessions: 0, duration: 0 }
-        dayMap[fd].distance += parseFloat((a.totalDistance / 1000).toFixed(2))
+        // Dùng quãng đường gốc để tính toán, không làm tròn ở đây để tránh sai số vận tốc
+        dayMap[fd].distance += (a.totalDistance / 1000)
         dayMap[fd].calories += roundKcal(a.calories)
         dayMap[fd].sessions += 1
         dayMap[fd].duration += a.totalDuration
@@ -383,7 +384,9 @@ export default function SportEventProgress({
 
       Object.keys(dayMap).forEach(fd => {
         const { distance, duration } = dayMap[fd]
+        // Tính vận tốc TB từ quãng đường gốc
         dayMap[fd].avgSpeed = duration > 0 ? Number((distance / (duration / 3600)).toFixed(2)) : 0
+        // Làm tròn quãng đường để hiển thị
         dayMap[fd].distance = Number(distance.toFixed(2))
       })
 
@@ -1023,13 +1026,14 @@ export default function SportEventProgress({
                           if (isOutdoor) {
                             const dayActs = completedActivities.filter(a => moment(a.startTime).format('YYYY-MM-DD') === d.fullDate)
                             const rowFromGpsChart = Object.prototype.hasOwnProperty.call(d, 'distance')
-                            const dist = d.distance != null ? d.distance : Number((dayActs.reduce((s, a) => s + a.totalDistance / 1000, 0)).toFixed(2))
+                            const totalDistRaw = dayActs.reduce((s, a) => s + a.totalDistance / 1000, 0)
+                            const dist = d.distance != null ? d.distance : Number(totalDistRaw.toFixed(2))
                             const cal = d.calories != null ? d.calories : dayActs.reduce((s, a) => s + roundKcal(a.calories), 0)
                             const sess = d.sessions != null ? d.sessions : dayActs.length
                             const dur = rowFromGpsChart && d.duration != null
                               ? d.duration
                               : dayActs.reduce((s, a) => s + a.totalDuration, 0)
-                            const spd = d.avgSpeed != null ? d.avgSpeed : (dur > 0 ? Number((dist / (dur / 3600)).toFixed(2)) : 0)
+                            const spd = d.avgSpeed != null ? d.avgSpeed : (dur > 0 ? Number((totalDistRaw / (dur / 3600)).toFixed(2)) : 0)
 
                             // Biểu đồ tiến độ ngoài trời dùng progressHistory (không có key distance): không có GPS trùng ngày → fallback thay vì toàn 0
                             if (activeMetric === 'progress' && dayActs.length === 0 && !rowFromGpsChart) {

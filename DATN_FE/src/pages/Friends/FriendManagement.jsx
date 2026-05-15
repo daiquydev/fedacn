@@ -130,6 +130,7 @@ const PeopleSection = ({
   badge,
   renderActions,
   emptyMessage,
+  noSearchResultsMessage = 'Không tìm thấy kết quả nào khớp với từ khóa.',
   disabled,
   sortOptions = defaultSortOptions,
   defaultSort = 'newest'
@@ -204,7 +205,11 @@ const PeopleSection = ({
         </div>
       </div>
       {!filteredAndSorted.length ? (
-        <EmptyState message={emptyMessage} />
+        <EmptyState
+          message={
+            filter.trim() && people.length > 0 ? noSearchResultsMessage : emptyMessage
+          }
+        />
       ) : (
         <ul className='space-y-1.5 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent'>
           {filteredAndSorted.map((person) => (

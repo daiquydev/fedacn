@@ -180,7 +180,7 @@ export default function MeChallenges({ isOwner = true, userId }) {
       : ['my-created-challenges-profile', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserChallenges(userId, { page, limit: LIMIT })
+        ? getPublicUserChallenges(userId, { page, limit: LIMIT, scope: 'created' })
         : getMyCreatedChallenges({ page, limit: LIMIT }),
     enabled: activeTab === 'created',
     placeholderData: keepPreviousData
@@ -192,7 +192,7 @@ export default function MeChallenges({ isOwner = true, userId }) {
       : ['my-challenges-profile', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserChallenges(userId, { page, limit: LIMIT })
+        ? getPublicUserChallenges(userId, { page, limit: LIMIT, scope: 'joined' })
         : getMyChallenges({ page, limit: LIMIT }),
     enabled: activeTab === 'joined',
     placeholderData: keepPreviousData
@@ -235,24 +235,20 @@ export default function MeChallenges({ isOwner = true, userId }) {
         }))
         : sourceParticipations.filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
     }
-    const normalizeCreator = (item) =>
-      String(
-        item?.challenge_id?.created_by?._id ||
-        item?.challenge_id?.created_by ||
-        item?.challenge_id?.createdBy?._id ||
-        item?.challenge_id?.createdBy ||
-        ''
-      )
     if (activeTab === 'created') {
-      const publicParticipations = normalizeParticipations(createdPayload)
-      return publicParticipations
-        .filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
-        .filter((item) => normalizeCreator(item) === String(userId))
+      const ch = normalizeChallenges(createdPayload)
+      return ch
+        .filter((challenge) => !isChallengeRemoved(challenge))
+        .map((challenge) => ({
+          _id: `created-${challenge._id}`,
+          challenge_id: challenge,
+          current_value: challenge.current_value || 0,
+          is_completed: false,
+          streak_count: challenge.streak_count || 0
+        }))
     }
-    return sourceParticipations
-      .filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
-      .filter((item) => normalizeCreator(item) !== String(userId))
-  }, [activeTab, createdPayload, isPublic, sourceCreatedChallenges, sourceParticipations, userId])
+    return sourceParticipations.filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
+  }, [activeTab, createdPayload, isPublic, sourceCreatedChallenges, sourceParticipations])
 
   const filteredParticipations = participations.filter((item) => {
     const normalized = keyword.trim().toLowerCase()
@@ -269,7 +265,29 @@ export default function MeChallenges({ isOwner = true, userId }) {
       ? (createdPayload?.totalPage || 1)
       : (joinedPayload?.totalPage || 1)
 
-  if (activeQuery.isLoading) {
+  const errorMessage =
+    activeQuery.error?.response?.data?.message ||
+    activeQuery.error?.message ||
+    'Đã xảy ra lỗi khi tải dữ liệu.'
+
+  if (activeQuery.isError) {
+    return (
+      <div className='text-center py-16 px-4'>
+        <FaTrophy className='text-6xl text-red-200 dark:text-red-900/40 mx-auto mb-4' />
+        <h3 className='text-lg font-medium text-gray-700 dark:text-gray-300'>Không tải được dữ liệu thử thách</h3>
+        <p className='text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto'>{errorMessage}</p>
+        <button
+          type='button'
+          onClick={() => activeQuery.refetch()}
+          className='mt-5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors'
+        >
+          Thử lại
+        </button>
+      </div>
+    )
+  }
+
+  if (activeQuery.isPending) {
     return <Loading className='flex justify-center py-20' />
   }
 
@@ -280,6 +298,13 @@ export default function MeChallenges({ isOwner = true, userId }) {
         <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
           {activeTab === 'created' ? 'Chưa tạo thử thách nào' : 'Chưa tham gia thử thách nào'}
         </h3>
+        {isPublic && !isOwner ? (
+          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto'>
+            {activeTab === 'created'
+              ? 'Chưa có thử thách công khai do người dùng này tạo để hiển thị.'
+              : 'Chưa có thử thách công khai mà người dùng này đã tham gia để hiển thị.'}
+          </p>
+        ) : null}
         {isOwner && (
           <>
             <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>

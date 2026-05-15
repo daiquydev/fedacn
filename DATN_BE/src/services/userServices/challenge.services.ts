@@ -906,6 +906,89 @@ class ChallengeService {
         return { challenges, totalPage, page, limit, total }
     }
 
+    /** Hồ sơ người khách: thử thách đã tạo, chỉ hiển thị khi thử thách công khai (visibility + is_public). */
+    async getPublicCreatedChallengesForProfile(profileUserId: string, page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit
+        const creatorOid = new Types.ObjectId(profileUserId)
+        const condition: Record<string, unknown> = {
+            creator_id: creatorOid,
+            is_deleted: { $ne: true },
+            is_public: true,
+            $or: [{ visibility: 'public' }, { visibility: { $exists: false } }]
+        }
+
+        const [challenges, total] = await Promise.all([
+            ChallengeModel.find(condition)
+                .populate('creator_id', 'name avatar')
+                .skip(skip)
+                .limit(limit)
+                .sort({ createdAt: -1 })
+                .lean(),
+            ChallengeModel.countDocuments(condition)
+        ])
+
+        const totalPage = Math.ceil(total / limit) || 1
+        return { challenges, totalPage, page, limit, total }
+    }
+
+    /**
+     * Hồ sơ người khách: thử thách đã tham gia công khai (challenge public + is_public),
+     * không gồm thử thách do chính họ tạo (tab «đã tham gia» trên /me).
+     */
+    async getPublicJoinedChallengesForProfile(profileUserId: string, page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit
+        const userOid = new Types.ObjectId(profileUserId)
+
+        const matchAfterLookup = {
+            '_ch.is_deleted': { $ne: true },
+            '_ch.is_public': true,
+            $or: [{ '_ch.visibility': 'public' }, { '_ch.visibility': { $exists: false } }],
+            '_ch.creator_id': { $ne: userOid }
+        }
+
+        const basePipeline = [
+            { $match: { user_id: userOid, status: { $ne: 'quit' } } },
+            {
+                $lookup: {
+                    from: 'challenges',
+                    localField: 'challenge_id',
+                    foreignField: '_id',
+                    as: '_ch'
+                }
+            },
+            { $unwind: '$_ch' },
+            { $match: matchAfterLookup },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_ch.creator_id',
+                    foreignField: '_id',
+                    as: '_creator',
+                    pipeline: [{ $project: { name: 1, avatar: 1 } }]
+                }
+            },
+            {
+                $addFields: {
+                    challenge_id: {
+                        $mergeObjects: ['$_ch', { creator_id: { $arrayElemAt: ['$_creator', 0] } }]
+                    }
+                }
+            },
+            { $project: { _ch: 0, _creator: 0 } },
+            { $sort: { joined_at: -1 } }
+        ]
+
+        const [countRows, participations] = await Promise.all([
+            ChallengeParticipantModel.aggregate([...basePipeline, { $count: 'total' }] as any),
+            ChallengeParticipantModel.aggregate([...basePipeline, { $skip: skip }, { $limit: limit }] as any)
+        ])
+
+        const total = countRows[0]?.total ?? 0
+        const totalPage = Math.ceil(total / limit) || 1
+
+        return { participations, totalPage, page, limit, total }
+    }
+
     async getMyChallenges(
         userId: string,
         page: number = 1,

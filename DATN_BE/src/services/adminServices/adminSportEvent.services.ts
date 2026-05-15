@@ -2,6 +2,7 @@ import SportEventModel, { SportEvent } from '~/models/schemas/sportEvent.schema'
 import SportEventSessionModel from '~/models/schemas/sportEventSession.schema'
 import SportEventProgressModel from '~/models/schemas/sportEventProgress.schema'
 import sportEventProgressService from '~/services/userServices/sportEventProgress.services'
+import { normalizeSportEventTargetUnit } from '~/utils/sportEventTargetUnit.utils'
 import { Types } from 'mongoose'
 
 class AdminSportEventService {
@@ -219,7 +220,7 @@ class AdminSportEventService {
             benefits: benefits || '',
             organizer: organizer || '',
             targetValue: targetValue || undefined,
-            targetUnit: targetUnit || '',
+            targetUnit: normalizeSportEventTargetUnit(eventType, targetUnit) || '',
             difficulty: difficulty || ''
         })
 
@@ -270,6 +271,13 @@ class AdminSportEventService {
             const end = new Date(safeUpdateData.endDate)
             if (end <= start) throw new Error('Ngày kết thúc phải sau ngày bắt đầu')
         }
+
+        const mergedType = (safeUpdateData.eventType as 'Ngoài trời' | 'Trong nhà') || existing.eventType
+        const rawUnit =
+            safeUpdateData.targetUnit !== undefined && safeUpdateData.targetUnit !== null
+                ? String(safeUpdateData.targetUnit)
+                : String(existing.targetUnit || '')
+        safeUpdateData.targetUnit = normalizeSportEventTargetUnit(mergedType, rawUnit)
 
         const event = await SportEventModel.findByIdAndUpdate(
             eventId,

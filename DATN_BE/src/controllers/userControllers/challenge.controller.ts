@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { isValidObjectId } from 'mongoose'
 import challengeService from '~/services/userServices/challenge.services'
 import { CHALLENGE_MESSAGE } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
@@ -272,11 +273,22 @@ export const deleteProgressController = async (req: Request, res: Response) => {
 
 export const getPublicUserChallengesController = async (req: Request, res: Response) => {
     const { userId } = req.params
-    const { page, limit } = req.query
+    const { page, limit, scope } = req.query
 
-    const result = await challengeService.getMyChallenges(userId, Number(page) || 1, Number(limit) || 20)
+    if (!isValidObjectId(userId)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'userId không hợp lệ' })
+    }
 
-    return res.json({ message: 'Lấy thử thách người dùng thành công', result })
+    const pageNum = Number(page) || 1
+    const limitNum = Number(limit) || 20
+    const tab = (scope as string) === 'created' ? 'created' : 'joined'
+
+    const result =
+        tab === 'created'
+            ? await challengeService.getPublicCreatedChallengesForProfile(userId, pageNum, limitNum)
+            : await challengeService.getPublicJoinedChallengesForProfile(userId, pageNum, limitNum)
+
+    return res.json({ message: 'Lấy thử thách hiển thị công khai thành công', result })
 }
 
 export const getFeedController = async (req: Request, res: Response) => {

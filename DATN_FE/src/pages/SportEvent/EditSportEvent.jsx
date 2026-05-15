@@ -109,8 +109,8 @@ const EditSportEvent = () => {
         targetUnit: (() => {
           const unit = event.targetUnit || 'km'
           const type = event.eventType || 'Ngoài trời'
-          // Nếu sự kiện Trong nhà mà unit là 'km' thì tự đổi sang 'kcal'
           if (type === 'Trong nhà' && unit === 'km') return 'kcal'
+          if (type === 'Ngoài trời' && (unit === 'phút' || unit === 'giờ')) return 'km'
           return unit
         })(),
         image: event.image || '',
@@ -301,7 +301,12 @@ const EditSportEvent = () => {
       category: newEvent.category,
       maxParticipants: Number(newEvent.maxParticipants),
       targetValue: Number(newEvent.targetValue),
-      targetUnit: (newEvent.eventType === 'Trong nhà' && newEvent.targetUnit === 'km') ? 'kcal' : newEvent.targetUnit,
+      targetUnit: (() => {
+        let u = newEvent.targetUnit
+        if (newEvent.eventType === 'Ngoài trời' && (u === 'phút' || u === 'giờ')) u = 'km'
+        if (newEvent.eventType === 'Trong nhà' && u === 'km') u = 'kcal'
+        return u
+      })(),
       image: newEvent.image,
       description: newEvent.description,
       detailedDescription: newEvent.detailedDescription,
@@ -611,8 +616,12 @@ const EditSportEvent = () => {
                     >
                       {newEvent.eventType === 'Ngoài trời' && <option value="km">km</option>}
                       <option value="kcal">kcal</option>
-                      <option value="phút">phút</option>
-                      <option value="giờ">giờ</option>
+                      {newEvent.eventType === 'Trong nhà' && (
+                        <>
+                          <option value="phút">phút</option>
+                          <option value="giờ">giờ</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <p className="text-xs text-gray-400 mt-1 font-medium">Mục tiêu cần hoàn thành để nhận phần thưởng</p>

@@ -10,6 +10,7 @@ import { ErrorWithStatus } from '~/utils/error'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { SPORT_EVENT_MESSAGE } from '~/constants/messages'
 import { sportEventHasStartedForDelete } from '~/utils/sportEventDeleteGuard.utils'
+import { normalizeSportEventTargetUnit } from '~/utils/sportEventTargetUnit.utils'
 
 // Mirror of sportEventProgress.services.ts isKcalUnit (avoids circular import)
 function isKcalUnit(targetUnit: string): boolean {
@@ -492,7 +493,7 @@ class SportEventService {
       createdBy,
       eventType,
       targetValue: targetValue !== undefined ? targetValue : undefined,
-      targetUnit: targetUnit || '',
+      targetUnit: normalizeSportEventTargetUnit(eventType, targetUnit) || '',
       requirements: requirements || '',
       benefits: benefits || '',
       participants: 1,
@@ -563,7 +564,17 @@ class SportEventService {
     if (!existing) throw new Error('Sport event not found')
     if (existing.isDeleted) throw new Error('Cannot update a deleted sport event')
 
-    const event = await SportEventModel.findByIdAndUpdate(eventId, updateData, { new: true })
+    const eventType = (updateData.eventType as 'Ngoài trời' | 'Trong nhà') || existing.eventType
+    const rawUnit =
+      updateData.targetUnit !== undefined && updateData.targetUnit !== null
+        ? String(updateData.targetUnit)
+        : String(existing.targetUnit || '')
+    const patch = {
+      ...updateData,
+      targetUnit: normalizeSportEventTargetUnit(eventType, rawUnit)
+    }
+
+    const event = await SportEventModel.findByIdAndUpdate(eventId, patch, { new: true })
       .populate('createdBy', 'name avatar')
       .populate('participants_ids', 'name avatar')
 

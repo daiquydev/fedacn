@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FaRunning, FaCalendarAlt, FaUsers, FaArrowRight, FaMapMarkerAlt, FaPlusCircle, FaCheckCircle } from 'react-icons/fa'
@@ -86,7 +86,7 @@ export default function MeSportEvents({ userId }) {
       : ['myCreatedEvents-profile', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT })
+        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT, scope: 'created' })
         : getMyEvents({ page, limit: LIMIT }),
     enabled: activeTab === 'created',
     placeholderData: keepPreviousData
@@ -98,7 +98,7 @@ export default function MeSportEvents({ userId }) {
       : ['joinedEvents-profile', { page, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT })
+        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT, scope: 'joined' })
         : getJoinedEvents({ page, limit: LIMIT }),
     enabled: activeTab === 'joined',
     placeholderData: keepPreviousData
@@ -107,15 +107,7 @@ export default function MeSportEvents({ userId }) {
   const activeQuery = activeTab === 'created' ? createdQuery : joinedQuery
   const raw = activeQuery?.data?.data?.result
   const sourceEvents = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
-  const events = useMemo(() => {
-    if (!isPublic) return sourceEvents
-    const normalizeCreator = (event) =>
-      String(event?.createdBy?._id || event?.createdBy || event?.created_by?._id || event?.created_by || '')
-    if (activeTab === 'created') {
-      return sourceEvents.filter((event) => normalizeCreator(event) === String(userId))
-    }
-    return sourceEvents.filter((event) => normalizeCreator(event) !== String(userId))
-  }, [activeTab, isPublic, sourceEvents, userId])
+  const events = sourceEvents
 
   const filteredEvents = events.filter((event) => {
     const normalized = keyword.trim().toLowerCase()
@@ -128,7 +120,29 @@ export default function MeSportEvents({ userId }) {
   })
   const totalPage = raw?.totalPage || 1
 
-  if (activeQuery.isLoading) {
+  const errorMessage =
+    activeQuery.error?.response?.data?.message ||
+    activeQuery.error?.message ||
+    'Đã xảy ra lỗi khi tải dữ liệu.'
+
+  if (activeQuery.isError) {
+    return (
+      <div className='text-center py-16 px-4'>
+        <FaRunning className='text-6xl text-red-200 dark:text-red-900/40 mx-auto mb-4' />
+        <h3 className='text-lg font-medium text-gray-700 dark:text-gray-300'>Không tải được dữ liệu sự kiện</h3>
+        <p className='text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto'>{errorMessage}</p>
+        <button
+          type='button'
+          onClick={() => activeQuery.refetch()}
+          className='mt-5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors'
+        >
+          Thử lại
+        </button>
+      </div>
+    )
+  }
+
+  if (activeQuery.isPending) {
     return <Loading className='flex justify-center py-20' />
   }
 
@@ -139,6 +153,13 @@ export default function MeSportEvents({ userId }) {
         <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
           {activeTab === 'created' ? 'Chưa tạo sự kiện nào' : 'Chưa tham gia sự kiện nào'}
         </h3>
+        {isPublic ? (
+          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto'>
+            {activeTab === 'created'
+              ? 'Người dùng chưa có sự kiện nào được tạo, hoặc chưa có dữ liệu để hiển thị.'
+              : 'Người dùng chưa tham gia sự kiện nào, hoặc chưa có dữ liệu để hiển thị.'}
+          </p>
+        ) : null}
         {!isPublic && (
           <>
             {activeTab === 'created' ? (

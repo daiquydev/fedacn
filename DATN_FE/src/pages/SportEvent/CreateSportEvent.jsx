@@ -214,7 +214,7 @@ const CreateSportEvent = () => {
     eventTime: '',    // HH:mm text
     location: '',
     category: '',
-    maxParticipants: 50,
+    maxParticipants: '',
     targetValue: 0,
     targetUnit: 'km',
     image: '',
@@ -294,7 +294,7 @@ Hãy điền đầy đủ tất cả các trường sau thành một JSON object
    - Hoạt động ngoài trời (category thuộc list: ${outdoorCategories}) → "Ngoài trời"
    - Hoạt động trong nhà (category thuộc list: ${indoorCategories}) → "Trong nhà"
 5. category: phải là một trong các giá trị sau (chọn phù hợp nhất với mô tả): ${allCategoryNames}. Chỉ điền tên category (không kèm loại).
-6. targetUnit: chỉ được là một trong: "km", "kcal", "phút", "giờ". Chọn đơn vị phù hợp với loại hoạt động.
+6. targetUnit: với "Ngoài trời" chỉ "km" hoặc "kcal". Với "Trong nhà" có thể "kcal", "phút", hoặc "giờ" (không dùng "km" trong nhà — nếu AI chọn km cho Trong nhà thì đổi sang kcal).
 7. targetValue (CỰC KỲ QUAN TRỌNG): đây là TỔNG mục tiêu cả nhóm phải tích lũy trong TOÀN BỘ khoảng startDate→endDate (ứng dụng sẽ chia cho maxParticipants để hiển thị góp phần mỗi người). KHÔNG được nhầm với cự ly một vòng chạy (vd 5km).
    - Với chạy bộ ngoài trời, đơn vị km: targetValue nên xấp xỉ maxParticipants × (cự ly gợi ý mỗi người trong kỳ, vd 3–8 km/người) × số ngày diễn ra / 7, tối thiểu đủ lớn để không bị "200 người nhưng chỉ 5 km tổng".
    - Ví dụ: giải 5km, ~100 người, sự kiện 7 ngày → targetValue (km) kiểu vài trăm đến vài nghìn tùy độ tham gia kỳ vọng, không phải số 5.
@@ -319,7 +319,7 @@ JSON output (chỉ object, không gì khác):
   "location": string,
   "maxParticipants": number,
   "targetValue": number,
-  "targetUnit": "km" | "kcal" | "phút" | "giờ",
+  "targetUnit": string,
   "image": string,
   "description": string,
   "detailedDescription": string,
@@ -366,10 +366,21 @@ JSON output (chỉ object, không gì khác):
         if (parsed.endDate) updated.endDate = parsed.endDate
         if (parsed.eventTime) updated.eventTime = parsed.eventTime
         if (parsed.location) updated.location = parsed.location
-        if (parsed.maxParticipants) updated.maxParticipants = Number(parsed.maxParticipants)
+        if (parsed.maxParticipants != null && Number(parsed.maxParticipants) >= 1) {
+          updated.maxParticipants = Number(parsed.maxParticipants)
+        }
         if (parsed.targetValue !== undefined) updated.targetValue = Number(parsed.targetValue)
-        if (['km', 'kcal', 'phút', 'giờ'].includes(parsed.targetUnit)) {
-          updated.targetUnit = parsed.targetUnit
+        if (parsed.targetUnit) {
+          const allowedOutdoor = ['km', 'kcal']
+          const allowedIndoor = ['kcal', 'phút', 'giờ']
+          const et = updated.eventType || prev.eventType
+          const ok =
+            et === 'Ngoài trời'
+              ? allowedOutdoor.includes(parsed.targetUnit)
+              : allowedIndoor.includes(parsed.targetUnit)
+          if (ok) updated.targetUnit = parsed.targetUnit
+          else if (et === 'Ngoài trời' && ['phút', 'giờ'].includes(parsed.targetUnit)) updated.targetUnit = 'km'
+          else if (et === 'Trong nhà' && parsed.targetUnit === 'km') updated.targetUnit = 'kcal'
         }
         if (parsed.image && String(parsed.image).startsWith('http')) updated.image = parsed.image
         if (parsed.description) updated.description = parsed.description.slice(0, 150)
@@ -433,6 +444,15 @@ JSON output (chỉ object, không gì khác):
       case 'image':
         if (!value?.trim()) error = 'Vui lòng tải lên ảnh bìa'
         break
+      case 'maxParticipants': {
+        const raw = String(value ?? '').trim()
+        const n = Number(raw)
+        if (raw === '') error = 'Vui lòng nhập số người tối đa'
+        else if (!Number.isFinite(n) || n < 1) error = 'Số người tối thiểu là 1'
+        else if (n > 500) error = 'Số người tối đa không vượt quá 500'
+        else if (!Number.isInteger(n)) error = 'Số người phải là số nguyên'
+        break
+      }
       default:
         break
     }
@@ -484,7 +504,7 @@ JSON output (chỉ object, không gì khác):
   }
 
   const validateForm = () => {
-    const fields = ['name', 'startDate', 'endDate', 'eventTime', ...(newEvent.eventType === 'Ngoài trời' ? ['location'] : []), 'description', 'image']
+    const fields = ['name', 'startDate', 'endDate', 'eventTime', ...(newEvent.eventType === 'Ngoài trời' ? ['location'] : []), 'description', 'image', 'maxParticipants']
     const sErr = {}
     fields.forEach(f => {
       let e = null
@@ -497,6 +517,8 @@ JSON output (chỉ object, không gì khác):
         else if (!isValidDateISO(newEvent[f])) e = 'Ngày không hợp lệ'
         else if (isPastDate(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
         else if (newEvent.startDate && new Date(newEvent[f]) < new Date(newEvent.startDate)) e = 'Ngày kết thúc phải sau ngày bắt đầu'
+      } else if (f === 'maxParticipants') {
+        e = validateField(f, newEvent.maxParticipants)
       } else {
         e = validateField(f, newEvent[f])
       }
@@ -530,9 +552,14 @@ JSON output (chỉ object, không gì khác):
       endDate: endISO,
       location: newEvent.eventType === 'Trong nhà' ? (newEvent.location?.trim() || 'Video call trực tuyến') : newEvent.location,
       category: newEvent.category,
-      maxParticipants: Number(newEvent.maxParticipants),
+      maxParticipants: Math.min(500, Math.max(1, Math.round(Number(newEvent.maxParticipants)))),
       targetValue: Number(newEvent.targetValue),
-      targetUnit: (newEvent.eventType === 'Trong nhà' && newEvent.targetUnit === 'km') ? 'kcal' : newEvent.targetUnit,
+      targetUnit: (() => {
+        let u = newEvent.targetUnit
+        if (newEvent.eventType === 'Ngoài trời' && (u === 'phút' || u === 'giờ')) u = 'km'
+        if (newEvent.eventType === 'Trong nhà' && u === 'km') u = 'kcal'
+        return u
+      })(),
       image: newEvent.image,
       description: newEvent.description,
       detailedDescription: newEvent.detailedDescription,
@@ -714,7 +741,11 @@ JSON output (chỉ object, không gì khác):
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, eventType: 'Ngoài trời' }))}
+                      onClick={() => setNewEvent(p => ({
+                        ...p,
+                        eventType: 'Ngoài trời',
+                        targetUnit: (p.targetUnit === 'phút' || p.targetUnit === 'giờ') ? 'km' : p.targetUnit
+                      }))}
                       className={`flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all ${newEvent.eventType === 'Ngoài trời'
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 shadow-md shadow-green-100'
                         : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-green-300'
@@ -867,15 +898,26 @@ JSON output (chỉ object, không gì khác):
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Số người tối đa */}
-                <div>
+                <div data-error={!!errors.maxParticipants}>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                     <FaUsers className="inline mr-1 text-blue-500" />
                     Số người tối đa
                   </label>
-                  <div className="flex items-center border-2 border-gray-100 dark:border-gray-600 rounded-xl overflow-hidden dark:bg-gray-700">
+                  <div
+                    className={`flex items-center border-2 rounded-xl overflow-hidden dark:bg-gray-700 ${
+                      errors.maxParticipants
+                        ? 'border-red-400'
+                        : 'border-gray-100 dark:border-gray-600'
+                    }`}
+                  >
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, maxParticipants: Math.max(1, Number(p.maxParticipants) - 10) }))}
+                      onClick={() =>
+                        setNewEvent(p => ({
+                          ...p,
+                          maxParticipants: Math.max(1, (Number(p.maxParticipants) || 1) - 10)
+                        }))
+                      }
                       className="px-4 py-3 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-500 transition font-bold text-lg"
                     >−</button>
                     <input
@@ -884,15 +926,23 @@ JSON output (chỉ object, không gì khác):
                       value={newEvent.maxParticipants}
                       onChange={handleInputChange}
                       min={1}
+                      max={500}
+                      placeholder="Nhập số người"
                       className="flex-1 py-3 bg-transparent dark:text-white text-center font-bold text-lg focus:outline-none"
                     />
                     <button
                       type="button"
-                      onClick={() => setNewEvent(p => ({ ...p, maxParticipants: Number(p.maxParticipants) + 10 }))}
+                      onClick={() =>
+                        setNewEvent(p => ({
+                          ...p,
+                          maxParticipants: Math.min(500, (Number(p.maxParticipants) || 0) + 10)
+                        }))
+                      }
                       className="px-4 py-3 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-500 transition font-bold text-lg"
                     >+</button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1 font-medium">Tối đa người tham gia</p>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Tối đa người tham gia (1–500)</p>
+                  <ErrorMsg name="maxParticipants" />
                 </div>
 
                 {/* Mục tiêu */}
@@ -919,8 +969,12 @@ JSON output (chỉ object, không gì khác):
                     >
                       {newEvent.eventType === 'Ngoài trời' && <option value="km">km</option>}
                       <option value="kcal">kcal</option>
-                      <option value="phút">phút</option>
-                      <option value="giờ">giờ</option>
+                      {newEvent.eventType === 'Trong nhà' && (
+                        <>
+                          <option value="phút">phút</option>
+                          <option value="giờ">giờ</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <p className="text-xs text-gray-400 mt-1 font-medium">Mục tiêu cần hoàn thành để nhận phần thưởng</p>
@@ -1062,7 +1116,11 @@ JSON output (chỉ object, không gì khác):
                     )}
                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
                       <FaUsers className="text-blue-500" />
-                      <span>{newEvent.maxParticipants} NGƯỜI</span>
+                      <span>
+                        {newEvent.maxParticipants === '' || newEvent.maxParticipants == null
+                          ? '—'
+                          : `${newEvent.maxParticipants} NGƯỜI`}
+                      </span>
                     </div>
                     {newEvent.targetValue > 0 && (
                       <div className="flex items-center gap-2 text-[11px] font-bold text-green-600">

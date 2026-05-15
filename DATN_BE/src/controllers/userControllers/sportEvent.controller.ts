@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { isValidObjectId } from 'mongoose'
 import { SPORT_EVENT_MESSAGE } from '~/constants/messages'
 import sportEventService from '~/services/userServices/sportEvent.services'
 
@@ -306,12 +307,25 @@ export const inviteFriendToEventController = async (req: Request, res: Response)
 export const getPublicUserEventsController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params
-    const { page, limit } = req.query
+    const { page, limit, scope } = req.query
 
-    const result = await sportEventService.getJoinedEventsService(userId, Number(page) || 1, Number(limit) || 20)
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ message: 'userId không hợp lệ' })
+    }
+
+    const pageNum = Number(page) || 1
+    const limitNum = Number(limit) || 20
+    const tab = (scope as string) === 'created' ? 'created' : 'joined'
+
+    const result =
+      tab === 'created'
+        ? await sportEventService.getMyEventsService(userId, pageNum, limitNum)
+        : await sportEventService.getJoinedEventsService(userId, pageNum, limitNum)
+
     return res.json({
       result,
-      message: 'Get user joined events successfully'
+      message:
+        tab === 'created' ? 'Get user created sport events successfully' : 'Get user joined events successfully'
     })
   } catch (error) {
     return res.status(500).json({
