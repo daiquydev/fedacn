@@ -29,6 +29,7 @@ import {
 } from 'react-icons/fa'
 import { MdAutoAwesome } from 'react-icons/md'
 import { BsClockHistory } from 'react-icons/bs'
+import { NUTRITION_CHALLENGE_LABEL } from '../../../utils/challengeCategoryDisplay'
 
 // ==================== AI PROXY ====================
 const AI_PROXY_ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`
@@ -179,8 +180,6 @@ const TYPE_GRADIENT = {
     fitness: 'from-purple-500 to-pink-600'
 }
 
-const NUTRITION_DEFAULT_CATEGORY = 'Ăn uống'
-
 const createInitialForm = (challengeType = 'nutrition') => {
     const isNutrition = challengeType === 'nutrition'
     const isFitness = challengeType === 'fitness'
@@ -189,7 +188,7 @@ const createInitialForm = (challengeType = 'nutrition') => {
         description: '',
         image: '',
         challenge_type: challengeType,
-        category: isNutrition ? NUTRITION_DEFAULT_CATEGORY : '',
+        category: '',
         kcal_per_unit: 0,
         goal_type: isNutrition ? 'meals_logged' : isFitness ? 'exercises_completed' : 'daily_km',
         goal_value: isNutrition ? '1' : '',
@@ -243,7 +242,7 @@ function PreviewCard({ form, selectedCat }) {
                         {form.challenge_type === 'outdoor_activity' && form.category
                             ? form.category
                             : form.challenge_type === 'nutrition'
-                                ? (form.category || NUTRITION_DEFAULT_CATEGORY)
+                                ? (form.category || NUTRITION_CHALLENGE_LABEL)
                                 : (typeConf?.label || '...')}
                     </span>
                 </div>
@@ -383,11 +382,11 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal', 
     const outdoorCategories = allCategories.filter(c => c.type === 'Ngoài trời')
     const selectedCat = outdoorCategories.find(c => c.name === form.category)
 
-    // Mặc định danh mục theo loại thử thách
+    // Mặc định danh mục sport (chỉ ngoài trời); nutrition không dùng sport_categories
     useEffect(() => {
         if (form.challenge_type === 'nutrition') {
-            if (form.category !== NUTRITION_DEFAULT_CATEGORY) {
-                setForm(prev => ({ ...prev, category: NUTRITION_DEFAULT_CATEGORY, kcal_per_unit: 0 }))
+            if (form.category || form.kcal_per_unit) {
+                setForm(prev => ({ ...prev, category: '', kcal_per_unit: 0 }))
             }
             return
         }
@@ -398,7 +397,7 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal', 
         if (form.challenge_type === 'fitness' && form.category) {
             setForm(prev => ({ ...prev, category: '', kcal_per_unit: 0 }))
         }
-    }, [form.challenge_type, form.category, outdoorCategories.length])
+    }, [form.challenge_type, form.category, form.kcal_per_unit, outdoorCategories.length])
 
     // Reset goal when changing type
     const FIXED_GOALS = {
@@ -498,9 +497,7 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal', 
             visibility: form.visibility,
             is_public: form.visibility !== 'private',
             badge_emoji: form.badge_emoji,
-            category: form.challenge_type === 'nutrition'
-                ? (form.category || NUTRITION_DEFAULT_CATEGORY)
-                : form.category,
+            category: form.challenge_type === 'nutrition' ? '' : form.category,
             kcal_per_unit: form.kcal_per_unit || 0,
             // nutrition time-window
             nutrition_sub_type: form.challenge_type === 'nutrition' ? form.nutrition_sub_type : 'free',
@@ -710,7 +707,7 @@ ${exerciseCatalogJson}
 
                 // Nutrition: khung giờ + số bữa (AI + suy luận từ mô tả tiếng Việt)
                 if (aiType === 'nutrition') {
-                    updated.category = NUTRITION_DEFAULT_CATEGORY
+                    updated.category = ''
                     updated.kcal_per_unit = 0
                     const userLine = aiDesc.trim()
                     const fromTextWindow = inferMealTimeWindowFromDescription(userLine)

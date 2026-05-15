@@ -21,6 +21,7 @@ import { getSportIcon } from '../../utils/sportIcons'
 import useravatar from '../../assets/images/useravatar.jpg'
 import ParticipantsList from '../../components/ParticipantsList'
 import { timestampFromIsoVN, vnMoment } from '../../utils/vnDateUtils'
+import { getChallengeCategoryLabel, isChallengeCategoryMarkedDeleted } from '../../utils/challengeCategoryDisplay'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -82,10 +83,14 @@ function FeaturedChallengesBanner({ challenges, navigate, deletedCategoryNames =
                 ? (() => {
                     const ex = formatFitnessExerciseListSummary(c.exercises)
                     if (ex) return ` • ${ex}`
-                    if (c.category) return ` • ${deletedCategoryNames.has(c.category) ? 'Danh mục đã xóa' : c.category}`
+                    const catLabel = getChallengeCategoryLabel(c, deletedCategoryNames)
+                    if (catLabel) return ` • ${catLabel}`
                     return ''
                   })()
-                : (c.category ? ` • ${deletedCategoryNames.has(c.category) ? 'Danh mục đã xóa' : c.category}` : '')} • {c.participants_count ?? 0} người tham gia
+                : (() => {
+                    const catLabel = getChallengeCategoryLabel(c, deletedCategoryNames)
+                    return `${catLabel ? ` • ${catLabel}` : ''} • ${c.participants_count ?? 0} người tham gia`
+                  })()}
             </p>
             <span className="inline-block bg-white/20 backdrop-blur-md hover:bg-white/30 transition px-5 py-2 rounded-xl text-sm font-bold">
               Xem chi tiết →
@@ -201,27 +206,31 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
                   </div>
                 )
               }
-              if (challenge.category) {
+              const catLabelFitness = getChallengeCategoryLabel(challenge, deletedCategoryNames)
+              if (catLabelFitness) {
                 return (
                   <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                     {CategoryIcon ? <CategoryIcon className="mr-2 flex-shrink-0" /> : <MdSportsSoccer className="mr-2 flex-shrink-0" />}
-                    {deletedCategoryNames.has(challenge.category)
-                      ? <span className="italic text-gray-400 dark:text-gray-500">Danh mục đã xóa</span>
-                      : <span>{challenge.category}</span>}
+                    <span className={isChallengeCategoryMarkedDeleted(challenge, deletedCategoryNames) ? 'italic text-gray-400 dark:text-gray-500' : ''}>
+                      {catLabelFitness}
+                    </span>
                   </div>
                 )
               }
               return null
             })()
-          ) : challenge.category ? (
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              {CategoryIcon ? <CategoryIcon className="mr-2 flex-shrink-0" /> : <MdSportsSoccer className="mr-2 flex-shrink-0" />}
-              {deletedCategoryNames.has(challenge.category)
-                ? <span className="italic text-gray-400 dark:text-gray-500">Danh mục đã xóa</span>
-                : <span>{challenge.category}</span>
-              }
-            </div>
-          ) : null}
+          ) : (() => {
+            const catLabel = getChallengeCategoryLabel(challenge, deletedCategoryNames)
+            if (!catLabel) return null
+            return (
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                {CategoryIcon ? <CategoryIcon className="mr-2 flex-shrink-0" /> : <MdSportsSoccer className="mr-2 flex-shrink-0" />}
+                <span className={isChallengeCategoryMarkedDeleted(challenge, deletedCategoryNames) ? 'italic text-gray-400 dark:text-gray-500' : ''}>
+                  {catLabel}
+                </span>
+              </div>
+            )
+          })()}
           {challenge.challenge_type === 'nutrition' && challenge.nutrition_sub_type === 'time_window' && challenge.time_window_start && challenge.time_window_end && (
             <div className="flex items-center text-xs font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400 px-2 py-1 rounded w-max mt-1">
               <FaClock className="mr-1.5" />

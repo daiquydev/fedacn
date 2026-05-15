@@ -181,11 +181,16 @@ function ChallengeListTab() {
                             {c.title}
                           </p>
                           <p className='text-xs text-slate-400 truncate max-w-[200px]'>
-                            {c.category
-                              ? deletedCategoryNames.has(c.category)
-                                ? <span className='italic text-red-400'>Danh mục đã xóa</span>
+                            {(() => {
+                              const catLabel = c.challenge_type === 'nutrition'
+                                ? (c.category || 'Ăn uống')
                                 : c.category
-                              : c.goal_type}
+                                  ? (deletedCategoryNames.has(c.category)
+                                    ? <span className='italic text-red-400'>Danh mục đã xóa</span>
+                                    : c.category)
+                                  : null
+                              return catLabel || c.goal_type
+                            })()}
                           </p>
                         </div>
                       </div>
