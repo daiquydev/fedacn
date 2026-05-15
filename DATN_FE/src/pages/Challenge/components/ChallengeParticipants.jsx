@@ -116,6 +116,19 @@ export default function ChallengeParticipants({
   const totalPages = Math.max(1, Math.ceil(processed.length / PAGE_SIZE))
   const paged = processed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
+  const getParticipantDisplay = (participant) => {
+    const user = participant.user || {}
+    const uid = String(user._id || '')
+    const pct = challenge ? getChallengePersonalProgressPercent(challenge, participant) : (participant.progress_percent || 0)
+    const isCompleted = participant.is_completed
+    const isMe = uid && uid === String(currentUserId)
+    const { isOrganizer, isFriend, isConnected, label, labelColor } = getRole(uid, creatorId, friendIds, connectedIds)
+    const ringStyle = !isMe ? getRingStyle(isOrganizer, isFriend, isConnected) : {}
+    const showBadge = isOrganizer || isFriend
+    const badgeBg = isOrganizer ? 'bg-amber-500' : 'bg-green-500'
+    return { user, uid, pct, isCompleted, isMe, label, labelColor, ringStyle, showBadge, badgeBg, isOrganizer, isFriend }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -125,12 +138,12 @@ export default function ChallengeParticipants({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm w-full min-w-0 max-w-full">
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
         {/* Filter buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <button
             onClick={() => { setFilterMode('all'); setPage(1) }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterMode === 'all'
@@ -166,7 +179,7 @@ export default function ChallengeParticipants({
         </div>
 
         {/* Search */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto sm:min-w-[12rem]">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
           <input
             type="text"
@@ -178,9 +191,91 @@ export default function ChallengeParticipants({
         </div>
       </div>
 
-      {/* ── Table ───────────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      {/* ── Mobile list ─────────────────────────────────────────────────── */}
+      <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+        {paged.map((participant, idx) => {
+          const { user, uid, pct, isCompleted, isMe, label, labelColor, ringStyle, showBadge, badgeBg, isOrganizer, isFriend } = getParticipantDisplay(participant)
+          return (
+            <button
+              key={uid || idx}
+              type="button"
+              onClick={() => onViewProgress?.(participant)}
+              className={`w-full text-left px-4 py-3.5 transition ${isMe
+                ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-750'}`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                  participant.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                  participant.rank === 2 ? 'bg-gray-100 text-gray-600' :
+                  participant.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                  'bg-gray-50 dark:bg-gray-700/60 text-gray-500'
+                }`}>
+                  {participant.rank <= 3
+                    ? ['🥇', '🥈', '🥉'][participant.rank - 1]
+                    : `#${participant.rank}`}
+                </div>
+                <div className="relative shrink-0">
+                  <img
+                    src={user.avatar ? getImageUrl(user.avatar) : useravatar}
+                    alt={user.name}
+                    className={`w-10 h-10 rounded-full object-cover ${isMe ? 'ring-2 ring-blue-500' : ''}`}
+                    style={ringStyle}
+                    onError={e => { e.target.onerror = null; e.target.src = useravatar }}
+                  />
+                  {showBadge && (
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 ${badgeBg} rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center`}>
+                      {isOrganizer
+                        ? <FaCrown className="text-white" style={{ fontSize: 6 }} />
+                        : <FaCheck className="text-white" style={{ fontSize: 6 }} />}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`font-semibold text-sm truncate ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+                    {user.name || 'Ẩn danh'}
+                    {isMe && <span className="text-xs font-normal text-blue-400 ml-1">(Bạn)</span>}
+                  </p>
+                  {label && (
+                    <span className={`text-[10px] font-semibold ${labelColor}`}>{label}</span>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Hôm nay: <span className="font-bold text-gray-800 dark:text-white">{participant.today_value ?? 0}</span>
+                    /{participant.goal_value} {goalUnit}
+                    {(participant.streak_count ?? 0) > 0 && (
+                      <span className="text-orange-500 font-bold ml-1.5 inline-flex items-center gap-0.5">
+                        <FaFire className="text-[10px]" /> {participant.streak_count}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2.5 pl-11">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${isCompleted ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-orange-400'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-500 mt-1 text-right">{pct}% tiến độ</p>
+              </div>
+            </button>
+          )
+        })}
+        {processed.length === 0 && (
+          <p className="text-center py-12 text-gray-500 text-sm px-4">
+            {filterMode === 'friends'
+              ? 'Chưa có bạn bè nào tham gia thử thách này'
+              : searchTerm
+                ? 'Không tìm thấy người tham gia'
+                : 'Chưa có người tham gia'}
+          </p>
+        )}
+      </div>
+
+      {/* ── Table (tablet+) ───────────────────────────────────────────────── */}
+      <div className="hidden md:block overflow-x-auto w-full min-w-0 max-w-full">
+        <table className="w-full min-w-[640px]">
           <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400 uppercase text-xs font-semibold select-none">
             <tr>
               <th className="px-5 py-3 text-left">

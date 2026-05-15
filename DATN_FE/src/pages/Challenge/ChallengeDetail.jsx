@@ -404,7 +404,7 @@ export default function ChallengeDetail() {
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900 w-full min-w-0 overflow-x-hidden">
       {/* Leave Confirmation Modal */}
       {showLeaveModal && !isCreator && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)}>
@@ -447,10 +447,10 @@ export default function ChallengeDetail() {
         </div>
 
         <div className="relative z-10 mt-auto px-4 pb-6 pt-2 sm:p-8 text-white">
-          <div className="container mx-auto max-w-6xl">
+          <div className="w-full max-w-6xl mx-auto min-w-0">
             {/* Badges row */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
                 <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${config.color} flex items-center gap-1.5 shadow-lg`}>
                   {config.icon} {config.label}
                 </span>
@@ -489,7 +489,7 @@ export default function ChallengeDetail() {
               {/* Creator */}
               {challenge.creator_id && (
                 <div
-                  className="flex items-center gap-3 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition group"
+                  className="flex items-center gap-3 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition group shrink-0 self-start"
                   onClick={() => challenge.creator_id?._id && navigate(`/user/${challenge.creator_id._id}`)}
                 >
                   <img
@@ -508,11 +508,11 @@ export default function ChallengeDetail() {
 
             {/* Status badges + Countdown */}
             {isNotStarted && (
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
                 <span className="bg-amber-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
                   <BsCalendarCheck className="text-[10px]" /> Sắp bắt đầu
                 </span>
-                <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+                <div className="flex flex-wrap items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 max-w-full">
                   {[{ v: countdown.days, l: 'ngày' }, { v: countdown.hours, l: 'giờ' }, { v: countdown.minutes, l: 'phút' }, { v: countdown.seconds, l: 'giây' }].map((u, i) => (
                     <span key={i} className="flex items-center gap-0.5">
                       <span className="bg-white/20 text-white font-mono font-bold text-sm px-1.5 py-0.5 rounded">{String(u.v).padStart(2, '0')}</span>
@@ -688,18 +688,19 @@ export default function ChallengeDetail() {
       </div>
 
       {/* Tabs Navigation — Sticky matching SportEventDetail */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-14 z-10">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-14 z-10 w-full min-w-0">
+          <div className="w-full max-w-6xl mx-auto min-w-0">
+          <div className="flex overflow-x-auto no-scrollbar">
             {[
-              { id: 'details', label: 'Chi tiết', icon: <FaCalendarAlt /> },
-              ...(challenge?.isJoined ? [{ id: 'progress', label: 'Tiến độ cá nhân', icon: <FaMedal /> }] : []),
-              { id: 'participants', label: 'Người tham gia', icon: <FaUsers /> }
+              { id: 'details', label: 'Chi tiết', shortLabel: 'Chi tiết', icon: <FaCalendarAlt /> },
+              ...(challenge?.isJoined ? [{ id: 'progress', label: 'Tiến độ cá nhân', shortLabel: 'Tiến độ', icon: <FaMedal /> }] : []),
+              { id: 'participants', label: 'Người tham gia', shortLabel: 'Tham gia', icon: <FaUsers /> }
             ].map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition whitespace-nowrap text-base ${activeTab === tab.id
+                className={`flex-1 min-w-[5.5rem] sm:min-w-0 flex-shrink-0 sm:flex-shrink flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 font-semibold transition whitespace-nowrap text-sm sm:text-base ${activeTab === tab.id
                   ? 'text-orange-500 border-b-2 border-orange-500 bg-orange-50 dark:bg-orange-900/10'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700/40'
                   }`}
@@ -712,7 +713,7 @@ export default function ChallengeDetail() {
       </div>
 
       {/* Tab Content */}
-      <div className="container mx-auto max-w-6xl p-6">
+      <div className="w-full max-w-6xl mx-auto min-w-0 px-4 py-4 sm:p-6">
         {/* DETAILS TAB — matching SportEventDetail */}
         {activeTab === 'details' && (
           <div className="space-y-8">

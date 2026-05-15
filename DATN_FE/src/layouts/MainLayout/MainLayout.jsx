@@ -22,7 +22,7 @@ function MainLayoutInner({ children }) {
         <SideBar />
 
         {/* Main content area */}
-        <main className='flex-1 min-w-0 lg:ml-60 bg-gray-100 dark:bg-color-primary-dark flex flex-col'>
+        <main className='flex-1 min-w-0 w-full overflow-x-hidden lg:ml-60 bg-gray-100 dark:bg-color-primary-dark flex flex-col'>
           <div className='flex-1'>
             {children}
           </div>
