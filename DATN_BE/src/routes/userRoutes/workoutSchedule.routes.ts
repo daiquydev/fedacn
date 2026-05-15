@@ -7,6 +7,7 @@ import {
   deleteWorkoutScheduleController,
   getListDateWorkoutItemController,
   getListWorkoutScheduleController,
+  getPublicUserWorkoutSchedulesController,
   getWorkoutScheduleByIdController,
   updateWorkoutScheduleController,
   weightSyncController
@@ -26,6 +27,11 @@ workoutScheduleRouter.get(
   accessTokenValidator,
   limitAndPageValidator,
   wrapRequestHandler(getListWorkoutScheduleController)
+)
+workoutScheduleRouter.get(
+  '/user/:userId',
+  limitAndPageValidator,
+  wrapRequestHandler(getPublicUserWorkoutSchedulesController)
 )
 workoutScheduleRouter.put(
   '/:id',

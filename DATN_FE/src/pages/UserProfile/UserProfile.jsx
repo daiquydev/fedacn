@@ -135,11 +135,11 @@ export default function UserProfile() {
       case 'posts':
         return <UserPost user_id={id} user={profileOwner} isFollowing={isSelf || isFollowing} />
       case 'sports':
-        return <MeSportEvents userId={id} />
+        return <MeSportEvents userId={isSelf ? undefined : id} />
       case 'workouts':
-        return <MeWorkouts isOwner={false} />
+        return <MeWorkouts isOwner={isSelf} userId={isSelf ? undefined : id} />
       case 'challenges':
-        return <MeChallenges isOwner={false} userId={id} />
+        return <MeChallenges isOwner={isSelf} userId={isSelf ? undefined : id} />
       default:
         return <ProfileTodayActivity userId={id} />
     }

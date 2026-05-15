@@ -20,6 +20,14 @@ const stagger = {
   visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
 }
 
+function parseEventsPayload(data) {
+  const raw = data?.data?.result
+  const events = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
+  const total = typeof raw?.total === 'number' ? raw.total : events.length
+  const totalPage = raw?.totalPage || 1
+  return { events, total, totalPage }
+}
+
 function EventCard({ event }) {
   const isOngoing = moment().isBetween(event.startDate, event.endDate)
   const isPast = moment().isAfter(event.endDate)
@@ -73,41 +81,79 @@ function EventCard({ event }) {
   )
 }
 
+function EmptyTabState({ activeTab, isPublic }) {
+  return (
+    <div className='text-center py-16'>
+      <FaRunning className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
+      <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
+        {activeTab === 'created' ? 'Chưa tạo sự kiện nào' : 'Chưa tham gia sự kiện nào'}
+      </h3>
+      {isPublic ? (
+        <p className='text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto'>
+          {activeTab === 'created'
+            ? 'Người dùng chưa có sự kiện nào được tạo, hoặc chưa có dữ liệu để hiển thị.'
+            : 'Người dùng chưa tham gia sự kiện nào, hoặc chưa có dữ liệu để hiển thị.'}
+        </p>
+      ) : null}
+      {!isPublic && (
+        <>
+          {activeTab === 'created' ? (
+            <>
+              <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tạo sự kiện để cộng đồng cùng tham gia!</p>
+              <Link to='/sport-event/create' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+                Tạo sự kiện <FaArrowRight />
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tham gia sự kiện thể thao để bắt đầu!</p>
+              <Link to='/sport-event' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
+                Khám phá sự kiện <FaArrowRight />
+              </Link>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function MeSportEvents({ userId }) {
   const isPublic = Boolean(userId)
   const [activeTab, setActiveTab] = useState('created')
   const [pageByTab, setPageByTab] = useState({ created: 1, joined: 1 })
   const [keyword, setKeyword] = useState('')
+
+  const createdPage = pageByTab.created
+  const joinedPage = pageByTab.joined
   const page = pageByTab[activeTab]
 
   const createdQuery = useQuery({
     queryKey: isPublic
-      ? ['publicUserEvents-created', userId, { page, limit: LIMIT }]
-      : ['myCreatedEvents-profile', { page, limit: LIMIT }],
+      ? ['publicUserEvents-created', userId, { page: createdPage, limit: LIMIT }]
+      : ['myCreatedEvents-profile', { page: createdPage, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT, scope: 'created' })
-        : getMyEvents({ page, limit: LIMIT }),
-    enabled: activeTab === 'created',
+        ? getPublicUserJoinedEvents(userId, { page: createdPage, limit: LIMIT, scope: 'created' })
+        : getMyEvents({ page: createdPage, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
   const joinedQuery = useQuery({
     queryKey: isPublic
-      ? ['publicUserEvents-joined', userId, { page, limit: LIMIT }]
-      : ['joinedEvents-profile', { page, limit: LIMIT }],
+      ? ['publicUserEvents-joined', userId, { page: joinedPage, limit: LIMIT }]
+      : ['joinedEvents-profile', { page: joinedPage, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserJoinedEvents(userId, { page, limit: LIMIT, scope: 'joined' })
-        : getJoinedEvents({ page, limit: LIMIT }),
-    enabled: activeTab === 'joined',
+        ? getPublicUserJoinedEvents(userId, { page: joinedPage, limit: LIMIT, scope: 'joined' })
+        : getJoinedEvents({ page: joinedPage, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
   const activeQuery = activeTab === 'created' ? createdQuery : joinedQuery
-  const raw = activeQuery?.data?.data?.result
-  const sourceEvents = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : []
-  const events = sourceEvents
+  const { events, totalPage } = parseEventsPayload(activeQuery.data)
+  const createdTotal = parseEventsPayload(createdQuery.data).total
+  const joinedTotal = parseEventsPayload(joinedQuery.data).total
 
   const filteredEvents = events.filter((event) => {
     const normalized = keyword.trim().toLowerCase()
@@ -118,95 +164,47 @@ export default function MeSportEvents({ userId }) {
       .toLowerCase()
     return searchable.includes(normalized)
   })
-  const totalPage = raw?.totalPage || 1
 
   const errorMessage =
     activeQuery.error?.response?.data?.message ||
     activeQuery.error?.message ||
     'Đã xảy ra lỗi khi tải dữ liệu.'
 
-  if (activeQuery.isError) {
-    return (
-      <div className='text-center py-16 px-4'>
-        <FaRunning className='text-6xl text-red-200 dark:text-red-900/40 mx-auto mb-4' />
-        <h3 className='text-lg font-medium text-gray-700 dark:text-gray-300'>Không tải được dữ liệu sự kiện</h3>
-        <p className='text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto'>{errorMessage}</p>
-        <button
-          type='button'
-          onClick={() => activeQuery.refetch()}
-          className='mt-5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors'
-        >
-          Thử lại
-        </button>
-      </div>
-    )
+  const handleTabChange = (tab) => {
+    if (tab !== activeTab) setKeyword('')
+    setActiveTab(tab)
   }
 
-  if (activeQuery.isPending) {
-    return <Loading className='flex justify-center py-20' />
-  }
-
-  if (events.length === 0 && page === 1) {
-    return (
-      <div className='text-center py-16'>
-        <FaRunning className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
-        <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
-          {activeTab === 'created' ? 'Chưa tạo sự kiện nào' : 'Chưa tham gia sự kiện nào'}
-        </h3>
-        {isPublic ? (
-          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto'>
-            {activeTab === 'created'
-              ? 'Người dùng chưa có sự kiện nào được tạo, hoặc chưa có dữ liệu để hiển thị.'
-              : 'Người dùng chưa tham gia sự kiện nào, hoặc chưa có dữ liệu để hiển thị.'}
-          </p>
-        ) : null}
-        {!isPublic && (
-          <>
-            {activeTab === 'created' ? (
-              <>
-                <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tạo sự kiện để cộng đồng cùng tham gia!</p>
-                <Link to='/sport-event/create' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
-                  Tạo sự kiện <FaArrowRight />
-                </Link>
-              </>
-            ) : (
-              <>
-                <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>Tham gia sự kiện thể thao để bắt đầu!</p>
-                <Link to='/sport-event' className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'>
-                  Khám phá sự kiện <FaArrowRight />
-                </Link>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    )
-  }
+  const tabCountLabel = (total, isSuccess) => (isSuccess ? ` (${total})` : '')
 
   return (
     <div>
       <div className='mb-5 flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-800 p-1'>
         <button
           type='button'
-          onClick={() => setActiveTab('created')}
+          onClick={() => handleTabChange('created')}
           className={`flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${activeTab === 'created'
             ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm'
             : 'text-gray-500 dark:text-gray-300'
             }`}
         >
-          <FaPlusCircle className='text-xs' />
-          Sự kiện đã tạo
+          <FaPlusCircle className='text-xs shrink-0' />
+          <span className='truncate'>
+            Sự kiện đã tạo{tabCountLabel(createdTotal, createdQuery.isSuccess)}
+          </span>
         </button>
         <button
           type='button'
-          onClick={() => setActiveTab('joined')}
+          onClick={() => handleTabChange('joined')}
           className={`flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${activeTab === 'joined'
             ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm'
             : 'text-gray-500 dark:text-gray-300'
             }`}
         >
-          <FaCheckCircle className='text-xs' />
-          Sự kiện đã tham gia
+          <FaCheckCircle className='text-xs shrink-0' />
+          <span className='truncate'>
+            Sự kiện đã tham gia{tabCountLabel(joinedTotal, joinedQuery.isSuccess)}
+          </span>
         </button>
       </div>
 
@@ -222,68 +220,100 @@ export default function MeSportEvents({ userId }) {
         </label>
       </div>
 
-      {filteredEvents.length === 0 && (
-        <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
-          Không tìm thấy sự kiện phù hợp với từ khóa "{keyword}".
+      {activeQuery.isError && (
+        <div className='text-center py-16 px-4'>
+          <FaRunning className='text-6xl text-red-200 dark:text-red-900/40 mx-auto mb-4' />
+          <h3 className='text-lg font-medium text-gray-700 dark:text-gray-300'>Không tải được dữ liệu sự kiện</h3>
+          <p className='text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto'>{errorMessage}</p>
+          <button
+            type='button'
+            onClick={() => activeQuery.refetch()}
+            className='mt-5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors'
+          >
+            Thử lại
+          </button>
         </div>
       )}
 
-      <motion.div variants={stagger} initial='hidden' animate='visible'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {filteredEvents.map((event) => (
-            <EventCard key={event._id} event={event} />
-          ))}
-        </div>
-      </motion.div>
+      {!activeQuery.isError && activeQuery.isPending && (
+        <Loading className='flex justify-center py-20' />
+      )}
 
-      {/* Pagination — cùng style Challenge.jsx */}
-      {totalPage > 1 && !keyword.trim() && (
-        <div className='flex items-center justify-center gap-2 mt-8'>
-          <button
-            disabled={page <= 1}
-            onClick={() => {
-              setPageByTab((prev) => ({ ...prev, [activeTab]: Math.max(1, prev[activeTab] - 1) }))
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
-          >
-            ← Trước
-          </button>
-          {Array.from({ length: totalPage }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
-            .reduce((acc, p, i, arr) => {
-              if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
-              acc.push(p)
-              return acc
-            }, [])
-            .map(p =>
-              typeof p === 'number' ? (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setPageByTab((prev) => ({ ...prev, [activeTab]: p }))
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                >
-                  {p}
-                </button>
-              ) : (
-                <span key={p} className='px-1 text-gray-400'>...</span>
-              )
-            )
-          }
-          <button
-            disabled={page >= totalPage}
-            onClick={() => {
-              setPageByTab((prev) => ({ ...prev, [activeTab]: Math.min(totalPage, prev[activeTab] + 1) }))
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
-          >
-            Sau →
-          </button>
-        </div>
+      {!activeQuery.isError && !activeQuery.isPending && events.length === 0 && page === 1 && !keyword.trim() && (
+        <EmptyTabState activeTab={activeTab} isPublic={isPublic} />
+      )}
+
+      {!activeQuery.isError && !activeQuery.isPending && (events.length > 0 || page > 1 || keyword.trim()) && (
+        <>
+          {filteredEvents.length === 0 && (
+            <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
+              {keyword.trim()
+                ? `Không tìm thấy sự kiện phù hợp với từ khóa "${keyword}".`
+                : activeTab === 'created'
+                  ? 'Chưa tạo sự kiện nào.'
+                  : 'Chưa tham gia sự kiện nào.'}
+            </div>
+          )}
+
+          {filteredEvents.length > 0 && (
+            <motion.div variants={stagger} initial='hidden' animate='visible'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                {filteredEvents.map((event) => (
+                  <EventCard key={event._id} event={event} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {totalPage > 1 && !keyword.trim() && filteredEvents.length > 0 && (
+            <div className='flex items-center justify-center gap-2 mt-8'>
+              <button
+                disabled={page <= 1}
+                onClick={() => {
+                  setPageByTab((prev) => ({ ...prev, [activeTab]: Math.max(1, prev[activeTab] - 1) }))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+              >
+                ← Trước
+              </button>
+              {Array.from({ length: totalPage }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map(p =>
+                  typeof p === 'number' ? (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        setPageByTab((prev) => ({ ...prev, [activeTab]: p }))
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                    >
+                      {p}
+                    </button>
+                  ) : (
+                    <span key={p} className='px-1 text-gray-400'>...</span>
+                  )
+                )
+              }
+              <button
+                disabled={page >= totalPage}
+                onClick={() => {
+                  setPageByTab((prev) => ({ ...prev, [activeTab]: Math.min(totalPage, prev[activeTab] + 1) }))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import moment from 'moment'
+import { isValidObjectId } from 'mongoose'
 import { WORKOUT_MESSAGE } from '~/constants/messages'
 import { TokenPayload } from '~/models/requests/authUser.request'
 import workoutScheduleService from '~/services/userServices/workoutSchedule.services'
@@ -65,6 +66,26 @@ export const getListWorkoutScheduleController = async (req: Request, res: Respon
     page: Number(page),
     limit: Number(limit),
     user_id: user.user_id
+  })
+
+  return res.json({
+    result,
+    message: WORKOUT_MESSAGE.GET_LIST_WORKOUT_SUCCESS
+  })
+}
+
+export const getPublicUserWorkoutSchedulesController = async (req: Request, res: Response) => {
+  const { userId } = req.params
+  const { page, limit } = req.query
+
+  if (!isValidObjectId(userId)) {
+    return res.status(400).json({ message: 'userId không hợp lệ' })
+  }
+
+  const result = await workoutScheduleService.getListWorkoutScheduleService({
+    page: Number(page) || 1,
+    limit: Number(limit) || 20,
+    user_id: userId
   })
 
   return res.json({

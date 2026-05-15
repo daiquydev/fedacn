@@ -56,6 +56,43 @@ const TYPE_CONFIG = {
   }
 }
 
+function normalizeParticipations(payload) {
+  if (Array.isArray(payload?.participations)) return payload.participations
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload)) {
+    return payload.filter((item) => item?.challenge_id || item?.challenge)
+  }
+  return []
+}
+
+function normalizeChallenges(payload) {
+  if (Array.isArray(payload?.challenges)) return payload.challenges
+  if (Array.isArray(payload)) {
+    return payload.filter((item) => item?._id && item?.title && item?.start_date && item?.end_date)
+  }
+  return []
+}
+
+function isChallengeRemoved(challenge) {
+  return !challenge || Boolean(challenge.is_deleted || challenge.is_archived_read_only || challenge.status === 'cancelled')
+}
+
+function mapChallengesToParticipations(challenges) {
+  return challenges
+    .filter((challenge) => !isChallengeRemoved(challenge))
+    .map((challenge) => ({
+      _id: `created-${challenge._id}`,
+      challenge_id: challenge,
+      current_value: challenge.current_value || 0,
+      is_completed: false,
+      streak_count: challenge.streak_count || 0
+    }))
+}
+
+function getPayloadFromQuery(data) {
+  return data?.data?.result || data?.result || {}
+}
+
 function ChallengeCard({ participation }) {
   const challenge = participation.challenge_id || participation.challenge
   if (!challenge) return null
@@ -80,7 +117,6 @@ function ChallengeCard({ participation }) {
         to={`/challenge/${challenge._id}`}
         className='block bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700/50 hover:shadow-lg transition-all duration-300 group'
       >
-        {/* Banner */}
         <div className={`relative h-36 bg-gradient-to-br ${config.gradient} flex items-center justify-center overflow-hidden`}>
           {challenge.image ? (
             <img
@@ -105,7 +141,6 @@ function ChallengeCard({ participation }) {
           </div>
         </div>
 
-        {/* Body */}
         <div className='p-4 space-y-2.5'>
           <div className='flex items-center gap-2'>
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 ${config.bg} ${config.text} rounded-full text-xs font-medium`}>
@@ -167,88 +202,91 @@ function ChallengeCard({ participation }) {
   )
 }
 
+function EmptyTabState({ activeTab, isPublic, isOwner }) {
+  return (
+    <div className='text-center py-16'>
+      <FaTrophy className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
+      <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
+        {activeTab === 'created' ? 'Chưa tạo thử thách nào' : 'Chưa tham gia thử thách nào'}
+      </h3>
+      {isPublic && !isOwner ? (
+        <p className='text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto'>
+          {activeTab === 'created'
+            ? 'Chưa có thử thách công khai do người dùng này tạo để hiển thị.'
+            : 'Chưa có thử thách công khai mà người dùng này đã tham gia để hiển thị.'}
+        </p>
+      ) : null}
+      {isOwner && (
+        <>
+          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>
+            {activeTab === 'created'
+              ? 'Tạo thử thách đầu tiên để kết nối cộng đồng!'
+              : 'Khám phá và tham gia các thử thách thú vị!'}
+          </p>
+          <Link
+            to={activeTab === 'created' ? '/challenge/create' : '/challenge'}
+            className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'
+          >
+            {activeTab === 'created' ? 'Tạo thử thách' : 'Khám phá thử thách'} <FaArrowRight />
+          </Link>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function MeChallenges({ isOwner = true, userId }) {
   const isPublic = Boolean(userId)
   const [activeTab, setActiveTab] = useState('created')
   const [pageByTab, setPageByTab] = useState({ created: 1, joined: 1 })
   const [keyword, setKeyword] = useState('')
+
+  const createdPage = pageByTab.created
+  const joinedPage = pageByTab.joined
   const page = pageByTab[activeTab]
 
   const createdQuery = useQuery({
     queryKey: isPublic
-      ? ['publicUserChallenges-created', userId, { page, limit: LIMIT }]
-      : ['my-created-challenges-profile', { page, limit: LIMIT }],
+      ? ['publicUserChallenges-created', userId, { page: createdPage, limit: LIMIT }]
+      : ['my-created-challenges-profile', { page: createdPage, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserChallenges(userId, { page, limit: LIMIT, scope: 'created' })
-        : getMyCreatedChallenges({ page, limit: LIMIT }),
-    enabled: activeTab === 'created',
+        ? getPublicUserChallenges(userId, { page: createdPage, limit: LIMIT, scope: 'created' })
+        : getMyCreatedChallenges({ page: createdPage, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
   const joinedQuery = useQuery({
     queryKey: isPublic
-      ? ['publicUserChallenges-joined', userId, { page, limit: LIMIT }]
-      : ['my-challenges-profile', { page, limit: LIMIT }],
+      ? ['publicUserChallenges-joined', userId, { page: joinedPage, limit: LIMIT }]
+      : ['my-challenges-profile', { page: joinedPage, limit: LIMIT }],
     queryFn: () =>
       isPublic
-        ? getPublicUserChallenges(userId, { page, limit: LIMIT, scope: 'joined' })
-        : getMyChallenges({ page, limit: LIMIT }),
-    enabled: activeTab === 'joined',
+        ? getPublicUserChallenges(userId, { page: joinedPage, limit: LIMIT, scope: 'joined' })
+        : getMyChallenges({ page: joinedPage, limit: LIMIT }),
     placeholderData: keepPreviousData
   })
 
   const activeQuery = activeTab === 'created' ? createdQuery : joinedQuery
-  const normalizeParticipations = (payload) => {
-    if (Array.isArray(payload?.participations)) return payload.participations
-    if (Array.isArray(payload?.items)) return payload.items
-    if (Array.isArray(payload)) {
-      return payload.filter((item) => item?.challenge_id || item?.challenge)
-    }
-    return []
-  }
 
-  const normalizeChallenges = (payload) => {
-    if (Array.isArray(payload?.challenges)) return payload.challenges
-    if (Array.isArray(payload)) {
-      return payload.filter((item) => item?._id && item?.title && item?.start_date && item?.end_date)
-    }
-    return []
-  }
+  const createdPayload = getPayloadFromQuery(createdQuery.data)
+  const joinedPayload = getPayloadFromQuery(joinedQuery.data)
 
-  const isChallengeRemoved = (challenge) =>
-    !challenge || Boolean(challenge.is_deleted || challenge.is_archived_read_only || challenge.status === 'cancelled')
+  const createdParticipations = useMemo(
+    () => mapChallengesToParticipations(normalizeChallenges(createdPayload)),
+    [createdPayload]
+  )
 
-  const createdPayload = createdQuery?.data?.data?.result || createdQuery?.data?.result || {}
-  const joinedPayload = joinedQuery?.data?.data?.result || joinedQuery?.data?.result || {}
-  const sourceParticipations = normalizeParticipations(joinedPayload)
-  const sourceCreatedChallenges = normalizeChallenges(createdPayload)
-  const participations = useMemo(() => {
-    if (!isPublic) {
-      return activeTab === 'created'
-        ? sourceCreatedChallenges.map((challenge) => ({
-          _id: `created-${challenge._id}`,
-          challenge_id: challenge,
-          current_value: challenge.current_value || 0,
-          is_completed: false,
-          streak_count: challenge.streak_count || 0
-        }))
-        : sourceParticipations.filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
-    }
-    if (activeTab === 'created') {
-      const ch = normalizeChallenges(createdPayload)
-      return ch
-        .filter((challenge) => !isChallengeRemoved(challenge))
-        .map((challenge) => ({
-          _id: `created-${challenge._id}`,
-          challenge_id: challenge,
-          current_value: challenge.current_value || 0,
-          is_completed: false,
-          streak_count: challenge.streak_count || 0
-        }))
-    }
-    return sourceParticipations.filter((item) => !isChallengeRemoved(item?.challenge_id || item?.challenge))
-  }, [activeTab, createdPayload, isPublic, sourceCreatedChallenges, sourceParticipations])
+  const joinedParticipations = useMemo(() => {
+    return normalizeParticipations(joinedPayload).filter(
+      (item) => !isChallengeRemoved(item?.challenge_id || item?.challenge)
+    )
+  }, [joinedPayload])
+
+  const participations = activeTab === 'created' ? createdParticipations : joinedParticipations
+
+  const createdTotal = typeof createdPayload?.total === 'number' ? createdPayload.total : createdParticipations.length
+  const joinedTotal = typeof joinedPayload?.total === 'number' ? joinedPayload.total : joinedParticipations.length
 
   const filteredParticipations = participations.filter((item) => {
     const normalized = keyword.trim().toLowerCase()
@@ -260,94 +298,51 @@ export default function MeChallenges({ isOwner = true, userId }) {
       .toLowerCase()
     return searchable.includes(normalized)
   })
-  const totalPage =
-    activeTab === 'created'
-      ? (createdPayload?.totalPage || 1)
-      : (joinedPayload?.totalPage || 1)
+
+  const totalPage = activeTab === 'created'
+    ? (createdPayload?.totalPage || 1)
+    : (joinedPayload?.totalPage || 1)
 
   const errorMessage =
     activeQuery.error?.response?.data?.message ||
     activeQuery.error?.message ||
     'Đã xảy ra lỗi khi tải dữ liệu.'
 
-  if (activeQuery.isError) {
-    return (
-      <div className='text-center py-16 px-4'>
-        <FaTrophy className='text-6xl text-red-200 dark:text-red-900/40 mx-auto mb-4' />
-        <h3 className='text-lg font-medium text-gray-700 dark:text-gray-300'>Không tải được dữ liệu thử thách</h3>
-        <p className='text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto'>{errorMessage}</p>
-        <button
-          type='button'
-          onClick={() => activeQuery.refetch()}
-          className='mt-5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors'
-        >
-          Thử lại
-        </button>
-      </div>
-    )
+  const handleTabChange = (tab) => {
+    if (tab !== activeTab) setKeyword('')
+    setActiveTab(tab)
   }
 
-  if (activeQuery.isPending) {
-    return <Loading className='flex justify-center py-20' />
-  }
-
-  if (participations.length === 0 && page === 1) {
-    return (
-      <div className='text-center py-16'>
-        <FaTrophy className='text-6xl text-gray-300 dark:text-gray-600 mx-auto mb-4' />
-        <h3 className='text-lg font-medium text-gray-500 dark:text-gray-400'>
-          {activeTab === 'created' ? 'Chưa tạo thử thách nào' : 'Chưa tham gia thử thách nào'}
-        </h3>
-        {isPublic && !isOwner ? (
-          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto'>
-            {activeTab === 'created'
-              ? 'Chưa có thử thách công khai do người dùng này tạo để hiển thị.'
-              : 'Chưa có thử thách công khai mà người dùng này đã tham gia để hiển thị.'}
-          </p>
-        ) : null}
-        {isOwner && (
-          <>
-            <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>
-              {activeTab === 'created'
-                ? 'Tạo thử thách đầu tiên để kết nối cộng đồng!'
-                : 'Khám phá và tham gia các thử thách thú vị!'}
-            </p>
-            <Link
-              to={activeTab === 'created' ? '/challenge/create' : '/challenge'}
-              className='inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors'
-            >
-              {activeTab === 'created' ? 'Tạo thử thách' : 'Khám phá thử thách'} <FaArrowRight />
-            </Link>
-          </>
-        )}
-      </div>
-    )
-  }
+  const tabCountLabel = (total, isSuccess) => (isSuccess ? ` (${total})` : '')
 
   return (
     <div>
       <div className='mb-5 flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-800 p-1'>
         <button
           type='button'
-          onClick={() => setActiveTab('created')}
+          onClick={() => handleTabChange('created')}
           className={`flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${activeTab === 'created'
             ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm'
             : 'text-gray-500 dark:text-gray-300'
             }`}
         >
-          <FaPlusCircle className='text-xs' />
-          Thử thách đã tạo
+          <FaPlusCircle className='text-xs shrink-0' />
+          <span className='truncate'>
+            Thử thách đã tạo{tabCountLabel(createdTotal, createdQuery.isSuccess)}
+          </span>
         </button>
         <button
           type='button'
-          onClick={() => setActiveTab('joined')}
+          onClick={() => handleTabChange('joined')}
           className={`flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${activeTab === 'joined'
             ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm'
             : 'text-gray-500 dark:text-gray-300'
             }`}
         >
-          <FaCheckCircle className='text-xs' />
-          Thử thách đã tham gia
+          <FaCheckCircle className='text-xs shrink-0' />
+          <span className='truncate'>
+            Thử thách đã tham gia{tabCountLabel(joinedTotal, joinedQuery.isSuccess)}
+          </span>
         </button>
       </div>
 
@@ -363,68 +358,100 @@ export default function MeChallenges({ isOwner = true, userId }) {
         </label>
       </div>
 
-      {filteredParticipations.length === 0 && (
-        <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
-          Không tìm thấy thử thách phù hợp với từ khóa "{keyword}".
+      {activeQuery.isError && (
+        <div className='text-center py-16 px-4'>
+          <FaTrophy className='text-6xl text-red-200 dark:text-red-900/40 mx-auto mb-4' />
+          <h3 className='text-lg font-medium text-gray-700 dark:text-gray-300'>Không tải được dữ liệu thử thách</h3>
+          <p className='text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto'>{errorMessage}</p>
+          <button
+            type='button'
+            onClick={() => activeQuery.refetch()}
+            className='mt-5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors'
+          >
+            Thử lại
+          </button>
         </div>
       )}
 
-      <motion.div variants={stagger} initial='hidden' animate='visible'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {filteredParticipations.map((p) => (
-            <ChallengeCard key={p._id} participation={p} />
-          ))}
-        </div>
-      </motion.div>
+      {!activeQuery.isError && activeQuery.isPending && (
+        <Loading className='flex justify-center py-20' />
+      )}
 
-      {/* Pagination — cùng style Challenge.jsx */}
-      {totalPage > 1 && !keyword.trim() && (
-        <div className='flex items-center justify-center gap-2 mt-8'>
-          <button
-            disabled={page <= 1}
-            onClick={() => {
-              setPageByTab((prev) => ({ ...prev, [activeTab]: Math.max(1, prev[activeTab] - 1) }))
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
-          >
-            ← Trước
-          </button>
-          {Array.from({ length: totalPage }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
-            .reduce((acc, p, i, arr) => {
-              if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
-              acc.push(p)
-              return acc
-            }, [])
-            .map(p =>
-              typeof p === 'number' ? (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setPageByTab((prev) => ({ ...prev, [activeTab]: p }))
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                >
-                  {p}
-                </button>
-              ) : (
-                <span key={p} className='px-1 text-gray-400'>...</span>
-              )
-            )
-          }
-          <button
-            disabled={page >= totalPage}
-            onClick={() => {
-              setPageByTab((prev) => ({ ...prev, [activeTab]: Math.min(totalPage, prev[activeTab] + 1) }))
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
-          >
-            Sau →
-          </button>
-        </div>
+      {!activeQuery.isError && !activeQuery.isPending && participations.length === 0 && page === 1 && !keyword.trim() && (
+        <EmptyTabState activeTab={activeTab} isPublic={isPublic} isOwner={isOwner} />
+      )}
+
+      {!activeQuery.isError && !activeQuery.isPending && (participations.length > 0 || page > 1 || keyword.trim()) && (
+        <>
+          {filteredParticipations.length === 0 && (
+            <div className='text-center py-10 text-sm text-gray-500 dark:text-gray-400'>
+              {keyword.trim()
+                ? `Không tìm thấy thử thách phù hợp với từ khóa "${keyword}".`
+                : activeTab === 'created'
+                  ? 'Chưa tạo thử thách nào.'
+                  : 'Chưa tham gia thử thách nào.'}
+            </div>
+          )}
+
+          {filteredParticipations.length > 0 && (
+            <motion.div variants={stagger} initial='hidden' animate='visible'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                {filteredParticipations.map((p) => (
+                  <ChallengeCard key={p._id} participation={p} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {totalPage > 1 && !keyword.trim() && filteredParticipations.length > 0 && (
+            <div className='flex items-center justify-center gap-2 mt-8'>
+              <button
+                disabled={page <= 1}
+                onClick={() => {
+                  setPageByTab((prev) => ({ ...prev, [activeTab]: Math.max(1, prev[activeTab] - 1) }))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+              >
+                ← Trước
+              </button>
+              {Array.from({ length: totalPage }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPage || Math.abs(p - page) <= 2)
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push('ellipsis-' + p)
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map(p =>
+                  typeof p === 'number' ? (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        setPageByTab((prev) => ({ ...prev, [activeTab]: p }))
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={`w-9 h-9 text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                    >
+                      {p}
+                    </button>
+                  ) : (
+                    <span key={p} className='px-1 text-gray-400'>...</span>
+                  )
+                )
+              }
+              <button
+                disabled={page >= totalPage}
+                onClick={() => {
+                  setPageByTab((prev) => ({ ...prev, [activeTab]: Math.min(totalPage, prev[activeTab] + 1) }))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className='px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium'
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

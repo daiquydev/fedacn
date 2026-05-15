@@ -149,7 +149,8 @@ class WorkoutScheduleService {
       workoutSchedule,
       totalPage,
       page,
-      limit
+      limit,
+      total: totalWorkoutSchedule
     }
   }
   async getWorkoutScheduleByIdService({ id, user_id }: { id: string; user_id: string }) {

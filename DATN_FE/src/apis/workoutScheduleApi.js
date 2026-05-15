@@ -4,6 +4,7 @@ export const createWorkoutSchedule = (data) => http.post('/workout-schedules', d
 export const updateWorkoutSchedule = (id, data) => http.put(`/workout-schedules/${id}`, data)
 export const deleteWorkoutSchedule = (id) => http.delete(`/workout-schedules/${id}`)
 export const getListWorkoutSchedules = (params) => http.get('/workout-schedules', { params })
+export const getPublicUserWorkoutSchedules = (userId, params) => http.get(`/workout-schedules/user/${userId}`, { params })
 export const getWorkoutSchedule = (id) => http.get(`/workout-schedules/${id}`)
 export const createWorkoutItem = (data) => http.post('/workout-schedules/workout-items/create', data)
 export const getDateWorkoutItem = (params) => http.get('/workout-schedules/workout-items/get', { params })

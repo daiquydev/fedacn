@@ -15,6 +15,16 @@ import { currentAccount, updateRequest } from '../../../apis/userApi'
 import ModalRequest from '../../../pages/Me/components/ModalRequest'
 import toast from 'react-hot-toast'
 
+/** Các route thuộc khu vực Cộng đồng (feed, hồ sơ, chi tiết bài viết) */
+const isCommunityRoute = (pathname) =>
+  pathname === '/home' ||
+  pathname === '/me' ||
+  /^\/post\/[^/]+$/.test(pathname) ||
+  /^\/user\/[^/]+$/.test(pathname)
+
+const isCommunityNavActive = ({ isActive, location }) =>
+  isActive || isCommunityRoute(location.pathname)
+
 export default function SideBar() {
   const isMobile = useMediaQuery({ query: '(max-width: 1023px)' })
   const [open, setOpen] = useState(false)
@@ -88,7 +98,12 @@ export default function SideBar() {
   const navItems = (
     <ul className='whitespace-pre px-2.5 pt-4 pb-4 flex flex-col gap-1.5 font-medium overflow-y-auto overflow-x-hidden scrollbar-thin flex-1'>
       <li>
-        <NavLink to={'/home'} className='link-custom' onClick={() => isMobile && setOpen(false)}>
+        <NavLink
+          to={'/home'}
+          className='link-custom'
+          isActive={isCommunityNavActive}
+          onClick={() => isMobile && setOpen(false)}
+        >
           <BsPeopleFill size={22} className='min-w-max' />
           Cộng đồng
         </NavLink>
