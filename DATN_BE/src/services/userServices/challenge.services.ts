@@ -358,7 +358,15 @@ class ChallengeService {
             })
 
             result.isJoined = !!participation || userId === creatorIdStr
-            result.participation = participation ? participation.toObject() : null
+            if (participation) {
+                const participationObj = participation.toObject() as any
+                const completedDaysCount =
+                    participationObj.completed_days?.length || participationObj.current_value
+                participationObj.current_value = completedDaysCount
+                result.participation = participationObj
+            } else {
+                result.participation = null
+            }
 
             if (!participation) {
                 const quitParticipation = await ChallengeParticipantModel.findOne({
