@@ -792,20 +792,19 @@ class ChallengeService {
         const participant = await ChallengeParticipantModel.findOne({
             challenge_id: new Types.ObjectId(challengeId),
             user_id: new Types.ObjectId(userId),
-            status: 'in_progress'
+            status: { $in: ['in_progress', 'completed'] }
         })
         if (!participant) throw new Error('Bạn chưa tham gia thử thách này')
 
         const updatedParticipant = await ChallengeParticipantModel.findOneAndUpdate(
             {
-                challenge_id: new Types.ObjectId(challengeId),
-                user_id: new Types.ObjectId(userId),
-                status: 'in_progress'
+                _id: participant._id,
+                status: { $in: ['in_progress', 'completed'] }
             },
             { $set: { status: 'quit' } },
             { new: true }
         )
-        if (!updatedParticipant) throw new Error('Bạn chưa tham gia thử thách này')
+        if (!updatedParticipant) throw new Error('Không thể rời thử thách, vui lòng thử lại')
 
         await ChallengeModel.updateOne(
             { _id: new Types.ObjectId(challengeId), participants_count: { $gt: 0 } },

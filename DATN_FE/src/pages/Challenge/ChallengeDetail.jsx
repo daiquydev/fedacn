@@ -233,8 +233,8 @@ export default function ChallengeDetail() {
       queryClient.invalidateQueries({ queryKey: ['challengeStats'] })
       toast.success('Đã rời thử thách')
       setShowLeaveModal(false)
-    },
-    onError: (err) => toast.error(err?.response?.data?.message || 'Lỗi')
+    }
+    // Lỗi: interceptor http.js đã toast — tránh hiện 2 thông báo giống nhau
   })
 
   useEffect(() => {
