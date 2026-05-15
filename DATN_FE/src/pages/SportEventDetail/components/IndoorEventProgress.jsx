@@ -16,6 +16,7 @@ import {
     isDailySportEventProgressAllowedAt,
     nextDailySportEventProgressWindowOpensAt
 } from '../../../utils/sportEventProgressWindow'
+import { getChartRangeBounds, buildDailyChartSlots } from '../../../utils/sportEventChartRange'
 
 import {
     getEventSessions,
@@ -333,112 +334,33 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
             }))
         }
 
-        // Custom date range → group by day
-        if (customRange) {
-            const start = moment(customRange.startDate)
-            const end = moment(customRange.endDate)
-            const totalDays = end.diff(start, 'days') + 1
-            const arr = Array.from({ length: totalDays }, (_, i) => {
-                const d = moment(start).add(i, 'days')
-                return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0, calories: 0, minutes: 0, sessions: 0 }
-            })
-            endedSessions.forEach(vs => {
-                const d = moment(vs.joinedAt).format('YYYY-MM-DD')
-                const slot = arr.find(x => x.fullDate === d)
-                if (slot) {
-                    slot.value += Math.round((vs[field] || 0) / divisor)
-                    slot.calories += (vs.caloriesBurned || 0)
-                    slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
-                    slot.sessions += 1
-                }
-            })
-            if (arr.length > 30) {
-                const step = Math.ceil(arr.length / 30)
-                return arr.filter((_, i) => i % step === 0)
-            }
-            return arr
-        }
-
-        // 7d → 7 cột theo ngày
-        if (timeFilter === '7d') {
-            const arr = Array.from({ length: 7 }, (_, i) => {
-                const d = moment().subtract(6 - i, 'days')
-                return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0, calories: 0, minutes: 0, sessions: 0 }
-            })
-            endedSessions.forEach(vs => {
-                const d = moment(vs.joinedAt).format('YYYY-MM-DD')
-                const slot = arr.find(x => x.fullDate === d)
-                if (slot) {
-                    slot.value += Math.round((vs[field] || 0) / divisor)
-                    slot.calories += (vs.caloriesBurned || 0)
-                    slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
-                    slot.sessions += 1
-                }
-            })
-            return arr
-        }
-
-        // all → group by tháng
-        if (timeFilter === 'all') {
-            const monthMap = {}
-            const start = event?.startDate ? moment(event.startDate).startOf('month') : moment().subtract(11, 'months').startOf('month')
-            const end = moment().endOf('month')
-            
-            let curr = start.clone()
-            while (curr.isSameOrBefore(end, 'month')) {
-                const key = curr.format('MM/YY')
-                monthMap[key] = { date: key, fullDate: curr.format('YYYY-MM'), value: 0, calories: 0, minutes: 0, sessions: 0, aiPctRaw: 0, totalSecondsRaw: 0 }
-                curr.add(1, 'months')
-            }
-
-            filteredSessions.forEach(vs => {
-                const key = moment(vs.joinedAt).format('MM/YY')
-                if (monthMap[key]) {
-                    monthMap[key].value += Math.round((vs[field] || 0) / divisor)
-                    monthMap[key].calories += (vs.caloriesBurned || 0)
-                    monthMap[key].minutes += Math.round((vs.activeSeconds || 0) / 60)
-                    monthMap[key].sessions += 1
-                    monthMap[key].aiPctRaw += (vs.activeSeconds || 0)
-                    monthMap[key].totalSecondsRaw += (vs.totalSeconds || 0)
-                }
-            })
-
-            return Object.values(monthMap).map(m => ({
-                ...m,
-                aiPct: m.totalSecondsRaw > 0 ? Math.round((m.aiPctRaw / m.totalSecondsRaw) * 100) : 0
-            }))
-        }
-
-        // 1m → 5 tuần, 6m → 26 tuần
-        let numWeeks = timeFilter === '6m' ? 26 : 5
-        if (event?.startDate) {
-            const daysSinceStart = moment().diff(moment(event.startDate).startOf('day'), 'days')
-            const maxEventWeeks = Math.max(1, Math.ceil((daysSinceStart + 1) / 7))
-            numWeeks = Math.min(numWeeks, maxEventWeeks)
-        }
-        const weeks = []
-        for (let i = numWeeks - 1; i >= 0; i--) {
-            const weekStart = moment().subtract(i * 7 + 6, 'days')
-            const weekEnd = moment().subtract(i * 7, 'days')
-            weeks.push({
-                date: weekStart.format('DD/MM'),
-                fullDate: weekStart.format('YYYY-MM-DD'),
-                weekEnd: weekEnd.format('YYYY-MM-DD'),
-                value: 0, calories: 0, minutes: 0, sessions: 0
-            })
-        }
-        endedSessions.forEach(vs => {
-            const vsDate = moment(vs.joinedAt)
-            const week = weeks.find(w => vsDate.isBetween(moment(w.fullDate), moment(w.weekEnd), 'day', '[]'))
-            if (week) {
-                week.value += Math.round((vs[field] || 0) / divisor)
-                week.calories += (vs.caloriesBurned || 0)
-                week.minutes += Math.round((vs.activeSeconds || 0) / 60)
-                week.sessions += 1
+        const { start, end } = getChartRangeBounds(timeFilter, customRange, event)
+        const arr = buildDailyChartSlots(start, end).map((slot) => ({
+            ...slot,
+            value: 0,
+            calories: 0,
+            minutes: 0,
+            sessions: 0,
+            aiPctRaw: 0,
+            totalSecondsRaw: 0
+        }))
+        filteredSessions.forEach(vs => {
+            const d = moment(vs.joinedAt).format('YYYY-MM-DD')
+            const slot = arr.find(x => x.fullDate === d)
+            if (slot) {
+                slot.value += Math.round((vs[field] || 0) / divisor)
+                slot.calories += (vs.caloriesBurned || 0)
+                slot.minutes += Math.round((vs.activeSeconds || 0) / 60)
+                slot.sessions += 1
+                slot.aiPctRaw += (vs.activeSeconds || 0)
+                slot.totalSecondsRaw += (vs.totalSeconds || 0)
             }
         })
-        return weeks
-    }, [endedSessions, timeFilter, activeMetric, customRange])
+        return arr.map(({ aiPctRaw, totalSecondsRaw, ...rest }) => ({
+            ...rest,
+            aiPct: totalSecondsRaw > 0 ? Math.round((aiPctRaw / totalSecondsRaw) * 100) : 0
+        }))
+    }, [endedSessions, filteredSessions, timeFilter, activeMetric, customRange, event])
 
     const handleCallEnded = useCallback((summary) => {
         setCallResult(summary)

@@ -1,4 +1,5 @@
 import { roundKcal } from '../../../utils/mathUtils'
+import { getChartRangeBounds, buildDailyChartSlots } from '../../../utils/sportEventChartRange'
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -327,51 +328,9 @@ export default function SportEventProgress({
         })
       }
 
-      // all → group by tháng
-      if (timeFilter === 'all') {
-        const monthMap = {}
-        const start = event?.startDate ? moment(event.startDate).startOf('month') : moment().subtract(11, 'months').startOf('month')
-        const end = moment().endOf('month')
-        
-        let curr = start.clone()
-        while (curr.isSameOrBefore(end, 'month')) {
-          const key = curr.format('MM/YY')
-          monthMap[key] = { date: key, fullDate: curr.format('YYYY-MM'), distance: 0, calories: 0, sessions: 0, duration: 0 }
-          curr.add(1, 'months')
-        }
-
-        filteredActivities.forEach(a => {
-          const key = moment(a.startTime).format('MM/YY')
-          if (monthMap[key]) {
-            monthMap[key].distance += parseFloat((a.totalDistance / 1000).toFixed(2))
-            monthMap[key].calories += roundKcal(a.calories)
-            monthMap[key].sessions += 1
-            monthMap[key].duration += a.totalDuration
-          }
-        })
-
-        return Object.values(monthMap).map(m => {
-          const avgSpeed = m.duration > 0 ? Number((m.distance / (m.duration / 3600)).toFixed(2)) : 0
-          let value = 0
-          switch (activeMetric) {
-            case 'distance': value = Number(m.distance.toFixed(2)); break
-            case 'calories': value = m.calories; break
-            case 'sessions': value = m.sessions; break
-            case 'speed': value = avgSpeed; break
-            default: value = 0
-          }
-          return {
-            ...m,
-            value,
-            avgSpeed,
-            distance: Number(m.distance.toFixed(2))
-          }
-        })
-      }
-
       // Group by date with all 4 metrics
       const dayMap = {}
-      completedActivities.forEach(a => {
+      filteredActivities.forEach(a => {
         const d = moment(a.startTime).format('DD/MM')
         const fd = moment(a.startTime).format('YYYY-MM-DD')
         if (!dayMap[fd]) dayMap[fd] = { distance: 0, calories: 0, sessions: 0, duration: 0 }
@@ -401,71 +360,16 @@ export default function SportEventProgress({
         }
       }
 
-      // Custom date range
-      if (customRange) {
-        const start = moment(customRange.startDate)
-        const end = moment(customRange.endDate)
-        const totalDays = end.diff(start, 'days') + 1
-        return Array.from({ length: totalDays }, (_, i) => {
-          const d = moment(start).add(i, 'days')
-          const fd = d.format('YYYY-MM-DD')
-          return {
-            date: d.format('DD/MM'),
-            fullDate: fd,
-            value: getValue(fd),
-            distance: dayMap[fd]?.distance || 0,
-            calories: dayMap[fd]?.calories || 0,
-            sessions: dayMap[fd]?.sessions || 0,
-            avgSpeed: dayMap[fd]?.avgSpeed || 0
-          }
-        }).filter((_, i, arr) => arr.length <= 30 || i % Math.ceil(arr.length / 30) === 0)
-      }
-
-      // 7d → 7 cột theo ngày
-      if (timeFilter === '7d') {
-        return Array.from({ length: 7 }, (_, i) => {
-          const d = moment().subtract(6 - i, 'days')
-          const fd = d.format('YYYY-MM-DD')
-          return {
-            date: d.format('DD/MM'),
-            fullDate: fd,
-            value: getValue(fd),
-            distance: dayMap[fd]?.distance || 0,
-            calories: dayMap[fd]?.calories || 0,
-            sessions: dayMap[fd]?.sessions || 0,
-            avgSpeed: dayMap[fd]?.avgSpeed || 0
-          }
-        })
-      }
-
-      // 1m → 5 tuần, 6m → 26 tuần, 1y → 52 tuần
-      let numWeeks = timeFilter === '6m' ? 26 : timeFilter === '1y' ? 52 : 5
-      if (event?.startDate) {
-        const daysSinceStart = moment().diff(moment(event.startDate).startOf('day'), 'days')
-        const maxEventWeeks = Math.max(1, Math.ceil((daysSinceStart + 1) / 7))
-        numWeeks = Math.min(numWeeks, maxEventWeeks)
-      }
-      const gpsWeeks = []
-      for (let i = numWeeks - 1; i >= 0; i--) {
-        const weekStart = moment().subtract(i * 7 + 6, 'days')
-        const weekEnd = moment().subtract(i * 7, 'days')
-        gpsWeeks.push({ date: weekStart.format('DD/MM'), fullDate: weekStart.format('YYYY-MM-DD'), weekEnd: weekEnd.format('YYYY-MM-DD'), distance: 0, calories: 0, sessions: 0, duration: 0 })
-      }
-      Object.keys(dayMap).forEach(fd => {
-        const fdMoment = moment(fd)
-        const week = gpsWeeks.find(w => fdMoment.isBetween(moment(w.fullDate), moment(w.weekEnd), 'day', '[]'))
-        if (week) {
-          week.distance += dayMap[fd].distance
-          week.calories += dayMap[fd].calories
-          week.sessions += dayMap[fd].sessions
-          week.duration += dayMap[fd].duration
-        }
-      })
-      return gpsWeeks.map(w => {
-        const avgSpd = w.duration > 0 ? Number((w.distance / (w.duration / 3600)).toFixed(2)) : 0
-        const v = activeMetric === 'distance' ? w.distance : activeMetric === 'calories' ? w.calories : activeMetric === 'sessions' ? w.sessions : avgSpd
-        return { ...w, avgSpeed: avgSpd, value: v }
-      })
+      const { start, end } = getChartRangeBounds(timeFilter, customRange, event)
+      return buildDailyChartSlots(start, end).map((slot) => ({
+        ...slot,
+        value: getValue(slot.fullDate),
+        distance: dayMap[slot.fullDate]?.distance || 0,
+        calories: dayMap[slot.fullDate]?.calories || 0,
+        sessions: dayMap[slot.fullDate]?.sessions || 0,
+        avgSpeed: dayMap[slot.fullDate]?.avgSpeed || 0,
+        duration: dayMap[slot.fullDate]?.duration || 0
+      }))
     }
 
     // Default: use progressHistory
@@ -485,109 +389,17 @@ export default function SportEventProgress({
       }))
     }
 
-    // Custom date range
-    if (customRange) {
-      const start = moment(customRange.startDate)
-      const end = moment(customRange.endDate)
-      const totalDays = end.diff(start, 'days') + 1
-
-      if (totalDays > 90) {
-        // Group by month
-        const monthMap = {}
-        userProgress.progressHistory.forEach(entry => {
-          const em = moment(entry.date)
-          if (em.isBetween(start, end, 'day', '[]')) {
-            const key = em.format('MM/YY')
-            if (!monthMap[key]) monthMap[key] = { date: key, fullDate: em.format('YYYY-MM'), value: 0 }
-            monthMap[key].value += entry.value
-          }
-        })
-        return Object.values(monthMap)
-      }
-
-      const arr = Array.from({ length: totalDays }, (_, i) => {
-        const d = moment(start).add(i, 'days')
-        return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0 }
-      })
-      userProgress.progressHistory.forEach(entry => {
-        const entryDate = moment(entry.date).format('YYYY-MM-DD')
-        const day = arr.find(d => d.fullDate === entryDate)
-        if (day) day.value += entry.value
-      })
-      if (arr.length > 30) {
-        const step = Math.ceil(arr.length / 30)
-        return arr.filter((_, i) => i % step === 0)
-      }
-      return arr
-    }
-
-    const getDays = () => {
-      switch (timeFilter) {
-        case 'today': return 1
-        case '7d': return 7
-        case '1m': return 30
-        case '6m': return 180
-        case '1y': return 365
-        default: return 0
-      }
-    }
-
-    if (timeFilter === 'all') {
-      const monthMap = {}
-      const start = event?.startDate ? moment(event.startDate).startOf('month') : moment().subtract(11, 'months').startOf('month')
-      const end = moment().endOf('month')
-      
-      let curr = start.clone()
-      while (curr.isSameOrBefore(end, 'month')) {
-        const key = curr.format('MM/YY')
-        monthMap[key] = { date: key, fullDate: curr.format('YYYY-MM'), value: 0 }
-        curr.add(1, 'months')
-      }
-
-      userProgress.progressHistory.forEach(entry => {
-        const key = moment(entry.date).format('MM/YY')
-        if (monthMap[key]) monthMap[key].value += entry.value
-      })
-      return Object.values(monthMap)
-    }
-
-    const days = getDays()
-
-    // 7d → 7 cột theo ngày
-    if (days === 7) {
-      const arr = Array.from({ length: 7 }, (_, i) => {
-        const d = moment().subtract(6 - i, 'days')
-        return { date: d.format('DD/MM'), fullDate: d.format('YYYY-MM-DD'), value: 0 }
-      })
-      userProgress.progressHistory.forEach(entry => {
-        const entryDate = moment(entry.date).format('YYYY-MM-DD')
-        const day = arr.find(d => d.fullDate === entryDate)
-        if (day) day.value += entry.value
-      })
-      return arr
-    } else {
-      // 1m → 5 tuần, 6m → 26 tuần, 1y → 52 tuần
-      let numWeeks = days <= 31 ? 5 : Math.ceil(days / 7)
-      if (event?.startDate) {
-        const daysSinceStart = moment().diff(moment(event.startDate).startOf('day'), 'days')
-        const maxEventWeeks = Math.max(1, Math.ceil((daysSinceStart + 1) / 7))
-        numWeeks = Math.min(numWeeks, maxEventWeeks)
-      }
-      const weeks = []
-      for (let i = numWeeks - 1; i >= 0; i--) {
-        const weekStart = moment().subtract(i * 7 + 6, 'days')
-        const weekEnd = moment().subtract(i * 7, 'days')
-        weeks.push({ date: weekStart.format('DD/MM'), fullDate: weekStart.format('YYYY-MM-DD'), weekEnd: weekEnd.format('YYYY-MM-DD'), value: 0 })
-      }
-      userProgress.progressHistory.forEach(entry => {
-        const em = moment(entry.date)
-        const week = weeks.find(w => em.isBetween(moment(w.fullDate), moment(w.weekEnd), 'day', '[]'))
-        if (week) week.value += entry.value
-      })
-      return weeks
-    }
+    const { start, end } = getChartRangeBounds(timeFilter, customRange, event)
+    const arr = buildDailyChartSlots(start, end).map((slot) => ({ ...slot, value: 0 }))
+    userProgress.progressHistory.forEach(entry => {
+      const em = moment(entry.date)
+      if (!em.isBetween(start, end, null, '[]')) return
+      const day = arr.find(d => d.fullDate === em.format('YYYY-MM-DD'))
+      if (day) day.value += entry.value
+    })
+    return arr
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProgress, timeFilter, activeMetric, completedActivities, customRange])
+  }, [userProgress, timeFilter, activeMetric, completedActivities, filteredActivities, customRange, event])
 
   // Chart bar click → scroll to activity
   const handleBarClick = (data) => {
