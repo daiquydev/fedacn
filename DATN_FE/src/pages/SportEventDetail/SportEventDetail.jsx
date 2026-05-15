@@ -490,7 +490,7 @@ export default function SportEventDetail() {
   const isOngoing = !isEnded && !isNotStarted
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
 
 
       {/* Share Sport Event Modal */}
@@ -542,8 +542,8 @@ export default function SportEventDetail() {
 
 
 
-      {/* Hero Section with Event Banner */}
-      <div className="relative h-96 bg-gradient-to-b from-gray-900 to-gray-800">
+      {/* Hero — flex column so mobile content can grow without clipping under fixed header */}
+      <div className="relative min-h-[28rem] sm:min-h-96 flex flex-col overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800">
         <img
           src={getImageUrl(event.image)}
           alt={event.name}
@@ -551,8 +551,7 @@ export default function SportEventDetail() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        {/* Navigation — above bottom overlay (same stacking context, later siblings win without z-index) */}
-        <div className="absolute top-6 left-6 z-30">
+        <div className="relative z-30 px-4 pt-4 sm:px-6 sm:pt-6 shrink-0">
           <button
             type="button"
             onClick={() => navigate('/sport-event')}
@@ -563,8 +562,7 @@ export default function SportEventDetail() {
           </button>
         </div>
 
-        {/* Event Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+        <div className="relative z-10 mt-auto px-4 pb-6 pt-2 sm:p-8 text-white">
           <div className="container mx-auto max-w-6xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -636,7 +634,7 @@ export default function SportEventDetail() {
               </div>
             )}
 
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{event.name}</h1>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-4">{event.name}</h1>
 
             <div className="flex flex-wrap items-center gap-6 text-sm md:text-base">
               <div className="flex items-center gap-2">
@@ -754,7 +752,7 @@ export default function SportEventDetail() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-14 z-10">
         <div className="container mx-auto max-w-6xl">
           <div className="flex">
             {[

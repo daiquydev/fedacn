@@ -404,7 +404,7 @@ export default function ChallengeDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       {/* Leave Confirmation Modal */}
       {showLeaveModal && !isCreator && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)}>
@@ -427,8 +427,8 @@ export default function ChallengeDetail() {
         <ModalReportChallenge challengeId={id} onClose={() => setShowReportModal(false)} />
       )}
 
-      {/* Hero Section — Matching SportEventDetail */}
-      <div className="relative h-96 bg-gradient-to-b from-gray-900 to-gray-800">
+      {/* Hero — flex column so mobile content can grow without clipping under fixed header */}
+      <div className="relative min-h-[28rem] sm:min-h-96 flex flex-col overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800">
         {challenge.image ? (
           <img src={getImageUrl(challenge.image)} alt={challenge.title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
         ) : (
@@ -436,8 +436,7 @@ export default function ChallengeDetail() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        {/* Back button — z-30 so it stays above the hero info overlay (also z-10, later in DOM) */}
-        <div className="absolute top-6 left-6 z-30">
+        <div className="relative z-30 px-4 pt-4 sm:px-6 sm:pt-6 shrink-0">
           <button
             type="button"
             onClick={() => navigate('/challenge')}
@@ -447,8 +446,7 @@ export default function ChallengeDetail() {
           </button>
         </div>
 
-        {/* Event Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-10">
+        <div className="relative z-10 mt-auto px-4 pb-6 pt-2 sm:p-8 text-white">
           <div className="container mx-auto max-w-6xl">
             {/* Badges row */}
             <div className="flex items-center justify-between mb-4">
@@ -565,7 +563,7 @@ export default function ChallengeDetail() {
             )}
 
             {/* Title */}
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{challenge.title}</h1>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-4">{challenge.title}</h1>
 
             {/* Info row */}
             <div className="flex flex-wrap items-center gap-6 text-sm md:text-base">
@@ -690,7 +688,7 @@ export default function ChallengeDetail() {
       </div>
 
       {/* Tabs Navigation — Sticky matching SportEventDetail */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-14 z-10">
         <div className="container mx-auto max-w-6xl">
           <div className="flex">
             {[
