@@ -9,6 +9,17 @@ Write-Host ""
 
 $APP_DIR = "C:\fedacn\DATN_BE"
 
+# 0. Dong bo gio Windows (NTP) — can cho Cloudinary upload (avatar, anh, ...)
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+    [Security.Principal.WindowsBuiltInRole]::Administrator
+)
+if ($isAdmin -and (Test-Path "$APP_DIR\deploy\SYNC_WINDOWS_TIME.ps1")) {
+    Write-Host "[>>] Dong bo gio he thong (W32Time)..." -ForegroundColor Yellow
+    & "$APP_DIR\deploy\SYNC_WINDOWS_TIME.ps1"
+} else {
+    Write-Host "[*] Chay rieng (PowerShell Admin): deploy\SYNC_WINDOWS_TIME.ps1" -ForegroundColor Yellow
+}
+
 # 1. Check directory
 if (-not (Test-Path $APP_DIR)) {
     Write-Host "[!!] LOI: Khong tim thay thu muc $APP_DIR." -ForegroundColor Red

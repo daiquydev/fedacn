@@ -12,6 +12,7 @@ $BAT_TUNNEL = "$APP_DIR\deploy\start-cloudflared.bat"
 
 Write-Host ""
 Write-Host "========== DATN — RESTART FULL ==========" -ForegroundColor Cyan
+Write-Host "[*] Neu upload Cloudinary loi Stale request: chay deploy\SYNC_WINDOWS_TIME.ps1 (Admin) truoc." -ForegroundColor Yellow
 Write-Host ""
 
 # --- 1. Kiểm tra thư mục ---
