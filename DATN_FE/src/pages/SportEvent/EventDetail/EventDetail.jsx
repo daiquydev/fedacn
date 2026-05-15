@@ -6,7 +6,7 @@ import {
   FaExclamationTriangle, FaBiking, FaSwimmer, FaDumbbell, FaAward, FaBullseye, FaArchive
 } from 'react-icons/fa'
 import { MdSportsSoccer, MdLeaderboard } from 'react-icons/md'
-import moment from 'moment'
+import { vnMoment } from '../../../utils/vnDateUtils'
 import { isDailySportEventProgressAllowedAt, nextDailySportEventProgressWindowOpensAt } from '../../../utils/sportEventProgressWindow'
 import { getSportEvent, joinSportEvent, leaveSportEvent, getUserProgress, getLeaderboard } from '../../../apis/sportEventApi'
 import { getImageUrl } from '../../../utils/imageUrl'
@@ -203,9 +203,9 @@ export default function EventDetail() {
   const isParticipant = event.participants_ids?.some(p => String(p._id || p) === String(userId)) || false
   const isCreator = String(event.createdBy?._id || event.createdBy) === String(userId)
   const isArchivedReadOnly = Boolean(event?.is_archived_read_only)
-  const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+  const isEnded = event.endDate && vnMoment().startOf('day').isAfter(vnMoment(event.endDate).endOf('day'))
   const isNotStarted =
-    event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))
+    event.startDate && vnMoment().startOf('day').isBefore(vnMoment(event.startDate).startOf('day'))
   const isOngoing = !isEnded && !isNotStarted
 
   const isLeaderboardLocked = event.startDate
@@ -295,14 +295,14 @@ export default function EventDetail() {
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Ngày bắt đầu</div>
                   <div className="flex items-center text-gray-900 dark:text-white font-medium">
                     <FaCalendarAlt className="mr-2 text-green-500 flex-shrink-0" />
-                    {moment(event.startDate).format('DD/MM/YYYY')}
+                    {vnMoment(event.startDate).format('DD/MM/YYYY')}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Thời gian</div>
                   <div className="flex items-center text-gray-900 dark:text-white font-medium">
                     <FaClock className="mr-2 text-green-500 flex-shrink-0" />
-                    {moment(event.startDate).format('HH:mm')}
+                    {vnMoment(event.startDate).format('HH:mm')}
                   </div>
                 </div>
                 {event.eventType !== 'Trong nhà' && (
@@ -595,19 +595,19 @@ export default function EventDetail() {
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Thời gian</div>
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {moment(event.startDate).format('HH:mm')}
+                    {vnMoment(event.startDate).format('HH:mm')}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Ngày bắt đầu</div>
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {moment(event.startDate).format('DD/MM/YYYY')}
+                    {vnMoment(event.startDate).format('DD/MM/YYYY')}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Ngày kết thúc</div>
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {moment(event.endDate).format('DD/MM/YYYY')}
+                    {vnMoment(event.endDate).format('DD/MM/YYYY')}
                   </div>
                 </div>
               </div>
@@ -637,7 +637,7 @@ export default function EventDetail() {
                       <p className="mt-2 text-sm">
                         Mở tiếp theo:{' '}
                         {nextDailySportEventProgressWindowOpensAt(event.startDate, event.endDate)?.format('DD/MM/YYYY HH:mm')
-                          ?? moment(event.startDate).format('DD/MM/YYYY HH:mm')}
+                          ?? vnMoment(event.startDate).format('DD/MM/YYYY HH:mm')}
                       </p>
                     </div>
                   ) : progressLoading ? (

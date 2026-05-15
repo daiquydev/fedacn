@@ -7,7 +7,7 @@ import { getActivity } from '../../apis/sportEventApi'
 import { getChallengeActivity } from '../../apis/challengeApi'
 import { formatDuration, formatPace } from '../../hooks/useActivityTracking'
 import { FaShareAlt, FaRoute, FaExpand, FaCompress } from 'react-icons/fa'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import '@goongmaps/goong-js/dist/goong-js.css'
 import './ActivityDetailModal.css'
 
@@ -176,7 +176,7 @@ export default function ActivityDetailModal({
   const distanceKm = activity ? (activity.totalDistance / 1000).toFixed(2) : '0.00'
   const activityTypeLabel = event?.category || activity?.activityType || 'Hoạt động'
   const dateStr = activity
-    ? moment(activity.startTime).format('dddd, DD [tháng] MM, YYYY • HH:mm')
+    ? vnMoment(activity.startTime).format('dddd, DD [tháng] MM, YYYY • HH:mm')
     : ''
   const hasRoute = (activity?.gpsRoute || []).length > 0
 

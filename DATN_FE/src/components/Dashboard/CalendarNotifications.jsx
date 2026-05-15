@@ -15,26 +15,18 @@ import moment from 'moment-timezone'
 import { getWorkoutCalendarEvents } from '../../apis/savedWorkoutApi'
 import { getJoinedEventsForCalendar } from '../../apis/sportEventApi'
 import { getMyChallenges } from '../../apis/challengeApi'
+import { dateKeyVN, getTodayDateVN, TZ_VN } from '../../utils/vnDateUtils'
 
-const TZ = 'Asia/Ho_Chi_Minh'
-
-/** Ngày lịch (YYYY-MM-DD) theo múi Việt Nam */
-const getTodayVN = () => moment().tz(TZ).format('YYYY-MM-DD')
-
-const dateKeyVN = (value) => {
-  if (value == null || value === '') return ''
-  const m = moment(value).tz(TZ)
-  return m.isValid() ? m.format('YYYY-MM-DD') : ''
-}
+const getTodayVN = getTodayDateVN
 
 const formatTime = (dateKey, time) => {
   if (!dateKey) return ''
   try {
     const today = getTodayVN()
-    const tomorrow = moment().tz(TZ).clone().add(1, 'day').format('YYYY-MM-DD')
+    const tomorrow = moment().tz(TZ_VN).clone().add(1, 'day').format('YYYY-MM-DD')
     if (dateKey === today) return `Hôm nay${time ? ' · ' + time : ''}`
     if (dateKey === tomorrow) return `Ngày mai${time ? ' · ' + time : ''}`
-    return moment.tz(dateKey, 'YYYY-MM-DD', TZ).format('ddd DD/MM') + (time ? ' · ' + time : '')
+    return moment.tz(dateKey, 'YYYY-MM-DD', TZ_VN).format('ddd DD/MM') + (time ? ' · ' + time : '')
   } catch {
     return dateKey
   }

@@ -2,7 +2,7 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import {
     FaTimes,
@@ -251,8 +251,8 @@ export default function SportEventShareModal({ event, onClose, eventId, deletedC
 function SportEventPreviewCardInModal({ event, isOnline }) {
     if (!event) return null
 
-    const startDate = moment(event.startDate)
-    const endDate = moment(event.endDate)
+    const startDate = vnMoment(event.startDate)
+    const endDate = vnMoment(event.endDate)
 
     return (
         <div className="rounded-xl overflow-hidden border-2 border-dashed border-red-200 dark:border-red-900 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">

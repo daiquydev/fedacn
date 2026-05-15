@@ -1,7 +1,7 @@
 import { useContext, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { formatDateVN, vnMoment } from '../../utils/vnDateUtils'
 import { formatRelativeTimeVi } from '../../utils/formatRelativeTimeVi'
 import {
     FaCalendarAlt,
@@ -200,9 +200,9 @@ export default function SportEventPreviewCard({ eventId }) {
     if (!event) return null
 
     const isOnline = event.eventType === 'Trong nhà'
-    const startDate = moment(event.startDate)
-    const endDate = moment(event.endDate)
-    const now = moment()
+    const startDate = vnMoment(event.startDate)
+    const endDate = vnMoment(event.endDate)
+    const now = vnMoment()
 
     // Use end of day for endDate so an event ending "today" isn't marked as ended
     const isEnded = now.isAfter(endDate.clone().endOf('day'))

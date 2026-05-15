@@ -10,8 +10,13 @@ import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
 import CloudinaryImageUploader from '../../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
-import moment from 'moment'
 import DatePicker from 'react-datepicker'
+import {
+    challengeDateToIsoVN,
+    compareDateInputVN,
+    isoToDateInputVN,
+    isValidDateISO
+} from '../../../utils/vnDateUtils'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
@@ -21,31 +26,6 @@ import {
     FaFileAlt, FaStar, FaInfoCircle, FaCheckCircle
 } from 'react-icons/fa'
 import { BsClockHistory } from 'react-icons/bs'
-
-// ==================== DATE HELPERS ====================
-// Date input uses type="date" → value is YYYY-MM-DD
-const isValidDateISO = (val) => {
-    if (!val || val.length !== 10) return false
-    const date = new Date(val + 'T00:00:00')
-    return !isNaN(date.getTime())
-}
-
-const parseDateToISO = (dateISO) => {
-    if (!isValidDateISO(dateISO)) return null
-    // Parse as local time (midnight) and convert to ISO (UTC)
-    return moment(dateISO, 'YYYY-MM-DD').startOf('day').toISOString()
-}
-
-// Convert ISO string from backend to YYYY-MM-DD for type="date" input value
-const isoToInput = (isoStr) => {
-    if (!isoStr) return ''
-    const d = new Date(isoStr)
-    if (isNaN(d.getTime())) return ''
-    const yyyy = d.getUTCFullYear()
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
-    const dd = String(d.getUTCDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
-}
 
 const parseTime = (timeStr) => {
     if (!timeStr) return new Date()
@@ -294,8 +274,8 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                     : isFitness
                         ? 'bài tập'
                         : (challenge.goal_unit || 'km'),
-                startDate: isoToInput(challenge.start_date),
-                endDate: isoToInput(challenge.end_date),
+                startDate: isoToDateInputVN(challenge.start_date),
+                endDate: isoToDateInputVN(challenge.end_date),
                 visibility: challenge.visibility || (challenge.is_public ? 'public' : 'private'),
                 badge_emoji: challenge.badge_emoji || '🏆',
                 nutrition_sub_type: challenge.nutrition_sub_type || 'free',
@@ -326,7 +306,7 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                 if (!value) return 'Vui lòng nhập ngày kết thúc'
                 if (!isValidDateISO(value)) return 'Ngày không hợp lệ'
                 if (isValidDateISO(form.startDate)) {
-                    if (new Date(value) < new Date(form.startDate)) return 'Phải sau ngày bắt đầu'
+                    if (compareDateInputVN(value, form.startDate) < 0) return 'Phải sau ngày bắt đầu'
                 }
                 return null
             default: return null
@@ -386,8 +366,8 @@ export default function EditChallengeModal({ open, onClose, challenge, layout = 
                 goal_type: isFitness ? 'exercises_completed' : isNutrition ? 'meals_logged' : form.goal_type,
                 goal_value: isFitness ? selectedExercises.length : Number(form.goal_value),
                 goal_unit: isFitness ? 'bài tập' : isNutrition ? 'bữa' : form.goal_unit,
-                start_date: parseDateToISO(form.startDate),
-                end_date: parseDateToISO(form.endDate),
+                start_date: challengeDateToIsoVN(form.startDate),
+                end_date: challengeDateToIsoVN(form.endDate),
                 visibility: form.visibility,
                 is_public: form.visibility !== 'private',
                 badge_emoji: form.badge_emoji,

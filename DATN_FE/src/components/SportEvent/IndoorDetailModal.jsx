@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FaShareAlt, FaCamera, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { MdVideocam } from 'react-icons/md'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import 'moment/dist/locale/vi'
 import './IndoorDetailModal.css'
 
@@ -64,7 +64,7 @@ export default function IndoorDetailModal({ session, event, isCompletion = false
 
   const activityTypeLabel = event?.category || 'Video Call'
   const dateStr = session.joinedAt
-    ? moment(session.joinedAt).locale('vi').format('dddd, DD [tháng] MM, YYYY • HH:mm')
+    ? vnMoment(session.joinedAt).locale('vi').format('dddd, DD [tháng] MM, YYYY • HH:mm')
     : ''
 
   const headerMode = isCompletion ? 'completion' : 'history'

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaRunning, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaFilter, FaCheckCircle, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import { MdSportsSoccer, MdDirectionsRun, MdFitnessCenter } from 'react-icons/md';
 import { IoIosFitness } from 'react-icons/io';
-import moment from 'moment';
+import { vnMoment } from '../../../utils/vnDateUtils';
 import toast from 'react-hot-toast';
 import { getJoinedEvents } from '../../../apis/sportEventApi';
 import DeleteConfirmBox from '../../../components/GlobalComponents/DeleteConfirmBox';
@@ -157,7 +157,7 @@ export default function JoinedEvents() {
 
                   <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
                     <FaCalendarAlt className="mr-2" />
-                    <span>{moment(event.date).format('ddd, D/M/YYYY • HH:mm')}</span>
+                    <span>{vnMoment(event.date).format('ddd, D/M/YYYY • HH:mm')}</span>
                   </div>
 
                   <div className="flex items-center text-gray-600 dark:text-gray-400 mb-3">

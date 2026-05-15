@@ -3,7 +3,7 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import goongjs from '@goongmaps/goong-js'
 import '@goongmaps/goong-js/dist/goong-js.css'
@@ -389,7 +389,7 @@ function ActivityPreviewCardInModal({ activity, event, eventId, challengeId, dis
 
     const duration = formatDuration(activity.totalDuration)
     const calories = roundKcal(activity.calories || 0)
-    const actDate = moment(activity.startTime).format('HH:mm - DD/MM/YYYY')
+    const actDate = vnMoment(activity.startTime).format('HH:mm - DD/MM/YYYY')
 
     const stats = [
         { icon: <FaRoad className="text-blue-500" />, label: 'Quãng đường', value: `${distanceKm} km` },

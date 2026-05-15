@@ -2,7 +2,7 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import {
     FaTimes, FaShare, FaTrophy,
@@ -148,8 +148,8 @@ export default function ChallengeShareModal({ challenge, challengeId, onClose })
     const selectedPrivacy = PRIVACY_OPTIONS.find((o) => o.value === privacy)
     const config = TYPE_CONFIG[challenge?.challenge_type] || TYPE_CONFIG.fitness
 
-    const startDate = challenge?.start_date ? moment(challenge.start_date) : null
-    const endDate = challenge?.end_date ? moment(challenge.end_date) : null
+    const startDate = challenge?.start_date ? vnMoment(challenge.start_date) : null
+    const endDate = challenge?.end_date ? vnMoment(challenge.end_date) : null
 
     return (
         <div
@@ -287,9 +287,9 @@ export default function ChallengeShareModal({ challenge, challengeId, onClose })
 function ChallengePreviewCardInModal({ challenge, config, startDate, endDate }) {
     if (!challenge) return null
 
-    const isExpired = endDate && moment().isAfter(endDate.clone().endOf('day'))
-    const isNotStarted = startDate && moment().isBefore(startDate.clone().startOf('day'))
-    const daysLeft = endDate ? Math.max(0, endDate.diff(moment(), 'days')) : 0
+    const isExpired = endDate && vnMoment().isAfter(endDate.clone().endOf('day'))
+    const isNotStarted = startDate && vnMoment().isBefore(startDate.clone().startOf('day'))
+    const daysLeft = endDate ? Math.max(0, endDate.diff(vnMoment(), 'days')) : 0
 
     return (
         <div className={`rounded-xl overflow-hidden border-2 border-dashed ${config.dashedBorder} bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900`}>

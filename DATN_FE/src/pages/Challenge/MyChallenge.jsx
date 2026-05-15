@@ -22,7 +22,7 @@ import {
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
 import toast from 'react-hot-toast'
-import moment from 'moment'
+import { vnMoment, vnStartOfDayDate } from '../../utils/vnDateUtils'
 import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../utils/challengeProgress'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import { getSportIcon } from '../../utils/sportIcons'
@@ -759,9 +759,9 @@ function CreatedTabContent({
 // Helper: status badge
 function getStatusBadge(challenge) {
   if (challenge.is_deleted) return { text: 'Đã gỡ', color: 'bg-slate-600', dot: false }
-  const now = moment()
-  const start = moment(challenge.start_date)
-  const end = moment(challenge.end_date)
+  const now = vnMoment()
+  const start = vnMoment(challenge.start_date)
+  const end = vnMoment(challenge.end_date)
   if (now.isAfter(end)) return { text: 'Đã kết thúc', color: 'bg-gray-500', dot: false }
   if (now.isBefore(start)) return { text: 'Sắp diễn ra', color: 'bg-amber-500', dot: false }
   return { text: 'Đang diễn ra', color: 'bg-emerald-500', dot: true }
@@ -807,7 +807,7 @@ function ChallengeDashboard({
               <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${config.bg} ${config.text}`}>
                 {config.icon} {config.label}
               </span>
-              <span className="text-xs text-gray-500 flex items-center gap-1"><FaCalendarAlt /> {moment(challenge.start_date).format('DD/MM/YYYY')} - {moment(challenge.end_date).format('DD/MM/YYYY')}</span>
+              <span className="text-xs text-gray-500 flex items-center gap-1"><FaCalendarAlt /> {vnMoment(challenge.start_date).format('DD/MM/YYYY')} - {vnMoment(challenge.end_date).format('DD/MM/YYYY')}</span>
               <span className="text-xs text-gray-500 flex items-center gap-1"><FaUsers /> {challenge.participants_count || 0}</span>
             </div>
           </div>
@@ -871,16 +871,16 @@ function OverviewSubTab({ challenge, leaderboard, navigate }) {
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
 
   // Calculate total required days
-  const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)
-  const safeEnd = new Date(challenge.end_date); safeEnd.setHours(0, 0, 0, 0)
+  const safeStart = vnStartOfDayDate(challenge.start_date)
+  const safeEnd = vnStartOfDayDate(challenge.end_date)
   const totalRequiredDays = Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
   return (
     <div className="space-y-6">
       {/* Info grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <InfoCard icon={FaCalendarAlt} label="Bắt đầu" value={moment(challenge.start_date).format('DD/MM/YYYY')} color="text-blue-500" />
-        <InfoCard icon={FaCalendarAlt} label="Kết thúc" value={moment(challenge.end_date).format('DD/MM/YYYY')} color="text-red-400" />
+        <InfoCard icon={FaCalendarAlt} label="Bắt đầu" value={vnMoment(challenge.start_date).format('DD/MM/YYYY')} color="text-blue-500" />
+        <InfoCard icon={FaCalendarAlt} label="Kết thúc" value={vnMoment(challenge.end_date).format('DD/MM/YYYY')} color="text-red-400" />
         <InfoCard icon={FaBullseye} label="Mục tiêu/ngày" value={`${challenge.goal_value} ${challenge.goal_unit}`} color="text-orange-500" />
         <InfoCard icon={FaClock} label="Tổng số ngày" value={`${totalRequiredDays} ngày`} color="text-green-500" />
       </div>
@@ -1118,7 +1118,7 @@ function ParticipantsSubTab({
 // ═══════════════════════════════════════════════════════════
 function canCreatorSoftDeleteChallenge(challenge) {
   if (!challenge?.start_date) return true
-  return moment().isBefore(moment(challenge.start_date))
+  return vnMoment().isBefore(vnMoment(challenge.start_date))
 }
 
 function SettingsSubTab({ challenge, onDeleteClick, onEditClick, navigate }) {
@@ -1157,11 +1157,11 @@ function SettingsSubTab({ challenge, onDeleteClick, onEditClick, navigate }) {
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Ngày bắt đầu</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(challenge.start_date).format('DD/MM/YYYY')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{vnMoment(challenge.start_date).format('DD/MM/YYYY')}</span>
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Ngày kết thúc</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(challenge.end_date).format('DD/MM/YYYY')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{vnMoment(challenge.end_date).format('DD/MM/YYYY')}</span>
           </div>
           {challenge.badge_emoji && (
             <div>
@@ -1706,7 +1706,7 @@ function JoinedTabContent({
               <div className="p-3.5">
                 <h4 className="text-sm font-bold text-gray-800 dark:text-white truncate mb-2">{challenge.title}</h4>
                 <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mb-2">
-                  <span className="flex items-center gap-1"><FaCalendarAlt />{moment(challenge.start_date).format('DD/MM')}</span>
+                  <span className="flex items-center gap-1"><FaCalendarAlt />{vnMoment(challenge.start_date).format('DD/MM')}</span>
                   <span className="flex items-center gap-1"><FaBullseye />{challenge.goal_value} {challenge.goal_unit}/ngày</span>
                   <span className="flex items-center gap-1"><FaUsers />{challenge.participants_count || 0}</span>
                 </div>

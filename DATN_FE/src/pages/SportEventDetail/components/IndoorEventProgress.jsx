@@ -10,7 +10,7 @@ import {
     FaHistory, FaCheckCircle, FaDotCircle, FaShareAlt, FaTrash, FaChartLine
 } from 'react-icons/fa'
 import { MdVideocam } from 'react-icons/md'
-import moment from 'moment'
+import { vnMoment } from '../../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import {
     isDailySportEventProgressAllowedAt,
@@ -118,10 +118,10 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
     })
     const scheduleList = schedSessionsData?.data?.result || schedSessionsData?.result || []
     const scheduleSessionIdForCall = useMemo(() => {
-        const now = moment()
+        const now = vnMoment()
         for (const s of scheduleList) {
             if (!s?.sessionDate) continue
-            const start = moment(s.sessionDate)
+            const start = vnMoment(s.sessionDate)
             const end = start.clone().add(s.durationHours ?? 1, 'hours')
             if (now.isBetween(start, end, null, '[]')) return s._id
         }
@@ -137,20 +137,20 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
     const videoSessions = useMemo(() => vsData?.data?.result || [], [vsData])
     // Lọc bỏ "abandoned sessions" + chỉ tính từ startDate hiện tại của sự kiện (fallback)
     const endedSessions = useMemo(() => {
-        const eventStart = event?.startDate ? moment(event.startDate).startOf('day') : null
+        const eventStart = event?.startDate ? vnMoment(event.startDate).startOf('day') : null
         return videoSessions.filter(s =>
             s.status === 'ended' &&
             (s.totalSeconds > 0 || s.activeSeconds > 0) &&
-            (!eventStart || moment(s.joinedAt).isSameOrAfter(eventStart))
+            (!eventStart || vnMoment(s.joinedAt).isSameOrAfter(eventStart))
         )
     }, [videoSessions, event?.startDate])
 
     // ── Cửa sổ video: mỗi ngày trong khoảng sự kiện mở từ (giờ trên startDate) − 10 phút
     const getWindowStatus = useCallback(() => {
-        const now = moment()
-        const t0 = moment(event?.startDate)
+        const now = vnMoment()
+        const t0 = vnMoment(event?.startDate)
         const isEnded =
-            event?.endDate && now.clone().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+            event?.endDate && now.clone().startOf('day').isAfter(vnMoment(event.endDate).endOf('day'))
 
         const officialToday =
             t0.isValid() &&
@@ -199,30 +199,30 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
     // ── Filter sessions by time range
     const filteredSessions = useMemo(() => {
         if (customRange) {
-            const start = moment(customRange.startDate).startOf('day')
-            const end = moment(customRange.endDate).endOf('day')
-            return endedSessions.filter(s => moment(s.joinedAt).isBetween(start, end, null, '[]'))
+            const start = vnMoment(customRange.startDate).startOf('day')
+            const end = vnMoment(customRange.endDate).endOf('day')
+            return endedSessions.filter(s => vnMoment(s.joinedAt).isBetween(start, end, null, '[]'))
         }
         if (timeFilter === 'all') return endedSessions
         if (timeFilter === 'today') {
-            const start = moment().startOf('day')
-            const end = moment().endOf('day')
-            return endedSessions.filter((s) => moment(s.joinedAt).isBetween(start, end, null, '[]'))
+            const start = vnMoment().startOf('day')
+            const end = vnMoment().endOf('day')
+            return endedSessions.filter((s) => vnMoment(s.joinedAt).isBetween(start, end, null, '[]'))
         }
         let cutoff
         switch (timeFilter) {
-            case '7d': cutoff = moment().subtract(7, 'days'); break
-            case '1m': cutoff = moment().subtract(1, 'month'); break
-            case '6m': cutoff = moment().subtract(6, 'months'); break
+            case '7d': cutoff = vnMoment().subtract(7, 'days'); break
+            case '1m': cutoff = vnMoment().subtract(1, 'month'); break
+            case '6m': cutoff = vnMoment().subtract(6, 'months'); break
             default: return endedSessions
         }
-        return endedSessions.filter(s => moment(s.joinedAt).isAfter(cutoff))
+        return endedSessions.filter(s => vnMoment(s.joinedAt).isAfter(cutoff))
     }, [endedSessions, timeFilter, customRange])
 
     // Today-only stats for the banner (independent of dropdown filter)
     const todayStats = useMemo(() => {
-        const today = moment().startOf('day')
-        const todaySessions = endedSessions.filter(s => moment(s.joinedAt).isSame(today, 'day'))
+        const today = vnMoment().startOf('day')
+        const todaySessions = endedSessions.filter(s => vnMoment(s.joinedAt).isSame(today, 'day'))
         return {
             totalSessions: todaySessions.length,
             totalActiveSeconds: todaySessions.reduce((s, v) => s + (v.activeSeconds || 0), 0),
@@ -249,10 +249,10 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
         // Weekly Streak (luôn tính từ tất cả sessions)
         const weekSet = new Set()
         endedSessions.forEach(s => {
-            weekSet.add(moment(s.joinedAt).format('YYYY-[W]WW'))
+            weekSet.add(vnMoment(s.joinedAt).format('YYYY-[W]WW'))
         })
         let streak = 0
-        let checkWeek = moment()
+        let checkWeek = vnMoment()
         while (weekSet.has(checkWeek.format('YYYY-[W]WW'))) {
             streak++
             checkWeek = checkWeek.subtract(1, 'week')
@@ -305,8 +305,8 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
     // ── Filter subtitle
     const filterSubtitle = useMemo(() => {
         if (customRange) {
-            const s = moment(customRange.startDate).format('DD/MM/YYYY')
-            const e = moment(customRange.endDate).format('DD/MM/YYYY')
+            const s = vnMoment(customRange.startDate).format('DD/MM/YYYY')
+            const e = vnMoment(customRange.endDate).format('DD/MM/YYYY')
             return `${s} → ${e}`
         }
         return FILTER_LABELS[timeFilter] || ''
@@ -319,14 +319,14 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
 
         // Hôm nay → từng buổi trong ngày lịch
         if (timeFilter === 'today' && !customRange) {
-            const start = moment().startOf('day')
-            const end = moment().endOf('day')
+            const start = vnMoment().startOf('day')
+            const end = vnMoment().endOf('day')
             const recentSessions = endedSessions
-                .filter(s => moment(s.joinedAt).isBetween(start, end, null, '[]'))
-                .sort((a, b) => moment(a.joinedAt).diff(moment(b.joinedAt)))
+                .filter(s => vnMoment(s.joinedAt).isBetween(start, end, null, '[]'))
+                .sort((a, b) => vnMoment(a.joinedAt).diff(vnMoment(b.joinedAt)))
             return recentSessions.map(vs => ({
-                date: moment(vs.joinedAt).format('HH:mm'),
-                fullDate: moment(vs.joinedAt).format('YYYY-MM-DD'),
+                date: vnMoment(vs.joinedAt).format('HH:mm'),
+                fullDate: vnMoment(vs.joinedAt).format('YYYY-MM-DD'),
                 value: Math.round((vs[field] || 0) / divisor),
                 calories: vs.caloriesBurned || 0,
                 minutes: Math.round((vs.activeSeconds || 0) / 60),
@@ -345,7 +345,7 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
             totalSecondsRaw: 0
         }))
         filteredSessions.forEach(vs => {
-            const d = moment(vs.joinedAt).format('YYYY-MM-DD')
+            const d = vnMoment(vs.joinedAt).format('YYYY-MM-DD')
             const slot = arr.find(x => x.fullDate === d)
             if (slot) {
                 slot.value += Math.round((vs[field] || 0) / divisor)
@@ -790,7 +790,7 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
                         ) : (
                             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                                 {endedSessions.map((vs) => {
-                                    const vsDate = moment(vs.joinedAt).format('YYYY-MM-DD')
+                                    const vsDate = vnMoment(vs.joinedAt).format('YYYY-MM-DD')
                                     const isHighlighted = highlightDate === vsDate
                                     const aiPct = vs.totalSeconds > 0
                                         ? Math.round((vs.activeSeconds / vs.totalSeconds) * 100)
@@ -817,7 +817,7 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
                                                         {vs.sessionId?.title || 'Video Call'}
                                                     </p>
                                                     <p className="text-xs text-gray-400">
-                                                        {moment(vs.joinedAt).format('HH:mm DD/MM/YYYY')}
+                                                        {vnMoment(vs.joinedAt).format('HH:mm DD/MM/YYYY')}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -875,7 +875,7 @@ export default function IndoorEventProgress({ event, userProgress, isArchivedRea
                                 <strong>{deleteSession.sessionId?.title || 'Video Call'}</strong>
                             </p>
                             <p className="text-xs text-gray-400 mb-6">
-                                {moment(deleteSession.joinedAt).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteSession.activeSeconds)} • {roundKcal(deleteSession.caloriesBurned).toFixed(2)} kcal
+                                {vnMoment(deleteSession.joinedAt).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteSession.activeSeconds)} • {roundKcal(deleteSession.caloriesBurned).toFixed(2)} kcal
                             </p>
                         </div>
                         <div className="flex gap-3">

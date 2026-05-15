@@ -2,7 +2,7 @@ import { roundKcal } from '../../utils/mathUtils'
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import {
     FaFire, FaClock, FaTrophy, FaRunning, FaRoute, FaBolt,
     FaUtensils, FaDumbbell, FaRoad, FaCheckCircle, FaTimesCircle, FaLeaf
@@ -169,7 +169,7 @@ export function ChallengeProgressPreviewCard({ progressId, challengeId }) {
                     <span className="text-white/60 text-[10px]">• Hoạt động thử thách</span>
                 </div>
                 <span className="text-white/80 text-xs">
-                    {moment(activity.date || activity.createdAt).format('HH:mm - DD/MM/YYYY')}
+                    {vnMoment(activity.date || activity.createdAt).format('HH:mm - DD/MM/YYYY')}
                 </span>
             </div>
 
@@ -330,7 +330,7 @@ export default function ChallengeActivityPreviewCard({ activityId, challengeId }
                     <span className="text-white/60 text-[10px]">• Hoạt động thử thách</span>
                 </div>
                 <span className="text-white/80 text-xs">
-                    {moment(activity.date || activity.startTime || activity.createdAt).format('HH:mm - DD/MM/YYYY')}
+                    {vnMoment(activity.date || activity.startTime || activity.createdAt).format('HH:mm - DD/MM/YYYY')}
                 </span>
             </div>
 

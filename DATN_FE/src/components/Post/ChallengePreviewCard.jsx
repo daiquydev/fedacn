@@ -1,7 +1,7 @@
 import { useContext, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { formatDateVN, vnMoment } from '../../utils/vnDateUtils'
 import {
     FaUtensils, FaRunning, FaDumbbell,
     FaUsers, FaTrophy, FaArrowRight,
@@ -215,9 +215,9 @@ export default function ChallengePreviewCard({ challengeId }) {
     const totalParticipants = challenge.participants_count || participantsList.length || 0
 
     const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
-    const startDate = moment(challenge.start_date)
-    const endDate = moment(challenge.end_date)
-    const now = moment()
+    const startDate = vnMoment(challenge.start_date)
+    const endDate = vnMoment(challenge.end_date)
+    const now = vnMoment()
 
     const isEnded = now.isAfter(endDate.clone().endOf('day'))
     const isNotStarted = now.isBefore(startDate.clone().startOf('day'))

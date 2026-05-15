@@ -4,7 +4,7 @@ import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPlus, FaEyeSlash } from 'reac
 import { MdVideocam, MdCheckCircle, MdSportsScore } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs';
-import moment from 'moment';
+import { vnMoment } from '../../../utils/vnDateUtils';
 import ParticipantsList from '../../../components/ParticipantsList';
 import { getImageUrl } from '../../../utils/imageUrl';
 import useravatar from '../../../assets/images/useravatar.jpg';
@@ -41,9 +41,9 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
   };
 
   const isOnline = event.eventType === 'Trong nhà';
-  const eventDate = moment(event.startDate);
-  const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'));
-  const beforeFirstCalendarDay = event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'));
+  const eventDate = vnMoment(event.startDate);
+  const isEnded = event.endDate && vnMoment().startOf('day').isAfter(vnMoment(event.endDate).endOf('day'));
+  const beforeFirstCalendarDay = event.startDate && vnMoment().startOf('day').isBefore(vnMoment(event.startDate).startOf('day'));
   const isNotStarted = !!beforeFirstCalendarDay;
   const isArchivedReadOnly = !!(event.is_archived_read_only || event.isDeleted);
 
@@ -101,7 +101,7 @@ const SportEventCard = ({ event, onJoin, isJoining, friendIds = new Set(), conne
         <div className="space-y-2 mb-3">
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <FaCalendarAlt className="mr-2 flex-shrink-0" />
-            <span>{eventDate.format('DD/MM/YYYY')} - {moment(event.endDate).format('DD/MM/YYYY')}</span>
+            <span>{eventDate.format('DD/MM/YYYY')} - {vnMoment(event.endDate).format('DD/MM/YYYY')}</span>
           </div>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <FaClock className="mr-2" />

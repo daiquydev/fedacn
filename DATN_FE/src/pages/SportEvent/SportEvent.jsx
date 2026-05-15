@@ -23,6 +23,7 @@ import sportCategoryApi from '../../apis/sportCategoryApi'
 import { currentAccount } from '../../apis/userApi'
 import { getSportIcon } from '../../utils/sportIcons'
 import toast from 'react-hot-toast'
+import { timestampFromIsoVN, vnMoment } from '../../utils/vnDateUtils'
 
 // Convert YYYY-MM-DD (from type="date") to DD/MM/YYYY for display chips
 const formatDateDisplay = (isoDate) => {
@@ -44,7 +45,10 @@ function FeaturedBanner({ events, navigate, deletedCategoryNames = new Set() }) 
   const ev = events[activeIdx]
   if (!ev) return null
 
-  const isOngoing = new Date(ev.startDate) <= new Date() && new Date(ev.endDate) > new Date()
+  const nowMs = Date.now()
+  const isOngoing =
+    (timestampFromIsoVN(ev.startDate) ?? Infinity) <= nowMs &&
+    (timestampFromIsoVN(ev.endDate) ?? 0) > nowMs
 
   return (
     <div className="container mx-auto px-4 pt-4">
@@ -292,7 +296,7 @@ const SportEvent = () => {
       {(() => {
         // Use current page events for banner if available (lightweight approach)
         const featuredEvents = [...sportEvents]
-          .filter(e => new Date(e.endDate) > new Date() && !e.is_archived_read_only && !e.isDeleted)
+          .filter(e => (timestampFromIsoVN(e.endDate) ?? 0) > Date.now() && !e.is_archived_read_only && !e.isDeleted)
           .sort((a, b) => (b.participants || 0) - (a.participants || 0))
           .slice(0, 3)
 

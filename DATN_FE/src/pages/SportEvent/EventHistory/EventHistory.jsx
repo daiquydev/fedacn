@@ -11,7 +11,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { MdHistory, MdErrorOutline } from "react-icons/md";
-import moment from "moment";
+import { vnMoment } from '../../../utils/vnDateUtils';
 import { getJoinedEvents } from "../../../apis/sportEventApi";
 
 export default function EventHistory() {
@@ -59,13 +59,13 @@ export default function EventHistory() {
         return false;
       }
 
-      const eventDate = moment(event.date);
+      const eventDate = vnMoment(event.date);
 
       if (filterStartDate && eventDate.isBefore(filterStartDate)) {
         return false;
       }
 
-      if (filterEndDate && eventDate.isAfter(moment(filterEndDate).endOf("day"))) {
+      if (filterEndDate && eventDate.isAfter(vnMoment(filterEndDate).endOf("day"))) {
         return false;
       }
 
@@ -82,8 +82,8 @@ export default function EventHistory() {
       let bValue = b[sortConfig.key];
 
       if (sortConfig.key === "date") {
-        aValue = moment(aValue);
-        bValue = moment(bValue);
+        aValue = vnMoment(aValue);
+        bValue = vnMoment(bValue);
       }
 
       if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
@@ -185,7 +185,7 @@ export default function EventHistory() {
               <tr key={event.id} onClick={() => handleEventClick(event.id)}>
                 <td>{event.name}</td>
                 <td>{event.category}</td>
-                <td>{moment(event.date).format("DD/MM/YYYY")}</td>
+                <td>{vnMoment(event.date).format("DD/MM/YYYY")}</td>
                 <td>{event.location}</td>
                 <td>
                   {event.ranking

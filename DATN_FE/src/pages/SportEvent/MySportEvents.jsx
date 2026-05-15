@@ -42,12 +42,10 @@ import { roundKcal } from '../../utils/mathUtils'
 import useravatar from '../../assets/images/useravatar.jpg'
 import ParticipantProgressModal from '../../components/SportEvent/ParticipantProgressModal'
 import toast from 'react-hot-toast'
-import moment from 'moment'
+import { timestampFromIsoVN, vnMoment } from '../../utils/vnDateUtils'
 
 function rawDateToMs(raw) {
-  if (raw == null || raw === '') return null
-  const t = new Date(raw).getTime()
-  return Number.isFinite(t) ? t : null
+  return timestampFromIsoVN(raw)
 }
 
 const formatDateDisplay = (isoDate) => {
@@ -363,9 +361,9 @@ const MySportEvents = () => {
   }
 
   const getStatusBadge = (event) => {
-    const now = moment()
-    const start = moment(event.startDate)
-    const end = moment(event.endDate)
+    const now = vnMoment()
+    const start = vnMoment(event.startDate)
+    const end = vnMoment(event.endDate)
     if (now.isAfter(end)) return { text: 'Đã kết thúc', color: 'bg-gray-500', dot: false }
     if (now.isBefore(start)) return { text: 'Sắp diễn ra', color: 'bg-amber-500', dot: false }
     return { text: 'Đang diễn ra', color: 'bg-emerald-500', dot: true }
@@ -778,9 +776,9 @@ function CreatedTabContent({
 
 // Helper: status badge (used in sidebar)
 function getStatusBadge(event) {
-  const now = moment()
-  const start = moment(event.startDate)
-  const end = moment(event.endDate)
+  const now = vnMoment()
+  const start = vnMoment(event.startDate)
+  const end = vnMoment(event.endDate)
   if (now.isAfter(end)) return { text: 'Đã kết thúc', color: 'bg-gray-500', dot: false }
   if (now.isBefore(start)) return { text: 'Sắp diễn ra', color: 'bg-amber-500', dot: false }
   return { text: 'Đang diễn ra', color: 'bg-emerald-500', dot: true }
@@ -819,7 +817,7 @@ function EventDashboard({
                 {status.dot && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                 {status.text}
               </span>
-              <span className="text-xs text-gray-500 flex items-center gap-1"><FaCalendarAlt /> {moment(event.startDate).format('DD/MM/YYYY')} - {moment(event.endDate).format('DD/MM/YYYY')}</span>
+              <span className="text-xs text-gray-500 flex items-center gap-1"><FaCalendarAlt /> {vnMoment(event.startDate).format('DD/MM/YYYY')} - {vnMoment(event.endDate).format('DD/MM/YYYY')}</span>
               <span className="text-xs text-gray-500 flex items-center gap-1"><FaUsers /> {event.participants}/{event.maxParticipants}</span>
             </div>
           </div>
@@ -890,8 +888,8 @@ function OverviewSubTab({ event, leaderboard, overallProgress, navigate }) {
     <div className="space-y-6">
       {/* Info grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <InfoCard icon={FaCalendarAlt} label="Bắt đầu" value={moment(event.startDate).format('DD/MM/YYYY')} color="text-blue-500" />
-        <InfoCard icon={FaClock} label="Thời gian" value={moment(event.startDate).format('HH:mm')} color="text-green-500" />
+        <InfoCard icon={FaCalendarAlt} label="Bắt đầu" value={vnMoment(event.startDate).format('DD/MM/YYYY')} color="text-blue-500" />
+        <InfoCard icon={FaClock} label="Thời gian" value={vnMoment(event.startDate).format('HH:mm')} color="text-green-500" />
         <InfoCard icon={event.eventType === 'Trong nhà' ? MdVideocam : FaMapMarkerAlt} label={event.eventType === 'Trong nhà' ? 'Loại' : 'Địa điểm'} value={event.eventType === 'Trong nhà' ? 'Trong nhà' : (event.location || '—')} color="text-violet-500" truncate />
         <InfoCard icon={FaBullseye} label="Mục tiêu" value={event.targetValue > 0 ? `${event.targetValue} ${event.targetUnit}` : 'Không có'} color="text-orange-500" />
       </div>
@@ -1243,15 +1241,15 @@ function SettingsSubTab({ event, onDeleteClick, navigate, deletedCategoryNames =
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Thời gian</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(event.startDate).format('HH:mm')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{vnMoment(event.startDate).format('HH:mm')}</span>
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Ngày bắt đầu</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(event.startDate).format('DD/MM/YYYY')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{vnMoment(event.startDate).format('DD/MM/YYYY')}</span>
           </div>
           <div>
             <span className="text-gray-400 text-xs block mb-0.5">Ngày kết thúc</span>
-            <span className="text-gray-800 dark:text-white font-medium">{moment(event.endDate).format('DD/MM/YYYY')}</span>
+            <span className="text-gray-800 dark:text-white font-medium">{vnMoment(event.endDate).format('DD/MM/YYYY')}</span>
           </div>
           {event.targetValue > 0 && (
             <div>
@@ -1692,8 +1690,8 @@ function JoinedTabContent({
                   <div className="p-3.5">
                     <h4 className="text-sm font-bold text-gray-800 dark:text-white truncate mb-2">{event.name}</h4>
                     <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mb-2">
-                      <span className="flex items-center gap-1"><FaCalendarAlt />{moment(event.startDate).format('DD/MM')}</span>
-                      <span className="flex items-center gap-1"><FaClock />{moment(event.startDate).format('HH:mm')}</span>
+                      <span className="flex items-center gap-1"><FaCalendarAlt />{vnMoment(event.startDate).format('DD/MM')}</span>
+                      <span className="flex items-center gap-1"><FaClock />{vnMoment(event.startDate).format('HH:mm')}</span>
                       <span className="flex items-center gap-1">
                         {event.eventType === 'Trong nhà' ? <MdVideocam /> : <FaMapMarkerAlt />}
                         {event.eventType}

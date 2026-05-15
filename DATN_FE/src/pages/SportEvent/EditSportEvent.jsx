@@ -24,32 +24,19 @@ import { getSportEvent, updateSportEvent } from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
-import moment from 'moment'
-
-// ==================== DATE/TIME HELPERS ====================
-// Date input uses type="date" → value is YYYY-MM-DD
-const isValidDateISO = (val) => {
-  if (!val || val.length !== 10) return false
-  const date = new Date(val + 'T00:00:00')
-  return !isNaN(date.getTime())
-}
+import {
+  compareDateInputVN,
+  isoToDateInputVN,
+  isoToTimeInputVN,
+  isPastDateVN,
+  isValidDateISO,
+  sportDateTimeToIsoVN
+} from '../../utils/vnDateUtils'
 
 const isValidTimeStr = (val) => {
   if (!val || val.length !== 5) return false
   const [h, min] = val.split(':').map(Number)
   return h >= 0 && h <= 23 && min >= 0 && min <= 59
-}
-
-const isPastDate = (dateISO) => {
-  if (!isValidDateISO(dateISO)) return false
-  const date = new Date(dateISO + 'T00:00:00')
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  return date < today
-}
-
-const parseDateToISO = (dateISO, timeStr = '00:00') => {
-  // Parse as local time and convert to ISO (UTC)
-  return moment(`${dateISO} ${timeStr}`, 'YYYY-MM-DD HH:mm').toISOString()
 }
 
 const formatDateInput = (raw) => {
@@ -99,9 +86,9 @@ const EditSportEvent = () => {
     if (event) {
       setNewEvent({
         name: event.name || '',
-        startDate: event.startDate ? moment(event.startDate).format('YYYY-MM-DD') : '',
-        endDate: event.endDate ? moment(event.endDate).format('YYYY-MM-DD') : '',
-        eventTime: event.startDate ? moment(event.startDate).format('HH:mm') : '',
+        startDate: isoToDateInputVN(event.startDate),
+        endDate: isoToDateInputVN(event.endDate),
+        eventTime: isoToTimeInputVN(event.startDate),
         location: event.location || '',
         category: event.category || '',
         maxParticipants: event.maxParticipants || 50,
@@ -174,7 +161,7 @@ const EditSportEvent = () => {
         if (!value) error = 'Vui lòng nhập ngày bắt đầu'
         else if (!isValidDateISO(value)) error = 'Ngày không hợp lệ'
         else if (currentState.endDate && isValidDateISO(currentState.endDate)) {
-          if (new Date(currentState.endDate) < new Date(value))
+          if (compareDateInputVN(currentState.endDate, value) < 0)
             setErrors(prev => ({ ...prev, endDate: 'Ngày kết thúc phải sau ngày bắt đầu' }))
           else
             setErrors(prev => ({ ...prev, endDate: null }))
@@ -183,9 +170,9 @@ const EditSportEvent = () => {
       case 'endDate':
         if (!value) error = 'Vui lòng nhập ngày kết thúc'
         else if (!isValidDateISO(value)) error = 'Ngày không hợp lệ'
-        else if (isPastDate(value)) error = 'Ngày kết thúc không thể nằm trong quá khứ'
+        else if (isPastDateVN(value)) error = 'Ngày kết thúc không thể nằm trong quá khứ'
         else if (currentState.startDate && isValidDateISO(currentState.startDate)) {
-          if (new Date(value) < new Date(currentState.startDate))
+          if (compareDateInputVN(value, currentState.startDate) < 0)
             error = 'Ngày kết thúc phải sau ngày bắt đầu'
         }
         break
@@ -264,8 +251,8 @@ const EditSportEvent = () => {
       } else if (f === 'endDate') {
         if (!newEvent[f]) e = 'Vui lòng nhập ngày kết thúc'
         else if (!isValidDateISO(newEvent[f])) e = 'Ngày không hợp lệ'
-        else if (isPastDate(newEvent[f])) e = 'Ngày kết thúc không thể nằm trong quá khứ'
-        else if (newEvent.startDate && new Date(newEvent[f]) < new Date(newEvent.startDate)) e = 'Ngày kết thúc phải sau ngày bắt đầu'
+        else if (isPastDateVN(newEvent[f])) e = 'Ngày kết thúc không thể nằm trong quá khứ'
+        else if (newEvent.startDate && compareDateInputVN(newEvent[f], newEvent.startDate) < 0) e = 'Ngày kết thúc phải sau ngày bắt đầu'
       } else {
         e = validateField(f, newEvent[f])
       }
@@ -290,8 +277,8 @@ const EditSportEvent = () => {
     }
 
     const timeStr = newEvent.eventTime || '00:00'
-    const startISO = parseDateToISO(newEvent.startDate, timeStr)
-    const endISO = parseDateToISO(newEvent.endDate, '23:59')
+    const startISO = sportDateTimeToIsoVN(newEvent.startDate, timeStr)
+    const endISO = sportDateTimeToIsoVN(newEvent.endDate, '23:59')
 
     const finalData = {
       name: newEvent.name,

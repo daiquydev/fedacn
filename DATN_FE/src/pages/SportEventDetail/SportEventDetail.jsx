@@ -29,7 +29,7 @@ import {
   MdInfoOutline
 } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import {
   nextDailySportEventProgressWindowOpensAt
@@ -233,11 +233,11 @@ export default function SportEventDetail() {
   const indoorPersonalFromVideo = useMemo(() => {
     if (!indoorVsEnabled || indoorVsPending) return null
     const videoSessions = indoorVsData?.data?.result || indoorVsData?.result || []
-    const eventStart = event?.startDate ? moment(event.startDate).startOf('day') : null
+    const eventStart = event?.startDate ? vnMoment(event.startDate).startOf('day') : null
     const endedSessions = videoSessions.filter((s) =>
       s.status === 'ended' &&
       (s.totalSeconds > 0 || s.activeSeconds > 0) &&
-      (!eventStart || moment(s.joinedAt).isSameOrAfter(eventStart))
+      (!eventStart || vnMoment(s.joinedAt).isSameOrAfter(eventStart))
     )
     const totalActiveSeconds = endedSessions.reduce((acc, v) => acc + (v.activeSeconds || 0), 0)
     const totalCalories = endedSessions.reduce((acc, v) => acc + (v.caloriesBurned || 0), 0)
@@ -362,7 +362,7 @@ export default function SportEventDetail() {
       }
 
       // Check if event has ended (allow joining on the end date)
-      const isEnded = event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+      const isEnded = event.endDate && vnMoment().startOf('day').isAfter(vnMoment(event.endDate).endOf('day'))
       if (isEnded) {
         toast.error('Sự kiện này đã kết thúc')
         return
@@ -430,9 +430,9 @@ export default function SportEventDetail() {
   useEffect(() => {
     if (!event?.startDate) return
     const openDt = nextDailySportEventProgressWindowOpensAt(event.startDate, event.endDate)
-    if (!openDt || !openDt.isValid() || !moment().isBefore(openDt)) return
+    if (!openDt || !openDt.isValid() || !vnMoment().isBefore(openDt)) return
     const tick = () => {
-      const now = moment()
+      const now = vnMoment()
       const diff = openDt.diff(now)
       if (diff <= 0) { setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 }); return }
       const dur = moment.duration(diff)
@@ -480,13 +480,13 @@ export default function SportEventDetail() {
 
   const progressPercentage = calculateProgress()
   const isOnline = event.eventType === 'Trong nhà'
-  const eventStartDate = moment(event.startDate)
-  const eventEndDate = moment(event.endDate)
+  const eventStartDate = vnMoment(event.startDate)
+  const eventEndDate = vnMoment(event.endDate)
 
   const isEnded =
-    event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))
+    event.endDate && vnMoment().startOf('day').isAfter(vnMoment(event.endDate).endOf('day'))
   const isNotStarted =
-    event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))
+    event.startDate && vnMoment().startOf('day').isBefore(vnMoment(event.startDate).startOf('day'))
   const isOngoing = !isEnded && !isNotStarted
 
   return (
@@ -659,14 +659,14 @@ export default function SportEventDetail() {
                 </div>
               )}
               {!isArchivedReadOnly && !event.isJoined ? (
-                (event.endDate && moment().startOf('day').isAfter(moment(event.endDate).endOf('day'))) ? (
+                (event.endDate && vnMoment().startOf('day').isAfter(vnMoment(event.endDate).endOf('day'))) ? (
                   <button
                     onClick={() => { }}
                     className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default"
                   >
                     Sự kiện đã kết thúc
                   </button>
-                ) : (event.startDate && moment().startOf('day').isBefore(moment(event.startDate).startOf('day'))) ? (
+                ) : (event.startDate && vnMoment().startOf('day').isBefore(vnMoment(event.startDate).startOf('day'))) ? (
                   <button
                     onClick={() => { }}
                     className="px-5 py-2.5 bg-white/10 text-white/60 border border-white/20 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-default"

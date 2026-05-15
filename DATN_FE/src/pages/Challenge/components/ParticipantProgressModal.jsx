@@ -19,6 +19,7 @@ import {
   getYear, addYears, subYears
 } from 'date-fns'
 import { vi } from 'date-fns/locale'
+import { dateKeyVN, todayStartOfDayDate, vnMoment, vnStartOfDayDate } from '../../../utils/vnDateUtils'
 import ActivityEntryDetailView from './ActivityEntryDetailView'
 import NutritionDetailView from './NutritionDetailView'
 import FitnessDetailView from './FitnessDetailView'
@@ -302,10 +303,10 @@ export default function ParticipantProgressModal({
   // Calendar navigation state
   const [calView, setCalView] = useState('month') // 'week' | 'month' | 'year'
   const [refDate, setRefDate] = useState(() => {
-    const now = new Date()
+    const now = todayStartOfDayDate()
     if (challenge?.start_date && challenge?.end_date) {
-      const s = new Date(challenge.start_date)
-      const e = new Date(challenge.end_date)
+      const s = vnStartOfDayDate(challenge.start_date) || now
+      const e = vnStartOfDayDate(challenge.end_date) || now
       if (now >= s && now <= e) return now
       if (now < s) return s
       return e
@@ -329,7 +330,7 @@ export default function ParticipantProgressModal({
   const progressByDate = useMemo(() => {
     const map = {}
     progressEntries.forEach(entry => {
-      const dateStr = format(new Date(entry.date || entry.createdAt), 'yyyy-MM-dd')
+      const dateStr = dateKeyVN(entry.date || entry.createdAt)
       if (!map[dateStr]) map[dateStr] = []
       map[dateStr].push(entry)
     })
@@ -337,11 +338,11 @@ export default function ParticipantProgressModal({
   }, [progressEntries])
 
   const challengeStart = useMemo(
-    () => challenge?.start_date ? startOfDay(new Date(challenge.start_date)) : null,
+    () => (challenge?.start_date ? vnStartOfDayDate(challenge.start_date) : null),
     [challenge]
   )
   const challengeEnd = useMemo(
-    () => challenge?.end_date ? startOfDay(new Date(challenge.end_date)) : null,
+    () => (challenge?.end_date ? vnStartOfDayDate(challenge.end_date) : null),
     [challenge]
   )
 

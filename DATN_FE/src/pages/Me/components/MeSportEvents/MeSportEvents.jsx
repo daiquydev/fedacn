@@ -6,7 +6,7 @@ import { FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { getJoinedEvents, getMyEvents, getPublicUserJoinedEvents } from '../../../../apis/sportEventApi'
 import Loading from '../../../../components/GlobalComponents/Loading'
-import moment from 'moment'
+import { formatDateVN, vnMoment } from '../../../../utils/vnDateUtils'
 
 const LIMIT = 9
 
@@ -29,8 +29,8 @@ function parseEventsPayload(data) {
 }
 
 function EventCard({ event }) {
-  const isOngoing = moment().isBetween(event.startDate, event.endDate)
-  const isPast = moment().isAfter(event.endDate)
+  const isOngoing = vnMoment().isBetween(event.startDate, event.endDate)
+  const isPast = vnMoment().isAfter(event.endDate)
 
   return (
     <motion.div variants={fadeIn}>
@@ -62,7 +62,7 @@ function EventCard({ event }) {
         <div className='p-4 space-y-2'>
           <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
             <FaCalendarAlt className='text-emerald-500 flex-shrink-0' />
-            <span>{moment(event.startDate).format('DD/MM/YYYY')} - {moment(event.endDate).format('DD/MM/YYYY')}</span>
+            <span>{vnMoment(event.startDate).format('DD/MM/YYYY')} - {vnMoment(event.endDate).format('DD/MM/YYYY')}</span>
           </div>
           <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
             <FaMapMarkerAlt className='text-red-400 flex-shrink-0' />

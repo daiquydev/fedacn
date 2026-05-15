@@ -6,6 +6,7 @@ import {
   isBefore, isAfter, startOfDay
 } from 'date-fns'
 import { vi } from 'date-fns/locale'
+import { dateKeyVN, todayStartOfDayDate, vnStartOfDayDate } from '../../../utils/vnDateUtils'
 
 const GRADIENT_MAP = {
   nutrition: 'from-emerald-500 to-teal-600',
@@ -56,9 +57,9 @@ function DiagonalRibbon({ text, bgColor }) {
  */
 export default function ChallengeCalendar({ challenge, progressEntries = [], onDayClick }) {
   const [currentDate, setCurrentDate] = useState(() => {
-    const now = new Date()
-    const start = new Date(challenge?.start_date)
-    const end = new Date(challenge?.end_date)
+    const now = todayStartOfDayDate()
+    const start = vnStartOfDayDate(challenge?.start_date) || now
+    const end = vnStartOfDayDate(challenge?.end_date) || now
     if (now >= start && now <= end) return now
     if (now < start) return start
     return end
@@ -70,15 +71,15 @@ export default function ChallengeCalendar({ challenge, progressEntries = [], onD
   const gradient = GRADIENT_MAP[challengeType] || GRADIENT_MAP.fitness
   const emoji = TYPE_EMOJI[challengeType] || '🎯'
 
-  const challengeStart = useMemo(() => challenge?.start_date ? startOfDay(new Date(challenge.start_date)) : null, [challenge])
-  const challengeEnd = useMemo(() => challenge?.end_date ? startOfDay(new Date(challenge.end_date)) : null, [challenge])
-  const today = startOfDay(new Date())
+  const challengeStart = useMemo(() => challenge?.start_date ? vnStartOfDayDate(challenge.start_date) : null, [challenge])
+  const challengeEnd = useMemo(() => challenge?.end_date ? vnStartOfDayDate(challenge.end_date) : null, [challenge])
+  const today = todayStartOfDayDate()
 
   // Group progress entries by date
   const progressByDate = useMemo(() => {
     const map = {}
     progressEntries.forEach(entry => {
-      const dateStr = format(new Date(entry.date || entry.createdAt), 'yyyy-MM-dd')
+      const dateStr = dateKeyVN(entry.date || entry.createdAt)
       if (!map[dateStr]) map[dateStr] = { total: 0, entries: [], completedIds: new Set() }
       const isValid = entry.validation_status !== 'invalid_time' && entry.ai_review_valid !== false;
       

@@ -1,21 +1,21 @@
-import moment from 'moment'
+import { vnMoment } from './vnDateUtils'
 
 /** Khoảng ngày hiển thị biểu đồ (trừ "hôm nay" — xử lý riêng theo từng lần). */
 export function getChartRangeBounds(timeFilter, customRange, event) {
   if (customRange?.startDate && customRange?.endDate) {
     return {
-      start: moment(customRange.startDate).startOf('day'),
-      end: moment(customRange.endDate).endOf('day')
+      start: vnMoment(customRange.startDate).startOf('day'),
+      end: vnMoment(customRange.endDate).endOf('day')
     }
   }
 
-  const end = moment().endOf('day')
+  const end = vnMoment().endOf('day')
 
   if (timeFilter === 'all') {
     return {
       start: event?.startDate
-        ? moment(event.startDate).startOf('day')
-        : moment().subtract(11, 'months').startOf('day'),
+        ? vnMoment(event.startDate).startOf('day')
+        : vnMoment().subtract(11, 'months').startOf('day'),
       end
     }
   }
@@ -23,19 +23,19 @@ export function getChartRangeBounds(timeFilter, customRange, event) {
   let start
   switch (timeFilter) {
     case '7d':
-      start = moment().subtract(6, 'days').startOf('day')
+      start = vnMoment().subtract(6, 'days').startOf('day')
       break
     case '1m':
-      start = moment().subtract(1, 'month').startOf('day')
+      start = vnMoment().subtract(1, 'month').startOf('day')
       break
     case '6m':
-      start = moment().subtract(6, 'months').startOf('day')
+      start = vnMoment().subtract(6, 'months').startOf('day')
       break
     case '1y':
-      start = moment().subtract(1, 'year').startOf('day')
+      start = vnMoment().subtract(1, 'year').startOf('day')
       break
     default:
-      start = moment().subtract(6, 'days').startOf('day')
+      start = vnMoment().subtract(6, 'days').startOf('day')
   }
 
   return { start, end }

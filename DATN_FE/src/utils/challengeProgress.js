@@ -1,13 +1,16 @@
+import { isoToDateInputVN } from './vnDateUtils'
+
 /**
  * Tổng số ngày của thử thách (khoảng start–end, tính cả hai đầu) — dùng chung feed, chi tiết, thẻ.
  */
 export function getChallengeTotalRequiredDays(challenge) {
   if (!challenge) return 1
-  const safeStart = new Date(challenge.start_date || new Date())
-  const safeEnd = new Date(challenge.end_date || new Date())
-  safeStart.setHours(0, 0, 0, 0)
-  safeEnd.setHours(0, 0, 0, 0)
-  return Math.max(1, Math.ceil((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+  const startKey = isoToDateInputVN(challenge.start_date)
+  const endKey = isoToDateInputVN(challenge.end_date)
+  if (!startKey || !endKey) return 1
+  const start = new Date(`${startKey}T00:00:00`)
+  const end = new Date(`${endKey}T00:00:00`)
+  return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 }
 
 /**

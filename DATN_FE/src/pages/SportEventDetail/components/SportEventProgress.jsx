@@ -28,7 +28,7 @@ import {
   FaPlay
 } from 'react-icons/fa'
 import { MdOutlineHistoryEdu } from 'react-icons/md'
-import moment from 'moment'
+import { vnMoment } from '../../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import { isDailySportEventProgressAllowedAt, nextDailySportEventProgressWindowOpensAt } from '../../../utils/sportEventProgressWindow'
 import { getUserActivities, softDeleteActivity } from '../../../apis/sportEventApi'
@@ -160,9 +160,9 @@ export default function SportEventProgress({
   // Chỉ tính activities từ startDate hiện tại của sự kiện (fallback server-side filter)
   const completedActivities = useMemo(() => {
     const all = activitiesResult?.activities?.filter(a => a.status === 'completed') || []
-    const eventStart = event?.startDate ? moment(event.startDate).startOf('day') : null
+    const eventStart = event?.startDate ? vnMoment(event.startDate).startOf('day') : null
     if (!eventStart) return all
-    return all.filter(a => moment(a.startTime).isSameOrAfter(eventStart))
+    return all.filter(a => vnMoment(a.startTime).isSameOrAfter(eventStart))
   }, [activitiesResult, event?.startDate])
 
   // Share activity to community — open modal inline
@@ -176,31 +176,31 @@ export default function SportEventProgress({
   // Filter GPS activities by time range
   const filteredActivities = useMemo(() => {
     if (customRange) {
-      const start = moment(customRange.startDate).startOf('day')
-      const end = moment(customRange.endDate).endOf('day')
-      return completedActivities.filter(a => moment(a.startTime).isBetween(start, end, null, '[]'))
+      const start = vnMoment(customRange.startDate).startOf('day')
+      const end = vnMoment(customRange.endDate).endOf('day')
+      return completedActivities.filter(a => vnMoment(a.startTime).isBetween(start, end, null, '[]'))
     }
     if (timeFilter === 'all') return completedActivities
     if (timeFilter === 'today') {
-      const start = moment().startOf('day')
-      const end = moment().endOf('day')
-      return completedActivities.filter((a) => moment(a.startTime).isBetween(start, end, null, '[]'))
+      const start = vnMoment().startOf('day')
+      const end = vnMoment().endOf('day')
+      return completedActivities.filter((a) => vnMoment(a.startTime).isBetween(start, end, null, '[]'))
     }
     let cutoff
     switch (timeFilter) {
-      case '7d': cutoff = moment().subtract(7, 'days'); break
-      case '1m': cutoff = moment().subtract(1, 'month'); break
-      case '6m': cutoff = moment().subtract(6, 'months'); break
-      case '1y': cutoff = moment().subtract(1, 'year'); break
+      case '7d': cutoff = vnMoment().subtract(7, 'days'); break
+      case '1m': cutoff = vnMoment().subtract(1, 'month'); break
+      case '6m': cutoff = vnMoment().subtract(6, 'months'); break
+      case '1y': cutoff = vnMoment().subtract(1, 'year'); break
       default: return completedActivities
     }
-    return completedActivities.filter(a => moment(a.startTime).isAfter(cutoff))
+    return completedActivities.filter(a => vnMoment(a.startTime).isAfter(cutoff))
   }, [completedActivities, timeFilter, customRange])
 
   // Today's GPS stats for the top banner (always today, unaffected by filter)
   const todayGpsStats = useMemo(() => {
-    const today = moment().startOf('day')
-    const todaysActivities = completedActivities.filter(a => moment(a.startTime).isSame(today, 'day'))
+    const today = vnMoment().startOf('day')
+    const todaysActivities = completedActivities.filter(a => vnMoment(a.startTime).isSame(today, 'day'))
 
     const distance = todaysActivities.reduce((sum, a) => sum + (a.totalDistance / 1000), 0)
     const duration = todaysActivities.reduce((sum, a) => sum + a.totalDuration, 0)
@@ -222,10 +222,10 @@ export default function SportEventProgress({
     // Weekly Streak (always from all activities)
     const weekSet = new Set()
     completedActivities.forEach(a => {
-      weekSet.add(moment(a.startTime).format('YYYY-[W]WW'))
+      weekSet.add(vnMoment(a.startTime).format('YYYY-[W]WW'))
     })
     let streak = 0
-    let checkWeek = moment()
+    let checkWeek = vnMoment()
     while (weekSet.has(checkWeek.format('YYYY-[W]WW'))) {
       streak++
       checkWeek = checkWeek.subtract(1, 'week')
@@ -282,8 +282,8 @@ export default function SportEventProgress({
   // Filter subtitle
   const filterSubtitle = useMemo(() => {
     if (customRange) {
-      const s = moment(customRange.startDate).format('DD/MM/YYYY')
-      const e = moment(customRange.endDate).format('DD/MM/YYYY')
+      const s = vnMoment(customRange.startDate).format('DD/MM/YYYY')
+      const e = vnMoment(customRange.endDate).format('DD/MM/YYYY')
       return `${s} → ${e}`
     }
     return FILTER_LABELS[timeFilter] || ''
@@ -295,11 +295,11 @@ export default function SportEventProgress({
       // Build chart from GPS activities
       // Hôm nay → từng hoạt động trong ngày lịch
       if (timeFilter === 'today' && !customRange) {
-        const start = moment().startOf('day')
-        const end = moment().endOf('day')
+        const start = vnMoment().startOf('day')
+        const end = vnMoment().endOf('day')
         const recentActivities = completedActivities
-          .filter(a => moment(a.startTime).isBetween(start, end, null, '[]'))
-          .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
+          .filter(a => vnMoment(a.startTime).isBetween(start, end, null, '[]'))
+          .sort((a, b) => vnMoment(a.startTime).diff(vnMoment(b.startTime)))
 
         return recentActivities.map(a => {
           const duration = a.totalDuration || 0
@@ -316,8 +316,8 @@ export default function SportEventProgress({
           }
 
           return {
-            date: moment(a.startTime).format('HH:mm'),
-            fullDate: moment(a.startTime).format('YYYY-MM-DD'),
+            date: vnMoment(a.startTime).format('HH:mm'),
+            fullDate: vnMoment(a.startTime).format('YYYY-MM-DD'),
             value: value,
             distance: Number(distance.toFixed(2)),
             calories: roundKcal(a.calories),
@@ -331,8 +331,8 @@ export default function SportEventProgress({
       // Group by date with all 4 metrics
       const dayMap = {}
       filteredActivities.forEach(a => {
-        const d = moment(a.startTime).format('DD/MM')
-        const fd = moment(a.startTime).format('YYYY-MM-DD')
+        const d = vnMoment(a.startTime).format('DD/MM')
+        const fd = vnMoment(a.startTime).format('YYYY-MM-DD')
         if (!dayMap[fd]) dayMap[fd] = { distance: 0, calories: 0, sessions: 0, duration: 0 }
         // Dùng quãng đường gốc để tính toán, không làm tròn ở đây để tránh sai số vận tốc
         dayMap[fd].distance += (a.totalDistance / 1000)
@@ -376,15 +376,15 @@ export default function SportEventProgress({
     if (!userProgress?.progressHistory) return []
 
     if (timeFilter === 'today' && !customRange) {
-      const start = moment().startOf('day')
-      const end = moment().endOf('day')
+      const start = vnMoment().startOf('day')
+      const end = vnMoment().endOf('day')
       const recentProgress = userProgress.progressHistory
-        .filter(entry => moment(entry.date).isBetween(start, end, null, '[]'))
-        .sort((a, b) => moment(a.date).diff(moment(b.date)))
+        .filter(entry => vnMoment(entry.date).isBetween(start, end, null, '[]'))
+        .sort((a, b) => vnMoment(a.date).diff(vnMoment(b.date)))
 
       return recentProgress.map(entry => ({
-        date: moment(entry.date).format('HH:mm'),
-        fullDate: moment(entry.date).format('YYYY-MM-DD'),
+        date: vnMoment(entry.date).format('HH:mm'),
+        fullDate: vnMoment(entry.date).format('YYYY-MM-DD'),
         value: entry.value
       }))
     }
@@ -392,7 +392,7 @@ export default function SportEventProgress({
     const { start, end } = getChartRangeBounds(timeFilter, customRange, event)
     const arr = buildDailyChartSlots(start, end).map((slot) => ({ ...slot, value: 0 }))
     userProgress.progressHistory.forEach(entry => {
-      const em = moment(entry.date)
+      const em = vnMoment(entry.date)
       if (!em.isBetween(start, end, null, '[]')) return
       const day = arr.find(d => d.fullDate === em.format('YYYY-MM-DD'))
       if (day) day.value += entry.value
@@ -418,11 +418,11 @@ export default function SportEventProgress({
   const [recordingCountdown, setRecordingCountdown] = useState(null)
 
   const getRecordingWindowStatus = useCallback(() => {
-    const now = moment()
+    const now = vnMoment()
     if (event?.eventType !== 'Ngoài trời') return null
-    const t0 = moment(event?.startDate)
+    const t0 = vnMoment(event?.startDate)
     const isEndedBanner =
-      !!(event?.endDate && now.clone().startOf('day').isAfter(moment(event.endDate).endOf('day')))
+      !!(event?.endDate && now.clone().startOf('day').isAfter(vnMoment(event.endDate).endOf('day')))
 
     const officialToday =
       t0.isValid() &&
@@ -478,7 +478,7 @@ export default function SportEventProgress({
 
   // Determine displayed stats
   const isOutdoor = event?.eventType === 'Ngoài trời'
-  const isEnded = event?.endDate ? moment().isAfter(moment(event.endDate)) : false
+  const isEnded = event?.endDate ? vnMoment().isAfter(vnMoment(event.endDate)) : false
   const recordingWindow = isOutdoor ? getRecordingWindowStatus() : null
   const getOutdoorTargetValue = () => {
     if (!allTimeGpsStats) return 0;
@@ -836,7 +836,7 @@ export default function SportEventProgress({
                           const d = (payload.find(p => p?.dataKey === 'value') ?? payload[0])?.payload
                           if (!d) return null
                           if (isOutdoor) {
-                            const dayActs = completedActivities.filter(a => moment(a.startTime).format('YYYY-MM-DD') === d.fullDate)
+                            const dayActs = completedActivities.filter(a => vnMoment(a.startTime).format('YYYY-MM-DD') === d.fullDate)
                             const rowFromGpsChart = Object.prototype.hasOwnProperty.call(d, 'distance')
                             const totalDistRaw = dayActs.reduce((s, a) => s + a.totalDistance / 1000, 0)
                             const dist = d.distance != null ? d.distance : Number(totalDistRaw.toFixed(2))
@@ -971,7 +971,7 @@ export default function SportEventProgress({
                   style={{ scrollbarWidth: 'thin' }}
                 >
                   {completedActivities.map((activity) => {
-                    const actDate = moment(activity.startTime).format('YYYY-MM-DD')
+                    const actDate = vnMoment(activity.startTime).format('YYYY-MM-DD')
                     const isHighlighted = highlightDate === actDate
                     const distKm = activity.totalDistance / 1000
                     const speedKmh = activity.avgSpeed ? (activity.avgSpeed * 3.6) : (activity.totalDuration > 0 ? (distKm / (activity.totalDuration / 3600)) : 0)
@@ -998,7 +998,7 @@ export default function SportEventProgress({
                               </h4>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <span className="text-xs text-gray-400">
-                                  {moment(activity.startTime).format('DD/MM HH:mm')}
+                                  {vnMoment(activity.startTime).format('DD/MM HH:mm')}
                                 </span>
                                 <button
                                   onClick={(e) => handleShare(e, activity)}
@@ -1073,7 +1073,7 @@ export default function SportEventProgress({
                 <strong>{event?.category || deleteActivity.activityType} — {(deleteActivity.totalDistance / 1000).toFixed(2)} km</strong>
               </p>
               <p className="text-xs text-gray-400 mb-6">
-                {moment(deleteActivity.startTime).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteActivity.totalDuration)} • {roundKcal(deleteActivity.calories)} kcal
+                {vnMoment(deleteActivity.startTime).format('HH:mm DD/MM/YYYY')} • {formatDuration(deleteActivity.totalDuration)} • {roundKcal(deleteActivity.calories)} kcal
               </p>
             </div>
             <div className="flex gap-3">

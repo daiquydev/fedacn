@@ -27,51 +27,25 @@ import { createSportEvent } from '../../apis/sportEventApi'
 import sportCategoryApi from '../../apis/sportCategoryApi'
 import CloudinaryImageUploader from '../../components/GlobalComponents/CloudinaryImageUploader/CloudinaryImageUploader'
 import toast from 'react-hot-toast'
-import moment from 'moment'
+import {
+  compareDateInputVN,
+  getTodayDateVN,
+  isPastDateVN,
+  isPastTimeVN,
+  isTodayVN,
+  isValidDateISO,
+  sportDateTimeToIsoVN,
+  vnMoment
+} from '../../utils/vnDateUtils'
 
 // ==================== AI FILL HELPERS ====================
 // Gọi qua backend proxy để tránh lỗi CORS khi gọi trực tiếp từ trình duyệt
 const AI_PROXY_ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`
 
-// ==================== DATE/TIME HELPERS ====================
-// Date input uses type="date" → value is YYYY-MM-DD
-const isValidDateISO = (val) => {
-  if (!val || val.length !== 10) return false
-  const date = new Date(val + 'T00:00:00')
-  return !isNaN(date.getTime())
-}
-
 const isValidTimeStr = (val) => {
   if (!val || val.length !== 5) return false
   const [h, min] = val.split(':').map(Number)
   return h >= 0 && h <= 23 && min >= 0 && min <= 59
-}
-
-const isPastDate = (dateISO) => {
-  if (!isValidDateISO(dateISO)) return false
-  const date = new Date(dateISO + 'T00:00:00')
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  return date < today
-}
-
-const isToday = (dateISO) => {
-  if (!isValidDateISO(dateISO)) return false
-  const date = new Date(dateISO + 'T00:00:00')
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  date.setHours(0, 0, 0, 0)
-  return date.getTime() === today.getTime()
-}
-
-const isPastTime = (timeStr) => {
-  if (!isValidTimeStr(timeStr)) return false
-  const [h, min] = timeStr.split(':').map(Number)
-  const now = new Date()
-  return h < now.getHours() || (h === now.getHours() && min < now.getMinutes())
-}
-
-const parseDateToISO = (dateISO, timeStr = '00:00') => {
-  // Parse as local time and convert to ISO (UTC)
-  return moment(`${dateISO} ${timeStr}`, 'YYYY-MM-DD HH:mm').toISOString()
 }
 
 // Format digits into HH:mm (for time input only)
@@ -100,14 +74,14 @@ const inferRaceDistanceKmFromText = (...parts) => {
 /** targetValue (km) trong app = TỔNG tích lũy cả nhóm trong cả sự kiện; UI chia cho maxParticipants. */
 const normalizeSportEventAIFields = (parsed, userDescription, todayISO) => {
   const out = { ...parsed }
-  const today = moment(todayISO, 'YYYY-MM-DD', true)
+  const today = vnMoment(todayISO)
   const userT = (userDescription || '').trim()
   const combined = [userT, out.name, out.description, out.detailedDescription].filter(Boolean).join(' ')
 
-  let start = moment(out.startDate, 'YYYY-MM-DD', true)
+  let start = vnMoment(out.startDate)
   if (!start.isValid() || start.isBefore(today, 'day')) start = today.clone()
 
-  let end = moment(out.endDate, 'YYYY-MM-DD', true)
+  let end = vnMoment(out.endDate)
   if (!end.isValid() || end.isBefore(start, 'day')) end = start.clone()
 
   const shortPrompt = userT.length < 40
@@ -273,7 +247,7 @@ const CreateSportEvent = () => {
     }
     setAiLoading(true)
     try {
-      const today = moment().format('YYYY-MM-DD')
+      const today = getTodayDateVN()
       const allCategoryNames = categories.map(c => `${c.name} (${c.type})`).join(', ')
       const outdoorCategories = categories.filter(c => c.type === 'Ngoài trời').map(c => c.name).join(', ')
       const indoorCategories = categories.filter(c => c.type === 'Trong nhà').map(c => c.name).join(', ')
@@ -413,9 +387,9 @@ JSON output (chỉ object, không gì khác):
       case 'startDate':
         if (!value) error = 'Vui lòng nhập ngày bắt đầu'
         else if (!isValidDateISO(value)) error = 'Ngày không hợp lệ'
-        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+        else if (isPastDateVN(value)) error = 'Không thể chọn ngày trong quá khứ'
         else if (currentState.endDate && isValidDateISO(currentState.endDate)) {
-          if (new Date(currentState.endDate) < new Date(value))
+          if (compareDateInputVN(currentState.endDate, value) < 0)
             setErrors(prev => ({ ...prev, endDate: 'Ngày kết thúc phải sau ngày bắt đầu' }))
           else
             setErrors(prev => ({ ...prev, endDate: null }))
@@ -424,16 +398,16 @@ JSON output (chỉ object, không gì khác):
       case 'endDate':
         if (!value) error = 'Vui lòng nhập ngày kết thúc'
         else if (!isValidDateISO(value)) error = 'Ngày không hợp lệ'
-        else if (isPastDate(value)) error = 'Không thể chọn ngày trong quá khứ'
+        else if (isPastDateVN(value)) error = 'Không thể chọn ngày trong quá khứ'
         else if (currentState.startDate && isValidDateISO(currentState.startDate)) {
-          if (new Date(value) < new Date(currentState.startDate))
+          if (compareDateInputVN(value, currentState.startDate) < 0)
             error = 'Ngày kết thúc phải sau ngày bắt đầu'
         }
         break
       case 'eventTime':
         if (!value) error = 'Vui lòng nhập thời điểm'
         else if (!isValidTimeStr(value)) error = 'Thời điểm không hợp lệ — định dạng HH:mm'
-        else if (isToday(currentState.startDate) && isPastTime(value)) error = 'Giờ bắt đầu không thể nằm trong quá khứ'
+        else if (isTodayVN(currentState.startDate) && isPastTimeVN(value, currentState.startDate)) error = 'Giờ bắt đầu không thể nằm trong quá khứ'
         break
       case 'location':
         if (!value?.trim()) error = 'Vui lòng nhập địa điểm'
@@ -511,12 +485,12 @@ JSON output (chỉ object, không gì khác):
       if (f === 'startDate') {
         if (!newEvent[f]) e = 'Vui lòng nhập ngày bắt đầu'
         else if (!isValidDateISO(newEvent[f])) e = 'Ngày không hợp lệ'
-        else if (isPastDate(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
+        else if (isPastDateVN(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
       } else if (f === 'endDate') {
         if (!newEvent[f]) e = 'Vui lòng nhập ngày kết thúc'
         else if (!isValidDateISO(newEvent[f])) e = 'Ngày không hợp lệ'
-        else if (isPastDate(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
-        else if (newEvent.startDate && new Date(newEvent[f]) < new Date(newEvent.startDate)) e = 'Ngày kết thúc phải sau ngày bắt đầu'
+        else if (isPastDateVN(newEvent[f])) e = 'Không thể chọn ngày trong quá khứ'
+        else if (newEvent.startDate && compareDateInputVN(newEvent[f], newEvent.startDate) < 0) e = 'Ngày kết thúc phải sau ngày bắt đầu'
       } else if (f === 'maxParticipants') {
         e = validateField(f, newEvent.maxParticipants)
       } else {
@@ -543,8 +517,8 @@ JSON output (chỉ object, không gì khác):
     }
 
     const timeStr = newEvent.eventTime || '00:00'
-    const startISO = parseDateToISO(newEvent.startDate, timeStr)
-    const endISO = parseDateToISO(newEvent.endDate, '23:59')
+    const startISO = sportDateTimeToIsoVN(newEvent.startDate, timeStr)
+    const endISO = sportDateTimeToIsoVN(newEvent.endDate, '23:59')
 
     const finalData = {
       name: newEvent.name,

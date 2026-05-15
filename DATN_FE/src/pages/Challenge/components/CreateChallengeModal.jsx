@@ -10,8 +10,15 @@ import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { getImageUrl } from '../../../utils/imageUrl'
 import { formatExerciseDifficultyVi } from '../../../utils/exerciseLabels'
 import toast from 'react-hot-toast'
-import moment from 'moment'
 import DatePicker from 'react-datepicker'
+import {
+    challengeDateToIsoVN,
+    compareDateInputVN,
+    getTodayDateVN,
+    isPastDateVN,
+    isValidDateISO,
+    vnMoment
+} from '../../../utils/vnDateUtils'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
     FaTimes, FaRunning, FaUtensils, FaDumbbell, FaTrophy,
@@ -34,13 +41,13 @@ const userHintedSingleDayChallenge = (text) => {
 /** Tránh thử thách ngoài trời bắt đầu & kết thúc cùng ngày khi prompt quá ngắn. */
 const normalizeOutdoorChallengeAIFields = (parsed, userDesc, todayISO) => {
     const out = { ...parsed }
-    const today = moment(todayISO, 'YYYY-MM-DD', true)
+    const today = vnMoment(todayISO)
     const userT = (userDesc || '').trim()
 
-    let start = moment(out.startDate, 'YYYY-MM-DD', true)
+    let start = vnMoment(out.startDate)
     if (!start.isValid() || start.isBefore(today, 'day')) start = today.clone()
 
-    let end = moment(out.endDate, 'YYYY-MM-DD', true)
+    let end = vnMoment(out.endDate)
     if (!end.isValid() || end.isBefore(start, 'day')) end = start.clone()
 
     let span = end.diff(start, 'days')
@@ -82,27 +89,6 @@ const enrichChallengeAICopy = (parsed, aiType, userDesc) => {
         out.description = (u ? `${base}: ${u}` : `${base} — ghi nhận tiến độ mỗi ngày trên app.`).slice(0, 150)
     }
     return out
-}
-
-// ==================== DATE HELPERS ====================
-// Date input uses type="date" → value is YYYY-MM-DD
-const isValidDateISO = (val) => {
-    if (!val || val.length !== 10) return false
-    const date = new Date(val + 'T00:00:00')
-    return !isNaN(date.getTime())
-}
-
-const isPastDate = (dateISO) => {
-    if (!isValidDateISO(dateISO)) return false
-    const date = new Date(dateISO + 'T00:00:00')
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    return date < today
-}
-
-const parseDateToISO = (dateISO) => {
-    if (!isValidDateISO(dateISO)) return null
-    // Parse as local time (midnight) and convert to ISO (UTC)
-    return moment(dateISO, 'YYYY-MM-DD').startOf('day').toISOString()
 }
 
 const parseTime = (timeStr) => {
@@ -420,13 +406,13 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
             case 'startDate':
                 if (!value) return 'Vui lòng nhập ngày bắt đầu'
                 if (!isValidDateISO(value)) return 'Định dạng ngày không hợp lệ'
-                if (isPastDate(value)) return 'Không được chọn ngày trong quá khứ'
+                if (isPastDateVN(value)) return 'Không được chọn ngày trong quá khứ'
                 return null
             case 'endDate':
                 if (!value) return 'Vui lòng nhập ngày kết thúc'
                 if (!isValidDateISO(value)) return 'Định dạng ngày không hợp lệ'
                 if (isValidDateISO(form.startDate)) {
-                    if (new Date(value) < new Date(form.startDate)) return 'Phải sau ngày bắt đầu'
+                    if (compareDateInputVN(value, form.startDate) < 0) return 'Phải sau ngày bắt đầu'
                 }
                 return null
             default: return null
@@ -485,8 +471,8 @@ export default function CreateChallengeModal({ open, onClose, layout = 'modal' }
             goal_type: form.challenge_type === 'fitness' ? 'exercises_completed' : form.goal_type,
             goal_value: form.challenge_type === 'fitness' ? selectedExercises.length : Number(form.goal_value),
             goal_unit: form.challenge_type === 'fitness' ? 'bài tập' : form.goal_unit,
-            start_date_iso: parseDateToISO(form.startDate),
-            end_date_iso: parseDateToISO(form.endDate),
+            start_date_iso: challengeDateToIsoVN(form.startDate),
+            end_date_iso: challengeDateToIsoVN(form.endDate),
             visibility: form.visibility,
             is_public: form.visibility !== 'private',
             badge_emoji: form.badge_emoji,
@@ -656,7 +642,7 @@ ${exerciseCatalogJson}
                     return
                 }
             }
-            const today = moment().format('YYYY-MM-DD')
+            const today = getTodayDateVN()
             const prompt = buildAIPrompt(aiDesc.trim(), today, aiType)
 
             const res = await fetch(AI_PROXY_ENDPOINT, {

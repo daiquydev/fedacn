@@ -21,7 +21,7 @@ import {
 } from 'react-icons/md'
 import { BsClockHistory, BsCalendarCheck } from 'react-icons/bs'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { getImageUrl } from '../../utils/imageUrl'
 import useravatar from '../../assets/images/useravatar.jpg'
@@ -273,29 +273,29 @@ export default function ChallengeDetail() {
   const participation = challenge?.participation
 
   // Calculate total days for the challenge
-  const safeStartDate = new Date(challenge?.start_date || new Date())
-  const safeEndDate = new Date(challenge?.end_date || new Date())
+  const safeStartDate = vnMoment(challenge?.start_date).toDate()
+  const safeEndDate = vnMoment(challenge?.end_date).toDate()
   safeStartDate.setHours(0, 0, 0, 0)
   safeEndDate.setHours(0, 0, 0, 0)
   const totalRequiredDays = Math.max(1, Math.ceil((safeEndDate.getTime() - safeStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
   const progress = getChallengePersonalProgressPercent(challenge, participation)
 
-  const startDate = challenge ? moment(challenge.start_date) : moment()
-  const endDate = challenge ? moment(challenge.end_date) : moment()
-  const isExpired = moment().isAfter(endDate)
-  const isNotStarted = moment().isBefore(startDate)
+  const startDate = challenge ? vnMoment(challenge.start_date) : vnMoment()
+  const endDate = challenge ? vnMoment(challenge.end_date) : vnMoment()
+  const isExpired = vnMoment().isAfter(endDate)
+  const isNotStarted = vnMoment().isBefore(startDate)
   const isOngoing = !isExpired && !isNotStarted
-  const daysLeft = Math.max(0, endDate.diff(moment(), 'days'))
+  const daysLeft = Math.max(0, endDate.diff(vnMoment(), 'days'))
 
   // Countdown for not-started challenges
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   useEffect(() => {
     if (!challenge?.start_date) return
-    const startDt = moment(challenge.start_date)
-    if (!moment().isBefore(startDt)) return
+    const startDt = vnMoment(challenge.start_date)
+    if (!vnMoment().isBefore(startDt)) return
     const tick = () => {
-      const now = moment()
+      const now = vnMoment()
       const diff = startDt.diff(now)
       if (diff <= 0) { setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 }); return }
       const dur = moment.duration(diff)

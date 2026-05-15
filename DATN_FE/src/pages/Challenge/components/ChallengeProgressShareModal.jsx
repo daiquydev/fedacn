@@ -4,7 +4,7 @@ import { useSafeMutation } from '../../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { vnMoment } from '../../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import {
   FaTimes, FaShare, FaTrophy,
@@ -153,7 +153,7 @@ export default function ChallengeProgressShareModal({ entry, challenge, onClose 
   }
 
   const selectedPrivacy = PRIVACY_OPTIONS.find((o) => o.value === privacy)
-  const actDate = moment(entry.createdAt || entry.date).format('HH:mm - DD/MM/YYYY')
+  const actDate = vnMoment(entry.createdAt || entry.date).format('HH:mm - DD/MM/YYYY')
 
   return (
     <div

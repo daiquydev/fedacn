@@ -20,7 +20,7 @@ import { getChallengePersonalProgressPercent, formatFitnessExerciseListSummary, 
 import { getSportIcon } from '../../utils/sportIcons'
 import useravatar from '../../assets/images/useravatar.jpg'
 import ParticipantsList from '../../components/ParticipantsList'
-import moment from 'moment'
+import { timestampFromIsoVN, vnMoment } from '../../utils/vnDateUtils'
 
 const TYPE_CONFIG = {
   nutrition: { icon: <FaUtensils />, label: 'Ăn uống', gradient: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -48,9 +48,9 @@ function FeaturedChallengesBanner({ challenges, navigate, deletedCategoryNames =
   const c = challenges[activeIdx]
   if (!c) return null
 
-  const endM = moment(c.end_date)
-  const startM = moment(c.start_date)
-  const now = moment()
+  const endM = vnMoment(c.end_date)
+  const startM = vnMoment(c.start_date)
+  const now = vnMoment()
   const isOngoing = now.isSameOrAfter(startM.startOf('day')) && now.isSameOrBefore(endM.endOf('day'))
 
   const coverUrl = c.image ? getImageUrl(c.image) : 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200'
@@ -120,12 +120,12 @@ function ChallengeCard({ challenge, onJoin, joinLoading, friendIds = new Set(), 
     vis === 'public' ||
     (vis === 'friends' && friendIds.has(creatorId))
 
-  const startM = moment(challenge.start_date)
-  const endM = moment(challenge.end_date)
-  const isEnded = challenge.end_date && moment().startOf('day').isAfter(endM.endOf('day'))
-  const isNotStarted = challenge.start_date && moment().startOf('day').isBefore(startM.startOf('day'))
+  const startM = vnMoment(challenge.start_date)
+  const endM = vnMoment(challenge.end_date)
+  const isEnded = challenge.end_date && vnMoment().startOf('day').isAfter(endM.endOf('day'))
+  const isNotStarted = challenge.start_date && vnMoment().startOf('day').isBefore(startM.startOf('day'))
   const isArchivedReadOnly = !!(challenge.is_archived_read_only || challenge.is_deleted)
-  const daysLeft = Math.max(0, Math.ceil((endM.endOf('day').valueOf() - moment().valueOf()) / 86400000))
+  const daysLeft = Math.max(0, Math.ceil((endM.endOf('day').valueOf() - vnMoment().valueOf()) / 86400000))
 
   const progress = challenge.isJoined ? getChallengePersonalProgressPercent(challenge) : 0
 
@@ -539,7 +539,7 @@ export default function Challenge() {
       {/* Banner thử thách nổi bật — cùng logic trang sự kiện (top theo lượt tham gia, chưa kết thúc) */}
       {(() => {
         const featured = [...challenges]
-          .filter(c => c?.end_date && new Date(c.end_date) > new Date() && !c.is_archived_read_only && !c.is_deleted)
+          .filter(c => c?.end_date && (timestampFromIsoVN(c.end_date) ?? 0) > Date.now() && !c.is_archived_read_only && !c.is_deleted)
           .sort((a, b) => (b.participants_count || 0) - (a.participants_count || 0))
           .slice(0, 3)
         if (isLoading || featured.length === 0) return null

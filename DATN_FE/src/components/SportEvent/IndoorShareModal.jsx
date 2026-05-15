@@ -2,7 +2,7 @@ import { useSafeMutation } from '../../hooks/useSafeMutation'
 import { useState, useContext, useRef, useEffect, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import toast from 'react-hot-toast'
 import {
     FaTimes,
@@ -274,7 +274,7 @@ function IndoorPreviewCardInModal({ session, event, progressPercent }) {
     } = session
 
     const aiAccuracy = totalSeconds > 0 ? Math.round((activeSeconds / totalSeconds) * 100) : 0
-    const sessionDate = moment(session.joinedAt).format('HH:mm - DD/MM/YYYY')
+    const sessionDate = vnMoment(session.joinedAt).format('HH:mm - DD/MM/YYYY')
 
     const getAiLabel = (pct) => {
         if (pct >= 90) return 'Xuất sắc'

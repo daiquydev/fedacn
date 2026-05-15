@@ -17,6 +17,7 @@ import { FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { getMyChallenges, getMyCreatedChallenges, getPublicUserChallenges } from '../../../../apis/challengeApi'
 import { getChallengePersonalProgressPercent, getChallengeTotalRequiredDays } from '../../../../utils/challengeProgress'
+import { formatDateVN, vnMoment } from '../../../../utils/vnDateUtils'
 import { getImageUrl } from '../../../../utils/imageUrl'
 import Loading from '../../../../components/GlobalComponents/Loading'
 
@@ -100,16 +101,16 @@ function ChallengeCard({ participation }) {
   const config = TYPE_CONFIG[challenge.challenge_type] || TYPE_CONFIG.fitness
   const TypeIcon = config.icon
 
-  const now = new Date()
-  const startDate = new Date(challenge.start_date)
-  const endDate = new Date(challenge.end_date)
-  const isOngoing = now >= startDate && now <= endDate
-  const isPast = now > endDate
+  const now = vnMoment()
+  const startDate = vnMoment(challenge.start_date)
+  const endDate = vnMoment(challenge.end_date)
+  const isOngoing = now.isSameOrAfter(startDate, 'day') && now.isSameOrBefore(endDate, 'day')
+  const isPast = now.isAfter(endDate, 'day')
 
   const totalRequiredDays = getChallengeTotalRequiredDays(challenge)
   const completedDays = participation.current_value || 0
   const progress = getChallengePersonalProgressPercent(challenge, participation)
-  const daysLeft = Math.max(0, Math.ceil((endDate - now) / (24 * 60 * 60 * 1000)))
+  const daysLeft = Math.max(0, endDate.clone().startOf('day').diff(now.clone().startOf('day'), 'days'))
 
   return (
     <motion.div variants={fadeIn}>
@@ -157,8 +158,7 @@ function ChallengeCard({ participation }) {
           <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
             <FaCalendarAlt className='text-emerald-500 flex-shrink-0' />
             <span>
-              {new Date(challenge.start_date).toLocaleDateString('vi-VN')} -{' '}
-              {new Date(challenge.end_date).toLocaleDateString('vi-VN')}
+              {formatDateVN(challenge.start_date)} - {formatDateVN(challenge.end_date)}
             </span>
           </div>
 

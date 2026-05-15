@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
-import moment from 'moment'
+import { vnMoment } from '../../utils/vnDateUtils'
 import goongjs from '@goongmaps/goong-js'
 import '@goongmaps/goong-js/dist/goong-js.css'
 import {
@@ -204,13 +204,13 @@ export default function ParticipantProgressModal({ open, event, participant, onC
         setAppliedFrom('')
         setAppliedTo('')
       } else {
-        const to = moment().endOf('day').format('YYYY-MM-DD')
+        const to = vnMoment().endOf('day').format('YYYY-MM-DD')
         let from = ''
         switch (period) {
-          case 'today': from = moment().startOf('day').format('YYYY-MM-DD'); break
-          case '7d': from = moment().subtract(7, 'days').format('YYYY-MM-DD'); break
-          case '1m': from = moment().subtract(1, 'month').format('YYYY-MM-DD'); break
-          case '6m': from = moment().subtract(6, 'months').format('YYYY-MM-DD'); break
+          case 'today': from = vnMoment().startOf('day').format('YYYY-MM-DD'); break
+          case '7d': from = vnMoment().subtract(7, 'days').format('YYYY-MM-DD'); break
+          case '1m': from = vnMoment().subtract(1, 'month').format('YYYY-MM-DD'); break
+          case '6m': from = vnMoment().subtract(6, 'months').format('YYYY-MM-DD'); break
           default: from = ''; break;
         }
         setAppliedFrom(from)
@@ -493,10 +493,10 @@ export default function ParticipantProgressModal({ open, event, participant, onC
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">
-                                {moment(row.date).format('DD/MM/YYYY')}
+                                {vnMoment(row.date).format('DD/MM/YYYY')}
                               </span>
                               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                                {moment(row.date).format('HH:mm')}
+                                {vnMoment(row.date).format('HH:mm')}
                               </span>
                               <SourceBadge source={row.source} />
                             </div>
