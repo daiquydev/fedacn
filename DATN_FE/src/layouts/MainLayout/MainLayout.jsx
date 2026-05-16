@@ -17,7 +17,7 @@ function MainLayoutInner({ children }) {
       <Header />
 
       {/* Body - Sidebar + Content */}
-      <div className='flex flex-1 pt-14'>
+      <div className='flex flex-1 pt-12'>
         {/* Sidebar - Desktop: fixed left, Mobile: drawer overlay */}
         <SideBar />
 

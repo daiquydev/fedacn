@@ -753,7 +753,7 @@ export default function SportEventDetail() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-14 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-12 z-10">
         <div className="container mx-auto max-w-6xl">
           <div className="flex">
             {[

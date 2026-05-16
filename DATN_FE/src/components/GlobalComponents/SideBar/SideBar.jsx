@@ -192,9 +192,8 @@ export default function SideBar() {
   if (!isMobile) {
     return (
       <>
-        <aside className='fixed top-14 left-0 bottom-0 w-60 bg-white dark:bg-color-primary-dark dark:text-gray-300 
+        <aside className='fixed top-12 left-0 bottom-0 w-60 bg-white dark:bg-color-primary-dark dark:text-gray-300 
           shadow-sm dark:shadow-green-900/30 z-[45] flex flex-col overflow-hidden'>
-          <Logo />
           {navItems}
         </aside>
         {openModalRequest && (
@@ -242,8 +241,7 @@ export default function SideBar() {
                 shadow-xl z-[80] flex flex-col overflow-hidden'
             >
               {/* Drawer header */}
-              <div className='flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700'>
-                <Logo />
+              <div className='flex items-center justify-end px-3 py-2 border-b border-gray-100 dark:border-gray-700'>
                 <button
                   onClick={() => setOpen(false)}
                   className='p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'

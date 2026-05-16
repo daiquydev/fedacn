@@ -689,7 +689,7 @@ export default function ChallengeDetail() {
       </div>
 
       {/* Tabs Navigation — Sticky matching SportEventDetail */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-14 z-10 w-full min-w-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-12 z-10 w-full min-w-0">
           <div className="w-full max-w-6xl mx-auto min-w-0">
           <div className="flex overflow-x-auto no-scrollbar">
             {[
