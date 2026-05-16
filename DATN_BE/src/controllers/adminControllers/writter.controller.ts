@@ -5,6 +5,18 @@ import { TokenPayload } from '~/models/requests/authUser.request'
 import writterService from '~/services/adminServices/writter.services'
 import { ErrorWithStatus } from '~/utils/error'
 
+function parseIngredientsOrThrow(raw: unknown) {
+  try {
+    if (typeof raw !== 'string') return raw
+    return JSON.parse(raw)
+  } catch (e: any) {
+    throw new ErrorWithStatus({
+      message: `ingredients JSON không hợp lệ: ${e?.message || 'Parse failed'}`,
+      status: HTTP_STATUS.BAD_REQUEST
+    })
+  }
+}
+
 export const createIngredientController = async (req: Request, res: Response) => {
   const { name, energy, protein, fat, carbohydrate, ingredient_category_ID } = req.body
   const result = await writterService.createIngredientService({
@@ -113,7 +125,7 @@ export const createRecipeForWritterController = async (req: Request, res: Respon
     carbohydrate: Number(carbohydrate),
     unit,
     quantity: Number(quantity),
-    ingredients: JSON.parse(ingredients as string)
+    ingredients: parseIngredientsOrThrow(ingredients)
   })
 
   return res.json({
@@ -163,7 +175,7 @@ export const updateRecipeForWritterController = async (req: Request, res: Respon
     carbohydrate: Number(carbohydrate),
     unit,
     quantity: Number(quantity),
-    ingredients: JSON.parse(ingredients as string)
+    ingredients: parseIngredientsOrThrow(ingredients)
   })
   return res.json({
     result,

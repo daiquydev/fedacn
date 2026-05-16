@@ -9,6 +9,16 @@ const { wrapRequestHandler } = require('../utils/handler');
 
 const router = express.Router();
 
+const parseJsonField = (value, fieldName) => {
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    const e = new Error(`Dữ liệu JSON không hợp lệ cho trường "${fieldName}": ${error.message}`);
+    e.statusCode = 400;
+    throw e;
+  }
+};
+
 // GET /api/recipes - Lấy danh sách recipes
 const getRecipesController = async (req, res) => {
   try {
@@ -183,13 +193,13 @@ const createRecipeController = async (req, res) => {
     let parsedMealType = [];
 
     try {
-      parsedIngredients = typeof ingredients === 'string' ? JSON.parse(ingredients) : ingredients;
-      parsedNutrition = typeof nutrition === 'string' ? JSON.parse(nutrition) : nutrition || {};
+      parsedIngredients = typeof ingredients === 'string' ? parseJsonField(ingredients, 'ingredients') : ingredients;
+      parsedNutrition = typeof nutrition === 'string' ? parseJsonField(nutrition, 'nutrition') : nutrition || {};
       parsedTags = typeof tags === 'string' ? 
-        (tags.includes('[') ? JSON.parse(tags) : tags.split(',').map(t => t.trim())) : 
+        (tags.includes('[') ? parseJsonField(tags, 'tags') : tags.split(',').map(t => t.trim())) : 
         (Array.isArray(tags) ? tags : []);
       parsedMealType = typeof meal_type === 'string' ? 
-        (meal_type.includes('[') ? JSON.parse(meal_type) : [parseInt(meal_type)]) : 
+        (meal_type.includes('[') ? parseJsonField(meal_type, 'meal_type') : [parseInt(meal_type)]) : 
         (Array.isArray(meal_type) ? meal_type.map(Number) : []);
     } catch (parseError) {
       return res.status(400).json({
@@ -315,13 +325,15 @@ const updateRecipeController = async (req, res) => {
 
     // Parse JSON fields if needed
     if (req.body.ingredients && typeof req.body.ingredients === 'string') {
-      updatedData.ingredients = JSON.parse(req.body.ingredients);
+      updatedData.ingredients = parseJsonField(req.body.ingredients, 'ingredients');
     }
     if (req.body.nutrition && typeof req.body.nutrition === 'string') {
-      updatedData.nutrition = JSON.parse(req.body.nutrition);
+      updatedData.nutrition = parseJsonField(req.body.nutrition, 'nutrition');
     }
     if (req.body.tags && typeof req.body.tags === 'string') {
-      updatedData.tags = req.body.tags.includes('[') ? JSON.parse(req.body.tags) : req.body.tags.split(',');
+      updatedData.tags = req.body.tags.includes('[')
+        ? parseJsonField(req.body.tags, 'tags')
+        : req.body.tags.split(',');
     }
 
     db.get('recipes').find({ id }).assign(updatedData).write();
@@ -332,7 +344,8 @@ const updateRecipeController = async (req, res) => {
       message: 'Cập nhật công thức thành công'
     });
   } catch (error) {
-    res.status(500).json({
+    const status = error.statusCode || 500;
+    res.status(status).json({
       success: false,
       message: 'Lỗi server: ' + error.message
     });

@@ -197,7 +197,11 @@ aiRouter.post('/generate', async (req: Request, res: Response) => {
             const parsed = JSON.parse(cleaned) as Record<string, unknown>
             parsed.image = resolveCoverImageUrl(parsed, prompt)
             text = JSON.stringify(parsed)
-        } catch {
+        } catch (e: any) {
+            console.warn('[AI Generate] JSON parse failed', {
+                message: e?.message || String(e),
+                preview: String(text).slice(0, 500)
+            })
             // If parsing fails, still return the raw text and let FE handle it
         }
 
@@ -323,7 +327,11 @@ Trả về JSON theo đúng định dạng sau (không có markdown, không có 
             AIUsageLogModel.create({ feature: 'analyze_fitness' }).catch(() => { })
 
             res.json(parsed)
-        } catch {
+        } catch (e: any) {
+            console.warn('[AI Analyze Fitness] JSON parse failed', {
+                message: e?.message || String(e),
+                preview: String(text).slice(0, 500)
+            })
             // If JSON parse fails, return raw text for debugging
             res.json({ health_analysis: text, suggested_exercises: [] })
         }
@@ -421,7 +429,11 @@ Trả về JSON theo đúng định dạng sau (không có markdown, không có 
             AIUsageLogModel.create({ feature: 'analyze_workout' }).catch(() => { })
 
             res.json(parsed)
-        } catch {
+        } catch (e: any) {
+            console.warn('[AI Workout Description] JSON parse failed', {
+                message: e?.message || String(e),
+                preview: String(text).slice(0, 500)
+            })
             res.json({ health_analysis: text, suggested_exercises: [] })
         }
     } catch (err: any) {
@@ -526,7 +538,11 @@ Chỉ trả về JSON (không markdown):
             AIUsageLogModel.create({ feature: 'review_meal_image' }).catch(() => { })
 
             res.json({ valid: Boolean(parsed.valid), reason: parsed.reason || '' })
-        } catch {
+        } catch (e: any) {
+            console.warn('[AI Review Meal] JSON parse failed', {
+                message: e?.message || String(e),
+                preview: String(text).slice(0, 500)
+            })
             // JSON parse failed → be lenient
             res.json({ valid: true, reason: 'AI không thể phân tích ảnh, bỏ qua kiểm tra.' })
         }
