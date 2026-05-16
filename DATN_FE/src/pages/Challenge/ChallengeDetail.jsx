@@ -429,7 +429,7 @@ export default function ChallengeDetail() {
       )}
 
       {/* Hero — flex column so mobile content can grow without clipping under fixed header */}
-      <div className="relative min-h-[28rem] sm:min-h-96 flex flex-col overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800">
+      <div className="relative min-h-[14rem] sm:min-h-[18rem] flex flex-col overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800">
         {challenge.image ? (
           <img src={getImageUrl(challenge.image)} alt={challenge.title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
         ) : (
@@ -437,7 +437,7 @@ export default function ChallengeDetail() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        <div className="relative z-30 px-4 pt-4 sm:px-6 sm:pt-6 shrink-0">
+        <div className="relative z-30 px-4 pt-4 sm:px-8 sm:pt-4 shrink-0">
           <button
             type="button"
             onClick={() => navigate('/challenge')}
@@ -447,7 +447,7 @@ export default function ChallengeDetail() {
           </button>
         </div>
 
-        <div className="relative z-10 mt-auto px-4 pb-6 pt-2 sm:p-8 text-white">
+        <div className="relative z-10 mt-auto px-4 pb-6 pt-2 sm:px-8 sm:pb-6 sm:pt-2 text-white">
           <div className="w-full max-w-6xl mx-auto min-w-0">
             {/* Badges row */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
