@@ -1,10 +1,13 @@
+
 import mongoose from 'mongoose'
-import moment from 'moment'
+import moment from 'moment-timezone'
 import { envConfig } from '../constants/config'
 import ChallengeModel from '../models/schemas/challenge.schema'
 import ChallengeParticipantModel from '../models/schemas/challengeParticipant.schema'
 import ChallengeProgressModel from '../models/schemas/challengeProgress.schema'
 import UserModel from '../models/schemas/user.schema'
+
+const TZ_VN = 'Asia/Ho_Chi_Minh'
 
 const TARGET_EMAILS = [
   'phangiabao10@gmail.com',
@@ -49,27 +52,28 @@ async function run() {
     console.log('Connected to MongoDB');
 
     const users = await UserModel.find({ email: { $in: TARGET_EMAILS } });
-    const userIds = users.map(u => u._id);
-
     const nutritionChallenges = await ChallengeModel.find({ 
       challenge_type: 'nutrition', 
       is_deleted: false 
     });
 
-    const today = moment().startOf('day');
+    const nowVN = moment().tz(TZ_VN);
+    const todayStr = nowVN.format('YYYY-MM-DD');
 
     for (const challenge of nutritionChallenges) {
-      console.log(`\n--- Recreating Data for: ${challenge.title} ---`);
+      console.log(`\n--- Synchronizing Data for: ${challenge.title} ---`);
       
       const imageSet = IMAGE_SETS[challenge.title] || IMAGE_SETS['Eat Clean 30 Ngày'];
-      const start = moment(challenge.start_date).startOf('day');
-      const end = moment(challenge.end_date).startOf('day');
-      const totalDurationDays = end.diff(start, 'days') + 1;
       
-      console.log(`Challenge Duration: ${totalDurationDays} days (${start.format('YYYY-MM-DD')} to ${end.format('YYYY-MM-DD')})`);
+      // Start/End in VN Time
+      const startVN = moment.tz(challenge.start_date, TZ_VN).startOf('day');
+      const endVN = moment.tz(challenge.end_date, TZ_VN).startOf('day');
+      const totalDurationDays = endVN.diff(startVN, 'days') + 1;
+      
+      console.log(`Challenge Duration: ${totalDurationDays} days (${startVN.format('YYYY-MM-DD')} to ${endVN.format('YYYY-MM-DD')})`);
 
       for (const user of users) {
-        // 1. Delete ALL previous progress for this challenge and user (including future ones)
+        // 1. Purge ALL existing progress (clean slate)
         await ChallengeProgressModel.deleteMany({ 
           challenge_id: challenge._id, 
           user_id: user._id 
@@ -77,24 +81,26 @@ async function run() {
 
         const activeDays: string[] = [];
         const completedDays: string[] = [];
-        let currentDate = moment(start);
-        const limitDate = today.isBefore(end) ? today : end;
+        
+        let cursor = startVN.clone();
+        const limitVN = nowVN.isBefore(endVN) ? nowVN : endVN;
 
-        while (currentDate.isSameOrBefore(limitDate)) {
-          const dateStr = currentDate.format('YYYY-MM-DD');
+        while (cursor.isSameOrBefore(limitVN, 'day')) {
+          const dateStr = cursor.format('YYYY-MM-DD');
           activeDays.push(dateStr);
           completedDays.push(dateStr);
 
-          // Log exactly challenge.goal_value meals per day
-          const mealsToLog = challenge.goal_value;
+          // Log meals for this day
+          const mealsToLog = challenge.goal_value || 1;
           for (let m = 0; m < mealsToLog; m++) {
-            const mealTime = currentDate.clone().hour(7 + m * 5).minute(Math.floor(Math.random() * 60));
+            // Distribute meals throughout the day (VN Time)
+            const mealTime = cursor.clone().hour(7 + m * 5).minute(Math.floor(Math.random() * 60));
             const mealInfo = imageSet[Math.floor(Math.random() * imageSet.length)];
 
             await ChallengeProgressModel.create({
               challenge_id: challenge._id,
               user_id: user._id,
-              date: mealTime.toDate(),
+              date: mealTime.toDate(), // Save as UTC Date object
               challenge_type: 'nutrition',
               value: 1,
               unit: challenge.goal_unit || 'bữa',
@@ -107,23 +113,23 @@ async function run() {
               updatedAt: mealTime.toDate()
             });
           }
-          currentDate.add(1, 'day');
+          cursor.add(1, 'day');
         }
 
-        // 2. Update/Create Participant record
-        const finalProgressValue = completedDays.length;
-        const isCompleted = finalProgressValue >= totalDurationDays;
+        // 2. Synchronize Participant Record
+        const currentProgressCount = completedDays.length;
+        const isCompleted = currentProgressCount >= totalDurationDays;
         
         await ChallengeParticipantModel.findOneAndUpdate(
           { challenge_id: challenge._id, user_id: user._id },
           {
             $set: {
-              current_value: finalProgressValue,
-              goal_value: totalDurationDays, // Crucial: Set goal_value to TOTAL DAYS for UI consistency
+              current_value: currentProgressCount,
+              goal_value: totalDurationDays, // Crucial for "32%" display
               active_days: activeDays,
               completed_days: completedDays,
-              streak_count: completedDays.length,
-              last_activity_at: limitDate.toDate(),
+              streak_count: currentProgressCount,
+              last_activity_at: limitVN.toDate(),
               status: isCompleted ? 'completed' : 'in_progress',
               is_completed: isCompleted,
               updatedAt: new Date()
@@ -133,13 +139,15 @@ async function run() {
         );
       }
       
-      const count = await ChallengeParticipantModel.countDocuments({ challenge_id: challenge._id });
+      // Update challenge participant count
+      const count = await ChallengeParticipantModel.countDocuments({ challenge_id: challenge._id, status: { $ne: 'quit' } });
       await ChallengeModel.updateOne({ _id: challenge._id }, { participants_count: count });
+      console.log(`Synced ${users.length} users for ${challenge.title}. Total participants: ${count}`);
     }
 
-    console.log('\nNutrition challenge data recreation completed!');
+    console.log('\nAll nutrition challenge data synchronized successfully!');
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Migration failed:', error);
   } finally {
     await mongoose.disconnect();
   }

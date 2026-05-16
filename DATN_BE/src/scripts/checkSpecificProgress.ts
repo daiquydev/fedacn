@@ -1,10 +1,12 @@
 
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { ChallengeProgressModel } from './models/schemas/challengeProgress.schema';
-import { ChallengeModel } from './models/schemas/challenge.schema';
-import { UserModel } from './models/schemas/user.schema';
-import { ChallengeParticipantModel } from './models/schemas/challengeParticipant.schema';
+// @ts-ignore
+import { ChallengeProgressModel } from '../models/schemas/challengeProgress.schema';
+// @ts-ignore
+import { UserModel } from '../models/schemas/user.schema';
+// @ts-ignore
+import { ChallengeParticipantModel } from '../models/schemas/challengeParticipant.schema';
 
 dotenv.config();
 
@@ -15,13 +17,13 @@ async function debug() {
     const challengeId = '6a0742825539b91f032bf2e1'; // "Ăn rau mỗi ngày"
     const userEmail = 'vukhanhly@gmail.com'; 
 
-    const user = await UserModel.findOne({ email: userEmail });
+    const user: any = await UserModel.findOne({ email: userEmail });
     if (!user) {
         console.log('User not found');
         return;
     }
 
-    const participant = await ChallengeParticipantModel.findOne({ 
+    const participant: any = await ChallengeParticipantModel.findOne({ 
         challenge_id: new mongoose.Types.ObjectId(challengeId),
         user_id: user._id 
     });
@@ -32,14 +34,14 @@ async function debug() {
     console.log(`Completed Days: ${participant?.completed_days?.length}`);
     console.log(`Active Days: ${participant?.active_days?.length}`);
 
-    const progress = await ChallengeProgressModel.find({
+    const progress: any[] = await ChallengeProgressModel.find({
         challenge_id: new mongoose.Types.ObjectId(challengeId),
         user_id: user._id
     }).sort({ date: 1 });
 
     console.log(`\n--- Progress Records (${progress.length}) ---`);
     const dayMap: any = {};
-    progress.forEach(p => {
+    progress.forEach((p: any) => {
         const d = p.date.toISOString().split('T')[0];
         if (!dayMap[d]) dayMap[d] = 0;
         dayMap[d]++;

@@ -1834,7 +1834,7 @@ class ChallengeService {
             challenge_id: new Types.ObjectId(challengeId),
             user_id: new Types.ObjectId(userId),
             is_deleted: { $ne: true }
-        }).sort({ date: -1 })
+        }).sort({ date: -1 }).limit(1000)
 
         // Calculate totalRequiredDays (same logic as getLeaderboard & getParticipants)
         const safeStart = new Date(challenge.start_date); safeStart.setHours(0, 0, 0, 0)

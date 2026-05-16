@@ -370,7 +370,9 @@ export default function ParticipantProgressModal({
   )
 
   const totalDays = allChallengeDays.length
-  const pct = participantData?.progress_percent ?? (totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0)
+  // Priority: Use pre-calculated current_value from backend if available, fallback to frontend re-calc
+  const displayCompletedDays = participantData?.current_value ?? completedDays
+  const pct = participantData?.progress_percent ?? (totalDays > 0 ? Math.round((displayCompletedDays / totalDays) * 100) : 0)
   const streakCount = participantData?.streak_count || 0
   const activeDaysCount = participantData?.active_days?.length || Object.keys(progressByDate).length
 
@@ -463,7 +465,7 @@ export default function ParticipantProgressModal({
             <div className="min-w-0">
               <h3 className="font-bold text-white text-sm truncate">{user.name || 'Ẩn danh'}</h3>
               <p className="text-white/80 text-[11px] mt-0.5 truncate">
-                {completedDays}/{totalDays} ngày hoàn thành
+                {displayCompletedDays}/{totalDays} ngày hoàn thành
                 {streakCount > 0 && <span className="ml-2 whitespace-nowrap">🔥 {streakCount} streak</span>}
               </p>
               {isPage && challenge?.title && (
