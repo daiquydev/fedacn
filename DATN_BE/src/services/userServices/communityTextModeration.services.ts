@@ -97,8 +97,13 @@ Trả về JSON duy nhất. reason: một câu tiếng Việt ngắn (khi approp
     let parsed: { appropriate?: unknown; reason?: unknown }
     try {
       parsed = JSON.parse(cleaned) as { appropriate?: unknown; reason?: unknown }
-    } catch {
-      console.warn('[moderateCommunityText] JSON parse failed')
+    } catch (e: any) {
+      console.warn('[moderateCommunityText] JSON parse failed', {
+        kind,
+        message: e?.message || String(e),
+        raw_preview: raw.slice(0, 500),
+        cleaned_preview: cleaned.slice(0, 500)
+      })
       return { allowed: true }
     }
 
