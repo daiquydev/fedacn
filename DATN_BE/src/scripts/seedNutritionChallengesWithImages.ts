@@ -97,6 +97,15 @@ async function run() {
             const mealTime = cursor.clone().hour(7 + m * 5).minute(Math.floor(Math.random() * 60));
             const mealInfo = imageSet[Math.floor(Math.random() * imageSet.length)];
 
+            // Determine realistic calorie range based on challenge title
+            const title = challenge.title?.toLowerCase() || '';
+            let calMin = 350, calMax = 600;
+            if (title.includes('rau')) {
+              calMin = 100; calMax = 250; // Veggies are lighter
+            } else if (title.includes('chay')) {
+              calMin = 300; calMax = 500;
+            }
+
             await ChallengeProgressModel.create({
               challenge_id: challenge._id,
               user_id: user._id,
@@ -106,7 +115,7 @@ async function run() {
               unit: challenge.goal_unit || 'bữa',
               food_name: mealInfo.name,
               proof_image: mealInfo.url,
-              calories: Math.floor(Math.random() * (600 - 300 + 1)) + 300, // Random 300-600 kcal
+              calories: Math.floor(Math.random() * (calMax - calMin + 1)) + calMin,
               ai_review_valid: true,
               validation_status: 'valid',
               source: 'photo_checkin',

@@ -443,7 +443,6 @@ export default function DayChallengeModal({
                                       </span>
                                     )}
                                   </div>
-                                  <span className="text-[10px] text-gray-400">{timeStr}</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5">

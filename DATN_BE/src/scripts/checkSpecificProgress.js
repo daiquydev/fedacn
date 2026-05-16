@@ -28,15 +28,18 @@ async function debug() {
         }).sort({ date: 1 }).toArray();
 
         console.log(`\n--- Progress Records (${progress.length}) ---`);
-        const dayMap = {};
+        const progressByDate = {};
         progress.forEach(p => {
             const d = p.date.toISOString().split('T')[0];
-            if (!dayMap[d]) dayMap[d] = 0;
-            dayMap[d]++;
+            if (!progressByDate[d]) progressByDate[d] = [];
+            progressByDate[d].push(p);
         });
 
-        Object.keys(dayMap).sort().forEach(d => {
-            console.log(`${d}: ${dayMap[d]} meals`);
+        const days = Object.keys(progressByDate).sort();
+        days.forEach(day => {
+            const entries = progressByDate[day];
+            const firstCal = entries[0].calories;
+            console.log(`${day}: ${entries.length} meals (Sample Cal: ${firstCal})`);
         });
 
         await mongoose.disconnect();
