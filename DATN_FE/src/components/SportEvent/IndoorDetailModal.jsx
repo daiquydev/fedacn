@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import moment from 'moment'
 import { createPortal } from 'react-dom'
 import { FaShareAlt, FaCamera, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { MdVideocam } from 'react-icons/md'

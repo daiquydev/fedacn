@@ -22,10 +22,11 @@ import { MdReport, MdEvent } from 'react-icons/md'
 import { GiMuscleUp } from 'react-icons/gi'
 
 export default function SideBar() {
-  let isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
-  const [open, setOpen] = useState(isTabletMid ? false : true)
+  const isTabletMid = useMediaQuery({ query: '(max-width: 767px)' })
+  const [open, setOpen] = useState(false)
   const sidebarRef = useRef()
   const { pathname } = useLocation()
+  const isSidebarVisible = !isTabletMid || open
   const isReportEventsActive = pathname.startsWith('/reports/events')
   const isReportChallengesActive = pathname.startsWith('/reports/challenges')
   const isReportPostsActive =
@@ -33,17 +34,12 @@ export default function SideBar() {
   const { profile } = useContext(AppContext)
 
   useEffect(() => {
-    if (isTabletMid) {
-      setOpen(false)
-    } else {
-      setOpen(true)
-    }
+    if (isTabletMid) setOpen(false)
   }, [isTabletMid])
 
   useEffect(() => {
-    isTabletMid && setOpen(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+    if (isTabletMid) setOpen(false)
+  }, [pathname, isTabletMid])
 
   const Nav_animation = {
     open: {
@@ -98,13 +94,14 @@ export default function SideBar() {
     <div className='fixed top-0 left-0 z-40 h-screen'>
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-10 max-h-screen bg-black/50 md:hidden ${open ? 'block' : 'hidden'} `}
+        className={`fixed inset-0 z-10 max-h-screen bg-black/50 md:hidden ${isSidebarVisible && isTabletMid ? 'block' : 'hidden'} `}
       ></div>
       <motion.div
+        key={isTabletMid ? 'mobile' : 'desktop'}
         ref={sidebarRef}
         variants={Nav_animation}
-        initial={{ x: isTabletMid ? -250 : 0 }}
-        animate={open ? 'open' : 'closed'}
+        initial={false}
+        animate={isSidebarVisible ? 'open' : 'closed'}
         className='relative z-20 h-screen w-[16rem] max-w-[16rem] overflow-hidden bg-white text-gray shadow-md dark:bg-color-primary-dark dark:text-gray-300 dark:shadow-yellow-800'
       >
         <Logo className='flex items-center gap-2.5 font-medium pb-2.5 pt-2.5 mx-3' />
@@ -298,7 +295,7 @@ export default function SideBar() {
         </div>
       </motion.div>
       <div
-        className='my-3 cursor-pointer hover:text-red-600 transition-all ml-4 mr-3 md:hidden absolute top-2 z-50'
+        className={`my-3 cursor-pointer hover:text-red-600 transition-all ml-4 mr-3 md:hidden absolute top-2 z-50 ${isTabletMid && !open ? '' : 'hidden'}`}
         onClick={() => setOpen(true)}
       >
         <MdMenu size={22} />
