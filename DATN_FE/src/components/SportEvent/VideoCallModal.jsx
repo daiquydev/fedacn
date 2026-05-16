@@ -20,7 +20,23 @@ import useravatar from '../../assets/images/useravatar.jpg'
 import { useQuery } from '@tanstack/react-query'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+function resolveSocketUrl() {
+    const explicitSocketUrl = import.meta.env.VITE_SOCKET_URL
+    if (explicitSocketUrl) return explicitSocketUrl
+
+    const apiUrl = import.meta.env.VITE_API_URL
+    if (!apiUrl) return 'http://localhost:5000'
+
+    try {
+        // API URL có thể chứa path (/api/v1), socket.io chỉ cần origin.
+        const parsed = new URL(apiUrl)
+        return `${parsed.protocol}//${parsed.host}`
+    } catch {
+        return apiUrl
+    }
+}
+
+const SOCKET_URL = resolveSocketUrl()
 
 /** STUN mặc định + TURN tùy chọn qua biến môi trường (Vite phải prefix VITE_) */
 function buildRtcConfiguration() {
@@ -28,8 +44,8 @@ function buildRtcConfiguration() {
     if (json && typeof json === 'string') {
         try {
             const parsed = JSON.parse(json)
-            if (Array.isArray(parsed)) return { iceServers: parsed }
-            if (parsed && Array.isArray(parsed.iceServers)) return { iceServers: parsed.iceServers }
+            if (Array.isArray(parsed)) return { iceServers: parsed, iceCandidatePoolSize: 10 }
+            if (parsed && Array.isArray(parsed.iceServers)) return { iceServers: parsed.iceServers, iceCandidatePoolSize: 10 }
         } catch {
             /* fall through */
         }
@@ -51,7 +67,7 @@ function buildRtcConfiguration() {
             iceServers.push({ urls: url })
         }
     }
-    return { iceServers }
+    return { iceServers, iceCandidatePoolSize: 10 }
 }
 
 const HEARTBEAT_INTERVAL_MS = 1000   // call backend every 1 second
@@ -219,6 +235,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
     const screenshotsRef = useRef([])        // Captured screenshot URLs
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // track in-flight screenshot uploads
+    const disconnectTimersRef = useRef({})   // delayed peer removal for transient disconnect
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -412,11 +429,37 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
 
         pc.oniceconnectionstatechange = () => {
             console.log(`[WebRTC] ICE state for ${remoteSocketId}:`, pc.iceConnectionState)
+            if (pc.iceConnectionState === 'failed') {
+                toast.error('Kết nối video thất bại. Mạng có thể đang chặn P2P hoặc thiếu TURN server.')
+            }
         }
 
         pc.onconnectionstatechange = () => {
             console.log(`[WebRTC] Connection state for ${remoteSocketId}:`, pc.connectionState)
-            if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+            if (pc.connectionState === 'connected') {
+                if (disconnectTimersRef.current[remoteSocketId]) {
+                    clearTimeout(disconnectTimersRef.current[remoteSocketId])
+                    delete disconnectTimersRef.current[remoteSocketId]
+                }
+                return
+            }
+
+            if (pc.connectionState === 'disconnected') {
+                if (!disconnectTimersRef.current[remoteSocketId]) {
+                    disconnectTimersRef.current[remoteSocketId] = setTimeout(() => {
+                        const currentPc = peerConnsRef.current[remoteSocketId]
+                        if (!currentPc) return
+                        const state = currentPc.connectionState
+                        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                            removePeer(remoteSocketId)
+                        }
+                        delete disconnectTimersRef.current[remoteSocketId]
+                    }, 8000)
+                }
+                return
+            }
+
+            if (['failed', 'closed'].includes(pc.connectionState)) {
                 removePeer(remoteSocketId)
             }
         }
@@ -464,6 +507,10 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
     }
 
     function removePeer(socketId) {
+        if (disconnectTimersRef.current[socketId]) {
+            clearTimeout(disconnectTimersRef.current[socketId])
+            delete disconnectTimersRef.current[socketId]
+        }
         peerConnsRef.current[socketId]?.close()
         delete peerConnsRef.current[socketId]
         setPeers(prev => { const n = { ...prev }; delete n[socketId]; return n })
@@ -782,6 +829,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
     function cleanup() {
         clearInterval(timerRef.current)
         clearInterval(heartbeatRef.current)
+        Object.values(disconnectTimersRef.current).forEach(clearTimeout)
+        disconnectTimersRef.current = {}
         localStreamRef.current?.getTracks().forEach(t => t.stop())
         screenStreamRef.current?.getTracks().forEach(t => t.stop())
         Object.values(peerConnsRef.current).forEach(pc => pc.close())
