@@ -247,6 +247,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
     const screenStreamRef = useRef(null)
     const peerConnsRef = useRef({})
     const socketRef = useRef(null)
+    const selfSocketIdRef = useRef(null)
     const vsIdRef = useRef(null)
     const totalRef = useRef(0)
     const activeRef = useRef(0)
@@ -351,6 +352,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
 
         socket.on('connect', () => {
             console.log('[VC] Socket connected:', socket.id)
+            selfSocketIdRef.current = socket.id
             socket.emit('vc:join-room', {
                 roomId: eventId,
                 userId: myId,
@@ -363,10 +365,20 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
             setSocketError('Socket lỗi: ' + err.message)
         })
 
+        socket.on('disconnect', () => {
+            selfSocketIdRef.current = null
+        })
+
         // Existing peers in room → received with full user info now
         socket.on('vc:existing-peers', async ({ peers: peerList }) => {
             // peerList = [{ socketId, userId, userName, userAvatar }, ...]
             for (const peer of peerList) {
+                const isSelfPeer =
+                    peer?.socketId === selfSocketIdRef.current ||
+                    peer?.socketId === socket.id ||
+                    (peer?.userId && myId && String(peer.userId) === String(myId))
+                if (isSelfPeer) continue
+
                 // Pre-populate peer info immediately (before track arrives)
                 setPeers(prev => ({
                     ...prev,
@@ -384,6 +396,12 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         // New peer joined → pre-populate info, but DON'T initiate offer
         // The NEW peer will initiate via vc:existing-peers to avoid SDP glare
         socket.on('vc:user-joined', async ({ socketId, userId, userName, userAvatar }) => {
+            const isSelfJoin =
+                socketId === selfSocketIdRef.current ||
+                socketId === socket.id ||
+                (userId && myId && String(userId) === String(myId))
+            if (isSelfJoin) return
+
             setPeers(prev => ({
                 ...prev,
                 [socketId]: { ...(prev[socketId] || {}), userId, userName, userAvatar }
@@ -393,6 +411,12 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         })
 
         socket.on('vc:offer', async ({ offer, from, fromUserId, fromUserName, fromUserAvatar }) => {
+            const isSelfOffer =
+                from === selfSocketIdRef.current ||
+                from === socket.id ||
+                (fromUserId && myId && String(fromUserId) === String(myId))
+            if (isSelfOffer) return
+
             // Pre-populate peer info from offer data
             if (fromUserId) {
                 setPeers(prev => ({
@@ -1033,6 +1057,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
     const sidebarEntries = useMemo(() => {
         const mainSocketId = mainEntry?.socketId || null
         const result = []
+        const selfSocketId = selfSocketIdRef.current
         // Add self if not main
         const selfIsMain = mainEntry?.type === 'self'
         if (!selfIsMain) {
@@ -1044,6 +1069,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         }
         // Other peers (not creator, not main)
         peerEntries.forEach(([sid, p]) => {
+            if (selfSocketId && sid === selfSocketId) return // never render own socket as remote tile
             if (p.userId === creatorId) return  // already handled above
             if (sid === mainSocketId) return     // in main
             result.push({ type: 'remote', socketId: sid, peer: p, isCreator: false })
