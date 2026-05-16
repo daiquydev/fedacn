@@ -1574,7 +1574,7 @@ class ChallengeService {
         challengeId: string,
         userId?: string,
         page: number = 1,
-        limit: number = 20,
+        limit: number = 1000,
         viewerId?: string
     ) {
         await this.getChallengeForRead(challengeId, viewerId)

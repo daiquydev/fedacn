@@ -207,8 +207,8 @@ async function run() {
               challengeId: challenge._id, userId: participant.user_id,
               activityType: challenge.category || 'Ngoài trời', status: 'completed',
               startTime: startTime.toDate(), endTime: moment(startTime).add(duration, 'seconds').toDate(),
-              totalDuration: Number((duration / 60).toFixed(2)), totalDistance: Number((sessionKm * 1000).toFixed(2)),
-              avgSpeed: Number(speed.toFixed(2)), calories: kcal, gpsRoute: route, source: 'app'
+              totalDuration: duration, totalDistance: Number((sessionKm * 1000).toFixed(2)),
+              avgSpeed: Number((speed).toFixed(2)), calories: kcal, gpsRoute: route, source: 'app'
             });
 
             const val = (challenge.goal_unit.toLowerCase() === 'km') ? sessionKm : kcal;
@@ -216,7 +216,7 @@ async function run() {
               challenge_id: challenge._id, user_id: participant.user_id, date: startTime.toDate(),
               challenge_type: 'outdoor_activity', value: Number(val.toFixed(2)), unit: challenge.goal_unit,
               distance: sessionKm, duration_minutes: Number((duration / 60).toFixed(2)),
-              avg_speed: Number(speed.toFixed(2)), calories: kcal, source: 'gps_tracking', activity_id: activity._id
+              avg_speed: Number((speed * 3.6).toFixed(2)), calories: kcal, source: 'gps_tracking', activity_id: activity._id
             });
             dayValue += val;
             totalDistanceKm = Number((totalDistanceKm + sessionKm).toFixed(2));

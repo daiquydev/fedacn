@@ -174,7 +174,7 @@ export default function ChallengeDetail() {
   // My progress entries (for calendar)
   const { data: progressData, refetch: refetchProgress } = useQuery({
     queryKey: ['challenge-progress', id],
-    queryFn: () => getChallengeProgress(id, {}),
+    queryFn: () => getChallengeProgress(id, { limit: 1000 }),
     staleTime: 1000,
     enabled: !!challenge?.isJoined
   })

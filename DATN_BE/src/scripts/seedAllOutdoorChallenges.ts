@@ -125,7 +125,7 @@ async function seedAllOutdoorChallenges() {
               unit: 'km',
               distance: distM / 1000,
               duration_minutes: Math.round(duration / 60),
-              avg_speed: Number(speed.toFixed(2)),
+              avg_speed: Number((speed * 3.6).toFixed(2)),
               calories: Math.round((distM / 1000) * config.calPerKm),
               source: 'gps_tracking',
               activity_id: activity._id
