@@ -693,7 +693,7 @@ export default function SportEventProgress({
                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Calories</span>
               </div>
               <p className="text-xl font-black text-gray-800 dark:text-white">
-                {displayCalories} <span className="text-sm font-medium text-gray-400">kcal</span>
+                {roundKcal(displayCalories ?? 0).toFixed(2)} <span className="text-sm font-medium text-gray-400">kcal</span>
               </p>
             </div>
 
