@@ -1402,7 +1402,7 @@ class ChallengeService {
         const participant = await ChallengeParticipantModel.findOne({
             challenge_id: new Types.ObjectId(challengeId),
             user_id: new Types.ObjectId(userId),
-            status: 'in_progress'
+            status: { $in: ['in_progress', 'completed'] }
         })
         if (!participant) throw new Error('Bạn chưa tham gia thử thách này')
 

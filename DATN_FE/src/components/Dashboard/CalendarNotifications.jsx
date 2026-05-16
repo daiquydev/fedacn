@@ -121,7 +121,7 @@ function buildTodayCalendarState({ wRes, sRes, cRes, todayVN }) {
       return startKey <= todayVN && endKey >= todayVN
     })
     .map((ev) => {
-      const start = moment(ev.startDate).tz(TZ)
+      const start = moment(ev.startDate).tz(TZ_VN)
       const endDateKey = dateKeyVN(ev.endDate)
       return {
         id: ev._id,
