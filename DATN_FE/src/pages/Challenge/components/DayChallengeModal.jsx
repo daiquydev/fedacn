@@ -338,7 +338,7 @@ export default function DayChallengeModal({
                 {/* ── Summary Stat Pills ── */}
                 {dayEntries.length > 0 && (
                   <div className="flex items-center gap-2 mt-3">
-                    {dayStats.totalDuration > 0 && (
+                    {type !== 'nutrition' && dayStats.totalDuration > 0 && (
                       <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-medium">
                         <FaClock className="text-[9px]" />
                         {fmtDuration(dayStats.totalDuration)}
@@ -471,10 +471,12 @@ export default function DayChallengeModal({
 
                             {/* Metrics pills — always visible */}
                             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                                <FaClock className="text-[8px]" />
-                                {durationSec > 0 ? fmtDuration(durationSec) : '0:00'}
-                              </span>
+                              {type !== 'nutrition' && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                                  <FaClock className="text-[8px]" />
+                                  {durationSec > 0 ? fmtDuration(durationSec) : '0:00'}
+                                </span>
+                              )}
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-900/20 text-[10px] font-medium text-orange-600 dark:text-orange-400">
                                 <FaFire className="text-[8px]" />
                                 {entryCalories ? roundKcal(entryCalories) : 0} kcal

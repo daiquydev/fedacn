@@ -106,6 +106,7 @@ async function run() {
               unit: challenge.goal_unit || 'bữa',
               food_name: mealInfo.name,
               proof_image: mealInfo.url,
+              calories: Math.floor(Math.random() * (600 - 300 + 1)) + 300, // Random 300-600 kcal
               ai_review_valid: true,
               validation_status: 'valid',
               source: 'photo_checkin',
