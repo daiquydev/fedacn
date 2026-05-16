@@ -1,0 +1,27 @@
+services:
+  coturn:
+    image: coturn/coturn:4.6.3
+    container_name: fedacn-coturn
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      - -n
+      - --log-file=stdout
+      - --simple-log
+      - --fingerprint
+      - --lt-cred-mech
+      - --realm=${TURN_REALM}
+      - --user=${TURN_USERNAME}:${TURN_PASSWORD}
+      - --external-ip=${TURN_EXTERNAL_IP}
+      - --listening-ip=0.0.0.0
+      - --relay-ip=0.0.0.0
+      - --listening-port=${TURN_PORT}
+      - --min-port=${TURN_MIN_PORT}
+      - --max-port=${TURN_MAX_PORT}
+      - --no-multicast-peers
+    ports:
+      - "${TURN_PORT}:${TURN_PORT}/udp"
+      - "${TURN_PORT}:${TURN_PORT}/tcp"
+      - "${TURN_MIN_PORT}-${TURN_MAX_PORT}:${TURN_MIN_PORT}-${TURN_MAX_PORT}/udp"
+

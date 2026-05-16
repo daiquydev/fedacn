@@ -40,12 +40,25 @@ const SOCKET_URL = resolveSocketUrl()
 
 /** STUN mặc định + TURN tùy chọn qua biến môi trường (Vite phải prefix VITE_) */
 function buildRtcConfiguration() {
+    const forceRelay = String(import.meta.env.VITE_FORCE_TURN || '').toLowerCase() === 'true'
     const json = import.meta.env.VITE_ICE_SERVERS_JSON
     if (json && typeof json === 'string') {
         try {
             const parsed = JSON.parse(json)
-            if (Array.isArray(parsed)) return { iceServers: parsed, iceCandidatePoolSize: 10 }
-            if (parsed && Array.isArray(parsed.iceServers)) return { iceServers: parsed.iceServers, iceCandidatePoolSize: 10 }
+            if (Array.isArray(parsed)) {
+                return {
+                    iceServers: parsed,
+                    iceCandidatePoolSize: 10,
+                    ...(forceRelay ? { iceTransportPolicy: 'relay' } : {})
+                }
+            }
+            if (parsed && Array.isArray(parsed.iceServers)) {
+                return {
+                    iceServers: parsed.iceServers,
+                    iceCandidatePoolSize: 10,
+                    ...(forceRelay ? { iceTransportPolicy: 'relay' } : {})
+                }
+            }
         } catch {
             /* fall through */
         }
@@ -67,7 +80,17 @@ function buildRtcConfiguration() {
             iceServers.push({ urls: url })
         }
     }
-    return { iceServers, iceCandidatePoolSize: 10 }
+    const hasTurnServer = iceServers.some((s) => {
+        const urls = Array.isArray(s?.urls) ? s.urls : [s?.urls]
+        return urls.some((u) => typeof u === 'string' && u.startsWith('turn:'))
+    })
+
+    return {
+        iceServers,
+        iceCandidatePoolSize: 10,
+        ...(forceRelay ? { iceTransportPolicy: 'relay' } : {}),
+        _meta: { hasTurnServer, forceRelay } // debug helper; stripped before RTCPeerConnection
+    }
 }
 
 const HEARTBEAT_INTERVAL_MS = 1000   // call backend every 1 second
@@ -111,7 +134,13 @@ function RemoteVideo({ stream, trackCount = 0, muted = false, className = '', st
         if (!el || !stream) return
         // Always re-set srcObject to ensure video/audio tracks are playing
         el.srcObject = stream
-        el.play().catch(() => { })
+        const tryPlay = () => el.play().catch(() => { })
+        tryPlay()
+        const onLoadedMetadata = () => tryPlay()
+        el.addEventListener('loadedmetadata', onLoadedMetadata)
+        return () => {
+            el.removeEventListener('loadedmetadata', onLoadedMetadata)
+        }
     }, [stream, trackCount])  // trackCount forces re-run when tracks are added to same stream
     return (
         <video
@@ -236,6 +265,7 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
     const lastScreenshotRef = useRef(0)      // Timestamp of last screenshot
     const uploadPromisesRef = useRef([])     // track in-flight screenshot uploads
     const disconnectTimersRef = useRef({})   // delayed peer removal for transient disconnect
+    const reconnectingPeersRef = useRef({})  // guard ICE restart per peer
 
     const syncPause = useCallback((v) => { pausedRef.current = v; setPaused(v) }, [])
 
@@ -409,8 +439,20 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         console.log(`[WebRTC] Creating PC for ${remoteSocketId}, initiator=${isInitiator}`)
         console.log(`[WebRTC] Local tracks:`, localStreamRef.current?.getTracks().map(t => t.kind))
 
-        const pc = new RTCPeerConnection(buildRtcConfiguration())
+        const rtcConfig = buildRtcConfiguration()
+        const { _meta, ...pcConfig } = rtcConfig
+        const pc = new RTCPeerConnection(pcConfig)
         peerConnsRef.current[remoteSocketId] = pc
+        if (!_meta?.hasTurnServer) {
+            console.warn('[WebRTC] No TURN server configured. Cross-network calls may fail (especially corporate networks).')
+        }
+        if (_meta?.forceRelay) {
+            console.log('[WebRTC] FORCE TURN mode is ON (iceTransportPolicy=relay)')
+        }
+
+        // Ensure both directions are negotiated even when some browsers delay track attachment.
+        pc.addTransceiver('audio', { direction: 'sendrecv' })
+        pc.addTransceiver('video', { direction: 'sendrecv' })
 
         const tracks = localStreamRef.current?.getTracks() || []
         tracks.forEach(t => {
@@ -427,9 +469,43 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
             }
         }
 
+        // Debug candidate-pair để xác định có đi qua relay (TURN) hay không.
+        const logSelectedCandidatePair = async () => {
+            try {
+                const stats = await pc.getStats()
+                let selectedPair = null
+                stats.forEach((report) => {
+                    if (report.type === 'transport' && report.selectedCandidatePairId) {
+                        selectedPair = stats.get(report.selectedCandidatePairId)
+                    }
+                })
+                if (!selectedPair) {
+                    stats.forEach((report) => {
+                        if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated) {
+                            selectedPair = report
+                        }
+                    })
+                }
+                if (!selectedPair) return
+                const local = stats.get(selectedPair.localCandidateId)
+                const remote = stats.get(selectedPair.remoteCandidateId)
+                console.log('[WebRTC] Selected pair:', {
+                    localType: local?.candidateType,
+                    remoteType: remote?.candidateType,
+                    protocol: local?.protocol || remote?.protocol
+                })
+            } catch {
+                // noop
+            }
+        }
+
         pc.oniceconnectionstatechange = () => {
             console.log(`[WebRTC] ICE state for ${remoteSocketId}:`, pc.iceConnectionState)
+            if (pc.iceConnectionState === 'disconnected') {
+                restartIceForPeer(remoteSocketId)
+            }
             if (pc.iceConnectionState === 'failed') {
+                restartIceForPeer(remoteSocketId)
                 toast.error('Kết nối video thất bại. Mạng có thể đang chặn P2P hoặc thiếu TURN server.')
             }
         }
@@ -437,6 +513,8 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         pc.onconnectionstatechange = () => {
             console.log(`[WebRTC] Connection state for ${remoteSocketId}:`, pc.connectionState)
             if (pc.connectionState === 'connected') {
+                logSelectedCandidatePair()
+                reconnectingPeersRef.current[remoteSocketId] = false
                 if (disconnectTimersRef.current[remoteSocketId]) {
                     clearTimeout(disconnectTimersRef.current[remoteSocketId])
                     delete disconnectTimersRef.current[remoteSocketId]
@@ -472,13 +550,19 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
             console.log(`[WebRTC] ✅ ontrack from ${remoteSocketId}:`, e.track.kind, 'streams:', e.streams.length)
             // Always prefer e.streams[0] — browser bundles audio+video into one stream
             if (e.streams && e.streams[0]) {
-                setPeers(prev => ({
-                    ...prev,
-                    [remoteSocketId]: {
-                        ...(prev[remoteSocketId] || {}),
-                        stream: e.streams[0]
-                    }
-                }))
+                const attachStream = () => {
+                    setPeers(prev => ({
+                        ...prev,
+                        [remoteSocketId]: {
+                            ...(prev[remoteSocketId] || {}),
+                            stream: e.streams[0],
+                            _trackCount: (prev[remoteSocketId]?._trackCount || 0) + 1
+                        }
+                    }))
+                }
+                // Some browsers fire ontrack before media is unmuted; re-attach when unmuted.
+                e.track.onunmute = attachStream
+                attachStream()
                 return
             }
             // Fallback: build MediaStream manually (Safari / edge cases)
@@ -487,22 +571,50 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
             }
             const ms = peerConnsRef.current[`stream_${remoteSocketId}`]
             ms.addTrack(e.track)
-            setPeers(prev => ({
-                ...prev,
-                [remoteSocketId]: {
-                    ...(prev[remoteSocketId] || {}),
-                    stream: ms,
-                    _trackCount: (prev[remoteSocketId]?._trackCount || 0) + 1
-                }
-            }))
+            const attachFallback = () => {
+                setPeers(prev => ({
+                    ...prev,
+                    [remoteSocketId]: {
+                        ...(prev[remoteSocketId] || {}),
+                        stream: ms,
+                        _trackCount: (prev[remoteSocketId]?._trackCount || 0) + 1
+                    }
+                }))
+            }
+            e.track.onunmute = attachFallback
+            attachFallback()
         }
 
         if (isInitiator) {
             console.log(`[WebRTC] Creating offer → ${remoteSocketId}`)
-            const offer = await pc.createOffer()
+            const offer = await pc.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true
+            })
             await pc.setLocalDescription(offer)
             socketRef.current?.emit('vc:offer', { to: remoteSocketId, offer })
             console.log(`[WebRTC] Offer sent → ${remoteSocketId}`)
+        }
+    }
+
+    async function restartIceForPeer(remoteSocketId) {
+        const pc = peerConnsRef.current[remoteSocketId]
+        if (!pc) return
+        if (!socketRef.current) return
+        if (reconnectingPeersRef.current[remoteSocketId]) return
+        if (pc.signalingState !== 'stable') return
+        if (pc.connectionState === 'closed') return
+
+        reconnectingPeersRef.current[remoteSocketId] = true
+        try {
+            console.warn(`[WebRTC] Restart ICE for ${remoteSocketId}`)
+            const offer = await pc.createOffer({ iceRestart: true })
+            await pc.setLocalDescription(offer)
+            socketRef.current.emit('vc:offer', { to: remoteSocketId, offer })
+        } catch (err) {
+            console.warn('[WebRTC] ICE restart failed:', err?.message || err)
+        } finally {
+            reconnectingPeersRef.current[remoteSocketId] = false
         }
     }
 
@@ -511,8 +623,10 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
             clearTimeout(disconnectTimersRef.current[socketId])
             delete disconnectTimersRef.current[socketId]
         }
+        delete reconnectingPeersRef.current[socketId]
         peerConnsRef.current[socketId]?.close()
         delete peerConnsRef.current[socketId]
+        delete peerConnsRef.current[`stream_${socketId}`]
         setPeers(prev => { const n = { ...prev }; delete n[socketId]; return n })
     }
 
@@ -831,10 +945,12 @@ export default function VideoCallModal({ event, sessionId: scheduleSessionId, ev
         clearInterval(heartbeatRef.current)
         Object.values(disconnectTimersRef.current).forEach(clearTimeout)
         disconnectTimersRef.current = {}
+        reconnectingPeersRef.current = {}
         localStreamRef.current?.getTracks().forEach(t => t.stop())
         screenStreamRef.current?.getTracks().forEach(t => t.stop())
         Object.values(peerConnsRef.current).forEach(pc => pc.close())
         peerConnsRef.current = {}
+        setPeers({})
         socketRef.current?.emit('vc:leave-room', { roomId: eventId })
         socketRef.current?.disconnect()
     }
